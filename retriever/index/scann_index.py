@@ -5,7 +5,7 @@ from argparse import ArgumentParser
 import scann
 import numpy as np
 
-from .index import DenseIndex
+from .index_base import DenseIndex
 
 
 logger = logging.getLogger(__name__)

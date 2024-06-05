@@ -1,6 +1,5 @@
 import logging
 import os
-import time
 from argparse import ArgumentParser, Namespace
 from copy import deepcopy
 from typing import Iterable
@@ -11,7 +10,7 @@ import torch
 from transformers import AutoModel, AutoTokenizer
 
 from .index import add_index_args, load_index
-from .retriever import Retriever
+from .retriever_base import Retriever
 from .utils import normalize
 
 
@@ -161,6 +160,7 @@ class DenseRetriever(Retriever):
             mode = "r" if self.read_only else "r+"
             h5file = tables.open_file(database_path, mode=mode)
             table = h5file.root.passages.data
+            self.save_embedding = "embedding" in table.colnames
             return h5file, table
         logger.info(f"Initiate database from {database_path}")
         return self.init_tables(database_path)
@@ -343,25 +343,6 @@ class DenseRetriever(Retriever):
     def __len__(self):
         return len(self.db_table)
 
-
-if __name__ == "__main__":
-    parser = ArgumentParser()
-    parser.add_argument(
-        "--log_interval",
-        type=int,
-        default=100,
-        help="The interval to log the progress",
-    )
-    parser = DenseRetriever.add_args(parser)
-    args = parser.parse_args()
-    retriever = DenseRetriever(args)
-    # while True:
-    #     query = input("Query: ")
-    #     if query == "quit":
-    #         break
-    #     r = retriever.search([query], leaves_to_search=500)[0]
-    #     pass
-    # retriever.test_acc(sample_num=1024, top_k=5, leaves_to_search=500)
-    retriever.test_speed(sample_num=8192, top_k=5, leaves_to_search=500)
-    retriever.close()
-    pass
+    @property
+    def embedding_size(self) -> int:
+        return self._embedding_size

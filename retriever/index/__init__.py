@@ -1,6 +1,6 @@
 from argparse import ArgumentParser, Namespace
 
-from .index import DenseIndex
+from .index_base import DenseIndex
 from .faiss_index import FaissIndex
 from .scann_index import ScaNNIndex
 
