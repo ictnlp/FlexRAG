@@ -66,9 +66,12 @@ class Retriever(ABC):
         top_k: int = 1,
         **search_kwargs,
     ) -> float:
+        from nltk.corpus import brown
+
         total_times = []
+        sents = [" ".join(i) for i in brown.sents()]
         for _ in range(test_times):
-            query = np.random.randn(sample_num, self.embedding_size).astype(np.float32)
+            query = [sents[i % len(sents)] for i in range(sample_num)]
             start_time = time.perf_counter()
             _ = self.search(query, top_k, **search_kwargs)
             end_time = time.perf_counter()
