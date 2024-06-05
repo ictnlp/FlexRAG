@@ -66,6 +66,12 @@ class DenseRetriever(Retriever):
             default=False,
             help="Whether to compress the database",
         )
+        parser.add_argument(
+            "--save_embedding",
+            action="store_true",
+            default=False,
+            help="Whether to save the embeddings into the database",
+        )
         # encoding arguments
         parser.add_argument(
             "--batch_size",
@@ -82,7 +88,7 @@ class DenseRetriever(Retriever):
         parser.add_argument(
             "--max_passage_length",
             type=int,
-            default=512,
+            default=2048,
             help="The maximum length of the passages",
         )
         parser.add_argument(
@@ -130,9 +136,10 @@ class DenseRetriever(Retriever):
             self.query_encoder.to(args.retriever_device_id)
             if self.passage_encoder is not None:
                 self.passage_encoder.to(args.retriever_device_id)
-        self.embedding_size = self.query_encoder.config.hidden_size
+        self._embedding_size = self.query_encoder.config.hidden_size
 
         # load database
+        self.save_embedding = args.save_embedding
         self.read_only = args.read_only
         self.compress_database = args.compress_database
         database_path = os.path.join(args.database_path, "database.h5")
@@ -143,7 +150,7 @@ class DenseRetriever(Retriever):
             index_args=args,
             index_path=args.database_path,
             log_interval=args.log_interval,
-            embedding_size=self.embedding_size,
+            embedding_size=self._embedding_size,
             device_id=args.retriever_device_id,
         )
         return
@@ -159,6 +166,12 @@ class DenseRetriever(Retriever):
         return self.init_tables(database_path)
 
     def init_tables(self, database_path: str) -> tuple[tables.File, tables.Table]:
+        class RetrieveTableWithEmb(tables.IsDescription):
+            title = tables.StringCol(self.max_passage_length, pos=1)
+            section = tables.StringCol(self.max_passage_length, pos=2)
+            text = tables.StringCol(self.max_passage_length, pos=3)
+            embedding = tables.Float16Col(768, pos=4)
+
         class RetrieveTable(tables.IsDescription):
             title = tables.StringCol(self.max_passage_length, pos=1)
             section = tables.StringCol(self.max_passage_length, pos=2)
@@ -173,12 +186,17 @@ class DenseRetriever(Retriever):
 
         # setup compressor
         if self.compress_database:
-            filters = tables.Filters(complevel=5, complib="blosc2:zstd")
+            filters = tables.Filters(complevel=5, complib="zlib")
         else:
             filters = None
 
         group = h5file.create_group("/", "passages", "Passages", filters=filters)
-        table = h5file.create_table(group, "data", RetrieveTable, "data")
+        if self.save_embedding:
+            table = h5file.create_table(
+                group, "data", RetrieveTableWithEmb, "data", filters=filters
+            )
+        else:
+            table = h5file.create_table(group, "data", RetrieveTable, "data")
         return h5file, table
 
     def add_passages(
@@ -188,7 +206,7 @@ class DenseRetriever(Retriever):
         Add passages to the retriever database
         """
         # generate embeddings
-        start_idx = len(self.db_table)
+        full_embeddings = []
         for n, idx in enumerate(range(0, len(passages), self.batch_size)):
             if n % self.log_interval == 0:
                 logger.info(f"Generating embeddings for batch {n}")
@@ -196,112 +214,58 @@ class DenseRetriever(Retriever):
             # prepare batch
             batch = passages[idx : idx + self.batch_size]
             embeddings = self._encode_batch(batch)
+            full_embeddings.append(embeddings)
 
             # add embeddings to database
             for i, p in enumerate(batch):
                 p = {"text": p} if isinstance(p, str) else p
                 row = self.db_table.row
-                row["title"] = p.get("title", "").encode()
-                row["section"] = p.get("section", "").encode()
-                row["text"] = p.get("text", "").encode()
-                row["embedding"] = embeddings[i]
+                row["title"] = self._safe_encode(p.get("title", ""))
+                row["section"] = self._safe_encode(p.get("section", ""))
+                row["text"] = self._safe_encode(p.get("text", ""))
+                if self.save_embedding:
+                    row["embedding"] = embeddings[i]
                 row.append()
             self.db_table.flush()
-        embeddings = self.db_table[start_idx:]["embedding"]
+        full_embeddings = np.concatenate(full_embeddings, axis=0)
 
         # update index
         if not self.index.is_trained:
-            self.index.train_index(embeddings)
+            self.index.train_index(full_embeddings)
         for n, idx in enumerate(range(0, len(passages), self.batch_size)):
             if n % self.log_interval == 0:
                 logger.info(f"Adding embeddings for batch {n}")
-            embeds_to_add = embeddings[idx : idx + self.batch_size]
+            embeds_to_add = full_embeddings[idx : idx + self.batch_size]
             self.index.add_embeddings_batch(embeds_to_add)
         self.index.serialize()
         logger.info("Finished adding passages")
         return
 
-    def search(
+    def search_batch(
         self,
         query: list[str],
         top_k: int = 10,
         **search_kwargs,
     ) -> list[dict[str, str | list]]:
-        final_results = []
-        for n, idx in enumerate(range(0, len(query), self.batch_size)):
-            if n % self.log_interval == 0:
-                logger.info(f"Searching for batch {n}")
-            batch = query[idx : idx + self.batch_size]
-            # encode query
-            embeddings = self._encode_batch(batch, is_query=True)
-            # retrieve for indices
-            scores, indices = self.index.search_batch(
-                embeddings, top_k, **search_kwargs
-            )
-            # convert indices to passages
-            results = [
-                {
-                    "query": q,
-                    "indices": [i for i in r],
-                    "scores": [i for i in s],
-                    "titles": [i.decode() for i in self.db_table[r]["title"]],
-                    "sections": [i.decode() for i in self.db_table[r]["section"]],
-                    "texts": [i.decode() for i in self.db_table[r]["text"]],
-                }
-                for q, r, s in zip(batch, indices, scores)
-            ]
-            final_results.extend(results)
-        return final_results
+        embeddings = self._encode_batch(query, is_query=True)
+        scores, indices = self.index.search_batch(embeddings, top_k, **search_kwargs)
+        results = [
+            {
+                "query": q,
+                "indices": [i for i in r],
+                "scores": [i for i in s],
+                "titles": [i.decode() for i in self.db_table[r]["title"]],
+                "sections": [i.decode() for i in self.db_table[r]["section"]],
+                "texts": [i.decode() for i in self.db_table[r]["text"]],
+            }
+            for q, r, s in zip(query, indices, scores)
+        ]
+        return results
 
     def close(self):
         self.db_table.flush()
         self.db_file.close()
         return
-
-    def test_acc(
-        self, sample_num: int = 10000, top_k: int = 1, **search_kwargs
-    ) -> float:
-        # sample keys if necessary
-        indices = np.random.choice(
-            np.arange(len(self.db_table)),
-            size=[min(sample_num, len(self.db_table))],
-            replace=False,
-        )
-
-        # calculate accuracy
-        acc_num = 0
-        for i in range(0, len(indices), self.batch_size):
-            if (i / self.batch_size) % self.log_interval == 0:
-                logger.info(f"Evaluating progress: {i} / {len(indices)}")
-            real_indices = indices[i : i + self.batch_size]
-            embed_batch = np.array(
-                self.db_table[real_indices]["embedding"], dtype=np.float32
-            )
-            _, knn_indices = self.index.search_batch(
-                embed_batch, top_k, **search_kwargs
-            )
-            # knn_indices
-            acc_mat = knn_indices == real_indices.reshape(-1, 1)
-            acc_num += acc_mat.any(axis=1).sum()
-        acc = acc_num / len(indices)
-        logger.info(f"Retrieval accuracy: {acc}")
-        return acc
-
-    def test_speed(
-        self, sample_num: int = 10000, top_k: int = 1, **search_kwargs
-    ) -> float:
-        # sample keys if necessary
-        embeds = np.random.randn(sample_num, self.embedding_size).astype(np.float32)
-
-        # calculate accuracy
-        start_time = time.perf_counter()
-        for i in range(0, len(embeds), self.batch_size):
-            if (i / self.batch_size) % self.log_interval == 0:
-                logger.info(f"Benchmarking progress: {i} / {len(embeds)}")
-            self.index.search_batch(embeds[i : i + self.batch_size], top_k)
-        end_time = time.perf_counter()
-        logger.info(f"Retrieval consume: {end_time - start_time}")
-        return end_time - start_time
 
     @torch.no_grad()
     def _encode_batch(
@@ -356,6 +320,25 @@ class DenseRetriever(Retriever):
         if self.normalize_text:
             batch_text = [normalize(p) for p in batch_text]
         return batch_text
+
+    def _safe_encode(self, text: str) -> bytes:
+        text = text.encode("utf-8")
+        if len(text) <= self.max_passage_length:
+            return text
+
+        # do not truncate in the middle of a character
+        trunc_point = self.max_passage_length
+        while trunc_point > 0 and (text[trunc_point] & 0xC0) == 0x80:
+            trunc_point -= 1
+
+        # ensure utf-8 encoding
+        while trunc_point > 0:
+            try:
+                _ = text[:trunc_point].decode("utf-8")
+                break
+            except:
+                trunc_point -= 1
+        return text[:trunc_point]
 
     def __len__(self):
         return len(self.db_table)
