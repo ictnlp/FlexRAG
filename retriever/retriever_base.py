@@ -1,10 +1,11 @@
 import logging
 import time
+import os
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
 
 import numpy as np
-from cachetools import cached
+from cachetools.keys import hashkey
 
 from .cache import PersistentLRUCache
 
@@ -27,12 +28,19 @@ class Retriever(ABC):
             required=True,
             help="The path to the Retriever database",
         )
+        parser.add_argument(
+            "--batch_size",
+            type=int,
+            default=512,
+            help="The batch size to use for encoding",
+        )
         return parser
 
     def __init__(self, args: Namespace) -> None:
         if args.cache_size > 0:
             self._cache = PersistentLRUCache(
-                args.database_path, maxsize=args.cache_size
+                persistant_path=os.path.join(args.database_path, "cache.db"),
+                maxsize=args.cache_size,
             )
         else:
             self._cache = None
@@ -59,11 +67,12 @@ class Retriever(ABC):
             return self._search_batch(query, top_k, **search_kwargs)
 
         # search from cache
+        cache_keys = [hashkey(query=q, top_k=top_k, **search_kwargs) for q in query]
         results = [None] * len(query)
         new_query = []
         new_indices = []
-        for n, q in enumerate(query):
-            if q in self._cache:
+        for n, (q, k) in enumerate(zip(query, cache_keys)):
+            if k in self._cache:
                 results[n] = self._cache[q]
             else:
                 new_indices.append(n)
@@ -74,7 +83,7 @@ class Retriever(ABC):
             new_results = self._search_batch(new_query, top_k, **search_kwargs)
             for n, r in zip(new_indices, new_results):
                 results[n] = r
-                self._cache[new_query[n]] = r
+                self._cache[cache_keys[n]] = r
         assert all(r is not None for r in results)
         return results
 
@@ -87,7 +96,6 @@ class Retriever(ABC):
     ) -> list[dict[str, str | list]]:
         return
 
-    @cached(cache=PersistentLRUCache(""))
     def search(
         self,
         query: list[str],
@@ -97,8 +105,10 @@ class Retriever(ABC):
         # search for documents
         final_results = []
         for n, idx in enumerate(range(0, len(query), self.batch_size)):
-            if n % self.log_interval == 0:
-                logger.info(f"Searching for batch {n}")
+            if (n % self.log_interval == 0) and (len(query) > self.batch_size):
+                logger.info(
+                    f"Searching for batch {n} / {len(query) // self.batch_size}"
+                )
             batch = query[idx : idx + self.batch_size]
             results_ = self.search_batch(batch, top_k, **search_kwargs)
             final_results.extend(results_)
@@ -141,3 +151,8 @@ class Retriever(ABC):
             f"Retrieval {sample_num} items consume: {avg_time:.4f} ± {std_time:.4f} s"
         )
         return end_time - start_time
+
+    def _clear_cache(self):
+        if self._cache is not None:
+            self._cache.clear()
+        return

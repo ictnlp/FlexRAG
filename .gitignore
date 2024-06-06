@@ -140,3 +140,6 @@ yala/model/third_party_models
 
 # aim
 .aim
+
+# test files
+test*.py
