@@ -48,12 +48,6 @@ class DenseRetriever(Retriever):
         )
         # database arguments
         parser.add_argument(
-            "--database_path",
-            type=str,
-            required=True,
-            help="The path to the Retriever database",
-        )
-        parser.add_argument(
             "--read_only",
             action="store_true",
             default=False,
@@ -241,7 +235,7 @@ class DenseRetriever(Retriever):
         logger.info("Finished adding passages")
         return
 
-    def search_batch(
+    def _search_batch(
         self,
         query: list[str],
         top_k: int = 10,
