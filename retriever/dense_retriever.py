@@ -1,7 +1,6 @@
 import logging
 import os
 from argparse import ArgumentParser, Namespace
-from copy import deepcopy
 from typing import Iterable
 
 import numpy as np
@@ -10,15 +9,14 @@ import torch
 from transformers import AutoModel, AutoTokenizer
 
 from .index import add_index_args, load_index
-from .retriever_base import Retriever
-from .utils import normalize
+from .retriever_base import LocalRetriever
 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-class DenseRetriever(Retriever):
+class DenseRetriever(LocalRetriever):
     @staticmethod
     def add_args(parser: ArgumentParser) -> ArgumentParser:
         # model arguments
@@ -65,48 +63,18 @@ class DenseRetriever(Retriever):
             default=False,
             help="Whether to save the embeddings into the database",
         )
-        # encoding arguments
         parser.add_argument(
-            "--batch_size",
-            type=int,
-            default=512,
-            help="The batch size to use for encoding",
-        )
-        parser.add_argument(
-            "--max_query_length",
-            type=int,
-            default=256,
-            help="The maximum length of the queries",
-        )
-        parser.add_argument(
-            "--max_passage_length",
-            type=int,
-            default=2048,
-            help="The maximum length of the passages",
-        )
-        parser.add_argument(
-            "--no_title",
+            "--load_in_memory",
             action="store_true",
             default=False,
-            help="Whether to include the title in the passage",
-        )
-        parser.add_argument(
-            "--lowercase",
-            action="store_true",
-            default=False,
-            help="Whether to lowercase the text",
-        )
-        parser.add_argument(
-            "--normalize_text",
-            action="store_true",
-            default=False,
-            help="Whether to normalize the text",
+            help="Whether to load the database into memory",
         )
         # index arguments
         parser = add_index_args(parser)
         return parser
 
     def __init__(self, args: Namespace) -> None:
+        super().__init__(args)
         # set args
         if args.retriever_tokenizer is None:
             args.retriever_tokenizer = args.query_encoder
@@ -161,15 +129,16 @@ class DenseRetriever(Retriever):
 
     def init_tables(self, database_path: str) -> tuple[tables.File, tables.Table]:
         class RetrieveTableWithEmb(tables.IsDescription):
-            title = tables.StringCol(self.max_passage_length, pos=1)
-            section = tables.StringCol(self.max_passage_length, pos=2)
-            text = tables.StringCol(self.max_passage_length, pos=3)
+            title = tables.VLStringAtom(self.max_passage_length, pos=1)
+            section = tables.VLStringAtom(self.max_passage_length, pos=2)
+            text = tables.VLStringAtom(self.max_passage_length, pos=3)
             embedding = tables.Float16Col(768, pos=4)
+            tables.StringAtom
 
         class RetrieveTable(tables.IsDescription):
-            title = tables.StringCol(self.max_passage_length, pos=1)
-            section = tables.StringCol(self.max_passage_length, pos=2)
-            text = tables.StringCol(self.max_passage_length, pos=3)
+            title = tables.VLStringAtom(self.max_passage_length, pos=1)
+            section = tables.VLStringAtom(self.max_passage_length, pos=2)
+            text = tables.VLStringAtom(self.max_passage_length, pos=3)
             embedding = tables.Float16Col(768, pos=4)
 
         if not os.path.exists(os.path.dirname(database_path)):
@@ -246,8 +215,8 @@ class DenseRetriever(Retriever):
         results = [
             {
                 "query": q,
-                "indices": [i for i in r],
-                "scores": [i for i in s],
+                "indices": [int(i) for i in r],
+                "scores": [float(i) for i in s],
                 "titles": [i.decode() for i in self.db_table[r]["title"]],
                 "sections": [i.decode() for i in self.db_table[r]["section"]],
                 "texts": [i.decode() for i in self.db_table[r]["text"]],
@@ -268,7 +237,7 @@ class DenseRetriever(Retriever):
         is_query: bool = False,
     ) -> np.ndarray:
         # prepare batch
-        batch_text = self._prepare_texts(batch)
+        batch_text = [self._prepare_text(doc) for doc in batch]
 
         # get encoder
         if is_query:
@@ -294,26 +263,6 @@ class DenseRetriever(Retriever):
         embeddings = token_embeddings.sum(dim=1) / mask.sum(dim=1)[..., None]
         embeddings = embeddings.cpu().numpy()
         return embeddings
-
-    def _prepare_texts(
-        self, batch: Iterable[dict[str, str]] | Iterable[str]
-    ) -> list[str]:
-        # add title
-        if isinstance(batch[0], dict):
-            if ("title" in batch[0]) and (not self.no_title):
-                batch_text = [f"{p['title']} {p['text']}" for p in batch]
-            else:
-                batch_text = [p["text"] for p in batch]
-        else:
-            assert isinstance(batch[0], str)
-            batch_text = deepcopy(batch)
-        # lowercase
-        if self.lowercase:
-            batch_text = [p.lower() for p in batch_text]
-        # normalize
-        if self.normalize_text:
-            batch_text = [normalize(p) for p in batch_text]
-        return batch_text
 
     def _safe_encode(self, text: str) -> bytes:
         text = text.encode("utf-8")

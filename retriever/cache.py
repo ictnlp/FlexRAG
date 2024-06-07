@@ -1,5 +1,7 @@
+import json
 import os
 import shelve
+from hashlib import md5
 from typing import Any
 
 from cachetools import LRUCache
@@ -28,3 +30,10 @@ class PersistentLRUCache(LRUCache):
             if key in db:
                 del db[key]
         return super().__delitem__(key)
+
+
+def hashkey(*args, **kwargs) -> str:
+    """Return a cache key for the specified hashable arguments."""
+    key = json.dumps([args, sorted(kwargs.items())], sort_keys=True)
+    key = md5(key.encode("utf-8")).hexdigest()
+    return key
