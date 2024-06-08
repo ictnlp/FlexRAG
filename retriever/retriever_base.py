@@ -115,7 +115,7 @@ class LocalRetriever(Retriever):
         # set cache for retrieve
         if args.cache_size > 0:
             self._cache = PersistentLRUCache(
-                persistant_path=os.path.join(args.database_path, "cache.db"),
+                persistant_path=os.path.join(args.database_path, "cache"),
                 maxsize=args.cache_size,
             )
         else:

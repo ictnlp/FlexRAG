@@ -12,9 +12,10 @@ class PersistentLRUCache(LRUCache):
         super().__init__(*args, **kwargs)
         self.persistant_path = persistant_path
         self._load_cache()
+        return
 
     def _load_cache(self) -> None:
-        if os.path.exists(self.persistant_path):
+        if os.path.exists(self.persistant_path + ".dat"):
             with shelve.open(self.persistant_path) as db:
                 for k, v in db.items():
                     self[k] = v
