@@ -1,5 +1,6 @@
 import os
 import time
+import logging
 from abc import abstractmethod
 from argparse import ArgumentParser, Namespace
 
@@ -8,6 +9,9 @@ from tenacity import retry, stop_after_attempt
 
 from .cache import PersistentLRUCache, hashkey
 from .retriever_base import Retriever
+
+
+logger = logging.getLogger(__name__)
 
 
 class WebRetriever(Retriever):
@@ -35,6 +39,7 @@ class WebRetriever(Retriever):
 
     def __init__(self, args: Namespace):
         self.timeout = args.timeout
+        self.log_interval = args.log_interval
 
         # set cache for retrieve
         if args.cache_size > 0:
@@ -59,14 +64,19 @@ class WebRetriever(Retriever):
         if isinstance(query, str):
             query = [query]
 
-        results = []
+        # prepare search method
         if retry_times > 1:
             search_method = retry(stop=stop_after_attempt(retry_times))(
                 self.search_item
             )
         else:
             search_method = self.search_item
-        for q in query:
+
+        # search
+        results = []
+        for n, q in enumerate(query):
+            if n % self.log_interval == 0:
+                logger.info(f"Searching for {n} / {len(query)}")
             results.append(search_method(q, top_k, delay=delay, **search_kwargs))
         return results
 
@@ -78,8 +88,8 @@ class WebRetriever(Retriever):
         disable_cache: bool = False,
         **search_kwargs,
     ) -> dict[str, str | list]:
-        time.sleep(delay)
         if (self._cache is None) or disable_cache:
+            time.sleep(delay)  # delay only when cache is not available
             return self._search_item(query, top_k, **search_kwargs)
 
         # search from cache
@@ -87,6 +97,7 @@ class WebRetriever(Retriever):
         result = self._cache.get(cache_key)
         # search from database
         if result is None:
+            time.sleep(delay)  # delay only when cache is not available
             result = self._search_item(query, top_k, **search_kwargs)
             self._cache[cache_key] = result
         return result
