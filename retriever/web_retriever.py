@@ -23,18 +23,6 @@ class WebRetriever(Retriever):
             default=1.0,
             help="The timeout for each request",
         )
-        parser.add_argument(
-            "--cache_size",
-            default=0,
-            type=int,
-            help="The size of the cache",
-        )
-        parser.add_argument(
-            "--database_path",
-            type=str,
-            required=True,
-            help="The path to the Retriever database",
-        )
         return parser
 
     def __init__(self, args: Namespace):

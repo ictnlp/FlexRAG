@@ -18,7 +18,7 @@ class PersistentLRUCache(LRUCache):
         if os.path.exists(self.persistant_path + ".dat"):
             with shelve.open(self.persistant_path) as db:
                 for k, v in db.items():
-                    self[k] = v
+                    super().__setitem__(k, v)
         return
 
     def __setitem__(self, key: Any, value: Any) -> None:

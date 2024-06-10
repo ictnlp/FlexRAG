@@ -14,6 +14,22 @@ logger = logging.getLogger(__name__)
 
 
 class Retriever(ABC):
+    @staticmethod
+    def add_args(parser: ArgumentParser) -> ArgumentParser:
+        parser.add_argument(
+            "--database_path",
+            type=str,
+            required=True,
+            help="The path to the Retriever database",
+        )
+        parser.add_argument(
+            "--cache_size",
+            default=0,
+            type=int,
+            help="The size of the cache",
+        )
+        return parser
+
     @abstractmethod
     def search(
         self,
@@ -51,18 +67,6 @@ class Retriever(ABC):
 class LocalRetriever(Retriever):
     @staticmethod
     def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--cache_size",
-            default=0,
-            type=int,
-            help="The size of the cache",
-        )
-        parser.add_argument(
-            "--database_path",
-            type=str,
-            required=True,
-            help="The path to the Retriever database",
-        )
         parser.add_argument(
             "--batch_size",
             type=int,
@@ -180,11 +184,11 @@ class LocalRetriever(Retriever):
         Returns:
             list[dict[str, str | list]]: The retrieved documents: [
                 {
-                    "indices": [],
-                    "scores": [],
-                    "titles": [],
-                    "sections": [],
-                    "texts": [],
+                    "indices": list[int|str],
+                    "scores": list[float],
+                    "titles": list[str],
+                    "sections": list[str],
+                    "texts": list[str],
                 }
             ]
         """
