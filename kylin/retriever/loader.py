@@ -1,7 +1,8 @@
 from argparse import ArgumentParser, Namespace
-from .retriever_base import Retriever, LocalRetriever
+
 from .bm25_retriever import BM25Retriever
 from .dense_retriever import DenseRetriever
+from .retriever_base import LocalRetriever, Retriever
 from .web_retriever import DuckDuckGoRetriever
 
 
@@ -22,16 +23,16 @@ def add_args_for_retriever(parser: ArgumentParser) -> ArgumentParser:
     return parser
 
 
-def load_retrievers(args: Namespace) -> list[Retriever]:
-    retrievers = []
+def load_retrievers(args: Namespace) -> dict[str, Retriever]:
+    retrievers = {}
     for ret_type in args.retriever_type:
         match ret_type:
             case "bm25":
-                retrievers.append(BM25Retriever(args))
+                retrievers[ret_type] = BM25Retriever(args)
             case "ddg":
-                retrievers.append(DuckDuckGoRetriever(args))
+                retrievers[ret_type] = DuckDuckGoRetriever(args)
             case "dense":
-                retrievers.append(DenseRetriever(args))
+                retrievers[ret_type] = DenseRetriever(args)
             case _:
                 raise ValueError(f"Invalid retriever type: {args.retriever_type}")
     return retrievers

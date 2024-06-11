@@ -130,7 +130,7 @@ PRIMES = {
 #: Quote characters, including apostrophes, single quotes, double quotes, accents and primes.
 QUOTES = APOSTROPHES | SINGLE_QUOTES | DOUBLE_QUOTES | ACCENTS | PRIMES
 
-def normalize(text):
+def normalize_token(text):
     for control in CONTROLS:
         text = text.replace(control, '')
     text = text.replace('\u000b', ' ').replace('\u000c', ' ').replace(u'\u0085', ' ')

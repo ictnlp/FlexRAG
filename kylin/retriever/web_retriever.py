@@ -1,6 +1,6 @@
+import logging
 import os
 import time
-import logging
 from abc import abstractmethod
 from argparse import ArgumentParser, Namespace
 

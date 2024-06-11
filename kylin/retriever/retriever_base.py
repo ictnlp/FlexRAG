@@ -1,13 +1,14 @@
 import logging
-import time
 import os
+import time
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
 
 import numpy as np
 
+from kylin.text_process import normalize_token
+
 from .cache import PersistentLRUCache, hashkey
-from .utils import normalize
 
 
 logger = logging.getLogger(__name__)
@@ -243,5 +244,5 @@ class LocalRetriever(Retriever):
             text = text.lower()
         # normalize
         if self.normalize_text:
-            text = normalize(text)
+            text = normalize_token(text)
         return text

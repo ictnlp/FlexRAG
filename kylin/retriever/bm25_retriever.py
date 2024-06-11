@@ -1,4 +1,5 @@
 import time
+import logging
 from argparse import ArgumentParser, Namespace
 from typing import Iterable
 
@@ -29,6 +30,12 @@ class BM25Retriever(LocalRetriever):
             default="documents",
             help="The name of the index to use for the BM25 retriever",
         )
+        parser.add_argument(
+            "--elastic_verbose",
+            default=False,
+            action="store_true",
+            help="Whether to show verbose log output from elasticsearch",
+        )
         return parser
 
     def __init__(self, args: Namespace) -> None:
@@ -36,6 +43,7 @@ class BM25Retriever(LocalRetriever):
         self.host = args.host
         self.api_key = args.api_key
         self.index_name = args.index_name
+        self.verbose = args.elastic_verbose
         self._prep_client()
         return
 
@@ -47,6 +55,7 @@ class BM25Retriever(LocalRetriever):
                 "text": {"type": "text", "analyzer": "english"},
             }
         }
+        # set client
         self.client = Elasticsearch(
             self.host,
             api_key=self.api_key,
@@ -56,6 +65,13 @@ class BM25Retriever(LocalRetriever):
                 index=self.index_name,
                 mappings=mapping,
             )
+
+        # set logging
+        logger = logging.getLogger("elastic_transport.transport")
+        if self.verbose:
+            logger.setLevel(logging.INFO)
+        else:
+            logger.setLevel(logging.WARNING)
         return
 
     def add_passages(
