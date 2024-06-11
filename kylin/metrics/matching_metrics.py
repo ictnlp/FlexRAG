@@ -34,12 +34,14 @@ class MatchingMetrics(MetricsBase):
     def compute_item(self, y_trues: list[str], y_pred: str) -> float:
         return
 
-    def compute(self, y_trues: list[list[str]], y_preds: list[str]) -> float:
+    def compute(
+        self, y_trues: list[list[str]], y_preds: list[str]
+    ) -> tuple[float, dict[str, list[float]]]:
         matching_list = []
         for y_t, y_p in zip(y_trues, y_preds):
             matching_list.append(self.compute_item(y_t, y_p))
-        matching_list = np.array(matching_list)
-        return matching_list.mean()
+        matching_score = sum(matching_list) / len(matching_list)
+        return matching_score, {"item_score": matching_list}
 
     def preprocess(
         self, y_trues: list[list[str]], y_preds: list[str]
