@@ -43,10 +43,11 @@ class ScaNNIndex(DenseIndex):
     def __init__(
         self,
         index_path: str,
-        vector_sz: int = 768,
         num_leaves: int = 0,
         num_leaves_to_search: int = 8,
         num_neighbors: int = 1000,
+        anisotropic_quantization_threshold: float = 0.2,
+        distance_func: str = "IP",
         index_train_num: int = 1000000,
         log_interval: int = 100,
         **kwargs,
@@ -61,10 +62,11 @@ class ScaNNIndex(DenseIndex):
             self.deserialize()
         else:
             self.index = self.prepare_index(
-                vector_sz=vector_sz,
                 num_leaves=num_leaves,
                 num_leaves_to_search=num_leaves_to_search,
                 num_neighbors=num_neighbors,
+                anisotropic_quantization_threshold=anisotropic_quantization_threshold,
+                distance_func=distance_func,
             )
         return
 
@@ -73,6 +75,7 @@ class ScaNNIndex(DenseIndex):
         num_leaves: int,
         num_leaves_to_search: int,
         num_neighbors: int,
+        anisotropic_quantization_threshold: float,
         distance_func: str = "IP",
     ) -> scann.ScannBuilder:
         distance_measure = "dot_product" if distance_func == "IP" else "squared_l2"
@@ -89,9 +92,9 @@ class ScaNNIndex(DenseIndex):
             )
             .score_ah(
                 dimensions_per_block=2,
-                anisotropic_quantization_threshold=0.2,
+                anisotropic_quantization_threshold=anisotropic_quantization_threshold,
             )
-            .reorder(100)
+            .reorder(200)
         )
 
     def train_index(self, embeddings: np.ndarray) -> None:
@@ -178,4 +181,6 @@ class ScaNNIndex(DenseIndex):
         return not isinstance(self.index, scann.ScannBuilder)
 
     def __len__(self) -> int:
+        if isinstance(self.index, scann.ScannBuilder):
+            return 0
         return self.index.docids

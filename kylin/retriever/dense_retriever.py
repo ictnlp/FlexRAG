@@ -8,7 +8,7 @@ import tables
 import torch
 import torch.distributed as dist
 from transformers import AutoModel, AutoTokenizer
-from torch.nn.parallel import DistributedDataParallel as DDP
+from torch.nn.parallel import DataParallel as DP
 
 from .index import add_index_args, load_index
 from .retriever_base import LocalRetriever
@@ -79,6 +79,7 @@ class DenseRetriever(LocalRetriever):
         else:
             self.passage_encoder = None
         self._embedding_size = self.query_encoder.config.hidden_size
+        self.max_encode_length = self.query_encoder.config.max_position_embeddings
 
         # prepare gpu
         if args.retriever_device_id != [-1]:
@@ -122,10 +123,10 @@ class DenseRetriever(LocalRetriever):
 
     def init_tables(self, database_path: str) -> tuple[tables.File, tables.Table]:
         class RetrieveTableWithEmb(tables.IsDescription):
-            title = tables.VLStringAtom()
-            section = tables.VLStringAtom()
-            text = tables.VLStringAtom()
-            embedding = tables.Float16Col(768, pos=4)
+            title = tables.StringCol(itemsize=self.max_query_length, pos=1)
+            section = tables.StringCol(itemsize=self.max_query_length, pos=2)
+            text = tables.StringCol(itemsize=self.max_passage_length, pos=3)
+            embedding = tables.Float16Col(self.embedding_size, pos=4)
             tables.StringAtom
 
         if not os.path.exists(os.path.dirname(database_path)):
@@ -144,12 +145,11 @@ class DenseRetriever(LocalRetriever):
         """
         Add passages to the retriever database
         """
-        # prepare DDP
+        # prepare Data Parallel
         if (len(self.device_id) > 1) and (
             len(passages) > (self.batch_size * len(self.device_id))
         ):
-            dist.init_process_group()
-            passage_encoder = DDP(self.passage_encoder)
+            passage_encoder = DP(self.passage_encoder)
             batch_size = self.batch_size * torch.cuda.device_count()
         else:
             passage_encoder = self.passage_encoder
@@ -159,7 +159,7 @@ class DenseRetriever(LocalRetriever):
         start_idx = len(self.db_table)
         for n, idx in enumerate(range(0, len(passages), batch_size)):
             if n % self.log_interval == 0:
-                logger.info(f"Generating embeddings for batch {n}")
+                logger.info(f"Generating embeddings for item {idx} / {len(passages)}")
 
             # prepare batch
             batch = passages[idx : idx + batch_size]
@@ -193,10 +193,6 @@ class DenseRetriever(LocalRetriever):
             self.index.add_embeddings_batch(embeds_to_add)
         self.index.serialize()
         logger.info("Finished adding passages")
-
-        # cleanup
-        if dist.is_initialized():
-            dist.destroy_process_group()
         return
 
     def _search_batch(
@@ -228,26 +224,28 @@ class DenseRetriever(LocalRetriever):
     @torch.no_grad()
     def _encode_batch(
         self,
-        encoder: torch.nn.Module,
+        encoder: torch.nn.Module | DP,
         batch: Iterable[dict[str, str]] | Iterable[str],
     ) -> np.ndarray:
         # prepare batch
         batch_text = [self._prepare_text(doc) for doc in batch]
 
         # tokenize text
-        device = encoder.device
+        device = encoder.device_ids if isinstance(encoder, DP) else encoder.device
         input_dict = self.tokenizer.batch_encode_plus(
             batch_text,
             return_tensors="pt",
-            max_length=self.max_passage_length,
+            max_length=self.max_encode_length,
             padding=True,
             truncation=True,
         )
-        input_dict = {k: v.to(device) for k, v in input_dict.items()}
+        if not isinstance(encoder, DP):
+            input_dict = {k: v.to(device) for k, v in input_dict.items()}
         mask = input_dict["attention_mask"]
 
         # encode text
         token_embeddings = encoder(**input_dict).last_hidden_state
+        mask = input_dict["attention_mask"].to(token_embeddings.device)
         token_embeddings = token_embeddings.masked_fill(~mask[..., None].bool(), 0.0)
         embeddings = token_embeddings.sum(dim=1) / mask.sum(dim=1)[..., None]
         embeddings = embeddings.cpu().numpy()
