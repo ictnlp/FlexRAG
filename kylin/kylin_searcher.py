@@ -167,33 +167,6 @@ class KylinLLMSearcher:
 
         return final_contexts, search_track
 
-    def rewrite_queries(self, queries: list[str]) -> list[str]:
-        # Rewrite the query to be more informative
-        sys_prompt = (
-            "Your task is to write a query for a search engine "
-            "to find the answer to the following question. "
-            "Please reply your query only.\n\n"
-        )
-        basic_prompts = [f"{sys_prompt}Question: {q}" for q in queries]
-        prompts = [
-            self.searcher_prompt_func(
-                history=[
-                    {
-                        "role": "user",
-                        "content": f"{prompt}",
-                    }
-                ]
-            )
-            for prompt in basic_prompts
-        ]
-        queries_to_search = self.searcher.generate(
-            prompts,
-            sampling_params=self.searcher_sample_params,
-            use_tqdm=False,
-        )
-        queries_to_search = [i.outputs[0].text for i in queries_to_search]
-        return queries_to_search
-
     def search_for_contexts(self, questions: list[str]) -> list[list[dict[str, str]]]:
         # Search for the queries
         contexts = [[] for _ in questions]
@@ -215,21 +188,15 @@ class KylinLLMSearcher:
                 contexts[n].extend(retrieved_docs)
         return contexts
 
-    def verify_contexts(
-        self, contexts: list[list[str]], question: list[str]
-    ) -> list[bool]:
+    def rewrite_queries(self, queries: list[str], engine_desc: str = "") -> list[str]:
+        # Rewrite the query to be more informative
         sys_prompt = (
-            "Your task is to verify whether the following context "
-            "contains enough information to answer the following question. "
-            "Please reply 'yes' or 'no' only.\n\n"
+            "Your task is to write a query for a search engine "
+            "to find the answer to the following question. "
+            f"{engine_desc}"
+            "Please only reply your query and do not output any other words.\n\n"
         )
-        basic_prompts = []
-        for ctxs, q in zip(contexts, question):
-            basic_prompt = sys_prompt
-            for n, ctx in enumerate(ctxs):
-                basic_prompt += f"Context {n}: {ctx['text']}\n\n"
-            basic_prompt += f"Question: {q}"
-            basic_prompts.append(basic_prompt)
+        basic_prompts = [f"{sys_prompt}Question: {q}" for q in queries]
         prompts = [
             self.searcher_prompt_func(
                 history=[
@@ -241,6 +208,35 @@ class KylinLLMSearcher:
             )
             for prompt in basic_prompts
         ]
+        queries_to_search = self.searcher.generate(
+            prompts,
+            sampling_params=self.searcher_sample_params,
+            use_tqdm=False,
+        )
+        queries_to_search = [i.outputs[0].text for i in queries_to_search]
+        return queries_to_search
+
+    def verify_contexts(
+        self, contexts: list[list[str]], question: list[str]
+    ) -> list[bool]:
+        prompts = []
+        sys_prompt = (
+            "Your task is to verify whether the following context "
+            "contains enough information to answer the following question. "
+            "Please only reply 'yes' or 'no' and do not output any other words.\n\n"
+        )
+        user_prompts = []
+        for ctxs, q in zip(contexts, question):
+            user_prompt = ""
+            for n, ctx in enumerate(ctxs):
+                user_prompt += f"Context {n}: {ctx['text']}\n\n"
+            user_prompt += f"Question: {q}"
+            user_prompts.append(user_prompt)
+            history = [
+                {"role": "system", "content": sys_prompt},
+                {"role": "user", "content": user_prompt},
+            ]
+            prompts.append(self.searcher_prompt_func(history=history))
         responses = self.searcher.generate(
             prompts,
             sampling_params=self.searcher_sample_params,
@@ -252,33 +248,22 @@ class KylinLLMSearcher:
     def summarize_contexts(
         self, contexts: list[list[dict[str, str]]], questions: list[str]
     ) -> list[list[dict[str, str]]]:
-        sys_prompt_abs = (
-            "Please extract the relevant information from the following context "
-            "that helps answer the question. "
-            "Please ensure the fidelity of the extracted information "
-            "If the context does not contain any relevant information, "
-            "respond with <none>."
-        )
         sys_prompt = (
             "Please copy the sentences from the following context that are relevant to the given question. "
-            "If the context does not contain any relevant information, respond with <none>."
+            "If the context does not contain any relevant information, respond with <none>.\n\n"
         )
         for q, ctxs in zip(questions, contexts):
-            basic_prompts = []
+            user_prompts = []
             for ctx in ctxs:
-                basic_prompts.append(
-                    f"{sys_prompt}\n\nContext: {ctx['text']}\n\nQuestion: {q}"
-                )
+                user_prompts.append(f"Context: {ctx['text']}\n\nQuestion: {q}")
             prompts = [
                 self.searcher_prompt_func(
                     history=[
-                        {
-                            "role": "user",
-                            "content": f"{prompt}",
-                        }
+                        {"role": "system", "content": sys_prompt},
+                        {"role": "user", "content": prompt},
                     ]
                 )
-                for prompt in basic_prompts
+                for prompt in user_prompts
             ]
             responses = self.searcher.generate(
                 prompts,
@@ -296,20 +281,22 @@ class KylinLLMSearcher:
     def generate_with_context(self, question: str, contexts: list[str]) -> str:
         # Generate the answer
         sys_prompt = (
-            "Your task is to generate an answer to the following question. "
-            "Use the provided context to formulate your response. "
+            "\n\nAnswer the question based on the given contexts. "
             "Note that the context might not always contain relevant information to answer the question. "
-            "Please reply your answer only.\n\n"
+            "Only give me the answer and do not output any other words.\n\n"
         )
-        basic_prompt = sys_prompt
         for n, context in enumerate(contexts):
             if "summary" in context:
                 ctx = context["summary"]
             else:
                 ctx = context["text"]
-            basic_prompt += f"Context {n + 1}:\n{ctx}\n\n"
-        basic_prompt += f"Question: {question}"
-        prompt = self.generator_prompt_func([{"role": "user", "content": basic_prompt}])
+            sys_prompt += f"Context {n + 1}: {ctx}\n\n"
+
+        history = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": f"\n\n{question}"},
+        ]
+        prompt = self.generator_prompt_func(history)
         response = self.generator.generate(
             prompt,
             sampling_params=self.generator_sample_params,
