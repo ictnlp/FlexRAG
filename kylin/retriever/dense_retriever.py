@@ -54,18 +54,6 @@ class DenseRetriever(LocalRetriever):
             default=False,
             help="Whether to open the database in read only mode",
         )
-        parser.add_argument(
-            "--compress_database",
-            action="store_true",
-            default=False,
-            help="Whether to compress the database",
-        )
-        parser.add_argument(
-            "--load_in_memory",
-            action="store_true",
-            default=False,
-            help="Whether to load the database into memory",
-        )
         # index arguments
         parser = add_index_args(parser)
         return parser
