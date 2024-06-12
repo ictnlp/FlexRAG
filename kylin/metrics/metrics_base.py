@@ -1,14 +1,39 @@
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
 
+from unidecode import unidecode
+
+from kylin.text_process import normalize_token
+
 
 class MetricsBase(ABC):
     @abstractmethod
     def add_args(parser: ArgumentParser) -> ArgumentParser:
+        parser.add_argument(
+            "--metric_normalize",
+            action="store_true",
+            default=False,
+            help="Whether to normalize the tokens for the metric computation",
+        )
+        parser.add_argument(
+            "--metric_lowercase",
+            action="store_true",
+            default=False,
+            help="Whether to lowercase the text for the metric computation",
+        )
+        parser.add_argument(
+            "--metric_unify",
+            action="store_true",
+            default=False,
+            help="Whether to convert all character into ascii for the metric computation",
+        )
         return parser
 
     def __init__(self, args: Namespace) -> None:
         self.args = args
+        self.normalize_token = args.metric_normalize
+        self.lowercase = args.metric_lowercase
+        self.unify = args.metric_unify
         return
 
     def __call__(
@@ -36,5 +61,16 @@ class MetricsBase(ABC):
         """
         return
 
-    def preprocess(self, y_trues: list[list[str]], y_preds: list[str]):
+    def preprocess(
+        self, y_trues: list[list[str]], y_preds: list[str]
+    ) -> tuple[list[str], list[list[str]]]:
+        if self.normalize_token:
+            y_preds = [normalize_token(y) for y in y_preds]
+            y_trues = [[normalize_token(y) for y in y_t] for y_t in y_trues]
+        if self.unify:
+            y_preds = [unidecode(y) for y in y_preds]
+            y_trues = [[unidecode(y) for y in y_t] for y_t in y_trues]
+        if self.lowercase:
+            y_preds = [y.lower() for y in y_preds]
+            y_trues = [[y.lower() for y in y_t] for y_t in y_trues]
         return y_trues, y_preds

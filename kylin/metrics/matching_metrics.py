@@ -1,35 +1,10 @@
-from argparse import ArgumentParser, Namespace
 from abc import abstractmethod
 from collections import Counter
-import numpy as np
 
 from .metrics_base import MetricsBase
-from kylin.text_process import normalize_token
 
 
 class MatchingMetrics(MetricsBase):
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--normalize_token",
-            action="store_true",
-            default=False,
-            help="Whether to normalize the token",
-        )
-        parser.add_argument(
-            "--lowercase",
-            action="store_true",
-            default=False,
-            help="Whether to lowercase the text",
-        )
-        return parser
-
-    def __init__(self, args: Namespace):
-        super().__init__(args)
-        self.normalize_token = args.normalize_token
-        self.lowercase = args.lowercase
-        return
-
     @abstractmethod
     def compute_item(self, y_trues: list[str], y_pred: str) -> float:
         return
@@ -42,17 +17,6 @@ class MatchingMetrics(MetricsBase):
             matching_list.append(self.compute_item(y_t, y_p))
         matching_score = sum(matching_list) / len(matching_list)
         return matching_score, {"item_score": matching_list}
-
-    def preprocess(
-        self, y_trues: list[list[str]], y_preds: list[str]
-    ) -> tuple[list[str], list[list[str]]]:
-        if self.normalize_token:
-            y_preds = [normalize_token(y) for y in y_preds]
-            y_trues = [[normalize_token(y) for y in y_t] for y_t in y_trues]
-        if self.lowercase:
-            y_preds = [y.lower() for y in y_preds]
-            y_trues = [[y.lower() for y in y_t] for y_t in y_trues]
-        return y_trues, y_preds
 
 
 class ExactMatch(MatchingMetrics):

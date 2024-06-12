@@ -14,11 +14,6 @@ def add_args_for_metrics(parser: ArgumentParser) -> ArgumentParser:
         help="The metrics to use",
     )
     parser = MetricsBase.add_args(parser)
-    parser = F1.add_args(parser)
-    parser = Recall.add_args(parser)
-    parser = ExactMatch.add_args(parser)
-    parser = Precision.add_args(parser)
-    parser = ContainsMatch.add_args(parser)
     return parser
 
 
