@@ -10,6 +10,7 @@ import torch.distributed as dist
 from transformers import AutoModel, AutoTokenizer
 from torch.nn.parallel import DataParallel as DP
 
+from kylin.utils import SimpleProgressLogger
 from .index import add_index_args, load_index
 from .retriever_base import LocalRetriever
 
@@ -25,7 +26,7 @@ class DenseRetriever(LocalRetriever):
         parser.add_argument(
             "--query_encoder",
             type=str,
-            default="facebook/contriever-msmarco",
+            default=None,
             help="The model to use for the query encoder",
         )
         parser.add_argument(
@@ -35,17 +36,17 @@ class DenseRetriever(LocalRetriever):
             help="The model to use for the passage encoder",
         )
         parser.add_argument(
-            "--retriever_tokenizer",
-            type=str,
-            default=None,
-            help="The tokenizer to use for the retriever",
-        )
-        parser.add_argument(
             "--retriever_device_id",
             type=int,
             nargs="+",
             default=[-1],
             help="The device id to use for the retriever(query and passage encoder)",
+        )
+        parser.add_argument(
+            "--compile",
+            action="store_true",
+            default=False,
+            help="Whether to compile the model",
         )
         # database arguments
         parser.add_argument(
@@ -61,8 +62,6 @@ class DenseRetriever(LocalRetriever):
     def __init__(self, args: Namespace) -> None:
         super().__init__(args)
         # set args
-        if args.retriever_tokenizer is None:
-            args.retriever_tokenizer = args.query_encoder
         self.batch_size = args.batch_size
         self.max_query_length = args.max_query_length
         self.max_passage_length = args.max_passage_length
@@ -70,16 +69,6 @@ class DenseRetriever(LocalRetriever):
         self.lowercase = args.lowercase
         self.normalize_text = args.normalize_text
         self.log_interval = args.log_interval
-
-        # prepare models
-        self.tokenizer = AutoTokenizer.from_pretrained(args.retriever_tokenizer)
-        self.query_encoder = AutoModel.from_pretrained(args.query_encoder)
-        if args.passage_encoder is not None:
-            self.passage_encoder = AutoModel.from_pretrained(args.passage_encoder)
-        else:
-            self.passage_encoder = None
-        self._embedding_size = self.query_encoder.config.hidden_size
-        self.max_encode_length = self.query_encoder.config.max_position_embeddings
 
         # prepare gpu
         if args.retriever_device_id != [-1]:
@@ -89,9 +78,35 @@ class DenseRetriever(LocalRetriever):
                 f"exceeds the number of available GPUs ({torch.cuda.device_count()})"
             )
             self.device_id = args.retriever_device_id
-            self.query_encoder.to(args.retriever_device_id[0])
-            if self.passage_encoder is not None:
-                self.passage_encoder.to(args.retriever_device_id[0])
+            default_device = torch.device(f"cuda:{args.retriever_device_id[0]}")
+            dtype = torch.float16
+        else:
+            default_device = torch.device("cpu")
+            dtype = torch.float32
+
+        # prepare models
+        if args.query_encoder is not None:
+            self.tokenizer = AutoTokenizer.from_pretrained(args.query_encoder)
+            self.query_encoder = AutoModel.from_pretrained(
+                args.query_encoder, torch_dtype=dtype
+            ).to(default_device)
+            self._embedding_size = self.query_encoder.config.hidden_size
+            self.max_encode_length = self.query_encoder.config.max_position_embeddings
+            if args.compile:
+                self.query_encoder = torch.compile(self.query_encoder)
+        else:
+            self.query_encoder = None
+        if args.passage_encoder is not None:
+            self.tokenizer = AutoTokenizer.from_pretrained(args.passage_encoder)
+            self.passage_encoder = AutoModel.from_pretrained(
+                args.passage_encoder, torch_dtype=dtype
+            ).to(default_device)
+            self._embedding_size = self.passage_encoder.config.hidden_size
+            self.max_encode_length = self.passage_encoder.config.max_position_embeddings
+            if args.compile:
+                self.passage_encoder = torch.compile(self.passage_encoder)
+        else:
+            self.passage_encoder = None
 
         # load database
         self.read_only = args.read_only
@@ -145,21 +160,24 @@ class DenseRetriever(LocalRetriever):
         """
         Add passages to the retriever database
         """
+        assert self.passage_encoder is not None, "Passage encoder is not provided"
         # prepare Data Parallel
         if (len(self.device_id) > 1) and (
             len(passages) > (self.batch_size * len(self.device_id))
         ):
-            passage_encoder = DP(self.passage_encoder)
-            batch_size = self.batch_size * torch.cuda.device_count()
+            passage_encoder = DP(self.passage_encoder, device_ids=self.device_id)
+            batch_size = self.batch_size * len(self.device_id)
         else:
             passage_encoder = self.passage_encoder
             batch_size = self.batch_size
 
         # generate embeddings
+        p_logger = SimpleProgressLogger(
+            logger, total=len(passages), interval=self.log_interval
+        )
         start_idx = len(self.db_table)
-        for n, idx in enumerate(range(0, len(passages), batch_size)):
-            if n % self.log_interval == 0:
-                logger.info(f"Generating embeddings for item {idx} / {len(passages)}")
+        for idx in range(0, len(passages), batch_size):
+            p_logger.update(step=batch_size, desc="Encoding passages")
 
             # prepare batch
             batch = passages[idx : idx + batch_size]
@@ -184,9 +202,11 @@ class DenseRetriever(LocalRetriever):
             self.index.train_index(full_embeddings)
 
         # add embeddings to index
-        for n, idx in enumerate(range(start_idx, len(self.db_table), batch_size)):
-            if n % self.log_interval == 0:
-                logger.info(f"Adding embeddings for batch {n}")
+        p_logger = SimpleProgressLogger(
+            logger, total=len(passages), interval=self.log_interval
+        )
+        for idx in range(start_idx, len(self.db_table), batch_size):
+            p_logger.update(step=batch_size, desc="Indexing embeddings")
             embeds_to_add = np.array(
                 self.db_table.cols.embedding[idx : idx + batch_size]
             )
