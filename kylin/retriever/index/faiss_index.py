@@ -56,7 +56,7 @@ class FaissIndex(DenseIndex):
         n_probe: int = 36,
         distance_func: str = "IP",
         factory_str: str = None,
-        device_id: int = -1,
+        device_id: list[int] = [-1],
         index_train_num: int = 1000000,
         log_interval: int = 100,
         **kwargs,
@@ -69,12 +69,12 @@ class FaissIndex(DenseIndex):
 
         # prepare GPU resource
         self.device_id = device_id
-        if self.device_id >= 0:
-            self.res = faiss.StandardGpuResources()
+        if self.device_id != [-1]:
+            self.gpu_res = faiss.StandardGpuResources()
             self.gpu_option = faiss.GpuClonerOptions()
             self.gpu_option.useFloat16 = True
         else:
-            self.res = None
+            self.gpu_res = None
             self.gpu_option = None
 
         # prepare index
@@ -232,7 +232,7 @@ class FaissIndex(DenseIndex):
         if os.path.getsize(self.index_path) / (1024**3) > 10:
             logger.info("Index file is too large. Loading on CPU with memory map.")
             self.device_id = -1
-            self.res = None
+            self.gpu_res = None
             self.gpu_option = None
             cpu_index = faiss.read_index(self.index_path, faiss.IO_FLAG_MMAP)
         else:
@@ -249,9 +249,13 @@ class FaissIndex(DenseIndex):
         return self.index.ntotal
     
     def _set_index(self, index: faiss.Index) -> None:
-        if self.device_id >= 0:
+        raise NotImplementedError
+        if self.gpu_res is not None:
+            faiss.index_cpu_to_all_gpus(
+                index,
+            )
             self.index = faiss.index_cpu_to_gpu(
-                self.res,
+                self.gpu_res,
                 self.device_id,
                 index,
                 self.gpu_option,

@@ -12,7 +12,7 @@ def load_index(
     index_path: str,
     log_interval: int = 100,
     embedding_size: int = 768,
-    device_id: int = -1,
+    device_id: list[int] = [-1],
 ) -> DenseIndex:
     # prepare args
     index_args = vars(index_args)

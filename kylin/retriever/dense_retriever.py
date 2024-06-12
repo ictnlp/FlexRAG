@@ -6,7 +6,9 @@ from typing import Iterable
 import numpy as np
 import tables
 import torch
+import torch.distributed as dist
 from transformers import AutoModel, AutoTokenizer
+from torch.nn.parallel import DistributedDataParallel as DDP
 
 from .index import add_index_args, load_index
 from .retriever_base import LocalRetriever
@@ -41,7 +43,8 @@ class DenseRetriever(LocalRetriever):
         parser.add_argument(
             "--retriever_device_id",
             type=int,
-            default=-1,
+            nargs="+",
+            default=[-1],
             help="The device id to use for the retriever(query and passage encoder)",
         )
         # database arguments
@@ -56,12 +59,6 @@ class DenseRetriever(LocalRetriever):
             action="store_true",
             default=False,
             help="Whether to compress the database",
-        )
-        parser.add_argument(
-            "--save_embedding",
-            action="store_true",
-            default=False,
-            help="Whether to save the embeddings into the database",
         )
         parser.add_argument(
             "--load_in_memory",
@@ -93,16 +90,22 @@ class DenseRetriever(LocalRetriever):
             self.passage_encoder = AutoModel.from_pretrained(args.passage_encoder)
         else:
             self.passage_encoder = None
-        if args.retriever_device_id >= 0:
-            self.query_encoder.to(args.retriever_device_id)
-            if self.passage_encoder is not None:
-                self.passage_encoder.to(args.retriever_device_id)
         self._embedding_size = self.query_encoder.config.hidden_size
 
+        # prepare gpu
+        if args.retriever_device_id != [-1]:
+            assert torch.cuda.is_available(), "CUDA is not available"
+            assert torch.cuda.device_count() >= len(args.retriever_device_id), (
+                f"Number of devices ({len(args.retriever_device_id)}) "
+                f"exceeds the number of available GPUs ({torch.cuda.device_count()})"
+            )
+            self.device_id = args.retriever_device_id
+            self.query_encoder.to(args.retriever_device_id[0])
+            if self.passage_encoder is not None:
+                self.passage_encoder.to(args.retriever_device_id[0])
+
         # load database
-        self.save_embedding = args.save_embedding
         self.read_only = args.read_only
-        self.compress_database = args.compress_database
         database_path = os.path.join(args.database_path, "database.h5")
         self.db_file, self.db_table = self.load_database(database_path)
 
@@ -114,6 +117,9 @@ class DenseRetriever(LocalRetriever):
             embedding_size=self._embedding_size,
             device_id=args.retriever_device_id,
         )
+
+        # consistency check
+        assert len(self.db_table) == len(self.index), "Inconsistent database and index"
         return
 
     def load_database(self, database_path: str) -> tuple[tables.File, tables.Table]:
@@ -122,24 +128,17 @@ class DenseRetriever(LocalRetriever):
             mode = "r" if self.read_only else "r+"
             h5file = tables.open_file(database_path, mode=mode)
             table = h5file.root.passages.data
-            self.save_embedding = "embedding" in table.colnames
             return h5file, table
         logger.info(f"Initiate database from {database_path}")
         return self.init_tables(database_path)
 
     def init_tables(self, database_path: str) -> tuple[tables.File, tables.Table]:
         class RetrieveTableWithEmb(tables.IsDescription):
-            title = tables.VLStringAtom(self.max_passage_length, pos=1)
-            section = tables.VLStringAtom(self.max_passage_length, pos=2)
-            text = tables.VLStringAtom(self.max_passage_length, pos=3)
+            title = tables.VLStringAtom()
+            section = tables.VLStringAtom()
+            text = tables.VLStringAtom()
             embedding = tables.Float16Col(768, pos=4)
             tables.StringAtom
-
-        class RetrieveTable(tables.IsDescription):
-            title = tables.VLStringAtom(self.max_passage_length, pos=1)
-            section = tables.VLStringAtom(self.max_passage_length, pos=2)
-            text = tables.VLStringAtom(self.max_passage_length, pos=3)
-            embedding = tables.Float16Col(768, pos=4)
 
         if not os.path.exists(os.path.dirname(database_path)):
             os.makedirs(os.path.dirname(database_path))
@@ -147,19 +146,8 @@ class DenseRetriever(LocalRetriever):
         assert not self.read_only, "Database does not exist"
         h5file = tables.open_file(database_path, mode="w", title="Retriever Database")
 
-        # setup compressor
-        if self.compress_database:
-            filters = tables.Filters(complevel=5, complib="zlib")
-        else:
-            filters = None
-
-        group = h5file.create_group("/", "passages", "Passages", filters=filters)
-        if self.save_embedding:
-            table = h5file.create_table(
-                group, "data", RetrieveTableWithEmb, "data", filters=filters
-            )
-        else:
-            table = h5file.create_table(group, "data", RetrieveTable, "data")
+        group = h5file.create_group("/", "passages", "Passages")
+        table = h5file.create_table(group, "data", RetrieveTableWithEmb, "data")
         return h5file, table
 
     def add_passages(
@@ -168,16 +156,26 @@ class DenseRetriever(LocalRetriever):
         """
         Add passages to the retriever database
         """
+        # prepare DDP
+        if (len(self.device_id) > 1) and (
+            len(passages) > (self.batch_size * len(self.device_id))
+        ):
+            dist.init_process_group()
+            passage_encoder = DDP(self.passage_encoder)
+            batch_size = self.batch_size * torch.cuda.device_count()
+        else:
+            passage_encoder = self.passage_encoder
+            batch_size = self.batch_size
+
         # generate embeddings
-        full_embeddings = []
-        for n, idx in enumerate(range(0, len(passages), self.batch_size)):
+        start_idx = len(self.db_table)
+        for n, idx in enumerate(range(0, len(passages), batch_size)):
             if n % self.log_interval == 0:
                 logger.info(f"Generating embeddings for batch {n}")
 
             # prepare batch
-            batch = passages[idx : idx + self.batch_size]
-            embeddings = self._encode_batch(batch)
-            full_embeddings.append(embeddings)
+            batch = passages[idx : idx + batch_size]
+            embeddings = self._encode_batch(passage_encoder, batch)
 
             # add embeddings to database
             for i, p in enumerate(batch):
@@ -186,22 +184,31 @@ class DenseRetriever(LocalRetriever):
                 row["title"] = self._safe_encode(p.get("title", ""))
                 row["section"] = self._safe_encode(p.get("section", ""))
                 row["text"] = self._safe_encode(p.get("text", ""))
-                if self.save_embedding:
-                    row["embedding"] = embeddings[i]
+                row["embedding"] = embeddings[i]
                 row.append()
             self.db_table.flush()
-        full_embeddings = np.concatenate(full_embeddings, axis=0)
 
         # update index
         if not self.index.is_trained:
+            logger.info("Training index")
+            logger.warning("Training index will consume a lot of memory")
+            full_embeddings = np.array(self.db_table.cols.embedding[start_idx:])
             self.index.train_index(full_embeddings)
-        for n, idx in enumerate(range(0, len(passages), self.batch_size)):
+
+        # add embeddings to index
+        for n, idx in enumerate(range(start_idx, len(self.db_table), batch_size)):
             if n % self.log_interval == 0:
                 logger.info(f"Adding embeddings for batch {n}")
-            embeds_to_add = full_embeddings[idx : idx + self.batch_size]
+            embeds_to_add = np.array(
+                self.db_table.cols.embedding[idx : idx + batch_size]
+            )
             self.index.add_embeddings_batch(embeds_to_add)
         self.index.serialize()
         logger.info("Finished adding passages")
+
+        # cleanup
+        if dist.is_initialized():
+            dist.destroy_process_group()
         return
 
     def _search_batch(
@@ -210,7 +217,7 @@ class DenseRetriever(LocalRetriever):
         top_k: int = 10,
         **search_kwargs,
     ) -> list[dict[str, str | list]]:
-        embeddings = self._encode_batch(query, is_query=True)
+        embeddings = self._encode_batch(self.query_encoder, query)
         scores, indices = self.index.search_batch(embeddings, top_k, **search_kwargs)
         results = [
             {
@@ -233,17 +240,11 @@ class DenseRetriever(LocalRetriever):
     @torch.no_grad()
     def _encode_batch(
         self,
+        encoder: torch.nn.Module,
         batch: Iterable[dict[str, str]] | Iterable[str],
-        is_query: bool = False,
     ) -> np.ndarray:
         # prepare batch
         batch_text = [self._prepare_text(doc) for doc in batch]
-
-        # get encoder
-        if is_query:
-            encoder = self.query_encoder
-        else:
-            encoder = self.passage_encoder
 
         # tokenize text
         device = encoder.device
@@ -289,3 +290,11 @@ class DenseRetriever(LocalRetriever):
     @property
     def embedding_size(self) -> int:
         return self._embedding_size
+
+
+def setup_distributed():
+    dist.init_process_group()
+
+
+def cleanup_distributed():
+    dist.destroy_process_group()
