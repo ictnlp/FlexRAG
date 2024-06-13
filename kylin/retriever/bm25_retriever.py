@@ -67,11 +67,14 @@ class BM25Retriever(LocalRetriever):
             )
 
         # set logging
-        logger = logging.getLogger("elastic_transport.transport")
+        transport_logger = logging.getLogger("elastic_transport.transport")
+        es_logger = logging.getLogger("elasticsearch")
         if self.verbose:
-            logger.setLevel(logging.INFO)
+            transport_logger.setLevel(logging.INFO)
+            es_logger.setLevel(logging.INFO)
         else:
-            logger.setLevel(logging.WARNING)
+            transport_logger.setLevel(logging.WARNING)
+            es_logger.setLevel(logging.WARNING)
         return
 
     def add_passages(
