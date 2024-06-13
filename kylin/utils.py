@@ -12,7 +12,7 @@ def apply_template_llama3(
     # add system prompt
     if len(history) == 0:
         history.append({"role": "system", "content": sys_prompt})
-    if history[0]["role"] != history:
+    if history[0]["role"] != "system":
         history.insert(0, {"role": "system", "content": sys_prompt})
 
     prompt = tokenizer.apply_chat_template(
@@ -29,7 +29,7 @@ def apply_template_phi3(
     # add system prompt
     if (len(history) == 0) and (sys_prompt is not None):
         history.append({"role": "system", "content": sys_prompt})
-    if (history[0]["role"] != history) and (sys_prompt is not None):
+    if (history[0]["role"] != "system") and (sys_prompt is not None):
         history.insert(0, {"role": "system", "content": sys_prompt})
 
     # apply template

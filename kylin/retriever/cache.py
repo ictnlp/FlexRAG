@@ -15,6 +15,8 @@ class PersistentLRUCache(LRUCache):
         return
 
     def _load_cache(self) -> None:
+        if not os.path.exists(os.path.dirname(self.persistant_path)):
+            os.makedirs(os.path.dirname(self.persistant_path))
         if os.path.exists(self.persistant_path + ".dat"):
             with shelve.open(self.persistant_path) as db:
                 for k, v in db.items():
