@@ -1,3 +1,4 @@
+import logging
 from argparse import ArgumentParser, Namespace
 import re
 
@@ -5,6 +6,10 @@ import torch
 
 from kylin.retriever import add_args_for_retriever, load_retrievers
 from .load_vllm import load_vllm
+from .utils import SimpleProgressLogger
+
+
+logger = logging.getLogger(__name__)
 
 
 class KylinLLMSearcher:
@@ -40,20 +45,6 @@ class KylinLLMSearcher:
             action="store_true",
             help="Whether to summarize the retrieved contexts",
         )
-        # parser.add_argument(
-        #     "--searcher_device_ids",
-        #     type=int,
-        #     nargs="+",
-        #     required=True,
-        #     help="The device ids for the searcher",
-        # )
-        # parser.add_argument(
-        #     "--generator_device_ids",
-        #     type=int,
-        #     nargs="+",
-        #     required=True,
-        #     help="The device ids for the generator",
-        # )
         parser.add_argument(
             "--searcher_max_length",
             type=int,
@@ -80,6 +71,7 @@ class KylinLLMSearcher:
         self.rewrite = args.rewrite_query
         self.verify_context = args.verify_context
         self.summary_context = args.summary_context
+        self.log_interval = args.log_interval
         (
             self.searcher,
             self.searcher_tokenizer,
@@ -115,8 +107,19 @@ class KylinLLMSearcher:
         self.retrievers = load_retrievers(args)
         return
 
-    def answer(self, question: str) -> tuple[str, dict[str, str | list[str]]]:
-        # search using kylin for the contexts
+    def answer(self, questions: str) -> tuple[list[str], list[dict[str, object]]]:
+        responses = []
+        search_tracks = []
+        progress = SimpleProgressLogger(logger, len(questions), self.log_interval)
+        for question in questions:
+            progress.update()
+            response, search_track = self._answer(question)
+            responses.append(response)
+            search_tracks.append(search_track)
+        return responses, search_tracks
+
+    def _answer(self, question: str) -> tuple[str, dict[str, str | list[str]]]:
+        # search contexts using kylin searcher
         contexts, search_track = self.search(question)
 
         # generate the answer using the generator
@@ -165,15 +168,17 @@ class KylinLLMSearcher:
                 search_track["verify_history"] = v_history
                 search_track["query_history"] = q_history
         search_track["verified_contexts"] = contexts
-        contexts = [i for j in contexts for i in j]
 
         # summarize the contexts
         if self.summary_context:
-            contexts = self.summarize_contexts(contexts, question)
-            search_track["summarized_contexts"] = [i["summary"] for i in contexts]
-            final_contexts = [i for i in contexts if i["summary"] is not None]
+            final_contexts = []
+            for ctx, info in zip(contexts, info_needed):
+                final_contexts.append(self.summarize_contexts(ctx, info))
+            final_contexts = [i for j in final_contexts for i in j]
+            search_track["summarized_contexts"] = [i["summary"] for i in final_contexts]
+            final_contexts = [i for i in final_contexts if i["summary"] is not None]
         else:
-            final_contexts = contexts
+            final_contexts = [i for j in contexts for i in j]
 
         return final_contexts, search_track
 
@@ -227,7 +232,7 @@ class KylinLLMSearcher:
             use_tqdm=False,
         )
         response = response[0].outputs[0].text
-        info_needed = re.findall(r"\[\d+\] (.+)", response)
+        info_needed = re.findall(r"\[\d+\] (.+?)(?=\[\d+\]|\Z)", response)
         return info_needed, response
 
     def rewrite_query(
@@ -294,7 +299,8 @@ class KylinLLMSearcher:
     ) -> list[dict[str, str]]:
         sys_prompt = (
             "Please copy the sentences from the following context that are relevant to the given question. "
-            "If the context does not contain any relevant information, respond with <none>.\n\n"
+            "If the context does not contain any relevant information, respond with <none>. "
+            "Please only reply the relevant sentences and do not output any other words.\n\n"
         )
         user_prompts = []
         for ctx in contexts:
