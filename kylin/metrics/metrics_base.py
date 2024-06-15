@@ -3,11 +3,11 @@ from argparse import ArgumentParser, Namespace
 
 from unidecode import unidecode
 
-from kylin.text_process import normalize_token
+from kylin.text_process import normalize_answer
 
 
 class MetricsBase(ABC):
-    @abstractmethod
+    @staticmethod
     def add_args(parser: ArgumentParser) -> ArgumentParser:
         parser.add_argument(
             "--metric_normalize",
@@ -31,7 +31,7 @@ class MetricsBase(ABC):
 
     def __init__(self, args: Namespace) -> None:
         self.args = args
-        self.normalize_token = args.metric_normalize
+        self.normalize_answer = args.metric_normalize
         self.lowercase = args.metric_lowercase
         self.unify = args.metric_unify
         return
@@ -64,9 +64,9 @@ class MetricsBase(ABC):
     def preprocess(
         self, y_trues: list[list[str]], y_preds: list[str]
     ) -> tuple[list[str], list[list[str]]]:
-        if self.normalize_token:
-            y_preds = [normalize_token(y) for y in y_preds]
-            y_trues = [[normalize_token(y) for y in y_t] for y_t in y_trues]
+        if self.normalize_answer:
+            y_preds = [normalize_answer(y) for y in y_preds]
+            y_trues = [[normalize_answer(y) for y in y_t] for y_t in y_trues]
         if self.unify:
             y_preds = [unidecode(y) for y in y_preds]
             y_trues = [[unidecode(y) for y in y_t] for y_t in y_trues]

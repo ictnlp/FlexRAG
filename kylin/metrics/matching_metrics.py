@@ -24,7 +24,7 @@ class ExactMatch(MatchingMetrics):
         return float(y_pred in y_trues)
 
 
-class ContainsMatch(MatchingMetrics):
+class Accuracy(MatchingMetrics):
     def compute_item(self, y_trues: list[str], y_pred: str) -> float:
         return float(any(y_t in y_pred for y_t in y_trues))
 
