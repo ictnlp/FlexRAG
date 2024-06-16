@@ -355,5 +355,5 @@ class KylinLLMSearcher:
 
     def close(self) -> None:
         for retriever in self.retrievers:
-            retriever.close()
+            self.retrievers[retriever].close()
         return
