@@ -5,6 +5,7 @@ from typing import Iterable
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import streaming_bulk
+from tenacity import retry, stop_after_attempt
 
 from .retriever_base import LocalRetriever
 
@@ -115,11 +116,25 @@ class BM25Retriever(LocalRetriever):
         return
 
     def _search_batch(
-        self, query: list[str], top_k: int = 10, **search_kwargs
+        self,
+        query: list[str],
+        top_k: int = 10,
+        retry_times: int = 3,
+        **search_kwargs,
     ) -> list[dict[str, str | list]]:
         results = []
+
+        # prepare retry
+        if retry_times > 1:
+            search_method = retry(stop=stop_after_attempt(retry_times))(
+                self.client.search
+            )
+        else:
+            search_method = self.client.search
+
+        # search for queries
         for q in query:
-            res = self.client.search(
+            res = search_method(
                 index=self.index_name,
                 body={
                     "query": {
