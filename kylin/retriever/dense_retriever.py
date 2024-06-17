@@ -20,6 +20,15 @@ logger = logging.getLogger(__name__)
 
 
 class DenseRetriever(LocalRetriever):
+    search_hint = (
+        "Suggestions for Writing Queries for Dense Retrieval Search Engine\n"
+        "1. Use Natural Language: Dense retrieval models are designed to understand and process natural language. Formulate queries in complete sentences or phrases as you would ask a question in a conversation."
+        "2. Incorporate Context: Provide context to your query to help the model understand the specific aspect of the topic you are interested in. Contextual information improves the accuracy of the retrieval."
+        "3. Ask Specific Questions: Dense retrieval models perform well with specific queries. Instead of a single keyword, use detailed questions or statements to convey your information need."
+        "4. Avoid Overly Technical Language: While dense retrieval can handle a variety of terms, overly technical or jargon-heavy language might not be necessary. Aim for clarity and simplicity."
+    )
+    name = "Dense Retrieval"
+
     @staticmethod
     def add_args(parser: ArgumentParser) -> ArgumentParser:
         # model arguments

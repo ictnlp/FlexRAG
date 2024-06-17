@@ -11,6 +11,17 @@ from .retriever_base import LocalRetriever
 
 
 class BM25Retriever(LocalRetriever):
+    search_hint = (
+        "Suggestions for Writing Queries for BM25 Search Engine\n"
+        "1. Use Descriptive Keywords: Ensure your query includes all relevant keywords that describe what you are searching for.\n"
+        "2. Incorporate Rare Terms: If you know any specific or rare terms related to your search, include them.\n"
+        '3. Avoid Stop Words: Common words like "the", "is", and "and" may dilute the effectiveness of the query.\n'
+        "4. Phrase Searches: When searching for specific phrases, enclose them in quotes.\n"
+        "5. Synonyms and Related Terms: Use synonyms and related terms to cover variations in how different documents might reference the same concept.\n"
+        "6. Balance Specificity and Generality: While specific queries yield precise results, overly specific queries might miss relevant documents. Adjust your query to balance specificity and generality."
+    )
+    name = "BM25"
+
     @staticmethod
     def add_args(parser: ArgumentParser) -> ArgumentParser:
         parser.add_argument(
