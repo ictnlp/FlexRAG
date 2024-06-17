@@ -7,7 +7,7 @@ import torch
 from kylin.retriever import add_args_for_retriever, load_retrievers
 
 from .kylin_prompts import *
-from .models.vllm_model import load_vllm
+from .models import load_generator, load_generation_config
 from .utils import SimpleProgressLogger
 
 
@@ -17,18 +17,7 @@ logger = logging.getLogger(__name__)
 class KylinLLMSearcher:
     @staticmethod
     def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--searcher_path",
-            type=str,
-            required=True,
-            help="The path to the kylin searcher model.",
-        )
-        parser.add_argument(
-            "--generator_path",
-            type=str,
-            default=None,
-            help="The path to the generator.",
-        )
+        # kylin arguments
         parser.add_argument(
             "--extract_information",
             default=False,
@@ -53,6 +42,20 @@ class KylinLLMSearcher:
             action="store_true",
             help="Whether to summarize the retrieved contexts.",
         )
+        # searcher arguments
+        parser.add_argument(
+            "--searcher_type",
+            type=str,
+            choices=["vllm", "hf", "openai"],
+            default="vllm",
+            help="The searcher model type.",
+        )
+        parser.add_argument(
+            "--searcher_path",
+            type=str,
+            default=None,
+            help="The path to the kylin searcher model.",
+        )
         parser.add_argument(
             "--searcher_max_length",
             type=int,
@@ -60,56 +63,126 @@ class KylinLLMSearcher:
             help="The maximum length for the searcher.",
         )
         parser.add_argument(
+            "--searcher_gpu_utilization",
+            type=float,
+            default=0.85,
+            help="The maximum GPU memory utilization of the searcher. Only used in VLLMGenerator",
+        )
+        parser.add_argument(
+            "--searcher_pipeline_parallel",
+            default=False,
+            action="store_true",
+            help="Enable pipeline parallel for searcher. Only used in HFGenerator",
+        )
+        parser.add_argument(
+            "--searcher_base_url",
+            type=str,
+            default=None,
+            help="Base URL for searcher. Only used in OpenAIGenerator",
+        )
+        parser.add_argument(
+            "--searcher_api_key",
+            type=str,
+            default="EMPTY",
+            help="API key for searcher. Only used in OpenAIGenerator",
+        )
+        parser.add_argument(
+            "--searcher_model_name",
+            type=str,
+            default=None,
+            help="Model Name for searcher. Only used in OpenAIGenerator",
+        )
+        # generator arguments
+        parser.add_argument(
+            "--generator_type",
+            type=str,
+            choices=["vllm", "hf", "openai"],
+            default=None,
+            help="The generator model type.",
+        )
+        parser.add_argument(
+            "--generator_path",
+            type=str,
+            default=None,
+            help="The path to the kylin generator model.",
+        )
+        parser.add_argument(
             "--generator_max_length",
             type=int,
-            default=300,
+            default=512,
             help="The maximum length for the generator.",
         )
         parser.add_argument(
-            "--gpu_memory_utilization",
+            "--generator_gpu_utilization",
             type=float,
-            default=0.4,
-            help="The memory limit for the GPU.",
+            default=0.85,
+            help="The maximum GPU memory utilization of the generator.",
+        )
+        parser.add_argument(
+            "--generator_pipeline_parallel",
+            default=False,
+            action="store_true",
+            help="Enable pipeline parallel for generator. Only used in HFGenerator",
+        )
+        parser.add_argument(
+            "--generator_base_url",
+            type=str,
+            default=None,
+            help="Base URL for generator. Only used in OpenAIGenerator",
+        )
+        parser.add_argument(
+            "--generator_api_key",
+            type=str,
+            default="EMPTY",
+            help="API key for generator. Only used in OpenAIGenerator",
+        )
+        parser.add_argument(
+            "--generator_model_name",
+            type=str,
+            default=None,
+            help="Model Name for generator. Only used in OpenAIGenerator",
         )
         parser = add_args_for_retriever(parser)
         return parser
 
     def __init__(self, args: Namespace) -> None:
-        # load searcher
+        # setup kylin
         self.extract_info = args.extract_information
         self.rewrite = args.rewrite_query
         self.verify = args.verify_context
         self.summary_context = args.summary_context
         self.log_interval = args.log_interval
-        (
-            self.searcher,
-            self.searcher_tokenizer,
-            self.searcher_sample_params,
-            self.searcher_prompt_func,
-        ) = load_vllm(
+
+        # load searcher
+        self.searcher = load_generator(
+            model_type=args.searcher_type,
             model_path=args.searcher_path,
-            gpu_memory_utilization=args.gpu_memory_utilization,
-            tensor_parallel_size=torch.cuda.device_count(),
-            max_gen_tokens=args.searcher_max_length,
+            gpu_memory_utilization=args.searcher_gpu_utilization,
+            pipeline_parallel=args.searcher_pipeline_parallel,
+            base_url=args.searcher_base_url,
+            api_key=args.searcher_api_key,
+            model_name=args.searcher_model_name,
+        )
+        self.searcher_gen_cfg = load_generation_config(
+            max_gen_tokens=args.searcher_max_length, model=self.searcher
         )
 
         # load generator
-        if args.generator_path is None:
+        if args.generator_type is None:
             self.generator = self.searcher
-            self.generator_tokenizer = self.searcher_tokenizer
-            self.generator_sample_params = self.searcher_sample_params
-            self.generator_prompt_func = self.searcher_prompt_func
+            self.generator_gen_cfg = self.searcher_gen_cfg
         else:
-            (
-                self.generator,
-                self.generator_tokenizer,
-                self.generator_sample_params,
-                self.generator_prompt_func,
-            ) = load_vllm(
+            self.generator = load_generator(
+                model_type=args.generator_type,
                 model_path=args.generator_path,
-                gpu_memory_utilization=args.gpu_memory_utilization,
-                tensor_parallel_size=torch.cuda.device_count(),
-                max_gen_tokens=args.generator_max_length,
+                gpu_memory_utilization=args.generator_gpu_utilization,
+                pipeline_parallel=args.generator_pipeline_parallel,
+                base_url=args.generator_base_url,
+                api_key=args.generator_api_key,
+                model_name=args.generator_model_name,
+            )
+            self.generator_gen_cfg = load_generation_config(
+                max_gen_tokens=args.generator_max_length, model=self.generator
             )
 
         # load retriever
@@ -229,18 +302,13 @@ class KylinLLMSearcher:
     def determine_needed_information(
         self, query: str, given_contexts: list[str] = None
     ) -> tuple[list[str], str]:
-        user_prompt = self.searcher_prompt_func(
-            history=[
-                {"role": "system", "content": determine_info_prompt},
-                {"role": "user", "content": f"Question: {query}"},
-            ]
-        )
-        response = self.searcher.generate(
-            [user_prompt],
-            sampling_params=self.searcher_sample_params,
-            use_tqdm=False,
-        )
-        response = response[0].outputs[0].text
+        prompt = [
+            {"role": "system", "content": determine_info_prompt},
+            {"role": "user", "content": f"Question: {query}"},
+        ]
+        response = self.searcher.chat(
+            [prompt], generation_config=self.searcher_gen_cfg
+        )[0]
         info_needed = re.findall(r"\[\d+\] (.+?)(?=\[\d+\]|\Z)", response)
         return info_needed, response
 
@@ -263,38 +331,29 @@ class KylinLLMSearcher:
             )
             for q in failing_queries:
                 user_prompt += f"\nFailing Query: {q}"
-        prompt = self.searcher_prompt_func(
-            history=[
-                {"role": "system", "content": sys_prompt},
-                {"role": "user", "content": user_prompt},
-            ]
-        )
-        query_to_search = self.searcher.generate(
-            [prompt],
-            sampling_params=self.searcher_sample_params,
-            use_tqdm=False,
-        )
-        query_to_search = query_to_search[0].outputs[0].text
+        prompt = [
+            {"role": "system", "content": sys_prompt},
+            {"role": "user", "content": user_prompt},
+        ]
+        query_to_search = self.searcher.chat(
+            [prompt], generation_config=self.searcher_gen_cfg
+        )[0]
         return query_to_search
 
-    def verify_contexts(
-        self, contexts: list[dict[str, str]], question: str
-    ) -> list[bool]:
+    def verify_contexts(self, contexts: list[dict[str, str]], question: str) -> bool:
+        if not self.verify:
+            return True
         user_prompt = ""
         for n, ctx in enumerate(contexts):
             user_prompt += f"Context {n}: {ctx['text']}\n\n"
         user_prompt += f"Topic: {question}"
-        history = [
+        prompt = [
             {"role": "system", "content": verify_prompt},
             {"role": "user", "content": user_prompt},
         ]
-        prompt = self.searcher_prompt_func(history=history)
-        response = self.searcher.generate(
-            [prompt],
-            sampling_params=self.searcher_sample_params,
-            use_tqdm=False,
-        )
-        response = response[0].outputs[0].text
+        response = self.searcher.chat(
+            [prompt], generation_config=self.searcher_gen_cfg
+        )[0]
         return "yes" in response.lower()
 
     def summarize_contexts(
@@ -304,20 +363,13 @@ class KylinLLMSearcher:
         for ctx in contexts:
             user_prompts.append(f"Context: {ctx['text']}\n\nQuestion: {question}")
         prompts = [
-            self.searcher_prompt_func(
-                history=[
-                    {"role": "system", "content": summary_prompt},
-                    {"role": "user", "content": prompt},
-                ]
-            )
+            [
+                {"role": "system", "content": summary_prompt},
+                {"role": "user", "content": prompt},
+            ]
             for prompt in user_prompts
         ]
-        responses = self.searcher.generate(
-            prompts,
-            sampling_params=self.searcher_sample_params,
-            use_tqdm=False,
-        )
-        responses = [i.outputs[0].text for i in responses]
+        responses = self.searcher.chat(prompts, generation_config=self.searcher_gen_cfg)
         for summ, ctx in zip(responses, contexts):
             if "<none>" in summ.lower():
                 ctx["summary"] = None
@@ -338,17 +390,12 @@ class KylinLLMSearcher:
             usr_prompt += f"Context {n + 1}: {ctx}\n\n"
         usr_prompt += f"Question: {question}"
 
-        history = [
+        prompt = [
             {"role": "system", "content": generate_prompt},
             {"role": "user", "content": usr_prompt},
         ]
-        prompt = self.generator_prompt_func(history)
-        response = self.generator.generate(
-            prompt,
-            sampling_params=self.generator_sample_params,
-            use_tqdm=False,
-        )
-        return response[0].outputs[0].text, prompt
+        response = self.generator.chat([prompt], generation_config=self.generator_gen_cfg)
+        return response, prompt
 
     def close(self) -> None:
         for retriever in self.retrievers:
