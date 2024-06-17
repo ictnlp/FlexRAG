@@ -194,7 +194,7 @@ class KylinLLMSearcher:
             for retriever in self.retrievers:
                 # rewrite query
                 if self.rewrite:
-                    failing_queries = [i[retriever] for i in queries_history[:-1]]
+                    failing_queries = [i[retriever] for i in queries_history[:turn_num]]
                     query_to_search = self.rewrite_query(
                         info=query,
                         engine_desc=self.retrievers[retriever].search_hint,
