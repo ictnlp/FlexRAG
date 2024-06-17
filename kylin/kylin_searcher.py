@@ -297,6 +297,7 @@ class KylinLLMSearcher:
             verification = self.verify_contexts(contexts, query)
             if verification:
                 break
+            turn_num += 1
         return contexts, queries_history, contexts_history
 
     def determine_needed_information(
