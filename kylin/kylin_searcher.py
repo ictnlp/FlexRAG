@@ -395,7 +395,9 @@ class KylinLLMSearcher:
             {"role": "system", "content": generate_prompt},
             {"role": "user", "content": usr_prompt},
         ]
-        response = self.generator.chat([prompt], generation_config=self.generator_gen_cfg)
+        response = self.generator.chat(
+            [prompt], generation_config=self.generator_gen_cfg
+        )[0]
         return response, prompt
 
     def close(self) -> None:
