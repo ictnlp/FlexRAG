@@ -37,12 +37,13 @@ class MetricsBase(ABC):
         return
 
     def __call__(
-        self, y_trues: list[str], y_preds: list[list[str]]
+        self, y_trues: list[list[str]], y_preds: list[str]
     ) -> dict[str, float]:
         assert len(y_trues) == len(
             y_preds
         ), "The length of y_true and y_pred should be the same"
-        y_trues, y_preds = self.preprocess(y_trues, y_preds)
+        y_preds = [self.preprocess_text(y) for y in y_preds]
+        y_trues = [[self.preprocess_text(y_) for y_ in y] for y in y_trues]
         return self.compute(y_trues, y_preds)
 
     @abstractmethod
@@ -61,16 +62,11 @@ class MetricsBase(ABC):
         """
         return
 
-    def preprocess(
-        self, y_trues: list[list[str]], y_preds: list[str]
-    ) -> tuple[list[str], list[list[str]]]:
+    def preprocess_text(self, text: str) -> str:
         if self.normalize_answer:
-            y_preds = [normalize_answer(y) for y in y_preds]
-            y_trues = [[normalize_answer(y) for y in y_t] for y_t in y_trues]
+            text = normalize_answer(text)
         if self.unify:
-            y_preds = [unidecode(y) for y in y_preds]
-            y_trues = [[unidecode(y) for y in y_t] for y_t in y_trues]
+            text = unidecode(text)
         if self.lowercase:
-            y_preds = [y.lower() for y in y_preds]
-            y_trues = [[y.lower() for y in y_t] for y_t in y_trues]
-        return y_trues, y_preds
+            text = unidecode(text)
+        return text
