@@ -68,5 +68,5 @@ class MetricsBase(ABC):
         if self.unify:
             text = unidecode(text)
         if self.lowercase:
-            text = unidecode(text)
+            text = text.lower()
         return text
