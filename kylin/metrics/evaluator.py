@@ -39,7 +39,7 @@ class ShortFormEvaluator:
                 case "accuracy":
                     self.metrics[metric] = Accuracy(args)
                 case _:
-                    raise ValueError(f"Invalid metric type: {args.metrics}")
+                    raise ValueError(f"Invalid metric type: {metric}")
         return
 
     def evaluate(
@@ -87,7 +87,7 @@ class LongFormEvaluator:
                 case "chrf":
                     self.metrics[metric] = chrF(args)
                 case _:
-                    raise ValueError(f"Invalid metric type: {args.metrics}")
+                    raise ValueError(f"Invalid metric type: {metric}")
         return
     
     def evaluate(
@@ -129,7 +129,7 @@ class RetrievalEvaluator:
                 case "success_rate":
                     self.metrics[metric] = SuccessRate(args)
                 case _:
-                    raise ValueError(f"Invalid metric type: {args.metrics}")
+                    raise ValueError(f"Invalid metric type: {metric}")
         return
     
     def evaluate(

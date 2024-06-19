@@ -143,3 +143,4 @@ yala/model/third_party_models
 
 # test files
 test*.py
+test*.ipynb
