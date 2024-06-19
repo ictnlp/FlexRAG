@@ -183,4 +183,4 @@ class ScaNNIndex(DenseIndex):
     def __len__(self) -> int:
         if isinstance(self.index, scann.ScannBuilder):
             return 0
-        return self.index.docids
+        return self.index.size()

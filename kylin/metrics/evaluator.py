@@ -3,6 +3,7 @@ from argparse import ArgumentParser, Namespace
 
 from .matching_metrics import F1, Accuracy, ExactMatch, Precision, Recall
 from .generation_metrics import BLEU, Rouge1, Rouge2, RougeL, chrF
+from .retrieval_metrics import RetrievalMetric, SuccessRate
 from .metrics_base import MetricsBase
 
 
@@ -107,5 +108,43 @@ class LongFormEvaluator:
 
 
 # TODO
-class RetrievalEvaluator: ...
+class RetrievalEvaluator:
+    @staticmethod
+    def add_args(parser: ArgumentParser) -> ArgumentParser:
+        parser.add_argument(
+            "--retrieval_metrics",
+            type=str,
+            nargs="+",
+            default=["success_rate"],
+            choices=["success_rate"],
+            help="The metrics to use",
+        )
+        parser = RetrievalMetric.add_args(parser)
+        return parser
+
+    def __init__(self, args: Namespace) -> None:
+        self.metrics = {}
+        for metric in args.retrieval_metrics:
+            match metric:
+                case "success_rate":
+                    self.metrics[metric] = SuccessRate(args)
+                case _:
+                    raise ValueError(f"Invalid metric type: {args.metrics}")
+        return
+    
+    def evaluate(
+        self,
+        evidences: list[list[str]],
+        retrieved: list[list[str]],
+        log: bool = True,
+    ) -> tuple[dict[str, float], dict[str, object]]:
+        evaluation_results = {}
+        evaluation_details = {}
+        for metric in self.metrics:
+            r, r_detail = self.metrics[metric](evidences, retrieved)
+            if log:
+                logger.info(f"{metric}: {r}")
+            evaluation_results[metric] = r
+            evaluation_details[metric] = r_detail
+        return evaluation_results, evaluation_details
 

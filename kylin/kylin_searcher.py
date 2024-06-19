@@ -92,6 +92,12 @@ class KylinLLMSearcher:
             default=None,
             help="Model Name for searcher. Only used in OpenAIGenerator",
         )
+        parser.add_argument(
+            "--searcher_top_k",
+            type=int,
+            default=10,
+            help="The number of top-k results to return.",
+        )
         # generator arguments
         parser.add_argument(
             "--generator_type",
@@ -152,6 +158,7 @@ class KylinLLMSearcher:
         self.verify = args.verify_context
         self.summary_context = args.summary_context
         self.log_interval = args.log_interval
+        self.searcher_top_k = args.searcher_top_k
 
         # load searcher
         self.searcher = load_generator(
@@ -278,7 +285,9 @@ class KylinLLMSearcher:
                     query_to_search = query
                 queries_history[turn_num][retriever] = query_to_search
                 # retrieve
-                ctxs = self.retrievers[retriever].search([query_to_search])[0]
+                ctxs = self.retrievers[retriever].search(
+                    [query_to_search], top_k=self.searcher_top_k
+                )[0]
                 # post process
                 if "indices" not in ctxs:
                     assert "urls" in ctxs
