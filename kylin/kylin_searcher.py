@@ -92,12 +92,6 @@ class KylinLLMSearcher:
             default=None,
             help="Model Name for searcher. Only used in OpenAIGenerator",
         )
-        parser.add_argument(
-            "--searcher_top_k",
-            type=int,
-            default=10,
-            help="The number of top-k results to return.",
-        )
         # generator arguments
         parser.add_argument(
             "--generator_type",
@@ -148,7 +142,14 @@ class KylinLLMSearcher:
             default=None,
             help="Model Name for generator. Only used in OpenAIGenerator",
         )
+        # retriever arguments
         parser = add_args_for_retriever(parser)
+        parser.add_argument(
+            "--retriever_top_k",
+            type=int,
+            default=10,
+            help="The number of top-k results to return.",
+        )
         return parser
 
     def __init__(self, args: Namespace) -> None:
