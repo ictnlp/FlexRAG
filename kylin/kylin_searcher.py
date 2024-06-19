@@ -159,7 +159,7 @@ class KylinLLMSearcher:
         self.verify = args.verify_context
         self.summary_context = args.summary_context
         self.log_interval = args.log_interval
-        self.searcher_top_k = args.searcher_top_k
+        self.retriever_top_k = args.retriever_top_k
 
         # load searcher
         self.searcher = load_generator(
@@ -287,7 +287,7 @@ class KylinLLMSearcher:
                 queries_history[turn_num][retriever] = query_to_search
                 # retrieve
                 ctxs = self.retrievers[retriever].search(
-                    [query_to_search], top_k=self.searcher_top_k
+                    [query_to_search], top_k=self.retriever_top_k
                 )[0]
                 # post process
                 if "indices" not in ctxs:
