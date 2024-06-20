@@ -1,5 +1,6 @@
-import time
 import logging
+import re
+import time
 from argparse import ArgumentParser, Namespace
 from typing import Iterable
 
@@ -10,15 +11,19 @@ from tenacity import retry, stop_after_attempt
 from .retriever_base import LocalRetriever
 
 
+logger = logging.getLogger("BM25Retriever")
+
+
 class BM25Retriever(LocalRetriever):
     search_hint = (
         "Suggestions for Writing Queries for BM25 Search Engine\n"
         "1. Use Descriptive Keywords: Ensure your query includes all relevant keywords that describe what you are searching for.\n"
         "2. Incorporate Rare Terms: If you know any specific or rare terms related to your search, include them.\n"
         '3. Avoid Stop Words: Common words like "the", "is", and "and" may dilute the effectiveness of the query.\n'
-        "4. Phrase Searches: When searching for specific phrases, enclose them in quotes.\n"
+        "4. Phrase Searches: When searching for specific phrases, enclose them in single quotes.\n"
         "5. Synonyms and Related Terms: Use synonyms and related terms to cover variations in how different documents might reference the same concept.\n"
-        "6. Balance Specificity and Generality: While specific queries yield precise results, overly specific queries might miss relevant documents. Adjust your query to balance specificity and generality."
+        "6. Use Boolean Operators: Use double quotes for terms that must contains in the documents, and minus to exclude terms in your query.\n"
+        'For example, to search for documents about MacBook Air that do not mention iPhones, you could use the query: "MacBook Air" Apple  -iPhone'
     )
     name = "BM25"
 
@@ -126,6 +131,184 @@ class BM25Retriever(LocalRetriever):
                 print(f"Indexed {n} passages")
         return
 
+    def _full_text_search(
+        self,
+        query: str,
+        top_k: int = 10,
+        retry_times: int = 3,
+        **search_kwargs,
+    ) -> dict[str, str | list]:
+        # prepare retry
+        if retry_times > 1:
+            search_method = retry(stop=stop_after_attempt(retry_times))(
+                self.client.msearch
+            )
+        else:
+            search_method = self.client.msearch
+
+        # prepare search body
+        body = []
+        for q in query:
+            body.append({"index": self.index_name})
+            body.append(
+                {
+                    "query": {
+                        "multi_match": {
+                            "query": q,
+                            "fields": ["title", "section", "text"],
+                        },
+                    },
+                    "size": top_k,
+                }
+            )
+
+        # search and post-process
+        res = search_method(body=body)["responses"]
+        results = []
+        for r, q in zip(res, query):
+            r = r["hits"]["hits"]
+            results.append(
+                {
+                    "query": q,
+                    "indices": [i["_id"] for i in r],
+                    "scores": [i["_score"] for i in r],
+                    "titles": [i["_source"]["title"] for i in r],
+                    "sections": [i["_source"]["section"] for i in r],
+                    "texts": [i["_source"]["text"] for i in r],
+                }
+            )
+        return results
+
+    def _bool_search(
+        self,
+        query: list[str],
+        top_k: int = 10,
+        retry_times: int = 3,
+        **search_kwargs,
+    ) -> dict[str, dict | list]:
+
+        # TODO: Finish this method
+        def parse_query(query: str) -> tuple[list[str], list[str], list[str]]:
+            phrases = re.findall(r'(?:"([^"]+)"|(\S+))', query)
+            must = [p[0] for p in phrases if p[0]]
+            must_not = [p[1] for p in phrases if p[1] and p[1].startswith("-")]
+            should = [p[1] for p in phrases if p[1] and not p[1].startswith("-")]
+            raise NotImplementedError
+
+        musts = []
+        must_nots = []
+        shoulds = []
+        for q in query:
+            must, must_not, should = parse_query(q)
+            musts.append(must)
+            must_nots.append(must_not)
+            shoulds.append(should)
+        responses = self._advanced_search(
+            musts=musts,
+            must_nots=must_nots,
+            shoulds=shoulds,
+            top_k=top_k,
+            retry_times=retry_times,
+            **search_kwargs,
+        )
+        results = []
+        for r, q in zip(responses, query):
+            r = r["hits"]["hits"]
+            results.append(
+                {
+                    "query": q,
+                    "indices": [i["_id"] for i in r],
+                    "scores": [i["_score"] for i in r],
+                    "titles": [i["_source"]["title"] for i in r],
+                    "sections": [i["_source"]["section"] for i in r],
+                    "texts": [i["_source"]["text"] for i in r],
+                }
+            )
+        return results
+
+    def _mutex_search(
+        self,
+        query: list[str],
+        top_k: int = 10,
+        retry_times: int = 3,
+        **search_kwargs,
+    ) -> dict[str, dict | list]:
+        def parse_query(query: str) -> tuple[list[str], str]:
+            must_not = re.findall(r'<([^>]+)>', query)
+            should = re.sub(r'<[^>]+>', "", query)
+            return must_not, should
+
+        must_nots = []
+        shoulds = []
+        for q in query:
+            must_not, should = parse_query(q)
+            must_nots.append(must_not)
+            shoulds.append([should])
+        responses = self._advanced_search(
+            musts=[[] for _ in query],
+            must_nots=must_nots,
+            shoulds=shoulds,
+            top_k=top_k,
+            retry_times=retry_times,
+            **search_kwargs,
+        )
+        results = []
+        for r, q in zip(responses, query):
+            r = r["hits"]["hits"]
+            results.append(
+                {
+                    "query": query,
+                    "indices": [i["_id"] for i in r],
+                    "scores": [i["_score"] for i in r],
+                    "titles": [i["_source"]["title"] for i in r],
+                    "sections": [i["_source"]["section"] for i in r],
+                    "texts": [i["_source"]["text"] for i in r],
+                }
+            )
+        return results
+
+    def _advanced_search(
+        self,
+        musts: list[list[str]],
+        must_nots: list[list[str]],
+        shoulds: list[list[str]],
+        top_k: int = 10,
+        retry_times: int = 3,
+        minimum_should_match: int = 0,
+        **search_kwargs,
+    ) -> dict[str, dict | list]:
+        # prepare retry
+        if retry_times > 1:
+            search_method = retry(stop=stop_after_attempt(retry_times))(
+                self.client.msearch
+            )
+        else:
+            search_method = self.client.msearch
+
+        # parse search clause
+        body = []
+        for must, must_not, should in zip(musts, must_nots, shoulds):
+            must_clause = [{"match": {"text": m}} for m in must]
+            should_clause = [{"match": {"text": s}} for s in should]
+            must_not_clause = [{"match_phrase": {"text": mn}} for mn in must_not]
+            body.append({"index": self.index_name})
+            body.append(
+                {
+                    "query": {
+                        "bool": {
+                            "must": must_clause,
+                            "should": should_clause,
+                            "must_not": must_not_clause,
+                            "minimum_should_match": minimum_should_match,
+                        },
+                    },
+                    "size": top_k,
+                }
+            )
+
+        # search
+        return search_method(body=body)["responses"]
+
     def _search_batch(
         self,
         query: list[str],
@@ -133,39 +316,31 @@ class BM25Retriever(LocalRetriever):
         retry_times: int = 3,
         **search_kwargs,
     ) -> list[dict[str, str | list]]:
-        results = []
-
-        # prepare retry
-        if retry_times > 1:
-            search_method = retry(stop=stop_after_attempt(retry_times))(
-                self.client.search
-            )
-        else:
-            search_method = self.client.search
-
-        # search for queries
-        for q in query:
-            res = search_method(
-                index=self.index_name,
-                body={
-                    "query": {
-                        "multi_match": {
-                            "query": q,
-                            "fields": ["title", "section", "text"],
-                        }
-                    }
-                },
-                size=top_k,
-            )["hits"]["hits"]
-            res = {
-                "query": q,
-                "indices": [i["_id"] for i in res],
-                "scores": [i["_score"] for i in res],
-                "titles": [i["_source"]["title"] for i in res],
-                "sections": [i["_source"]["section"] for i in res],
-                "texts": [i["_source"]["text"] for i in res],
-            }
-            results.append(res)
+        search_method = search_kwargs.get("search_method", "full_text")
+        match search_method:
+            case "full_text":
+                results = self._full_text_search(
+                    query=query,
+                    top_k=top_k,
+                    retry_times=retry_times,
+                    **search_kwargs,
+                )
+            case "bool":
+                results = self._bool_search(
+                    query=query,
+                    top_k=top_k,
+                    retry_times=retry_times,
+                    **search_kwargs,
+                )
+            case "mutex":
+                results = self._mutex_search(
+                    query=query,
+                    top_k=top_k,
+                    retry_times=retry_times,
+                    **search_kwargs,
+                )
+            case _:
+                raise ValueError(f"Invalid search method: {search_method}")
         return results
 
     def close(self) -> None:

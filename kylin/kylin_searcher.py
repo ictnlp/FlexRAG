@@ -128,19 +128,19 @@ class KylinLLMSearcher:
             "--generator_base_url",
             type=str,
             default=None,
-            help="Base URL for generator. Only used in OpenAIGenerator",
+            help="Base URL for generator. Only used in OpenAIGenerator.",
         )
         parser.add_argument(
             "--generator_api_key",
             type=str,
             default="EMPTY",
-            help="API key for generator. Only used in OpenAIGenerator",
+            help="API key for generator. Only used in OpenAIGenerator.",
         )
         parser.add_argument(
             "--generator_model_name",
             type=str,
             default=None,
-            help="Model Name for generator. Only used in OpenAIGenerator",
+            help="Model Name for generator. Only used in OpenAIGenerator.",
         )
         # retriever arguments
         parser = add_args_for_retriever(parser)
@@ -149,6 +149,12 @@ class KylinLLMSearcher:
             type=int,
             default=10,
             help="The number of top-k results to return.",
+        )
+        parser.add_argument(
+            "--disable_cache",
+            default=False,
+            action="store_true",
+            help="Whether to disable the cache.",
         )
         return parser
 
@@ -160,6 +166,7 @@ class KylinLLMSearcher:
         self.summary_context = args.summary_context
         self.log_interval = args.log_interval
         self.retriever_top_k = args.retriever_top_k
+        self.disable_cache = args.disable_cache
 
         # load searcher
         self.searcher = load_generator(
@@ -287,7 +294,9 @@ class KylinLLMSearcher:
                 queries_history[turn_num][retriever] = query_to_search
                 # retrieve
                 ctxs = self.retrievers[retriever].search(
-                    [query_to_search], top_k=self.retriever_top_k
+                    [query_to_search],
+                    top_k=self.retriever_top_k,
+                    disable_cache=self.disable_cache,
                 )[0]
                 # post process
                 if "indices" not in ctxs:

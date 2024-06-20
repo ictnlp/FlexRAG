@@ -107,7 +107,6 @@ class LongFormEvaluator:
         return evaluation_results, evaluation_details
 
 
-# TODO
 class RetrievalEvaluator:
     @staticmethod
     def add_args(parser: ArgumentParser) -> ArgumentParser:

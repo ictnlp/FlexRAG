@@ -3,6 +3,7 @@ import os
 import time
 from abc import ABC, abstractmethod
 from argparse import ArgumentParser, Namespace
+from collections import defaultdict
 
 import numpy as np
 
@@ -103,7 +104,7 @@ class LocalRetriever(Retriever):
             "--normalize_text",
             action="store_true",
             default=False,
-            help="Whether to normalize the text",
+            help="Whether to normalize the text.",
         )
         return parser
 
@@ -115,7 +116,7 @@ class LocalRetriever(Retriever):
         self.no_title = args.no_title
         self.lowercase = args.lowercase
         self.normalize_text = args.normalize_text
-        self.log_interval = args.log_interval
+        self.log_interval = getattr(args, "log_interval", 10)
 
         # set cache for retrieve
         if args.cache_size > 0:

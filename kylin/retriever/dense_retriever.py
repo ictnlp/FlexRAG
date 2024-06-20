@@ -15,16 +15,15 @@ from .index import add_index_args, load_index
 from .retriever_base import LocalRetriever
 
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = logging.getLogger("DenseRetriever")
 
 
 class DenseRetriever(LocalRetriever):
     search_hint = (
         "Suggestions for Writing Queries for Dense Retrieval Search Engine\n"
-        "1. Use Natural Language: Dense retrieval models are designed to understand and process natural language. Formulate queries in complete sentences or phrases as you would ask a question in a conversation."
-        "2. Incorporate Context: Provide context to your query to help the model understand the specific aspect of the topic you are interested in. Contextual information improves the accuracy of the retrieval."
-        "3. Ask Specific Questions: Dense retrieval models perform well with specific queries. Instead of a single keyword, use detailed questions or statements to convey your information need."
+        "1. Use Natural Language: Dense retrieval models are designed to understand and process natural language. Formulate queries in complete sentences or phrases as you would ask a question in a conversation.\n"
+        "2. Incorporate Context: Provide context to your query to help the model understand the specific aspect of the topic you are interested in. Contextual information improves the accuracy of the retrieval.\n"
+        "3. Ask Specific Questions: Dense retrieval models perform well with specific queries. Instead of a single keyword, use detailed questions or statements to convey your information need.\n"
         "4. Avoid Overly Technical Language: While dense retrieval can handle a variety of terms, overly technical or jargon-heavy language might not be necessary. Aim for clarity and simplicity."
     )
     name = "Dense Retrieval"
