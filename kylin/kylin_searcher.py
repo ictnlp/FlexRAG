@@ -337,7 +337,7 @@ class KylinLLMSearcher:
         # Rewrite the query to be more informative
         failing_queries = [i["query"] for i in failing_history]
         user_prompt = f"Query: {info}"
-        if (failing_queries is not None) and (len(failing_queries) > 0):
+        if len(failing_queries) > 0:
             user_prompt += (
                 "\nHere are some queries that failed to retrieve the information, "
                 "please avoid using them."
@@ -374,7 +374,7 @@ class KylinLLMSearcher:
                 r"no relevant information",
             ]
             for pattern in patterns:
-                if re.match(pattern, text.lower()):
+                if re.search(pattern, text, re.IGNORECASE):
                     return True
             return False
 

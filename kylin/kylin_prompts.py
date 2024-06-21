@@ -59,7 +59,6 @@ rewrite_prompts = {
         {
             "role": "system",
             "content": (
-                "Please optimize the following query for the BM25 search engine.\n"
                 "Suggestions for Writing Queries for BM25 Search Engine\n"
                 "1. Use Descriptive Keywords: Ensure your query includes all relevant keywords that describe what you are searching for.\n"
                 "2. Incorporate Rare Terms: If you know any specific or rare terms related to your search, include them.\n"
@@ -68,6 +67,7 @@ rewrite_prompts = {
                 "5. Synonyms and Related Terms: Use synonyms and related terms to cover variations in how different documents might reference the same concept.\n"
                 "6. Use Boolean Operators: Use double quotes for terms that must contains in the documents, and minus to exclude terms in your query.\n"
                 'For example, to search for documents about MacBook Air that do not mention iPhones, you could use the query: "MacBook Air" Apple  -iPhone\n'
+                "Please optimize the following query for the BM25 Search Engine.\n"
                 "Please only reply your query and do not output any other words."
             ),
         }
@@ -76,12 +76,12 @@ rewrite_prompts = {
         {
             "role": "system",
             "content": (
-                "Please optimize the following query for the BM25 search engine.\n"
                 "Suggestions for Writing Queries for Dense Retrieval Search Engine\n"
                 "1. Use Natural Language: Dense retrieval models are designed to understand and process natural language. Formulate queries in complete sentences or phrases as you would ask a question in a conversation.\n"
                 "2. Incorporate Context: Provide context to your query to help the model understand the specific aspect of the topic you are interested in. Contextual information improves the accuracy of the retrieval.\n"
                 "3. Ask Specific Questions: Dense retrieval models perform well with specific queries. Instead of a single keyword, use detailed questions or statements to convey your information need.\n"
                 "4. Avoid Overly Technical Language: While dense retrieval can handle a variety of terms, overly technical or jargon-heavy language might not be necessary. Aim for clarity and simplicity.\n"
+                "Please optimize the following query for the Dense Retrieval Search Engine.\n"
                 "Please only reply your query and do not output any other words."
             ),
         }
