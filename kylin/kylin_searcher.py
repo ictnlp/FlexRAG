@@ -328,6 +328,12 @@ class KylinLLMSearcher:
         info_needed = re.findall(r"\[\d+\] (.+?)(?=\[\d+\]|\Z)", response)
         return info_needed, response
 
+    # TODO: finish this
+    def feedback_from_query(
+        self,
+        failing_history: list[dict[str, str | list]] = [],
+    ): ...
+
     def rewrite_query(
         self,
         info: str,
@@ -402,7 +408,10 @@ class KylinLLMSearcher:
         self, question: str, contexts: list[str]
     ) -> tuple[str, str]:
         # Generate the answer
-        prompt = deepcopy(generate_prompt)
+        if len(contexts) > 0:
+            prompt = deepcopy(generate_prompt["with_contexts"])
+        else:
+            prompt = deepcopy(generate_prompt["without_contexts"])
         usr_prompt = ""
         for n, context in enumerate(contexts):
             if "summary" in context:

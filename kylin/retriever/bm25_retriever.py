@@ -204,6 +204,18 @@ class BM25Retriever(LocalRetriever):
         res = search_method(body=body)["responses"]
         results = []
         for r, q in zip(res, query):
+            if r["status"] != 200:
+                results.append(
+                    {
+                        "query": q,
+                        "indices": [],
+                        "scores": [],
+                        "titles": [],
+                        "sections": [],
+                        "texts": [],
+                    }
+                )
+                continue
             r = r["hits"]["hits"]
             results.append(
                 {
@@ -272,8 +284,8 @@ class BM25Retriever(LocalRetriever):
         **search_kwargs,
     ) -> dict[str, dict | list]:
         def parse_query(query: str) -> tuple[list[str], str]:
-            must_not = re.findall(r'<([^>]+)>', query)
-            should = re.sub(r'<[^>]+>', "", query)
+            must_not = re.findall(r"<([^>]+)>", query)
+            should = re.sub(r"<[^>]+>", "", query)
             return must_not, should
 
         must_nots = []
