@@ -15,16 +15,6 @@ logger = logging.getLogger("BM25Retriever")
 
 
 class BM25Retriever(LocalRetriever):
-    search_hint = (
-        "Suggestions for Writing Queries for BM25 Search Engine\n"
-        "1. Use Descriptive Keywords: Ensure your query includes all relevant keywords that describe what you are searching for.\n"
-        "2. Incorporate Rare Terms: If you know any specific or rare terms related to your search, include them.\n"
-        '3. Avoid Stop Words: Common words like "the", "is", and "and" may dilute the effectiveness of the query.\n'
-        "4. Phrase Searches: When searching for specific phrases, enclose them in single quotes.\n"
-        "5. Synonyms and Related Terms: Use synonyms and related terms to cover variations in how different documents might reference the same concept.\n"
-        "6. Use Boolean Operators: Use double quotes for terms that must contains in the documents, and minus to exclude terms in your query.\n"
-        'For example, to search for documents about MacBook Air that do not mention iPhones, you could use the query: "MacBook Air" Apple  -iPhone'
-    )
     name = "BM25"
 
     @staticmethod

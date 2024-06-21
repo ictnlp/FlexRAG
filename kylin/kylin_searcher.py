@@ -1,6 +1,7 @@
 import logging
 import re
 from argparse import ArgumentParser, Namespace
+from copy import deepcopy
 
 import torch
 
@@ -227,71 +228,52 @@ class KylinLLMSearcher:
     def search(self, question: str) -> tuple[list[dict[str, str]], dict[str, object]]:
         # extract needed information
         search_track = {"question": question}
+        search_track["retrieval"] = []
         if self.extract_info:
             info_needed, response = self.determine_needed_information(question)
         else:
             info_needed = [question]
-        search_track["needed_information"] = info_needed
 
         # search contexts from the retrievers
         contexts = []
-        contexts_history = []
-        queries_history = []
         for q in info_needed:
-            ctx, q_history, ctx_history = self.inner_search(q)
-            contexts.append(ctx)
-            queries_history.append(q_history)
-            contexts_history.append(ctx_history)
+            ctx, ret_history = self.inner_search(q)
+            search_track["retrieval"].append(
+                {"atom_query": q, "retrieval_history": ret_history}
+            )
+            contexts.extend(ctx)
         search_track["retrieved_contexts"] = contexts
-        search_track["queries_history"] = queries_history
-        search_track["contexts_history"] = contexts_history
-
-        # summarize the contexts
-        if self.summary_context:
-            final_contexts = []
-            for ctx, info in zip(contexts, info_needed):
-                final_contexts.append(self.summarize_contexts(ctx, info))
-            final_contexts = [i for j in final_contexts for i in j]
-            search_track["summarized_contexts"] = [i["summary"] for i in final_contexts]
-            final_contexts = [i for i in final_contexts if i["summary"] is not None]
-        else:
-            final_contexts = [i for j in contexts for i in j]
-
-        return final_contexts, search_track
+        return contexts, search_track
 
     def inner_search(
         self, query: str
-    ) -> tuple[list[dict[str, str]], list[dict[str, str]], list[list[dict[str, str]]]]:
+    ) -> tuple[list[dict[str, str]], list[list[dict[str, object]]]]:
         """Search from multiple retrievers
 
         Args:
-            query (str): query to search
+            query (str): query / information to search
 
         Returns:
-            contexts (list[dict[str, str]]):
-            queries_history (list[dict[str, str]]]): query used for different retrievers.
-            contexts_history (dict[str, str])
+            contexts (list[dict[str, str]]): contexts retrieved from different retrievers.
+            retrieval_history (list[list[dict[str, object]]]): retrieval history.
         """
         total_turn_num = 3 if self.verify else 1
-        contexts_history = []
-        queries_history = []
+        retrieval_history: list[list[dict]] = []
         turn_num = 0
         while turn_num < total_turn_num:
             contexts = []
-            queries_history.append({})
-            for retriever in self.retrievers:
+            retrieval_history.append([])
+            for idx, retriever in enumerate(self.retrievers):
                 # rewrite query
                 if self.rewrite:
-                    failing_queries = [i[retriever] for i in queries_history[:turn_num]]
+                    failing_history = [i[idx] for i in retrieval_history[:turn_num]]
                     query_to_search = self.rewrite_query(
                         info=query,
-                        engine_desc=self.retrievers[retriever].search_hint,
                         engine_name=retriever,
-                        failing_queries=failing_queries,
+                        failing_history=failing_history,
                     )
                 else:
                     query_to_search = query
-                queries_history[turn_num][retriever] = query_to_search
                 # retrieve
                 ctxs = self.retrievers[retriever].search(
                     [query_to_search],
@@ -302,30 +284,44 @@ class KylinLLMSearcher:
                 if "indices" not in ctxs:
                     assert "urls" in ctxs
                     ctxs["indices"] = ctxs["urls"]
-                for text, idx in zip(ctxs["texts"], ctxs["indices"]):
-                    contexts.append(
-                        {
-                            "query": ctxs["query"],
-                            "retriever": retriever,
-                            "text": text,
-                            "source": idx,
-                        }
-                    )
+                ctxs = [
+                    {
+                        "query": query_to_search,
+                        "retriever": retriever,
+                        "text": t,
+                        "full_text": t,
+                        "source": s,
+                    }
+                    for t, s in zip(ctxs["texts"], ctxs["indices"])
+                ]
+                # update history
+                retrieval_history[turn_num].append(
+                    {
+                        "retriever": retriever,
+                        "query": query_to_search,
+                        "contexts": ctxs,
+                    }
+                )
+                # summary
+                if self.summary_context:
+                    summarized = self.summarize_contexts(ctxs, query)
+                    retrieval_history[turn_num][-1]["summarized_contexts"] = summarized
+                    contexts.extend([i for i in summarized if i["text"] is not None])
+                else:
+                    contexts.extend(ctxs)
+
             # verify
-            contexts_history.append(contexts)
             verification = self.verify_contexts(contexts, query)
             if verification:
                 break
             turn_num += 1
-        return contexts, queries_history, contexts_history
+        return contexts, retrieval_history
 
     def determine_needed_information(
         self, query: str, given_contexts: list[str] = None
     ) -> tuple[list[str], str]:
-        prompt = [
-            {"role": "system", "content": determine_info_prompt},
-            {"role": "user", "content": f"Question: {query}"},
-        ]
+        prompt = deepcopy(determine_info_prompt)
+        prompt.append({"role": "user", "content": f"Question: {query}"})
         response = self.searcher.chat(
             [prompt], generation_config=self.searcher_gen_cfg
         )[0]
@@ -336,14 +332,11 @@ class KylinLLMSearcher:
         self,
         info: str,
         engine_name: str,
-        engine_desc: str = "",
-        failing_queries: list[str] = None,
+        failing_history: list[dict[str, str | list]] = [],
     ) -> str:
         # Rewrite the query to be more informative
-        sys_prompt = rewrite_prompt.format(
-            engine_name=engine_name, engine_desc=engine_desc
-        )
-        user_prompt = f"Information: {info}"
+        failing_queries = [i["query"] for i in failing_history]
+        user_prompt = f"Query: {info}"
         if (failing_queries is not None) and (len(failing_queries) > 0):
             user_prompt += (
                 "\nHere are some queries that failed to retrieve the information, "
@@ -351,10 +344,8 @@ class KylinLLMSearcher:
             )
             for q in failing_queries:
                 user_prompt += f"\nFailing Query: {q}"
-        prompt = [
-            {"role": "system", "content": sys_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
+        prompt = deepcopy(rewrite_prompts[engine_name])
+        prompt.append({"role": "user", "content": user_prompt})
         query_to_search = self.searcher.chat(
             [prompt], generation_config=self.searcher_gen_cfg
         )[0]
@@ -363,14 +354,12 @@ class KylinLLMSearcher:
     def verify_contexts(self, contexts: list[dict[str, str]], question: str) -> bool:
         if not self.verify:
             return True
+        prompt = deepcopy(verify_prompt)
         user_prompt = ""
         for n, ctx in enumerate(contexts):
             user_prompt += f"Context {n}: {ctx['text']}\n\n"
         user_prompt += f"Topic: {question}"
-        prompt = [
-            {"role": "system", "content": verify_prompt},
-            {"role": "user", "content": user_prompt},
-        ]
+        prompt.append({"role": "user", "content": user_prompt})
         response = self.searcher.chat(
             [prompt], generation_config=self.searcher_gen_cfg
         )[0]
@@ -379,28 +368,41 @@ class KylinLLMSearcher:
     def summarize_contexts(
         self, contexts: list[dict[str, str]], question: str
     ) -> list[dict[str, str]]:
-        user_prompts = []
-        for ctx in contexts:
-            user_prompts.append(f"Context: {ctx['text']}\n\nQuestion: {question}")
-        prompts = [
-            [
-                {"role": "system", "content": summary_prompt},
-                {"role": "user", "content": prompt},
+        def not_relevant(text: str) -> bool:
+            patterns = [
+                r"context does not (provide|contain)",
+                r"no relevant information",
             ]
-            for prompt in user_prompts
-        ]
+            for pattern in patterns:
+                if re.match(pattern, text.lower()):
+                    return True
+            return False
+
+        prompts = []
+        for ctx in contexts:
+            prompt = deepcopy(summary_prompt)
+            prompt.append(
+                {
+                    "role": "user",
+                    "content": f"Context: {ctx['full_text']}\n\nQuestion: {question}",
+                }
+            )
+            prompts.append(prompt)
         responses = self.searcher.chat(prompts, generation_config=self.searcher_gen_cfg)
-        for summ, ctx in zip(responses, contexts):
-            if "<none>" in summ.lower():
-                ctx["summary"] = None
+        # post process
+        summarized = deepcopy(contexts)
+        for summ, ctx in zip(responses, summarized):
+            if not_relevant(summ):
+                ctx["text"] = None
             else:
-                ctx["summary"] = summ
-        return contexts
+                ctx["text"] = summ
+        return summarized
 
     def generate_with_context(
         self, question: str, contexts: list[str]
     ) -> tuple[str, str]:
         # Generate the answer
+        prompt = deepcopy(generate_prompt)
         usr_prompt = ""
         for n, context in enumerate(contexts):
             if "summary" in context:
@@ -410,10 +412,7 @@ class KylinLLMSearcher:
             usr_prompt += f"Context {n + 1}: {ctx}\n\n"
         usr_prompt += f"Question: {question}"
 
-        prompt = [
-            {"role": "system", "content": generate_prompt},
-            {"role": "user", "content": usr_prompt},
-        ]
+        prompt.append({"role": "user", "content": usr_prompt})
         response = self.generator.chat(
             [prompt], generation_config=self.generator_gen_cfg
         )[0]

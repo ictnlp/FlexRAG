@@ -15,13 +15,6 @@ logger = logging.getLogger(__name__)
 
 
 class WebRetriever(Retriever):
-    search_hint = {
-        "Suggestions for Writing Queries for Web Search Engines\n"
-        "1. Use Specific Keywords: Identify and use the most relevant and specific keywords related to your search topic. This helps narrow down the results to the most pertinent web pages.\n"
-        "2. Phrase Searches: Enclose exact phrases in quotation marks to search for those exact words in that exact order. This is useful for finding specific quotes, names, or titles.\n"
-        '3. Ask Questions: Formulate your query as a question to get direct answers. For example, "How to cook pasta?" is likely to return step-by-step instructions.\n'
-        '4. Synonyms and Variants: Include synonyms or different variations of a word to broaden your search. For instance, "smartphone" and "mobile phone" can yield different results.'
-    }
     name = "web"
 
     @staticmethod
