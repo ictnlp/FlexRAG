@@ -123,11 +123,11 @@ class BM25Retriever(LocalRetriever):
 
     def _full_text_search(
         self,
-        query: str,
+        query: list[str],
         top_k: int = 10,
         retry_times: int = 3,
         **search_kwargs,
-    ) -> dict[str, str | list]:
+    ) -> list[dict[str, str | list]]:
         # prepare retry
         if retry_times > 1:
             search_method = retry(stop=stop_after_attempt(retry_times))(
@@ -144,6 +144,54 @@ class BM25Retriever(LocalRetriever):
                 {
                     "query": {
                         "multi_match": {
+                            "query": q,
+                            "fields": ["title", "section", "text"],
+                        },
+                    },
+                    "size": top_k,
+                }
+            )
+
+        # search and post-process
+        res = search_method(body=body)["responses"]
+        results = []
+        for r, q in zip(res, query):
+            r = r["hits"]["hits"]
+            results.append(
+                {
+                    "query": q,
+                    "indices": [i["_id"] for i in r],
+                    "scores": [i["_score"] for i in r],
+                    "titles": [i["_source"]["title"] for i in r],
+                    "sections": [i["_source"]["section"] for i in r],
+                    "texts": [i["_source"]["text"] for i in r],
+                }
+            )
+        return results
+
+    def _string_search(
+        self,
+        query: list[str],
+        top_k: int = 10,
+        retry_times: int = 3,
+        **search_kwargs,
+    ) -> list[dict[str, str | list]]:
+        # prepare retry
+        if retry_times > 1:
+            search_method = retry(stop=stop_after_attempt(retry_times))(
+                self.client.msearch
+            )
+        else:
+            search_method = self.client.msearch
+
+        # prepare search body
+        body = []
+        for q in query:
+            body.append({"index": self.index_name})
+            body.append(
+                {
+                    "query": {
+                        "query_string": {
                             "query": q,
                             "fields": ["title", "section", "text"],
                         },
@@ -306,7 +354,7 @@ class BM25Retriever(LocalRetriever):
         retry_times: int = 3,
         **search_kwargs,
     ) -> list[dict[str, str | list]]:
-        search_method = search_kwargs.get("search_method", "full_text")
+        search_method = search_kwargs.get("search_method", "string")
         match search_method:
             case "full_text":
                 results = self._full_text_search(
@@ -324,6 +372,13 @@ class BM25Retriever(LocalRetriever):
                 )
             case "mutex":
                 results = self._mutex_search(
+                    query=query,
+                    top_k=top_k,
+                    retry_times=retry_times,
+                    **search_kwargs,
+                )
+            case "string":
+                results = self._string_search(
                     query=query,
                     top_k=top_k,
                     retry_times=retry_times,
