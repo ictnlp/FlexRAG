@@ -64,8 +64,8 @@ rewrite_prompts = {
                 "2. Incorporate Rare Terms: If you know any specific or rare terms related to your search, include them.\n"
                 '3. Avoid Stop Words: Common words like "the", "is", and "and" may dilute the effectiveness of the query.\n'
                 "4. Synonyms and Related Terms: Use synonyms and related terms to cover variations in how different documents might reference the same concept.\n"
-                "5. Phrase Searches: When searching for specific phrases, enclose them in double quotes.\n"
-                '6. Use Boolean Operators: Use "+" for terms that must contains in the documents, and "-" for terms that must not contains in the documents.\n'
+                "5. Phrase Searches: When searching for specific named entity, enclose them in double quotes.\n"
+                # '6. Use Boolean Operators: Use "+" for terms that must contains in the documents, and "-" for terms that must not contains in the documents.\n'
                 "Please optimize the following query for the BM25 Search Engine.\n"
                 "Please only reply your query and do not output any other words."
             ),
