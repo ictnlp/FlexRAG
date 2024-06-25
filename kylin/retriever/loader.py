@@ -10,7 +10,7 @@ def add_args_for_retriever(parser: ArgumentParser) -> ArgumentParser:
     parser.add_argument(
         "--retriever_type",
         type=str,
-        nargs="+",
+        nargs="*",
         default=["bm25"],
         choices=["bm25", "ddg", "dense"],
         help="The retrievers to use",

@@ -249,7 +249,7 @@ generate_prompt = {
         {
             "role": "system",
             "content": (
-                "Answer the following question."
+                "Answer the following question. "
                 "Only give me the answer and do not output any other words."
             ),
         }
