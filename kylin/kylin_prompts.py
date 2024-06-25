@@ -54,7 +54,7 @@ determine_info_prompt = [
 
 
 rewrite_prompts = {
-    "bm25_": [
+    "bm25": [
         {
             "role": "system",
             "content": (
@@ -86,7 +86,7 @@ rewrite_prompts = {
             "content": '"oar athletes" olympics number count many participants',
         },
     ],
-    "bm25": [
+    "bm25_": [
         {
             "role": "system",
             "content": (

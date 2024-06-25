@@ -165,7 +165,7 @@ class KylinLLMSearcher:
         self.rewrite = args.rewrite_query
         self.verify = args.verify_context
         self.summary_context = args.summary_context
-        self.log_interval = args.log_interval
+        self.log_interval = getattr(args, "log_interval", 10)
         self.retriever_top_k = args.retriever_top_k
         self.disable_cache = args.disable_cache
 
