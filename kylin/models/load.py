@@ -2,6 +2,7 @@ from transformers import GenerationConfig, PreTrainedTokenizer
 
 from .hf_model import HFGenerator
 from .model_base import GeneratorBase
+from .ollama_model import OllamaGenerator
 from .openai_model import OpenAIGenerator
 from .vllm_model import VLLMGenerator
 
@@ -34,6 +35,12 @@ def load_generator(
                 base_url=base_url,
                 api_key=api_key,
                 model_name=model_name,
+            )
+        case "ollama":
+            assert model_name is not None
+            model = OllamaGenerator(
+                model_name=model_name,
+                base_url=base_url,
             )
         case _:
             raise ValueError(f"Not supported model: {model_type}")

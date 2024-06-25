@@ -47,8 +47,8 @@ class KylinLLMSearcher:
         parser.add_argument(
             "--searcher_type",
             type=str,
-            choices=["vllm", "hf", "openai"],
-            default="vllm",
+            choices=["vllm", "hf", "openai", "ollama"],
+            required=True,
             help="The searcher model type.",
         )
         parser.add_argument(
