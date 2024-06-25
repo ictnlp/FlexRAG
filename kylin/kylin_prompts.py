@@ -53,9 +53,8 @@ determine_info_prompt = [
 ]
 
 
-# TODO: few-shot learning
 rewrite_prompts = {
-    "bm25": [
+    "bm25_": [
         {
             "role": "system",
             "content": (
@@ -69,9 +68,25 @@ rewrite_prompts = {
                 "Please optimize the following query for the BM25 Search Engine.\n"
                 "Please only reply your query and do not output any other words."
             ),
-        }
+        },
+        {
+            "role": "user",
+            "content": "What is John Mayne's occupation?",
+        },
+        {
+            "role": "assistant",
+            "content": '"John Mayne" occupation job career profession',
+        },
+        {
+            "role": "user",
+            "content": "how many oar athletes are in the olympics",
+        },
+        {
+            "role": "assistant",
+            "content": '"oar athletes" olympics number count many participants',
+        },
     ],
-    "bm25_advance": [
+    "bm25": [
         {
             "role": "system",
             "content": (
@@ -81,10 +96,34 @@ rewrite_prompts = {
                 '3. Avoid Stop Words: Common words like "the", "is", and "and" may dilute the effectiveness of the query.\n'
                 "4. Synonyms and Related Terms: Use synonyms and related terms to cover variations in how different documents might reference the same concept.\n"
                 "5. Phrase Searches: When searching for specific named entity, enclose them in double quotes.\n"
-                '6. Use Boolean Operators: Use "+" for terms that must contains in the documents, and "-" for terms that must not contains in the documents.\n'
+                '6. Use Boolean Operators: Use "+" for terms that must contains in the documents, "-" for terms that must not contains in the documents, and "OR" for terms that are optional.\n'
                 "Please optimize the following query for the BM25 Search Engine.\n"
                 "Please only reply your query and do not output any other words."
             ),
+        },
+        {
+            "role": "user",
+            "content": "What is John Mayne's occupation?",
+        },
+        {
+            "role": "assistant",
+            "content": '+"John Mayne" (occupation OR job OR career OR profession)',
+        },
+        {
+            "role": "user",
+            "content": "what year did my pet monster come out",
+        },
+        {
+            "role": "assistant",
+            "content": '+"my pet monster" (year OR release OR debut OR came)',
+        },
+        {
+            "role": "user",
+            "content": "Which prince is Queen Elizabeth II's youngest son?",
+        },
+        {
+            "role": "assistant",
+            "content": '+"Queen Elizabeth II" +youngest +(prince OR son OR child)',
         }
     ],
     "dense": [
@@ -214,5 +253,5 @@ generate_prompt = {
                 "Only give me the answer and do not output any other words."
             ),
         }
-    ]
+    ],
 }
