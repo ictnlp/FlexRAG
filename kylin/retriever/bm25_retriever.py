@@ -55,22 +55,25 @@ class BM25Retriever(LocalRetriever):
         return
 
     def _prep_client(self):
-        mapping = {
-            "properties": {
-                "title": {"type": "text", "analyzer": "english"},
-                "section": {"type": "text", "analyzer": "english"},
-                "text": {"type": "text", "analyzer": "english"},
-            }
-        }
         # set client
         self.client = Elasticsearch(
             self.host,
             api_key=self.api_key,
         )
         if not self.client.indices.exists(index=self.index_name):
+            index_body = {
+                "settings": {"number_of_shards": 1, "number_of_replicas": 1},
+                "mappings": {
+                    "properties": {
+                        "title": {"type": "text", "analyzer": "english"},
+                        "section": {"type": "text", "analyzer": "english"},
+                        "text": {"type": "text", "analyzer": "english"},
+                    }
+                },
+            }
             self.client.indices.create(
                 index=self.index_name,
-                mappings=mapping,
+                body=index_body,
             )
 
         # set logging
