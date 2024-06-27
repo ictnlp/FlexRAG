@@ -1,6 +1,5 @@
 import logging
 
-from ollama import Client
 from transformers import GenerationConfig
 
 
@@ -14,6 +13,8 @@ class OllamaGenerator:
         base_url: str = None,
         verbose: bool = False,
     ) -> None:
+        from ollama import Client
+
         self.client = Client(
             host=base_url,
         )

@@ -2,7 +2,6 @@ import logging
 import os
 from argparse import ArgumentParser
 
-import scann
 import numpy as np
 
 from .index_base import DenseIndex
@@ -52,6 +51,14 @@ class ScaNNIndex(DenseIndex):
         log_interval: int = 100,
         **kwargs,
     ) -> None:
+        # check scann
+        try:
+            import scann
+
+            self.scann = scann
+        except:
+            raise ImportError("Please install scann by running `pip install scann`")
+
         # preapre basic args
         self.train_num = index_train_num
         self.log_interval = log_interval
@@ -77,10 +84,10 @@ class ScaNNIndex(DenseIndex):
         num_neighbors: int,
         anisotropic_quantization_threshold: float,
         distance_func: str = "IP",
-    ) -> scann.ScannBuilder:
+    ):
         distance_measure = "dot_product" if distance_func == "IP" else "squared_l2"
         return (
-            scann.scann_ops_pybind.builder(
+            self.scann.scann_ops_pybind.builder(
                 None,
                 num_neighbors,
                 distance_measure=distance_measure,
@@ -173,14 +180,14 @@ class ScaNNIndex(DenseIndex):
 
     def deserialize(self) -> None:
         logger.info(f"Loading index from {self.index_path}")
-        self.index = scann.scann_ops_pybind.load_searcher(self.index_path)
+        self.index = self.scann.scann_ops_pybind.load_searcher(self.index_path)
         return
 
     @property
     def is_trained(self):
-        return not isinstance(self.index, scann.ScannBuilder)
+        return not isinstance(self.index, self.scann.ScannBuilder)
 
     def __len__(self) -> int:
-        if isinstance(self.index, scann.ScannBuilder):
+        if isinstance(self.index, self.scann.ScannBuilder):
             return 0
         return self.index.size()

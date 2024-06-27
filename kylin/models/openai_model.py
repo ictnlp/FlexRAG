@@ -1,6 +1,5 @@
 import logging
 
-from openai import OpenAI
 from transformers import GenerationConfig
 
 
@@ -12,6 +11,8 @@ class OpenAIGenerator:
         api_key: str = "EMPTY",
         verbose: bool = False,
     ) -> None:
+        from openai import OpenAI
+
         self.client = OpenAI(
             api_key=api_key,
             base_url=base_url,

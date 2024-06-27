@@ -5,16 +5,30 @@ from typing import Iterable
 
 import numpy as np
 import torch
-import pymilvus
-from pymilvus import DataType, Collection, MilvusClient
 from transformers import AutoModel, AutoTokenizer
 
 from .retriever_base import LocalRetriever
-from kylin.text_process import normalize_token
 
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+
+VALID_INDEX_TYPE = [
+    "GPU_IVF_FLAT",
+    "GPU_IVF_PQ",
+    "FLAT",
+    "IVF_FLAT",
+    "IVF_SQ8",
+    "IVF_PQ",
+    "HNSW",
+    "BIN_FLAT",
+    "BIN_IVF_FLAT",
+    "DISKANN",
+    "AUTOINDEX",
+    "GPU_CAGRA",
+    "GPU_BRUTE_FORCE",
+]
 
 
 class MilvusRetriever(LocalRetriever):
@@ -100,13 +114,23 @@ class MilvusRetriever(LocalRetriever):
             "--index_type",
             type=str,
             default="AUTOINDEX",
-            choices=pymilvus.client.utils.valid_index_types,
+            choices=VALID_INDEX_TYPE,
             help="The index type to use for the Milvus index",
         )
         return parser
 
     def __init__(self, args: Namespace) -> None:
         super().__init__(args)
+        # check pymilvus
+        try:
+            import pymilvus
+
+            self.pymilvus = pymilvus
+        except:
+            raise ImportError(
+                "Please install pymilvus by running `pip install pymilvus`"
+            )
+
         # set args
         if args.retriever_tokenizer is None:
             args.retriever_tokenizer = args.query_encoder
@@ -136,7 +160,7 @@ class MilvusRetriever(LocalRetriever):
         # load database
         self.database_path = os.path.join(args.database_path, "database.db")
         self.indices_path = os.path.join(args.database_path, "indices.npy")
-        self.client = MilvusClient(self.database_path)
+        self.client = self.pymilvus.MilvusClient(self.database_path)
         if self.client.has_collection("database"):
             self.db = self.client.load_collection("database")
             self.indices = np.load(self.indices_path)
@@ -145,7 +169,7 @@ class MilvusRetriever(LocalRetriever):
             self.indices = np.zeros(0, dtype=np.int64)
         return
 
-    def _init_database(self) -> Collection:
+    def _init_database(self):
         # prepare schema
         schema = self.client.create_schema(
             auto_id=True,
@@ -153,17 +177,17 @@ class MilvusRetriever(LocalRetriever):
         )
         schema.add_field(
             field_name="id",
-            datatype=DataType.INT64,
+            datatype=self.pymilvus.DataType.INT64,
             is_primary=True,
         )
         schema.add_field(
             field_name="embedding",
-            datatype=DataType.FLOAT_VECTOR,
+            datatype=self.pymilvus.DataType.FLOAT_VECTOR,
             dim=768,
         )
         schema.add_field(
             field_name="data",
-            datatype=DataType.JSON,
+            datatype=self.pymilvus.DataType.JSON,
         )
 
         # prepare index

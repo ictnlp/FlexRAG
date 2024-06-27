@@ -2,7 +2,6 @@ import logging
 import os
 from argparse import ArgumentParser
 
-import faiss
 import numpy as np
 
 from .index_base import DenseIndex
@@ -61,6 +60,14 @@ class FaissIndex(DenseIndex):
         log_interval: int = 100,
         **kwargs,
     ) -> None:
+        # check faiss
+        try:
+            import faiss
+
+            self.faiss = faiss
+        except:
+            raise ImportError("Please install faiss by running `pip install faiss-cpu`")
+
         # preapre basic args
         self.index_train_num = index_train_num
         self.log_interval = log_interval
@@ -70,8 +77,8 @@ class FaissIndex(DenseIndex):
         # prepare GPU resource
         self.device_id = device_id
         if self.device_id != [-1]:
-            self.gpu_res = faiss.StandardGpuResources()
-            self.gpu_option = faiss.GpuClonerOptions()
+            self.gpu_res = self.faiss.StandardGpuResources()
+            self.gpu_option = self.faiss.GpuClonerOptions()
             self.gpu_option.useFloat16 = True
         else:
             self.gpu_res = None
@@ -102,25 +109,25 @@ class FaissIndex(DenseIndex):
         n_probe: int,
         factory_str: str,
         distance_func: str = "IP",
-    ) -> faiss.Index:
+    ):
         # prepare basic index
         if distance_func == "IP":
-            basic_index = faiss.IndexFlatIP(embedding_size)
-            basic_metric = faiss.METRIC_INNER_PRODUCT
+            basic_index = self.faiss.IndexFlatIP(embedding_size)
+            basic_metric = self.faiss.METRIC_INNER_PRODUCT
         else:
             assert distance_func == "L2"
-            basic_index = faiss.IndexFlatL2(embedding_size)
-            basic_metric = faiss.METRIC_L2
+            basic_index = self.faiss.IndexFlatL2(embedding_size)
+            basic_metric = self.faiss.METRIC_L2
 
         # prepare optimized index
         if factory_str is not None:
-            basic_index = faiss.index_factory(
+            basic_index = self.faiss.index_factory(
                 embedding_size,
                 factory_str,
                 basic_metric,
             )
         elif (n_list > 0) and (n_bits > 0):  # IVFPQ
-            basic_index = faiss.IndexIVFPQ(
+            basic_index = self.faiss.IndexIVFPQ(
                 basic_index,
                 embedding_size,
                 n_list,
@@ -129,13 +136,13 @@ class FaissIndex(DenseIndex):
             )
             basic_index.nprobe = n_probe
         elif n_bits > 0:  # PQ
-            basic_index = faiss.IndexPQ(
+            basic_index = self.faiss.IndexPQ(
                 embedding_size,
                 n_subquantizers,
                 n_bits,
             )
         elif n_list > 0:  # IVF
-            basic_index = faiss.IndexIVFFlat(
+            basic_index = self.faiss.IndexIVFFlat(
                 basic_index,
                 embedding_size,
                 n_list,
@@ -221,10 +228,10 @@ class FaissIndex(DenseIndex):
     def serialize(self) -> None:
         logger.info(f"Serializing index to {self.index_path}")
         if self.device_id >= 0:
-            cpu_index = faiss.index_gpu_to_cpu(self.index)
+            cpu_index = self.faiss.index_gpu_to_cpu(self.index)
         else:
             cpu_index = self.index
-        faiss.write_index(cpu_index, self.index_path)
+        self.faiss.write_index(cpu_index, self.index_path)
         return
 
     def deserialize(self) -> None:
@@ -234,9 +241,9 @@ class FaissIndex(DenseIndex):
             self.device_id = -1
             self.gpu_res = None
             self.gpu_option = None
-            cpu_index = faiss.read_index(self.index_path, faiss.IO_FLAG_MMAP)
+            cpu_index = self.faiss.read_index(self.index_path, self.faiss.IO_FLAG_MMAP)
         else:
-            cpu_index = faiss.read_index(self.index_path)
+            cpu_index = self.faiss.read_index(self.index_path)
         cpu_index.nprobe = self.nprobe
         self._set_index(cpu_index)
         return
@@ -247,8 +254,8 @@ class FaissIndex(DenseIndex):
 
     def __len__(self):
         return self.index.ntotal
-    
-    def _set_index(self, index: faiss.Index) -> None:
+
+    def _set_index(self, index) -> None:
         raise NotImplementedError
         if self.gpu_res is not None:
             faiss.index_cpu_to_all_gpus(

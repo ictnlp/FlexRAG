@@ -27,7 +27,7 @@ class RetrievalMetric(MetricsBase):
         Compute the metric value and additional metric-specific information.
 
         Args:
-            relevant (list[list[str]]): The relevant documents.
+            evidences (list[list[str]]): The evidence documents.
             retrieved (list[list[str]]): The retrieved documents.
 
         Returns:
