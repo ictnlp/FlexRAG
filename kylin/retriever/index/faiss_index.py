@@ -1,81 +1,45 @@
 import logging
 import os
-from argparse import ArgumentParser
+from dataclasses import dataclass, field
+from typing import Optional
 
 import numpy as np
 
-from .index_base import DenseIndex
+from .index_base import DenseIndex, DenseIndexConfig
 
 
 logger = logging.getLogger(__name__)
 
 
-class FaissIndex(DenseIndex):
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--n_subquantizers",
-            type=int,
-            default=0,
-            help="Number of subquantizers for IVFPQ index",
-        )
-        parser.add_argument(
-            "--n_bits",
-            type=int,
-            default=0,
-            help="Number of bits for PQ index",
-        )
-        parser.add_argument(
-            "--n_list",
-            type=int,
-            default=1000,
-            help="Number of clusters for IVF index",
-        )
-        parser.add_argument(
-            "--n_probe",
-            type=int,
-            default=32,
-            help="Number of clusters to explore at search time",
-        )
-        parser.add_argument(
-            "--factory_str",
-            type=str,
-            default=None,
-            help="String to pass to index factory",
-        )
-        return parser
+@dataclass
+class FaissIndexConfig(DenseIndexConfig):
+    n_subquantizers: int = 0
+    n_bits: int = 0
+    n_list: int = 1000
+    n_probe: int = 32
+    factory_str: Optional[str] = None
+    device_id: list[int] = field(default_factory=list)
 
-    def __init__(
-        self,
-        index_path: str,
-        embedding_size: int = 768,
-        n_subquantizers: int = 0,
-        n_bits: int = 8,
-        n_list: int = 1000,
-        n_probe: int = 36,
-        distance_func: str = "IP",
-        factory_str: str = None,
-        device_id: list[int] = [-1],
-        index_train_num: int = 1000000,
-        log_interval: int = 100,
-        **kwargs,
-    ) -> None:
+
+class FaissIndex(DenseIndex):
+    def __init__(self, cfg: FaissIndexConfig) -> None:
+        super().__init__(cfg)
         # check faiss
         try:
             import faiss
 
             self.faiss = faiss
         except:
-            raise ImportError("Please install faiss by running `pip install faiss-cpu`")
+            raise ImportError("Please install faiss by running `conda install faiss-gpu`")
 
         # preapre basic args
-        self.index_train_num = index_train_num
-        self.log_interval = log_interval
-        self.index_path = os.path.join(index_path, "index.faiss")
-        self.nprobe = n_probe
+        self.index_train_num = cfg.index_train_num
+        self.log_interval = cfg.log_interval
+        self.index_path = cfg.index_path
+        self.nprobe = cfg.n_probe
 
         # prepare GPU resource
-        self.device_id = device_id
+        self.device_id = cfg.device_id
         if self.device_id != [-1]:
             self.gpu_res = self.faiss.StandardGpuResources()
             self.gpu_option = self.faiss.GpuClonerOptions()
@@ -89,13 +53,13 @@ class FaissIndex(DenseIndex):
             self.deserialize()
         else:
             index = self.prepare_index(
-                embedding_size=embedding_size,
-                n_subquantizers=n_subquantizers,
-                n_bits=n_bits,
-                n_list=n_list,
-                n_probe=n_probe,
-                factory_str=factory_str,
-                distance_func=distance_func,
+                embedding_size=cfg.embedding_size,
+                n_subquantizers=cfg.n_subquantizers,
+                n_bits=cfg.n_bits,
+                n_list=cfg.n_list,
+                n_probe=cfg.n_probe,
+                factory_str=cfg.factory_str,
+                distance_func=self.distance_function,
             )
             self._set_index(index)
         return
@@ -248,13 +212,22 @@ class FaissIndex(DenseIndex):
         self._set_index(cpu_index)
         return
 
+    # TODO: implement clear method
+    def clear(self):
+        raise NotImplementedError
+
     @property
     def is_trained(self):
         return self.index.is_trained
 
+    @property
+    def embedding_size(self):
+        return self.index.d
+
     def __len__(self):
         return self.index.ntotal
 
+    # TODO: implement _set_index method
     def _set_index(self, index) -> None:
         raise NotImplementedError
         if self.gpu_res is not None:

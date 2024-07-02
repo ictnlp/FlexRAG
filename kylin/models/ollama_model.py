@@ -1,25 +1,31 @@
 import logging
+from dataclasses import dataclass
+from omegaconf import MISSING
 
 from transformers import GenerationConfig
+
+from .model_base import GeneratorBase, GeneratorConfig
 
 
 logger = logging.getLogger("OllamaGenerator")
 
 
-class OllamaGenerator:
-    def __init__(
-        self,
-        model_name: str,
-        base_url: str = None,
-        verbose: bool = False,
-    ) -> None:
+@dataclass
+class OllamaGeneratorConfig(GeneratorConfig):
+    model_name: str = MISSING
+    base_url: str = MISSING
+    verbose: bool = False
+
+
+class OllamaGenerator(GeneratorBase):
+    def __init__(self, cfg: OllamaGeneratorConfig) -> None:
         from ollama import Client
 
         self.client = Client(
-            host=base_url,
+            host=cfg.base_url,
         )
-        self.model_name = model_name
-        if not verbose:
+        self.model_name = cfg.model_name
+        if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)
         self._check()

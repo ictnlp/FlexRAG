@@ -1,7 +1,7 @@
 from abc import abstractmethod
 from collections import Counter
 
-from .metrics_base import MetricsBase
+from .metrics_base import MetricsBase, MetricsConfig
 
 
 class MatchingMetrics(MetricsBase):
@@ -17,6 +17,13 @@ class MatchingMetrics(MetricsBase):
             matching_list.append(self.compute_item(y_t, y_p))
         matching_score = sum(matching_list) / len(matching_list)
         return matching_score, {"item_score": matching_list}
+
+
+ExactMatchConfig = MetricsConfig
+AccuracyConfig = MetricsConfig
+F1Config = MetricsConfig
+RecallConfig = MetricsConfig
+PrecisionConfig = MetricsConfig
 
 
 class ExactMatch(MatchingMetrics):

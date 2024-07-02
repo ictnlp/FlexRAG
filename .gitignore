@@ -144,3 +144,9 @@ yala/model/third_party_models
 # test files
 test*.py
 test*.ipynb
+
+# experimental configs
+experimental_configs/
+
+# hydra logs
+outputs/

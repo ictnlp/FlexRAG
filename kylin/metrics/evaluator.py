@@ -1,43 +1,61 @@
 import logging
-from argparse import ArgumentParser, Namespace
+from dataclasses import dataclass, field
 
-from .matching_metrics import F1, Accuracy, ExactMatch, Precision, Recall
-from .generation_metrics import BLEU, Rouge1, Rouge2, RougeL, chrF
-from .retrieval_metrics import RetrievalMetric, SuccessRate
-from .metrics_base import MetricsBase
+from kylin.utils import Choices
+
+from .matching_metrics import (
+    F1,
+    F1Config,
+    Accuracy,
+    AccuracyConfig,
+    ExactMatch,
+    ExactMatchConfig,
+    Precision,
+    PrecisionConfig,
+    Recall,
+    RecallConfig,
+)
+from .generation_metrics import (
+    BLEU,
+    BLEUConfig,
+    chrF,
+    chrFConfig,
+    Rouge1,
+    Rouge2,
+    RougeL,
+    RougeConfig,
+)
+from .retrieval_metrics import SuccessRate, SuccessRateConfig
 
 
 logger = logging.getLogger(__name__)
 
 
-class ShortFormEvaluator:
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--short_form_metrics",
-            type=str,
-            nargs="+",
-            default=["f1"],
-            choices=["f1", "recall", "em", "precision", "accuracy"],
-            help="The metrics to use",
-        )
-        parser = MetricsBase.add_args(parser)
-        return parser
+@dataclass
+class ShortFormEvaluatorConfig:
+    short_form_metrics: list[Choices(["f1", "recall", "em", "precision", "accuracy"])] = field(default_factory=list)  # type: ignore
+    f1_config: F1Config = field(default_factory=F1Config)
+    recall_config: RecallConfig = field(default_factory=RecallConfig)
+    em_config: ExactMatchConfig = field(default_factory=ExactMatchConfig)
+    precision_config: PrecisionConfig = field(default_factory=PrecisionConfig)
+    accuracy_config: AccuracyConfig = field(default_factory=AccuracyConfig)
 
-    def __init__(self, args: Namespace) -> None:
+
+class ShortFormEvaluator:
+    def __init__(self, cfg: ShortFormEvaluatorConfig) -> None:
         self.metrics = {}
-        for metric in args.short_form_metrics:
+        for metric in cfg.short_form_metrics:
             match metric:
                 case "f1":
-                    self.metrics[metric] = F1(args)
+                    self.metrics[metric] = F1(cfg.f1_config)
                 case "recall":
-                    self.metrics[metric] = Recall(args)
+                    self.metrics[metric] = Recall(cfg.recall_config)
                 case "em":
-                    self.metrics[metric] = ExactMatch(args)
+                    self.metrics[metric] = ExactMatch(cfg.em_config)
                 case "precision":
-                    self.metrics[metric] = Precision(args)
+                    self.metrics[metric] = Precision(cfg.precision_config)
                 case "accuracy":
-                    self.metrics[metric] = Accuracy(args)
+                    self.metrics[metric] = Accuracy(cfg.accuracy_config)
                 case _:
                     raise ValueError(f"Invalid metric type: {metric}")
         return
@@ -57,39 +75,35 @@ class ShortFormEvaluator:
             evaluation_results[metric] = r
             evaluation_details[metric] = r_detail
         return evaluation_results, evaluation_details
+
+
+@dataclass
+class LongFormEvaluatorConfig:
+    long_form_metrics: list[Choices(["bleu", "chrf", "rouge-1", "rouge-2", "rouge-l"])] = field(default_factory=list)  # type: ignore
+    bleu_config: BLEUConfig = field(default_factory=BLEUConfig)
+    chrf_config: chrFConfig = field(default_factory=chrFConfig)
+    rouge_config: RougeConfig = field(default_factory=RougeConfig)
 
 
 class LongFormEvaluator:
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--long_form_metrics",
-            type=str,
-            nargs="+",
-            default=["bleu"],
-            choices=["bleu", "rouge-1", "rouge-2", "rouge-l", "chrf"],
-            help="The metrics to use",
-        )
-        return parser
-
-    def __init__(self, args: Namespace) -> None:
+    def __init__(self, cfg: LongFormEvaluatorConfig) -> None:
         self.metrics = {}
-        for metric in args.long_form_metrics:
+        for metric in cfg.long_form_metrics:
             match metric:
                 case "bleu":
-                    self.metrics[metric] = BLEU(args)
-                case "rouge-1":
-                    self.metrics[metric] = Rouge1(args)
-                case "rouge-2":
-                    self.metrics[metric] = Rouge2(args)
-                case "rouge-l":
-                    self.metrics[metric] = RougeL(args)
+                    self.metrics[metric] = BLEU(cfg.bleu_config)
                 case "chrf":
-                    self.metrics[metric] = chrF(args)
+                    self.metrics[metric] = chrF(cfg.chrf_config)
+                case "rouge-1":
+                    self.metrics[metric] = Rouge1(cfg.rouge_config)
+                case "rouge-2":
+                    self.metrics[metric] = Rouge2(cfg.rouge_config)
+                case "rouge-l":
+                    self.metrics[metric] = RougeL(cfg.rouge_config)
                 case _:
                     raise ValueError(f"Invalid metric type: {metric}")
         return
-    
+
     def evaluate(
         self,
         trues: list[list[str]],
@@ -107,30 +121,23 @@ class LongFormEvaluator:
         return evaluation_results, evaluation_details
 
 
-class RetrievalEvaluator:
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--retrieval_metrics",
-            type=str,
-            nargs="+",
-            default=["success_rate"],
-            choices=["success_rate"],
-            help="The metrics to use",
-        )
-        parser = RetrievalMetric.add_args(parser)
-        return parser
+@dataclass
+class RetrievalEvaluatorConfig:
+    retrieval_metrics: list[Choices(["success_rate"])] = field(default_factory=list)  # type: ignore
+    success_config: SuccessRateConfig = field(default_factory=SuccessRateConfig)
 
-    def __init__(self, args: Namespace) -> None:
+
+class RetrievalEvaluator:
+    def __init__(self, cfg: RetrievalEvaluatorConfig) -> None:
         self.metrics = {}
-        for metric in args.retrieval_metrics:
+        for metric in cfg.retrieval_metrics:
             match metric:
                 case "success_rate":
-                    self.metrics[metric] = SuccessRate(args)
+                    self.metrics[metric] = SuccessRate(cfg.success_config)
                 case _:
                     raise ValueError(f"Invalid metric type: {metric}")
         return
-    
+
     def evaluate(
         self,
         evidences: list[list[str]],
@@ -146,4 +153,3 @@ class RetrievalEvaluator:
             evaluation_results[metric] = r
             evaluation_details[metric] = r_detail
         return evaluation_results, evaluation_details
-

@@ -1,26 +1,21 @@
-from argparse import ArgumentParser, Namespace
+from dataclasses import dataclass
 
 import sacrebleu
 import rouge
 
-from .metrics_base import MetricsBase
+from kylin.utils import Choices
+from .metrics_base import MetricsBase, MetricsConfig
+
+
+@dataclass
+class BLEUConfig(MetricsConfig):
+    bleu_tokenizer: Choices(sacrebleu.BLEU.TOKENIZERS) = sacrebleu.BLEU.TOKENIZER_DEFAULT  # type: ignore
 
 
 class BLEU(MetricsBase):
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--bleu_tokenizer",
-            type=str,
-            default=sacrebleu.BLEU.TOKENIZER_DEFAULT,
-            choices=sacrebleu.BLEU.TOKENIZERS,
-            help="The tokenizer to use for BLEU",
-        )
-        return parser
-
-    def __init__(self, args: Namespace):
-        super().__init__(args)
-        self.tokenizer = args.bleu_tokenizer
+    def __init__(self, cfg: BLEUConfig):
+        super().__init__(cfg)
+        self.tokenizer = cfg.bleu_tokenizer
         return
 
     def compute(
@@ -34,34 +29,19 @@ class BLEU(MetricsBase):
         return bleu.score, vars(bleu)
 
 
-class chrF(MetricsBase):
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--chrf_beta",
-            type=float,
-            default=1.0,
-            help="The beta value for chrF",
-        )
-        parser.add_argument(
-            "--chrf_char_order",
-            type=int,
-            default=sacrebleu.CHRF.CHAR_ORDER,
-            help="Character n-gram order.",
-        )
-        parser.add_argument(
-            "--chrf_word_order",
-            type=int,
-            default=sacrebleu.CHRF.WORD_ORDER,
-            help="Word n-gram order. If equals to 2, the metric is referred to as chrF++.",
-        )
-        return parser
+@dataclass
+class chrFConfig:
+    chrf_beta: float = 1.0
+    chrf_char_order: int = sacrebleu.CHRF.CHAR_ORDER
+    chrf_word_order: int = sacrebleu.CHRF.WORD_ORDER
 
-    def __init__(self, args: Namespace) -> None:
-        super().__init__(args)
-        self.beta = args.chrf_beta
-        self.char_order = args.chrf_char_order
-        self.word_order = args.chrf_word_order
+
+class chrF(MetricsBase):
+    def __init__(self, cfg: chrFConfig) -> None:
+        super().__init__(cfg)
+        self.beta = cfg.chrf_beta
+        self.char_order = cfg.chrf_char_order
+        self.word_order = cfg.chrf_word_order
         return
 
     def compute(
@@ -73,6 +53,9 @@ class chrF(MetricsBase):
             beta=self.beta,
         )
         return chrf.score, vars(chrf)
+
+
+RougeConfig = MetricsConfig
 
 
 class Rouge(MetricsBase):
@@ -102,21 +85,21 @@ class Rouge(MetricsBase):
 
 
 class Rouge1(MetricsBase):
-    def __init__(self, args: Namespace) -> None:
-        super().__init__(args)
+    def __init__(self, cfg: RougeConfig) -> None:
+        super().__init__(cfg)
         self.scorer = rouge.Rouge(metrics=["rouge-1"])
         return
 
 
 class Rouge2(MetricsBase):
-    def __init__(self, args: Namespace) -> None:
-        super().__init__(args)
+    def __init__(self, cfg: RougeConfig) -> None:
+        super().__init__(cfg)
         self.scorer = rouge.Rouge(metrics=["rouge-2"])
         return
 
 
 class RougeL(MetricsBase):
-    def __init__(self, args: Namespace) -> None:
-        super().__init__(args)
+    def __init__(self, cfg: RougeConfig) -> None:
+        super().__init__(cfg)
         self.scorer = rouge.Rouge(metrics=["rouge-l"])
         return

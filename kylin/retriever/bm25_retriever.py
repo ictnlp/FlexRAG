@@ -1,56 +1,36 @@
 import logging
 import re
 import time
-from argparse import ArgumentParser, Namespace
-from typing import Iterable
+from dataclasses import dataclass
+from typing import Iterable, Optional
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import streaming_bulk
 from tenacity import retry, stop_after_attempt
 
-from .retriever_base import LocalRetriever
+from .retriever_base import LocalRetriever, LocalRetrieverConfig
 
 
 logger = logging.getLogger("BM25Retriever")
 
 
+@dataclass
+class BM25RetrieverConfig(LocalRetrieverConfig):
+    host: str = "http://localhost:9200"
+    api_key: Optional[str] = None
+    index_name: str = "documents"
+    verbose: bool = False
+
+
 class BM25Retriever(LocalRetriever):
     name = "BM25"
 
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--host",
-            type=str,
-            default="http://localhost:9200/",
-            help="The host of the Elasticsearch server",
-        )
-        parser.add_argument(
-            "--api_key",
-            type=str,
-            default=None,
-            help="The api key for the Elasticsearch server",
-        )
-        parser.add_argument(
-            "--index_name",
-            type=str,
-            default="documents",
-            help="The name of the index to use for the BM25 retriever",
-        )
-        parser.add_argument(
-            "--elastic_verbose",
-            default=False,
-            action="store_true",
-            help="Whether to show verbose log output from elasticsearch",
-        )
-        return parser
-
-    def __init__(self, args: Namespace) -> None:
-        super().__init__(args)
-        self.host = args.host
-        self.api_key = args.api_key
-        self.index_name = args.index_name
-        self.verbose = args.elastic_verbose
+    def __init__(self, cfg: BM25RetrieverConfig) -> None:
+        super().__init__(cfg)
+        self.host = cfg.host
+        self.api_key = cfg.api_key
+        self.index_name = cfg.index_name
+        self.verbose = cfg.verbose
         self._prep_client()
         return
 
@@ -90,7 +70,6 @@ class BM25Retriever(LocalRetriever):
     def add_passages(
         self,
         passages: Iterable[dict[str, str]] | list[str],
-        source: str = None,
         reinit: bool = False,
     ):
         if reinit:
@@ -362,7 +341,7 @@ class BM25Retriever(LocalRetriever):
         # search
         return search_method(body=body)["responses"]
 
-    def _search_batch(
+    def search_batch(
         self,
         query: list[str],
         top_k: int = 10,
@@ -409,3 +388,7 @@ class BM25Retriever(LocalRetriever):
 
     def __len__(self) -> int:
         return self.client.count(index=self.index_name)["count"]
+
+    @property
+    def indices(self) -> list[str]:
+        return [i["index"] for i in self.client.cat.indices(format="json")]

@@ -1,23 +1,20 @@
 from abc import abstractmethod
-from argparse import ArgumentParser, Namespace
-from .metrics_base import MetricsBase
+from dataclasses import dataclass
+
+from kylin.utils import Choices
+
+from .metrics_base import MetricsBase, MetricsConfig
+
+
+@dataclass
+class RetrievalMetricsConfig(MetricsConfig):
+    relevance_check: Choices(["contain"]) = "contain"  # type: ignore
 
 
 class RetrievalMetric(MetricsBase):
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--relevance_check",
-            type=str,
-            default="contain",
-            choices=["contain"],
-            help="The method to check the relevance of the retrieved documents.",
-        )
-        return parser
-
-    def __init__(self, args: Namespace) -> None:
-        super().__init__(args)
-        self.relevance_check = args.relevance_check
+    def __init__(self, cfg: RetrievalMetricsConfig) -> None:
+        super().__init__(cfg)
+        self.relevance_check = cfg.relevance_check
         return
 
     def __call__(
@@ -73,6 +70,9 @@ class RetrievalMetric(MetricsBase):
             raise NotImplementedError
 
 
+SuccessRateConfig = RetrievalMetricsConfig
+
+
 class SuccessRate(RetrievalMetric):
     def _get_score(self, relevance_map: list[list[list[bool]]]) -> float:
         scores = 0.0
@@ -82,11 +82,3 @@ class SuccessRate(RetrievalMetric):
                     scores += 1.0
                     break
         return scores / len(relevance_map)
-
-
-# class RetrievalPrecision(RetrievalMetric):
-#     def _get_score(self, relevance_map: list[list[list[bool]]]) -> float:
-#         scores = []
-#         for line in relevance_map:
-#             scores.append(sum(line) / len(line))
-#         return sum(scores) / len(scores)

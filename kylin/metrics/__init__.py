@@ -1,29 +1,62 @@
-from .generation_metrics import BLEU, Rouge1, Rouge2, RougeL, chrF
-from .evaluator import ShortFormEvaluator, LongFormEvaluator, RetrievalEvaluator
+from .generation_metrics import (
+    BLEU,
+    BLEUConfig,
+    chrF,
+    chrFConfig,
+    Rouge1,
+    Rouge2,
+    RougeL,
+    RougeConfig,
+)
+from .evaluator import (
+    ShortFormEvaluator,
+    ShortFormEvaluatorConfig,
+    LongFormEvaluator,
+    LongFormEvaluatorConfig,
+    RetrievalEvaluator,
+    RetrievalEvaluatorConfig,
+)
 from .matching_metrics import (
     F1,
+    F1Config,
     Accuracy,
+    AccuracyConfig,
     ExactMatch,
+    ExactMatchConfig,
     MatchingMetrics,
     Precision,
+    PrecisionConfig,
     Recall,
+    RecallConfig,
 )
-from .metrics_base import MetricsBase
+from .metrics_base import MetricsBase, MetricsConfig
 
 __all__ = [
     "MetricsBase",
+    "MetricsConfig",
     "MatchingMetrics",
     "Accuracy",
+    "AccuracyConfig",
     "ExactMatch",
+    "ExactMatchConfig",
     "F1",
+    "F1Config",
     "Recall",
+    "RecallConfig",
     "Precision",
+    "PrecisionConfig",
     "BLEU",
+    "BLEUConfig",
     "Rouge1",
     "Rouge2",
     "RougeL",
+    "RougeConfig",
     "chrF",
+    "chrFConfig",
     "ShortFormEvaluator",
+    "ShortFormEvaluatorConfig",
     "LongFormEvaluator",
+    "LongFormEvaluatorConfig",
     "RetrievalEvaluator",
+    "RetrievalEvaluatorConfig",
 ]

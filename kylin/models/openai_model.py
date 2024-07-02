@@ -1,24 +1,34 @@
 import logging
+from dataclasses import dataclass
+from typing import Optional
 
-from transformers import GenerationConfig
+from omegaconf import MISSING
+
+from .model_base import (
+    GeneratorBase,
+    GeneratorConfig,
+    GenerationConfig,
+)
 
 
-class OpenAIGenerator:
-    def __init__(
-        self,
-        model_name: str,
-        base_url: str = None,
-        api_key: str = "EMPTY",
-        verbose: bool = False,
-    ) -> None:
+@dataclass
+class OpenAIGeneratorConfig(GeneratorConfig):
+    model_name: str = MISSING
+    base_url: Optional[str] = None
+    api_key: str = "EMPTY"
+    verbose: bool = False
+
+
+class OpenAIGenerator(GeneratorBase):
+    def __init__(self, cfg: OpenAIGeneratorConfig) -> None:
         from openai import OpenAI
 
         self.client = OpenAI(
-            api_key=api_key,
-            base_url=base_url,
+            api_key=cfg.api_key,
+            base_url=cfg.base_url,
         )
-        self.model_name = model_name
-        if not verbose:
+        self.model_name = cfg.model_name
+        if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)
         return
@@ -59,3 +69,6 @@ class OpenAIGenerator:
             )
             responses.append(response.choices[0].text)
         return responses
+
+    def _check(self):
+        return self.client.status.get()

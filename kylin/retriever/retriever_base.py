@@ -2,8 +2,8 @@ import logging
 import os
 import time
 from abc import ABC, abstractmethod
-from argparse import ArgumentParser, Namespace
-from collections import defaultdict
+from dataclasses import dataclass
+from typing import Optional, Iterable
 
 import numpy as np
 
@@ -15,25 +15,62 @@ from .cache import PersistentLRUCache, hashkey
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class RetrieverConfig:
+    cache_path: Optional[str] = None
+    cache_size: int = -1
+    log_interval: int = 100
+
+
+@dataclass
+class LocalRetrieverConfig(RetrieverConfig):
+    batch_size: int = 32
+    max_query_length: int = 512
+    max_passage_length: int = 512
+    no_title: bool = False
+    lowercase: bool = False
+    normalize_text: bool = True
+
+
 class Retriever(ABC):
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--database_path",
-            type=str,
-            required=True,
-            help="The path to the Retriever database",
-        )
-        parser.add_argument(
-            "--cache_size",
-            default=0,
-            type=int,
-            help="The size of the cache",
-        )
-        return parser
+    def __init__(self, cfg: RetrieverConfig):
+        self._cache = self.prepare_cache(cfg.cache_size, cfg.cache_path)
+        self.log_interval = cfg.log_interval
+        return
+
+    def search(
+        self,
+        query: list[str],
+        top_k: int = 10,
+        disable_cache: bool = False,
+        **search_kwargs,
+    ) -> list[dict[str, str | list]]:
+        if (self._cache is None) or disable_cache:
+            return self._search(query, top_k, **search_kwargs)
+
+        # search from cache
+        cache_keys = [hashkey(query=q, top_k=top_k, **search_kwargs) for q in query]
+        results = [None] * len(query)
+        new_query = []
+        new_indices = []
+        for n, (q, k) in enumerate(zip(query, cache_keys)):
+            if k in self._cache:
+                results[n] = self._cache[k]
+            else:
+                new_indices.append(n)
+                new_query.append(q)
+
+        # search from database
+        if new_query:
+            new_results = self._search(new_query, top_k, **search_kwargs)
+            for n, r in zip(new_indices, new_results):
+                results[n] = r
+                self._cache[cache_keys[n]] = r
+        assert all(r is not None for r in results)
+        return results
 
     @abstractmethod
-    def search(
+    def _search(
         self,
         query: list[str],
         top_k: int = 10,
@@ -65,116 +102,53 @@ class Retriever(ABC):
         )
         return end_time - start_time
 
-
-class LocalRetriever(Retriever):
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--batch_size",
-            type=int,
-            default=512,
-            help="The batch size to use for encoding",
-        )
-        # encoding arguments
-        parser.add_argument(
-            "--max_query_length",
-            type=int,
-            default=256,
-            help="The maximum length of the queries",
-        )
-        parser.add_argument(
-            "--max_passage_length",
-            type=int,
-            default=2048,
-            help="The maximum length of the passages",
-        )
-        parser.add_argument(
-            "--no_title",
-            action="store_true",
-            default=False,
-            help="Whether to include the title in the passage",
-        )
-        parser.add_argument(
-            "--lowercase",
-            action="store_true",
-            default=False,
-            help="Whether to lowercase the text",
-        )
-        parser.add_argument(
-            "--normalize_text",
-            action="store_true",
-            default=False,
-            help="Whether to normalize the text.",
-        )
-        return parser
-
-    def __init__(self, args: Namespace) -> None:
-        # set args for process documents
-        self.batch_size = args.batch_size
-        self.max_query_length = args.max_query_length
-        self.max_passage_length = args.max_passage_length
-        self.no_title = args.no_title
-        self.lowercase = args.lowercase
-        self.normalize_text = args.normalize_text
-        self.log_interval = getattr(args, "log_interval", 10)
-
+    def prepare_cache(
+        self, cache_size: int, cache_path: str = None
+    ) -> PersistentLRUCache | None:
         # set cache for retrieve
-        if args.cache_size > 0:
-            self._cache = PersistentLRUCache(
-                persistant_path=os.path.join(args.database_path, "cache"),
-                maxsize=args.cache_size,
+        if cache_path is not None:
+            cache = PersistentLRUCache(
+                persistant_path=os.path.join(cache_path, "cache"),
+                maxsize=cache_size,
             )
         else:
-            self._cache = None
+            cache = None
+        return cache
+
+    def close(self):
+        return
+
+
+class LocalRetriever(Retriever):
+    def __init__(self, cfg: LocalRetrieverConfig) -> None:
+        super().__init__(cfg)
+        # set args for process documents
+        self.batch_size = cfg.batch_size
+        self.max_query_length = cfg.max_query_length
+        self.max_passage_length = cfg.max_passage_length
+        self.no_title = cfg.no_title
+        self.lowercase = cfg.lowercase
+        self.normalize_text = cfg.normalize_text
+        self.log_interval = cfg.log_interval
         return
 
     @abstractmethod
     def add_passages(
         self,
-        passages: list[dict[str, str]] | list[str],
-        source: str = None,
+        passages: Iterable[dict[str, str]] | Iterable[str],
+        reinit: bool = False,
     ):
         """
         Add passages to the retriever database
         """
         return
 
+    @abstractmethod
     def search_batch(
         self,
         query: list[str],
         top_k: int = 10,
         disable_cache: bool = False,
-        **search_kwargs,
-    ) -> list[dict[str, str | list]]:
-        if (self._cache is None) or disable_cache:
-            return self._search_batch(query, top_k, **search_kwargs)
-
-        # search from cache
-        cache_keys = [hashkey(query=q, top_k=top_k, **search_kwargs) for q in query]
-        results = [None] * len(query)
-        new_query = []
-        new_indices = []
-        for n, (q, k) in enumerate(zip(query, cache_keys)):
-            if k in self._cache:
-                results[n] = self._cache[k]
-            else:
-                new_indices.append(n)
-                new_query.append(q)
-
-        # search from database
-        if new_query:
-            new_results = self._search_batch(new_query, top_k, **search_kwargs)
-            for n, r in zip(new_indices, new_results):
-                results[n] = r
-                self._cache[cache_keys[n]] = r
-        assert all(r is not None for r in results)
-        return results
-
-    @abstractmethod
-    def _search_batch(
-        self,
-        query: list[str],
-        top_k: int = 10,
         **search_kwargs,
     ) -> list[dict[str, str | list]]:
         """Search queries using local retriever.
@@ -196,11 +170,10 @@ class LocalRetriever(Retriever):
         """
         return
 
-    def search(
+    def _search(
         self,
         query: list[str] | str,
         top_k: int = 10,
-        disable_cache: bool = False,
         **search_kwargs,
     ) -> list[dict[str, str | list]]:
         # search for documents
@@ -212,7 +185,7 @@ class LocalRetriever(Retriever):
                     f"Searching for batch {n} / {len(query) // self.batch_size}"
                 )
             batch = query[idx : idx + self.batch_size]
-            results_ = self.search_batch(batch, top_k, disable_cache, **search_kwargs)
+            results_ = self.search_batch(batch, top_k, **search_kwargs)
             final_results.extend(results_)
         return final_results
 

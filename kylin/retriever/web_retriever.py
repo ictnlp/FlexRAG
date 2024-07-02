@@ -1,49 +1,44 @@
 import logging
-import os
 import time
 from abc import abstractmethod
-from argparse import ArgumentParser, Namespace
+from dataclasses import dataclass
+from omegaconf import MISSING
+from typing import Optional
 
 import requests
 from tenacity import retry, stop_after_attempt
 
-from .cache import PersistentLRUCache, hashkey
-from .retriever_base import Retriever
+from .retriever_base import Retriever, RetrieverConfig
 
 
 logger = logging.getLogger(__name__)
 
 
+@dataclass
+class WebRetrieverConfig(RetrieverConfig):
+    timeout: float = 1.0
+
+
+@dataclass
+class BingRetrieverConfig(WebRetrieverConfig):
+    subscription_key: str = MISSING
+    endpoint: str = "https://api.bing.microsoft.com"
+
+
+@dataclass
+class DuckDuckGoRetrieverConfig(WebRetrieverConfig):
+    proxy: Optional[str] = None
+
+
 class WebRetriever(Retriever):
     name = "web"
 
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--timeout",
-            type=float,
-            default=1.0,
-            help="The timeout for each request",
-        )
-        return parser
-
-    def __init__(self, args: Namespace):
-        self.timeout = args.timeout
-        self.log_interval = args.log_interval
-
-        # set cache for retrieve
-        if args.cache_size > 0:
-            if not os.path.exists(args.database_path):
-                os.makedirs(args.database_path)
-            self._cache = PersistentLRUCache(
-                persistant_path=os.path.join(args.database_path, "cache"),
-                maxsize=args.cache_size,
-            )
-        else:
-            self._cache = None
+    def __init__(self, cfg: WebRetrieverConfig):
+        super().__init__(cfg)
+        self.timeout = cfg.timeout
         return
 
-    def search(
+    def _search(
         self,
         query: list[str] | str,
         top_k: int = 10,
@@ -65,35 +60,14 @@ class WebRetriever(Retriever):
         # search
         results = []
         for n, q in enumerate(query):
+            time.sleep(delay)
             if n % self.log_interval == 0:
                 logger.info(f"Searching for {n} / {len(query)}")
-            results.append(search_method(q, top_k, delay=delay, **search_kwargs))
+            results.append(search_method(q, top_k, **search_kwargs))
         return results
 
-    def search_item(
-        self,
-        query: str,
-        top_k: int = 10,
-        delay: float = 0.1,
-        disable_cache: bool = False,
-        **search_kwargs,
-    ) -> dict[str, str | list]:
-        if (self._cache is None) or disable_cache:
-            time.sleep(delay)  # delay only when cache is not available
-            return self._search_item(query, top_k, **search_kwargs)
-
-        # search from cache
-        cache_key = hashkey(query=query, top_k=top_k, **search_kwargs)
-        result = self._cache.get(cache_key)
-        # search from database
-        if result is None:
-            time.sleep(delay)  # delay only when cache is not available
-            result = self._search_item(query, top_k, **search_kwargs)
-            self._cache[cache_key] = result
-        return result
-
     @abstractmethod
-    def _search_item(
+    def search_item(
         self,
         query: list[str],
         top_k: int = 10,
@@ -118,30 +92,13 @@ class WebRetriever(Retriever):
 
 
 class BingRetriever(WebRetriever):
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--subscription_key",
-            required=True,
-            type=str,
-            help="The api key for the Bing search engine",
-        )
-        parser.add_argument(
-            "--endpoint",
-            type=str,
-            default="https://api.bing.microsoft.com",
-            help="The endpoint for the Bing search engine",
-        )
-        parser = WebRetriever.add_args(parser)
-        return parser
-
-    def __init__(self, args: Namespace):
-        super().__init__(args)
-        self.endpoint = args.endpoint + "/v7.0/search"
-        self.headers = {"Ocp-Apim-Subscription-Key": args.subscription_key}
+    def __init__(self, cfg: BingRetrieverConfig):
+        super().__init__(cfg)
+        self.endpoint = cfg.endpoint + "/v7.0/search"
+        self.headers = {"Ocp-Apim-Subscription-Key": cfg.subscription_key}
         return
 
-    def _search_item(
+    def search_item(
         self,
         query: str,
         top_k: int = 10,
@@ -166,26 +123,15 @@ class BingRetriever(WebRetriever):
 
 
 class DuckDuckGoRetriever(WebRetriever):
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--proxy",
-            type=str,
-            default=None,
-            help="The proxy for the DuckDuckGo search engine",
-        )
-        parser = WebRetriever.add_args(parser)
-        return parser
-
-    def __init__(self, args: Namespace):
-        super().__init__(args)
+    def __init__(self, cfg: DuckDuckGoRetrieverConfig):
+        super().__init__(cfg)
 
         from duckduckgo_search import DDGS
 
-        self.ddgs = DDGS(proxy=args.proxy)
+        self.ddgs = DDGS(proxy=cfg.proxy)
         return
 
-    def _search_item(
+    def search_item(
         self,
         query: str,
         top_k: int = 10,

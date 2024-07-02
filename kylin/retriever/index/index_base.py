@@ -1,9 +1,30 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Optional
+
+from kylin.utils import Choices
+
+from omegaconf import MISSING
 
 import numpy as np
 
 
+@dataclass
+class DenseIndexConfig:
+    distance_function: Choices(["IP", "L2"]) = "IP"  # type: ignore
+    embedding_size: Optional[int] = None
+    index_train_num: int = 1000000
+    index_path: str = MISSING
+    log_interval: int = 1000
+
+
 class DenseIndex(ABC):
+    def __init__(self, cfg: DenseIndexConfig):
+        self.distance_function = cfg.distance_function
+        self.index_train_num = cfg.index_train_num
+        self.index_path = cfg.index_path
+        return
+
     @abstractmethod
     def train_index(self, embedings: np.ndarray):
         return
@@ -66,10 +87,21 @@ class DenseIndex(ABC):
         """Deserialize the index from self.index_path."""
         return
 
+    @abstractmethod
+    def clear(self) -> None:
+        """Clear the index."""
+        return
+
     @property
     @abstractmethod
     def is_trained(self) -> bool:
         """Return True if the index is trained."""
+        return
+
+    @property
+    @abstractmethod
+    def embedding_size(self) -> int:
+        """Return the embedding size of the index."""
         return
 
     @abstractmethod

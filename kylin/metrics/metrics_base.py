@@ -1,39 +1,24 @@
 from abc import ABC, abstractmethod
-from argparse import ArgumentParser, Namespace
+from dataclasses import dataclass
 
 from unidecode import unidecode
 
 from kylin.text_process import normalize_answer
 
 
-class MetricsBase(ABC):
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--metric_normalize",
-            action="store_true",
-            default=False,
-            help="Whether to normalize the tokens for the metric computation",
-        )
-        parser.add_argument(
-            "--metric_lowercase",
-            action="store_true",
-            default=False,
-            help="Whether to lowercase the text for the metric computation",
-        )
-        parser.add_argument(
-            "--metric_unify",
-            action="store_true",
-            default=False,
-            help="Whether to convert all character into ascii for the metric computation",
-        )
-        return parser
+@dataclass
+class MetricsConfig:
+    normalize: bool = False
+    lowercase: bool = False
+    unify: bool = False
 
-    def __init__(self, args: Namespace) -> None:
-        self.args = args
-        self.normalize_answer = args.metric_normalize
-        self.lowercase = args.metric_lowercase
-        self.unify = args.metric_unify
+
+class MetricsBase(ABC):
+    def __init__(self, cfg: MetricsConfig) -> None:
+        self.args = cfg
+        self.normalize_answer = cfg.normalize
+        self.lowercase = cfg.lowercase
+        self.unify = cfg.unify
         return
 
     def __call__(

@@ -1,131 +1,92 @@
 import logging
 import os
-from argparse import ArgumentParser, Namespace
+from dataclasses import dataclass, field
 from typing import Iterable
 
 import numpy as np
 import tables
-import torch
 import torch.distributed as dist
-from transformers import AutoModel, AutoTokenizer
-from torch.nn.parallel import DataParallel as DP
+from omegaconf import MISSING
 
-from kylin.utils import SimpleProgressLogger
-from .index import add_index_args, load_index
-from .retriever_base import LocalRetriever
+from kylin.utils import SimpleProgressLogger, Choices
+from kylin.models import EncoderBase, HFEncoder, HFEncoderConfig
+from .index import (
+    FaissIndex,
+    FaissIndexConfig,
+    ScaNNIndex,
+    ScaNNIndexConfig,
+    DenseIndex,
+)
+from .retriever_base import LocalRetriever, LocalRetrieverConfig
 
 
 logger = logging.getLogger("DenseRetriever")
 
 
+@dataclass
+class DenseRetrieverConfig(LocalRetrieverConfig):
+    read_only: bool = False
+    database_path: str = MISSING
+    index_type: Choices(["faiss", "scann"]) = "faiss"  # type: ignore
+    faiss_index_config: FaissIndexConfig = field(default_factory=FaissIndexConfig)
+    scann_index_config: ScaNNIndexConfig = field(default_factory=ScaNNIndexConfig)
+    query_encoder_type: Choices(["hf", "null"]) = "null"  # type: ignore
+    hf_query_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
+    passage_encoder_type: Choices(["hf", "null"]) = "null"  # type: ignore
+    hf_passage_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
+
+
 class DenseRetriever(LocalRetriever):
     name = "Dense Retrieval"
+    index: DenseIndex
 
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        # model arguments
-        parser.add_argument(
-            "--query_encoder",
-            type=str,
-            default=None,
-            help="The model to use for the query encoder",
-        )
-        parser.add_argument(
-            "--passage_encoder",
-            type=str,
-            default=None,
-            help="The model to use for the passage encoder",
-        )
-        parser.add_argument(
-            "--retriever_device_id",
-            type=int,
-            nargs="+",
-            default=[-1],
-            help="The device id to use for the retriever(query and passage encoder)",
-        )
-        parser.add_argument(
-            "--compile",
-            action="store_true",
-            default=False,
-            help="Whether to compile the model",
-        )
-        # database arguments
-        parser.add_argument(
-            "--read_only",
-            action="store_true",
-            default=False,
-            help="Whether to open the database in read only mode",
-        )
-        # index arguments
-        parser = add_index_args(parser)
-        return parser
-
-    def __init__(self, args: Namespace) -> None:
-        super().__init__(args)
+    def __init__(self, cfg: DenseRetrieverConfig) -> None:
+        super().__init__(cfg)
         # set args
-        self.batch_size = args.batch_size
-        self.max_query_length = args.max_query_length
-        self.max_passage_length = args.max_passage_length
-        self.no_title = args.no_title
-        self.lowercase = args.lowercase
-        self.normalize_text = args.normalize_text
-        self.log_interval = args.log_interval
+        self.batch_size = cfg.batch_size
+        self.max_query_length = cfg.max_query_length
+        self.max_passage_length = cfg.max_passage_length
+        self.no_title = cfg.no_title
+        self.lowercase = cfg.lowercase
+        self.normalize_text = cfg.normalize_text
+        self.log_interval = cfg.log_interval
 
-        # prepare gpu
-        if args.retriever_device_id != [-1]:
-            assert torch.cuda.is_available(), "CUDA is not available"
-            assert torch.cuda.device_count() >= len(args.retriever_device_id), (
-                f"Number of devices ({len(args.retriever_device_id)}) "
-                f"exceeds the number of available GPUs ({torch.cuda.device_count()})"
-            )
-            self.device_id = args.retriever_device_id
-            default_device = torch.device(f"cuda:{args.retriever_device_id[0]}")
-            dtype = torch.float16
-        else:
-            default_device = torch.device("cpu")
-            dtype = torch.float32
-
-        # prepare models
-        if args.query_encoder is not None:
-            self.tokenizer = AutoTokenizer.from_pretrained(args.query_encoder)
-            self.query_encoder = AutoModel.from_pretrained(
-                args.query_encoder, torch_dtype=dtype
-            ).to(default_device)
-            self._embedding_size = self.query_encoder.config.hidden_size
-            self.max_encode_length = self.query_encoder.config.max_position_embeddings
-            if args.compile:
-                self.query_encoder = torch.compile(self.query_encoder)
-        else:
-            self.query_encoder = None
-        if args.passage_encoder is not None:
-            self.tokenizer = AutoTokenizer.from_pretrained(args.passage_encoder)
-            self.passage_encoder = AutoModel.from_pretrained(
-                args.passage_encoder, torch_dtype=dtype
-            ).to(default_device)
-            self._embedding_size = self.passage_encoder.config.hidden_size
-            self.max_encode_length = self.passage_encoder.config.max_position_embeddings
-            if args.compile:
-                self.passage_encoder = torch.compile(self.passage_encoder)
-        else:
-            self.passage_encoder = None
+        # load encoder
+        self.query_encoder = self.load_encoder(
+            cfg.query_encoder_type, cfg.hf_query_encoder_config
+        )
+        self.passage_encoder = self.load_encoder(
+            cfg.passage_encoder_type, cfg.hf_passage_encoder_config
+        )
 
         # load database
-        self.read_only = args.read_only
-        database_path = os.path.join(args.database_path, "database.h5")
+        self.read_only = cfg.read_only
+        database_path = os.path.join(cfg.database_path, "database.h5")
         self.db_file, self.db_table = self.load_database(database_path)
 
         # load / build index
-        self.index = load_index(
-            index_args=args,
-            index_path=args.database_path,
-            log_interval=args.log_interval,
-            embedding_size=self._embedding_size,
-            device_id=args.retriever_device_id,
+        self.index = self.load_index(
+            index_type=cfg.index_type,
+            faiss_index_config=cfg.faiss_index_config,
+            scann_index_config=cfg.scann_index_config,
         )
 
         # consistency check
         assert len(self.db_table) == len(self.index), "Inconsistent database and index"
         return
+
+    def load_encoder(
+        self,
+        encoder_type: str,
+        hf_encoder_config: HFEncoderConfig,
+    ) -> EncoderBase:
+        match encoder_type:
+            case "hf":
+                return HFEncoder(hf_encoder_config)
+            case "null":
+                return None
+            case _:
+                raise ValueError(f"Encoder type {encoder_type} is not supported")
 
     def load_database(self, database_path: str) -> tuple[tables.File, tables.Table]:
         if os.path.exists(database_path):
@@ -136,6 +97,28 @@ class DenseRetriever(LocalRetriever):
             return h5file, table
         logger.info(f"Initiate database from {database_path}")
         return self.init_tables(database_path)
+
+    def load_index(
+        self,
+        index_type: str,
+        faiss_index_config: FaissIndexConfig,
+        scann_index_config: ScaNNIndexConfig,
+    ) -> DenseIndex:
+        match index_type:
+            case "faiss":
+                if (faiss_index_config.embedding_size is None) and (
+                    self.passage_encoder is not None
+                ):
+                    faiss_index_config.embedding_size = self.embedding_size
+                return FaissIndex(faiss_index_config)
+            case "scann":
+                if (scann_index_config.embedding_size is None) and (
+                    self.passage_encoder is not None
+                ):
+                    scann_index_config.embedding_size = self.embedding_size
+                return ScaNNIndex(scann_index_config)
+            case _:
+                raise ValueError(f"Index type {index_type} is not supported")
 
     def init_tables(self, database_path: str) -> tuple[tables.File, tables.Table]:
         class RetrieveTableWithEmb(tables.IsDescription):
@@ -156,37 +139,31 @@ class DenseRetriever(LocalRetriever):
         return h5file, table
 
     def add_passages(
-        self, passages: list[dict[str, str]] | list[str], source: str = None
+        self, passages: Iterable[dict[str, str]] | Iterable[str], reinit: bool = False
     ):
         """
         Add passages to the retriever database
         """
-        assert self.passage_encoder is not None, "Passage encoder is not provided"
-        # prepare Data Parallel
-        if (len(self.device_id) > 1) and (
-            len(passages) > (self.batch_size * len(self.device_id))
-        ):
-            passage_encoder = DP(self.passage_encoder, device_ids=self.device_id)
-            batch_size = self.batch_size * len(self.device_id)
-        else:
-            passage_encoder = self.passage_encoder
-            batch_size = self.batch_size
+        # reinitialize database
+        if reinit:
+            logger.info("Reinitializing database")
+            self.db_table.remove_rows(0, len(self.db_table))
+            self.index.clear()
+            self.db_table.flush()
 
         # generate embeddings
+        assert self.passage_encoder is not None, "Passage encoder is not provided"
+        total_length = len(passages) if isinstance(passages, list) else None
         p_logger = SimpleProgressLogger(
-            logger, total=len(passages), interval=self.log_interval
+            logger, total=total_length, interval=self.log_interval
         )
         start_idx = len(self.db_table)
-        for idx in range(0, len(passages), batch_size):
-            p_logger.update(step=batch_size, desc="Encoding passages")
-
-            # prepare batch
-            batch = passages[idx : idx + batch_size]
-            embeddings = self._encode_batch(passage_encoder, batch)
+        for batch, sources in self._get_batch(passages):
+            embeddings = self.passage_encoder.encode(batch)
+            p_logger.update(step=self.batch_size, desc="Encoding passages")
 
             # add embeddings to database
-            for i, p in enumerate(batch):
-                p = {"text": p} if isinstance(p, str) else p
+            for i, p in enumerate(sources):
                 row = self.db_table.row
                 row["title"] = self._safe_encode(p.get("title", ""))
                 row["section"] = self._safe_encode(p.get("section", ""))
@@ -206,23 +183,24 @@ class DenseRetriever(LocalRetriever):
         p_logger = SimpleProgressLogger(
             logger, total=len(passages), interval=self.log_interval
         )
-        for idx in range(start_idx, len(self.db_table), batch_size):
-            p_logger.update(step=batch_size, desc="Indexing embeddings")
+        for idx in range(start_idx, len(self.db_table), self.batch_size):
+            p_logger.update(step=self.batch_size, desc="Indexing embeddings")
             embeds_to_add = np.array(
-                self.db_table.cols.embedding[idx : idx + batch_size]
+                self.db_table.cols.embedding[idx : idx + self.batch_size]
             )
             self.index.add_embeddings_batch(embeds_to_add)
         self.index.serialize()
         logger.info("Finished adding passages")
         return
 
-    def _search_batch(
+    def search_batch(
         self,
         query: list[str],
         top_k: int = 10,
         **search_kwargs,
     ) -> list[dict[str, str | list]]:
-        embeddings = self._encode_batch(self.query_encoder, query)
+        texts = [self._prepare_text(q) for q in query]
+        embeddings = self.query_encoder.encode(texts)
         scores, indices = self.index.search_batch(embeddings, top_k, **search_kwargs)
         results = [
             {
@@ -241,36 +219,6 @@ class DenseRetriever(LocalRetriever):
         self.db_table.flush()
         self.db_file.close()
         return
-
-    @torch.no_grad()
-    def _encode_batch(
-        self,
-        encoder: torch.nn.Module | DP,
-        batch: Iterable[dict[str, str]] | Iterable[str],
-    ) -> np.ndarray:
-        # prepare batch
-        batch_text = [self._prepare_text(doc) for doc in batch]
-
-        # tokenize text
-        device = encoder.device_ids if isinstance(encoder, DP) else encoder.device
-        input_dict = self.tokenizer.batch_encode_plus(
-            batch_text,
-            return_tensors="pt",
-            max_length=self.max_encode_length,
-            padding=True,
-            truncation=True,
-        )
-        if not isinstance(encoder, DP):
-            input_dict = {k: v.to(device) for k, v in input_dict.items()}
-        mask = input_dict["attention_mask"]
-
-        # encode text
-        token_embeddings = encoder(**input_dict).last_hidden_state
-        mask = input_dict["attention_mask"].to(token_embeddings.device)
-        token_embeddings = token_embeddings.masked_fill(~mask[..., None].bool(), 0.0)
-        embeddings = token_embeddings.sum(dim=1) / mask.sum(dim=1)[..., None]
-        embeddings = embeddings.cpu().numpy()
-        return embeddings
 
     def _safe_encode(self, text: str) -> bytes:
         text = text.encode("utf-8")
@@ -296,12 +244,27 @@ class DenseRetriever(LocalRetriever):
 
     @property
     def embedding_size(self) -> int:
-        return self._embedding_size
-
-
-def setup_distributed():
-    dist.init_process_group()
-
-
-def cleanup_distributed():
-    dist.destroy_process_group()
+        if self.query_encoder is not None:
+            return self.query_encoder.embedding_size
+        if self.passage_encoder is not None:
+            return self.passage_encoder.embedding_size
+        if self.index is not None:
+            return self.index.embedding_size
+        raise ValueError("No encoder is provided")
+    
+    def _get_batch(
+        self, passages: Iterable[dict[str, str] | str]
+    ) -> Iterable[tuple[list[str], list[dict[str, str]]]]:
+        batch = []
+        sources = []
+        for passage in passages:
+            passage = {"text": passage} if isinstance(passage, str) else passage
+            if len(batch) == self.batch_size:
+                yield batch, sources
+                batch = []
+                sources = []
+            batch.append(self._prepare_text(passage))
+            sources.append(passage)
+        if batch:
+            yield batch, sources
+        return

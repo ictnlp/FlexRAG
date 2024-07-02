@@ -1,56 +1,26 @@
 import logging
 import os
-from argparse import ArgumentParser
+from dataclasses import dataclass
 
 import numpy as np
 
-from .index_base import DenseIndex
+from .index_base import DenseIndex, DenseIndexConfig
 
 
 logger = logging.getLogger(__name__)
 
 
-class ScaNNIndex(DenseIndex):
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        parser.add_argument(
-            "--num_leaves",
-            type=int,
-            default=2000,
-            help="Number of leaves in the tree",
-        )
-        parser.add_argument(
-            "--num_leaves_to_search",
-            type=int,
-            default=500,
-            help="Number of leaves to search",
-        )
-        parser.add_argument(
-            "--num_neighbors",
-            type=int,
-            default=10,
-            help="Number of neighbors to return",
-        )
-        parser.add_argument(
-            "--anisotropic_quantization_threshold",
-            type=float,
-            default=0.2,
-            help="Anisotropic quantization threshold",
-        )
-        return parser
+@dataclass
+class ScaNNIndexConfig(DenseIndexConfig):
+    num_leaves: int = 2000
+    num_leaves_to_search: int = 500
+    num_neighbors: int = 10
+    anisotropic_quantization_threshold: float = 0.2
 
-    def __init__(
-        self,
-        index_path: str,
-        num_leaves: int = 0,
-        num_leaves_to_search: int = 8,
-        num_neighbors: int = 1000,
-        anisotropic_quantization_threshold: float = 0.2,
-        distance_func: str = "IP",
-        index_train_num: int = 1000000,
-        log_interval: int = 100,
-        **kwargs,
-    ) -> None:
+
+class ScaNNIndex(DenseIndex):
+    def __init__(self, cfg: ScaNNIndexConfig) -> None:
+        super().__init__(cfg)
         # check scann
         try:
             import scann
@@ -60,20 +30,20 @@ class ScaNNIndex(DenseIndex):
             raise ImportError("Please install scann by running `pip install scann`")
 
         # preapre basic args
-        self.train_num = index_train_num
-        self.log_interval = log_interval
-        self.index_path = os.path.join(index_path, "scann_index")
+        self.train_num = self.index_train_num
+        self.log_interval = cfg.log_interval
+        self.index_path = self.index_path
 
         # prepare index
         if self.index_path is not None and os.path.exists(self.index_path):
             self.deserialize()
         else:
             self.index = self.prepare_index(
-                num_leaves=num_leaves,
-                num_leaves_to_search=num_leaves_to_search,
-                num_neighbors=num_neighbors,
-                anisotropic_quantization_threshold=anisotropic_quantization_threshold,
-                distance_func=distance_func,
+                num_leaves=cfg.num_leaves,
+                num_leaves_to_search=cfg.num_leaves_to_search,
+                num_neighbors=cfg.num_neighbors,
+                anisotropic_quantization_threshold=cfg.anisotropic_quantization_threshold,
+                distance_func=self.distance_function,
             )
         return
 
@@ -183,9 +153,17 @@ class ScaNNIndex(DenseIndex):
         self.index = self.scann.scann_ops_pybind.load_searcher(self.index_path)
         return
 
+    # TODO: implement clear method
+    def clear(self):
+        raise NotImplementedError
+
     @property
     def is_trained(self):
         return not isinstance(self.index, self.scann.ScannBuilder)
+
+    @property
+    def embedding_size(self):
+        return self.index.num_columns
 
     def __len__(self) -> int:
         if isinstance(self.index, self.scann.ScannBuilder):
