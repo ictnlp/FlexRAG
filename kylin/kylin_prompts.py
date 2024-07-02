@@ -64,7 +64,6 @@ rewrite_prompts = {
                 '3. Avoid Stop Words: Common words like "the", "is", and "and" may dilute the effectiveness of the query.\n'
                 "4. Synonyms and Related Terms: Use synonyms and related terms to cover variations in how different documents might reference the same concept.\n"
                 "5. Entity Searches: When searching for specific named entity, enclose them in double quotes.\n"
-                # '6. Use Boolean Operators: Use "+" for terms that must contains in the documents, and "-" for terms that must not contains in the documents.\n'
                 "Please optimize the following query for the BM25 Search Engine.\n"
                 "Please only reply your query and do not output any other words."
             ),
@@ -75,7 +74,7 @@ rewrite_prompts = {
         },
         {
             "role": "assistant",
-            "content": '"John Mayne" occupation job career profession',
+            "content": '"John Mayne" occupation job career',
         },
         {
             "role": "user",
@@ -83,10 +82,10 @@ rewrite_prompts = {
         },
         {
             "role": "assistant",
-            "content": '"oar athletes" olympics number count many participants',
+            "content": '"oar athletes" olympics number count participants',
         },
     ],
-    "bm25_": [
+    "bm25_advance": [
         {
             "role": "system",
             "content": (
@@ -124,7 +123,7 @@ rewrite_prompts = {
         {
             "role": "assistant",
             "content": '+"Queen Elizabeth II" +youngest +(prince OR son OR child)',
-        }
+        },
     ],
     "dense": [
         {
@@ -138,13 +137,29 @@ rewrite_prompts = {
                 "Please optimize the following query for the Dense Retrieval Search Engine.\n"
                 "Please only reply your query and do not output any other words."
             ),
-        }
+        },
+        {
+            "role": "user",
+            "content": "What is John Mayne's occupation?",
+        },
+        {
+            "role": "assistant",
+            "content": "What is John Mayne's occupation?",
+        },
+        {
+            "role": "user",
+            "content": "The year my pet monster come out",
+        },
+        {
+            "role": "assistant",
+            "content": "When did My Pet Monster come out?",
+        },
     ],
     "web": [
         {
             "role": "system",
             "content": (
-                "Please optimize the following query for the BM25 search engine.\n"
+                "Please optimize the following query for the Web search engine.\n"
                 "Suggestions for Writing Queries for Web Search Engines\n"
                 "1. Use Specific Keywords: Identify and use the most relevant and specific keywords related to your search topic. This helps narrow down the results to the most pertinent web pages.\n"
                 "2. Phrase Searches: Enclose exact phrases in quotation marks to search for those exact words in that exact order. This is useful for finding specific quotes, names, or titles.\n"
@@ -161,26 +176,91 @@ rewrite_prompts = {
 verify_prompt = [
     {
         "role": "system",
+        # "content": (
+        #     "Your task is to verify whether any of the following contexts "
+        #     "contains enough information to understand the following topic. "
+        #     "Please only reply 'yes' or 'no' and do not output any other words."
+        # ),
         "content": (
-            "Your task is to verify whether the following context "
-            "contains enough information to understand the following topic. "
+            "Your task is to verify whether any of the following contexts "
+            "contains enough information to answer the following question. "
             "Please only reply 'yes' or 'no' and do not output any other words."
         ),
     }
 ]
 
 
-# TODO: few-shot learning
-feedback_prompt = [
-    {
-        "role": "system",
-        "content": (
-            "If the context is completely irrelevant to the question, "
-            "please reply with the keywords that should be filtered out to avoid retrieving the same information in the next search, "
-            "or reply with the keywords that should be contained in the next search."
-        ),
-    }
-]
+refine_prompt = {
+    "bm25": {
+        "extend": [
+            {
+                "role": "system",
+                "content": (
+                    "You are an AI assistant tasked with helping users refine their search queries. "
+                    "When given a context retrieved from an initial query, "
+                    "your goal is to suggest additional keywords or phrases that could help obtain more relevant and specific information.\n\n"
+                    "Follow these guidelines:\n"
+                    "1. Analyze the Given Context: "
+                    "Carefully read the provided context to understand what information has already been retrieved.\n"
+                    "2. Identify Missing Information: "
+                    "Determine what specific details or aspects might be missing or could be more relevant to the user's needs.\n"
+                    "3. Suggest Additional Keywords: "
+                    "Provide additional keywords or phrases that could help refine the search and yield more precise results. "
+                    "Ensure these keywords are directly related to the topic and can help narrow down the search to more relevant information."
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    "The above context was retrieved using the given query. "
+                    "However, the information may not fully address user needs. "
+                    "To refine the search and obtain more relevant results, "
+                    "please suggest **one** additional keyword or phrases that could help narrow down the search."
+                    "Please only reply your keyword and do not output any other words."
+                ),
+            },
+        ],
+        # "filter": [
+        #     {
+        #         "role": "system",
+        #         "content": (
+        #             "The following context is retrieved using the given query. "
+        #             "However, the context may not contain the information you are looking for. "
+        #             "Please provide one keyword to filter out irrelevant information. "
+        #         ),
+        #     },
+        # ],
+        "emphasize": [
+            {
+                "role": "system",
+                "content": (
+                    "You are an AI assistant tasked with helping users refine their search queries. "
+                    "When given a context retrieved from an initial query, "
+                    "your goal is to suggest the keywords that should be emphasized to help obtain more relevant and specific information.\n\n"
+                    "Follow these guidelines:\n"
+                    "1. Analyze the Given Context: "
+                    "Carefully read the provided context to understand what information has already been retrieved.\n"
+                    "2. Identify Missing Information: "
+                    "Determine what specific details or aspects might be missing or could be more relevant to the user's needs.\n"
+                    "3. Indicate Important Keywords: "
+                    "Provide keywords or phrases that should be emphasized to refine the search and yield more precise results. "
+                ),
+            },
+            {
+                "role": "user",
+                "content": (
+                    "The above context was retrieved using the given query. "
+                    "However, the information may not fully address user needs. "
+                    "To refine the search and obtain more relevant results, "
+                    "please suggest the keyword or phrases that should be emphasized to narrow down the search."
+                    "Please only reply your keyword and do not output any other words."
+                ),
+            },
+        ],
+    },
+    "dense": {},
+    "web": {},
+}
 
 
 summary_prompt = [
