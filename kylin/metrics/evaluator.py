@@ -69,6 +69,7 @@ class ShortFormEvaluator:
         evaluation_results = {}
         evaluation_details = {}
         for metric in self.metrics:
+            metric = str(metric)  # make json serializable
             r, r_detail = self.metrics[metric](trues, preds)
             if log:
                 logger.info(f"{metric}: {r}")
@@ -113,6 +114,7 @@ class LongFormEvaluator:
         evaluation_results = {}
         evaluation_details = {}
         for metric in self.metrics:
+            metric = str(metric)  # make json serializable
             r, r_detail = self.metrics[metric](trues, preds)
             if log:
                 logger.info(f"{metric}: {r}")
@@ -147,6 +149,7 @@ class RetrievalEvaluator:
         evaluation_results = {}
         evaluation_details = {}
         for metric in self.metrics:
+            metric = str(metric)  # make json serializable
             r, r_detail = self.metrics[metric](evidences, retrieved)
             if log:
                 logger.info(f"{metric}: {r}")

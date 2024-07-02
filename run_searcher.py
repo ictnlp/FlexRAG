@@ -37,6 +37,7 @@ def main(config: Config):
     # merge config
     default_cfg = OmegaConf.structured(Config)
     config = OmegaConf.merge(default_cfg, config)
+    logging.info(f"Configs:\n{OmegaConf.to_yaml(config)}")
 
     # load dataset
     data_cfg = config.data_config
@@ -60,10 +61,10 @@ def main(config: Config):
     contexts_text = [[i["full_text"] for i in ctx] for ctx in contexts]
     evaluator = RetrievalEvaluator(config.evaluate_config)
     r, r_detail = evaluator.evaluate(goldens, contexts_text)
-    
 
     # dump results
     final = {
+        "config": config,
         "contexts": contexts,
         "search_trackback": tracks,
         "scores": r,

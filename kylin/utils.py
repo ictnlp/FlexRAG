@@ -1,9 +1,14 @@
+import json
 import os
 from contextlib import contextmanager
+from enum import Enum
 from logging import Logger
 from time import perf_counter
 from typing import Iterable
-from enum import Enum
+from functools import partial
+
+from omegaconf import OmegaConf
+from omegaconf.dictconfig import DictConfig
 
 
 class SimpleProgressLogger:
@@ -69,16 +74,30 @@ def set_env_var(key, value):
 class StrEnum(Enum):
     def __eq__(self, other: str):
         return self.value == other
-    
+
     def __str__(self):
         return self.value
-    
+
     def __hash__(self):
         return hash(self.value)
-    
+
     def __repr__(self):
         return self.value
 
 
 def Choices(choices: Iterable[str]):
     return StrEnum("Choices", {c: c for c in choices})
+
+
+# Monkey Patching the JSONEncoder to handle StrEnum
+class CustomEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, StrEnum):
+            return str(obj)
+        if isinstance(obj, DictConfig):
+            return OmegaConf.to_container(obj, resolve=True)
+        return super().default(obj)
+
+
+json.dumps = partial(json.dumps, cls=CustomEncoder)
+json.dump = partial(json.dump, cls=CustomEncoder)
