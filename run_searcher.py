@@ -40,7 +40,7 @@ def main(config: Config):
 
     # load dataset
     data_cfg = config.data_config
-    testdata = [json.loads(i) for i in open(data_cfg.data_path, "r")][:100]
+    testdata = [json.loads(i) for i in open(data_cfg.data_path, "r")]
     questions = [i["question"] for i in testdata]
     goldens = [i["golden_answers"] for i in testdata]
 
