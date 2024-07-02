@@ -1,5 +1,9 @@
+import os
+from contextlib import contextmanager
 from logging import Logger
 from time import perf_counter
+from typing import Iterable
+from enum import Enum
 
 
 class SimpleProgressLogger:
@@ -47,3 +51,34 @@ class SimpleProgressLogger:
             time_str = f"[{fmt_time(time_spend)}, {speed:.2f} update/s]"
             self.logger.info(f"{self.desc}: {num_str} {time_str}")
         return
+
+
+@contextmanager
+def set_env_var(key, value):
+    original_value = os.environ.get(key)
+    os.environ[key] = value
+    try:
+        yield
+    finally:
+        if original_value is None:
+            del os.environ[key]
+        else:
+            os.environ[key] = original_value
+
+
+class StrEnum(Enum):
+    def __eq__(self, other: str):
+        return self.value == other
+    
+    def __str__(self):
+        return self.value
+    
+    def __hash__(self):
+        return hash(self.value)
+    
+    def __repr__(self):
+        return self.value
+
+
+def Choices(choices: Iterable[str]):
+    return StrEnum("Choices", {c: c for c in choices})
