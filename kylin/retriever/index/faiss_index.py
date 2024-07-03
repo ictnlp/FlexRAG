@@ -9,7 +9,6 @@ from kylin.utils import SimpleProgressLogger
 
 from .index_base import DenseIndex, DenseIndexConfig
 
-
 logger = logging.getLogger(__name__)
 
 

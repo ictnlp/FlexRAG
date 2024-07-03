@@ -5,7 +5,6 @@ from typing import Iterable
 
 import numpy as np
 import tables
-import torch.distributed as dist
 from omegaconf import MISSING
 
 from kylin.utils import SimpleProgressLogger, Choices

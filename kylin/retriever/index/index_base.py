@@ -2,11 +2,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 
-from kylin.utils import Choices
-
+import numpy as np
 from omegaconf import MISSING
 
-import numpy as np
+from kylin.utils import Choices
 
 
 @dataclass
