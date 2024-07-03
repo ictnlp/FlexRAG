@@ -1,9 +1,12 @@
 from dataclasses import dataclass
+
+from omegaconf import MISSING
 from transformers import AutoConfig
 from vllm import LLM, SamplingParams
-from omegaconf import MISSING
 
-from .model_base import GeneratorBase, GeneratorConfig, GenerationConfig
+from kylin.utils import Choices
+
+from .model_base import GenerationConfig, GeneratorBase, GeneratorConfig
 from .utils import get_prompt_func
 
 
