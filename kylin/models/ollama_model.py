@@ -21,9 +21,7 @@ class OllamaGenerator(GeneratorBase):
     def __init__(self, cfg: OllamaGeneratorConfig) -> None:
         from ollama import Client
 
-        self.client = Client(
-            host=cfg.base_url,
-        )
+        self.client = Client(host=cfg.base_url)
         self.model_name = cfg.model_name
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
