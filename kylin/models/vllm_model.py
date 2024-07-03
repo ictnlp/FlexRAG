@@ -1,15 +1,18 @@
-import torch
+from dataclasses import dataclass
 from transformers import AutoConfig
 from vllm import LLM, SamplingParams
+from omegaconf import MISSING
 
 from .model_base import GeneratorBase, GeneratorConfig, GenerationConfig
 from .utils import get_prompt_func
 
 
+@dataclass
 class VLLMGeneratorConfig(GeneratorConfig):
-    model_path: str
+    model_path: str = MISSING
     gpu_memory_utilization: float = 0.85
     max_model_len: int = 16384
+    tensor_parallel: int = 1
 
 
 class VLLMGenerator(GeneratorBase):
@@ -19,7 +22,7 @@ class VLLMGenerator(GeneratorBase):
         self.model = LLM(
             cfg.model_path,
             gpu_memory_utilization=cfg.gpu_memory_utilization,
-            tensor_parallel_size=torch.cuda.device_count(),
+            tensor_parallel_size=cfg.tensor_parallel,
             max_model_len=min(model_cfg.max_position_embeddings, cfg.max_model_len),
             trust_remote_code=True,
         )

@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 class HFGeneratorConfig(GeneratorConfig):
     model_path: str = MISSING
     tokenizer_path: Optional[str] = None
-    device_id: list[int] = field(default_factory=list)
+    pipeline_parallel: bool = False
     load_dtype: Choices(["bfloat16", "float32", "float16", "8bit", "4bit", "auto"]) = "auto" # type: ignore
 # fmt: on
 
@@ -36,12 +36,12 @@ class HFGeneratorConfig(GeneratorConfig):
 class HFGenerator(GeneratorBase):
     def __init__(self, cfg: HFGeneratorConfig) -> None:
         # prepare gpu
-        if len(cfg.device_id) < 1:
-            device_map = None
-        if len(cfg.device_id) == 1:
-            device_map = cfg.device_id[0]
-        else:
+        if cfg.pipeline_parallel:
             device_map = "auto"
+        elif torch.cuda.is_available():
+            device_map = 0
+        else:
+            device_map = None
 
         # prepare dtype
         match cfg.load_dtype:

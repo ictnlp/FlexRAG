@@ -4,39 +4,32 @@ from transformers import PreTrainedModel, PreTrainedTokenizer
 from vllm import LLM
 
 
-def apply_template_llama3(
-    history: list[dict[str, str]],
-    tokenizer: PreTrainedTokenizer,
-    sys_prompt: str = "You are a pirate chatbot who always responds in pirate speak!",
-) -> str:
-    # add system prompt
-    if len(history) == 0:
-        history.append({"role": "system", "content": sys_prompt})
-    if history[0]["role"] != "system":
-        history.insert(0, {"role": "system", "content": sys_prompt})
+def apply_template_general(default_system_prompt: str = None):
+    def apply_template_general_(
+        history: list[dict[str, str]],
+        tokenizer: PreTrainedTokenizer,
+        sys_prompt: str = default_system_prompt,
+    ) -> str:
+        # add system prompt
+        if (len(history) == 0) and (sys_prompt is not None):
+            history.append({"role": "system", "content": sys_prompt})
+        if (history[0]["role"] != "system") and (sys_prompt is not None):
+            history.insert(0, {"role": "system", "content": sys_prompt})
 
-    prompt = tokenizer.apply_chat_template(
-        history, tokenize=False, add_generation_prompt=True
-    )
-    return prompt
+        # apply template
+        prompt = tokenizer.apply_chat_template(
+            history, tokenize=False, add_generation_prompt=True
+        )
+        return prompt
+
+    return apply_template_general_
 
 
-def apply_template_phi3(
-    history: list[dict[str, str]],
-    tokenizer: PreTrainedTokenizer,
-    sys_prompt: str = None,
-) -> str:
-    # add system prompt
-    if (len(history) == 0) and (sys_prompt is not None):
-        history.append({"role": "system", "content": sys_prompt})
-    if (history[0]["role"] != "system") and (sys_prompt is not None):
-        history.insert(0, {"role": "system", "content": sys_prompt})
-
-    # apply template
-    prompt = tokenizer.apply_chat_template(
-        history, tokenize=False, add_generation_prompt=True
-    )
-    return prompt
+apply_template_phi3 = apply_template_general()
+apply_template_llama3 = apply_template_general(
+    "You are a pirate chatbot who always responds in pirate speak!"
+)
+apply_template_qwen2 = apply_template_general("You are a helpful assistant.")
 
 
 def get_prompt_func(
@@ -56,6 +49,8 @@ def get_prompt_func(
             return partial(apply_template_phi3, tokenizer=tokenizer)
         case "LlamaConfig":
             return partial(apply_template_llama3, tokenizer=tokenizer)
+        case "Qwen2Config":
+            return partial(apply_template_qwen2, tokenizer=tokenizer)
         case _:
             raise ValueError(f"Unsupported config: {cfg_name}")
     return
