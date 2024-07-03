@@ -19,7 +19,7 @@ class GenerationConfig:
     temperature: float = 1.0
     max_new_tokens: int = 512
     top_p: float = 0.9
-    top_k: int = 0
+    top_k: int = 50
     eos_token_id: Optional[int] = None
 
 
