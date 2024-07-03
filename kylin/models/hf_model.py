@@ -96,10 +96,13 @@ class HFGenerator(GeneratorBase):
             top_p=generation_config.top_p,
             top_k=generation_config.top_k,
         )
+        if generation_config.eos_token_id is not None:
+            inputs["eos_token_id"] = generation_config.eos_token_id
+        else:
+            inputs["eos_token_id"] = self.tokenizer.eos_token_id
         responses = self.model.generate(
             **inputs,
             generation_config=hf_gen_cfg,
-            eos_token_id=generation_config.eos_token_id,
         )
         input_lengths = inputs["attention_mask"].sum(dim=1)
         responses = [i[l:] for i, l in zip(responses, input_lengths)]
