@@ -102,10 +102,10 @@ class ScaNNIndex(DenseIndex):
         ids: np.ndarray | list[int] = None,
     ) -> None:
         embeddings = embeddings.astype("float32")
-        assert self.index.is_trained, "Index should be trained first"
+        assert self.is_trained, "Index should be trained first"
         if ids is None:
             ids = np.arange(self.index.docids)
-        self.index.upsert(database=embeddings)
+        self.index.upsert(docids=ids, database=embeddings)
         return
 
     def search(
