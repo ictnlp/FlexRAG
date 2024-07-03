@@ -30,7 +30,7 @@ class DenseIndex(ABC):
         return
 
     @abstractmethod
-    def add_embeddings(self, embeddings: np.ndarray, ids: np.ndarray):
+    def add_embeddings(self, embeddings: np.ndarray, ids: np.ndarray, batch_size: int):
         return
 
     @abstractmethod

@@ -5,6 +5,8 @@ from typing import Optional
 
 import numpy as np
 
+from kylin.utils import SimpleProgressLogger
+
 from .index_base import DenseIndex, DenseIndexConfig
 
 
@@ -130,14 +132,17 @@ class FaissIndex(DenseIndex):
     def add_embeddings(
         self,
         embeddings: np.ndarray,
-        batch_size: int = 512,
         ids: np.ndarray | list[int] = None,
+        batch_size: int = 512,
     ):
         if ids is not None:
             assert len(ids) == len(embeddings)
+
+        p_logger = SimpleProgressLogger(
+            logger, total=embeddings.shape[0], interval=self.log_interval
+        )
         for idx in range(0, len(embeddings), batch_size):
-            if (idx // batch_size) % self.log_interval == 0:
-                logger.info(f"Adding {idx} / {len(embeddings)} embeddings.")
+            p_logger.update(step=batch_size, desc="Adding embeddings")
             embeds_to_add = embeddings[idx : idx + batch_size]
             if ids is not None:
                 ids_to_add = ids[idx : idx + batch_size]
@@ -152,7 +157,7 @@ class FaissIndex(DenseIndex):
         ids: np.ndarray | list[int] = None,
     ) -> None:
         embeddings = embeddings.astype("float32")
-        assert self.index.is_trained, "Index should be trained first"
+        assert self.is_trained, "Index should be trained first"
         if ids is not None:
             assert len(embeddings) == len(ids)
             self.index.add_with_ids(len(embeddings), embeddings, ids)

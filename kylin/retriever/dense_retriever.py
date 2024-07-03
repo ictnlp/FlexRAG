@@ -172,7 +172,7 @@ class DenseRetriever(LocalRetriever):
                 row.append()
             self.db_table.flush()
 
-        # update index
+        # train index
         if not self.index.is_trained:
             logger.info("Training index")
             logger.warning("Training index will consume a lot of memory")
@@ -180,15 +180,8 @@ class DenseRetriever(LocalRetriever):
             self.index.train_index(full_embeddings)
 
         # add embeddings to index
-        p_logger = SimpleProgressLogger(
-            logger, total=len(passages), interval=self.log_interval
-        )
-        for idx in range(start_idx, len(self.db_table), self.batch_size):
-            p_logger.update(step=self.batch_size, desc="Indexing embeddings")
-            embeds_to_add = np.array(
-                self.db_table.cols.embedding[idx : idx + self.batch_size]
-            )
-            self.index.add_embeddings_batch(embeds_to_add)
+        indices = np.arange(start_idx, len(self.db_table))
+        self.index.add_embeddings(full_embeddings, indices, self.batch_size)
         self.index.serialize()
         logger.info("Finished adding passages")
         return

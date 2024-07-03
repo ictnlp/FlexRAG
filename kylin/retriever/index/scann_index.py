@@ -4,6 +4,8 @@ from dataclasses import dataclass
 
 import numpy as np
 
+from kylin.utils import SimpleProgressLogger
+
 from .index_base import DenseIndex, DenseIndexConfig
 
 
@@ -85,9 +87,14 @@ class ScaNNIndex(DenseIndex):
         ids: np.ndarray | list[int] = None,
         batch_size: int = 512,
     ) -> None:
+        if ids is not None:
+            assert len(ids) == len(embeddings)
+
+        p_logger = SimpleProgressLogger(
+            logger, total=embeddings.shape[0], interval=self.log_interval
+        )
         for idx in range(0, len(embeddings), batch_size):
-            if (idx // batch_size) % self.log_interval == 0:
-                logger.info(f"Adding {idx} / {len(embeddings)} embeddings.")
+            p_logger.update(step=batch_size, desc="Adding embeddings")
             embeds_to_add = embeddings[idx : idx + batch_size]
             if ids is not None:
                 ids_to_add = ids[idx : idx + batch_size]
