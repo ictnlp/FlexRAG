@@ -100,7 +100,8 @@ class ScaNNIndex(DenseIndex):
         **search_kwargs,
     ) -> tuple[np.ndarray, np.ndarray]:
         query = query.astype("float32")
-        scores, indices = self.index.search_batched(query, top_k, **search_kwargs)
+        indices, scores = self.index.search_batched(query, top_k, **search_kwargs)
+        indices = np.array([[int(i) for i in idx] for idx in indices])
         return indices, scores
 
     def serialize(self) -> None:

@@ -87,8 +87,8 @@ class DenseIndex(ABC):
             p_logger.update(step=self.batch_size, desc="Searching")
             q = query[idx : idx + self.batch_size]
             r = self._search_batch(q, top_k, **search_kwargs)
-            scores.append(r[0])
-            indices.append(r[1])
+            scores.append(r[1])
+            indices.append(r[0])
         scores = np.concatenate(scores, axis=0)
         indices = np.concatenate(indices, axis=0)
         return indices, scores
