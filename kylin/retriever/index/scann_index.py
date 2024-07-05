@@ -1,10 +1,9 @@
 import logging
 import os
+import shutil
 from dataclasses import dataclass
 
 import numpy as np
-
-from kylin.utils import SimpleProgressLogger
 
 from .index_base import DenseIndex, DenseIndexConfig
 
@@ -30,121 +29,73 @@ class ScaNNIndex(DenseIndex):
         except:
             raise ImportError("Please install scann by running `pip install scann`")
 
-        # preapre basic args
-        self.train_num = self.index_train_num
-        self.log_interval = cfg.log_interval
-        self.index_path = self.index_path
+        # set basic args
+        self.num_leaves = cfg.num_leaves
+        self.num_leaves_to_search = cfg.num_leaves_to_search
+        self.num_neighbors = cfg.num_neighbors
+        self.anisotropic_quantization_threshold = cfg.anisotropic_quantization_threshold
 
         # prepare index
-        if self.index_path is not None and os.path.exists(self.index_path):
+        if os.path.exists(self.index_path):
             self.deserialize()
         else:
-            self.index = self.prepare_index(
-                num_leaves=cfg.num_leaves,
-                num_leaves_to_search=cfg.num_leaves_to_search,
-                num_neighbors=cfg.num_neighbors,
-                anisotropic_quantization_threshold=cfg.anisotropic_quantization_threshold,
-                distance_func=self.distance_function,
-            )
+            self.index = self._prepare_index()
         return
 
-    def prepare_index(
-        self,
-        num_leaves: int,
-        num_leaves_to_search: int,
-        num_neighbors: int,
-        anisotropic_quantization_threshold: float,
-        distance_func: str = "IP",
-    ):
-        distance_measure = "dot_product" if distance_func == "IP" else "squared_l2"
+    def build_index(self, embeddings: np.ndarray, ids: np.ndarray | list[int] = None):
+        if self.is_trained:
+            self.clear()
+        self.index.db = embeddings
+        if ids is None:
+            ids = list(np.arange(len(embeddings)))
+        ids = [str(i) for i in ids]
+        self.index = self.index.build(docids=ids)
+        self.serialize()
+        return
+
+    def _prepare_index(self):
+        if self.distance_function == "IP":
+            distance_measure = "dot_product"
+        else:
+            distance_measure = "squared_l2"
         return (
             self.scann.scann_ops_pybind.builder(
                 None,
-                num_neighbors,
+                self.num_neighbors,
                 distance_measure=distance_measure,
             )
             .tree(
-                num_leaves=num_leaves,
-                num_leaves_to_search=num_leaves_to_search,
-                training_sample_size=2500000,
+                num_leaves=self.num_leaves,
+                num_leaves_to_search=self.num_leaves_to_search,
+                training_sample_size=self.index_train_num,
             )
             .score_ah(
                 dimensions_per_block=2,
-                anisotropic_quantization_threshold=anisotropic_quantization_threshold,
+                anisotropic_quantization_threshold=self.anisotropic_quantization_threshold,
             )
             .reorder(200)
         )
 
-    def train_index(self, embeddings: np.ndarray) -> None:
-        self.index.db = embeddings
-        self.index = self.index.build()
-        return
-
-    def add_embeddings(
+    def _add_embeddings_batch(
         self,
         embeddings: np.ndarray,
-        ids: np.ndarray | list[int] = None,
-        batch_size: int = 512,
-    ) -> None:
-        if ids is not None:
-            assert len(ids) == len(embeddings)
-
-        p_logger = SimpleProgressLogger(
-            logger, total=embeddings.shape[0], interval=self.log_interval
-        )
-        for idx in range(0, len(embeddings), batch_size):
-            p_logger.update(step=batch_size, desc="Adding embeddings")
-            embeds_to_add = embeddings[idx : idx + batch_size]
-            if ids is not None:
-                ids_to_add = ids[idx : idx + batch_size]
-            else:
-                ids_to_add = None
-            self.add_embeddings_batch(embeds_to_add, ids_to_add)
-        return
-
-    def add_embeddings_batch(
-        self,
-        embeddings: np.ndarray,
-        ids: np.ndarray | list[int] = None,
+        ids: np.ndarray,
     ) -> None:
         embeddings = embeddings.astype("float32")
         assert self.is_trained, "Index should be trained first"
-        if ids is None:
-            ids = np.arange(self.index.docids)
+        ids = [str(i) for i in ids]
+        assert len(ids) == len(embeddings)
         self.index.upsert(docids=ids, database=embeddings)
         return
 
-    def search(
+    def _search_batch(
         self,
-        query_vectors: np.array,
-        top_docs: int,
-        batch_size: int = 512,
+        query: np.ndarray,
+        top_k: int,
         **search_kwargs,
     ) -> tuple[np.ndarray, np.ndarray]:
-        query_vectors = query_vectors.astype("float32")
-        scores = []
-        indices = []
-        for idx in range(0, len(query_vectors), batch_size):
-            if (idx // batch_size) % self.log_interval == 0:
-                logger.info(f"Searching {idx} / {len(query_vectors)} queries.")
-            query = query_vectors[idx : idx + batch_size]
-            r = self.search_batch(query, top_docs, **search_kwargs)
-            scores.append(r[0])
-            indices.append(r[1])
-        scores = np.concatenate(scores, axis=0)
-        indices = np.concatenate(indices, axis=0)
-        return indices, scores
-
-    def search_batch(
-        self,
-        query_vectors: np.array,
-        top_docs: int,
-        **search_kwargs,
-    ) -> tuple[np.ndarray, np.ndarray]:
-        query_vectors = query_vectors.astype("float32")
-        scores, indices = self.index.search_batched(
-            query_vectors, top_docs, **search_kwargs
-        )
+        query = query.astype("float32")
+        scores, indices = self.index.search_batched(query, top_k, **search_kwargs)
         return indices, scores
 
     def serialize(self) -> None:
@@ -159,9 +110,13 @@ class ScaNNIndex(DenseIndex):
         self.index = self.scann.scann_ops_pybind.load_searcher(self.index_path)
         return
 
-    # TODO: implement clear method
     def clear(self):
-        raise NotImplementedError
+        if not self.is_trained:
+            return
+        if os.path.exists(self.index_path):
+            shutil.rmtree(self.index_path)
+        self.index = self._prepare_index()
+        return
 
     @property
     def is_trained(self):

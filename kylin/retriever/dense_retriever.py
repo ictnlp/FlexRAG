@@ -171,18 +171,16 @@ class DenseRetriever(LocalRetriever):
                 row.append()
             self.db_table.flush()
 
-        # train index
-        if not self.index.is_trained:
+        indices = np.arange(start_idx, len(self.db_table))
+        if not self.index.is_trained:  # train index
             logger.info("Training index")
             logger.warning("Training index will consume a lot of memory")
             full_embeddings = np.array(self.db_table.cols.embedding[start_idx:])
-            self.index.train_index(full_embeddings)
-
-        # add embeddings to index
-        indices = np.arange(start_idx, len(self.db_table))
-        self.index.add_embeddings(full_embeddings, indices, self.batch_size)
-        self.index.serialize()
-        logger.info("Finished adding passages")
+            self.index.build_index(full_embeddings, indices)
+        else:  # add embeddings to index
+            self.index.add_embeddings(full_embeddings, indices, self.batch_size)
+            self.index.serialize()
+            logger.info("Finished adding passages")
         return
 
     def search_batch(
@@ -193,7 +191,7 @@ class DenseRetriever(LocalRetriever):
     ) -> list[dict[str, str | list]]:
         texts = [self._prepare_text(q) for q in query]
         embeddings = self.query_encoder.encode(texts)
-        scores, indices = self.index.search_batch(embeddings, top_k, **search_kwargs)
+        scores, indices = self.index.search(embeddings, top_k, **search_kwargs)
         results = [
             {
                 "query": q,
@@ -243,7 +241,7 @@ class DenseRetriever(LocalRetriever):
         if self.index is not None:
             return self.index.embedding_size
         raise ValueError("No encoder is provided")
-    
+
     def _get_batch(
         self, passages: Iterable[dict[str, str] | str]
     ) -> Iterable[tuple[list[str], list[dict[str, str]]]]:
