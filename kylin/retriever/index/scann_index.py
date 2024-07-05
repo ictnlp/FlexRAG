@@ -16,6 +16,7 @@ class ScaNNIndexConfig(DenseIndexConfig):
     num_leaves_to_search: int = 500
     num_neighbors: int = 10
     anisotropic_quantization_threshold: float = 0.2
+    threads: int = 0
 
 
 class ScaNNIndex(DenseIndex):
@@ -34,6 +35,7 @@ class ScaNNIndex(DenseIndex):
         self.num_leaves_to_search = cfg.num_leaves_to_search
         self.num_neighbors = cfg.num_neighbors
         self.anisotropic_quantization_threshold = cfg.anisotropic_quantization_threshold
+        self.threads = cfg.threads
 
         # prepare index
         if os.path.exists(self.index_path):
@@ -50,6 +52,7 @@ class ScaNNIndex(DenseIndex):
             ids = list(np.arange(len(embeddings)))
         ids = [str(i) for i in ids]
         self.index = self.index.build(docids=ids)
+        self.index.set_num_threads(self.threads)
         self.serialize()
         return
 
@@ -58,7 +61,7 @@ class ScaNNIndex(DenseIndex):
             distance_measure = "dot_product"
         else:
             distance_measure = "squared_l2"
-        return (
+        builder = (
             self.scann.scann_ops_pybind.builder(
                 None,
                 self.num_neighbors,
@@ -75,6 +78,8 @@ class ScaNNIndex(DenseIndex):
             )
             .reorder(200)
         )
+        builder.set_n_training_threads(self.threads)
+        return builder
 
     def _add_embeddings_batch(
         self,
@@ -85,7 +90,7 @@ class ScaNNIndex(DenseIndex):
         assert self.is_trained, "Index should be trained first"
         ids = [str(i) for i in ids]
         assert len(ids) == len(embeddings)
-        self.index.upsert(docids=ids, database=embeddings)
+        self.index.upsert(docids=ids, database=embeddings, batch_size=self.batch_size)
         return
 
     def _search_batch(
