@@ -7,8 +7,13 @@ from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING, OmegaConf
 
 from kylin.metrics import RetrievalEvaluator, RetrievalEvaluatorConfig
-from kylin.searchers import BM25Searcher, BM25SearcherConfig
-from kylin.utils import SimpleProgressLogger
+from kylin.searchers import (
+    BM25Searcher,
+    BM25SearcherConfig,
+    WebSearcher,
+    WebSearcherConfig,
+)
+from kylin.utils import SimpleProgressLogger, Choices
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,7 +28,9 @@ class DataConfig:
 @dataclass
 class Config:
     data_config: DataConfig = field(default_factory=DataConfig)
-    searcher_config: BM25SearcherConfig = field(default_factory=BM25SearcherConfig)
+    searcher_type: Choices(["bm25", "web"]) = "bm25"  # type: ignore
+    bm25_searcher_config: BM25SearcherConfig = field(default_factory=BM25SearcherConfig)
+    web_searcher_config: WebSearcherConfig = field(default_factory=WebSearcherConfig)
     evaluate_config: RetrievalEvaluatorConfig = field(default_factory=RetrievalEvaluatorConfig)  # fmt: skip
     log_interval: int = 10
 
@@ -46,7 +53,15 @@ def main(config: Config):
     goldens = [i["golden_answers"] for i in testdata]
 
     # load searcher
-    searcher = BM25Searcher(config.searcher_config)
+    match config.searcher_type:
+        case "bm25":
+            searcher = BM25Searcher(config.bm25_searcher_config)
+        case "web":
+            searcher = WebSearcher(config.web_searcher_config)
+        case _:
+            raise ValueError(f"Invalid searcher type: {config.searcher_type}")
+
+    # search
     contexts = []
     tracks = []
     pbar = SimpleProgressLogger(logger, len(questions), config.log_interval)

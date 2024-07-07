@@ -160,14 +160,30 @@ rewrite_prompts = {
             "role": "system",
             "content": (
                 "Please optimize the following query for the Web search engine.\n"
-                "Suggestions for Writing Queries for Web Search Engines\n"
+                "Suggestions for Writing Queries for Web Search Engines:\n"
                 "1. Use Specific Keywords: Identify and use the most relevant and specific keywords related to your search topic. This helps narrow down the results to the most pertinent web pages.\n"
                 "2. Phrase Searches: Enclose exact phrases in quotation marks to search for those exact words in that exact order. This is useful for finding specific quotes, names, or titles.\n"
                 '3. Ask Questions: Formulate your query as a question to get direct answers. For example, "How to cook pasta?" is likely to return step-by-step instructions.\n'
                 '4. Synonyms and Variants: Include synonyms or different variations of a word to broaden your search. For instance, "smartphone" and "mobile phone" can yield different results.\n'
                 "Please only reply your query and do not output any other words."
             ),
-        }
+        },
+        {
+            "role": "user",
+            "content": "What is John Mayne's occupation?",
+        },
+        {
+            "role": "assistant",
+            "content": 'What is "John Mayne"\'s occupation?',
+        },
+        {
+            "role": "user",
+            "content": "The year my pet monster come out",
+        },
+        {
+            "role": "assistant",
+            "content": 'When did "My Pet Monster" come out?',
+        },
     ],
 }
 

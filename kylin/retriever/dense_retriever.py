@@ -1,5 +1,6 @@
 import logging
 import os
+from uuid import uuid4
 from dataclasses import dataclass, field
 from typing import Iterable
 
@@ -33,6 +34,7 @@ class DenseRetrieverConfig(LocalRetrieverConfig):
     hf_query_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
     passage_encoder_type: Choices(["hf", "null"]) = "null"  # type: ignore
     hf_passage_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
+    source: str = "passages"
 
 
 class DenseRetriever(LocalRetriever):
@@ -42,13 +44,8 @@ class DenseRetriever(LocalRetriever):
     def __init__(self, cfg: DenseRetrieverConfig) -> None:
         super().__init__(cfg)
         # set args
-        self.batch_size = cfg.batch_size
-        self.max_query_length = cfg.max_query_length
-        self.max_passage_length = cfg.max_passage_length
-        self.no_title = cfg.no_title
-        self.lowercase = cfg.lowercase
-        self.normalize_text = cfg.normalize_text
-        self.log_interval = cfg.log_interval
+        self.database_path = cfg.database_path
+        self.source = cfg.source
 
         # load encoder
         self.query_encoder = self.load_encoder(
@@ -60,8 +57,12 @@ class DenseRetriever(LocalRetriever):
 
         # load database
         self.read_only = cfg.read_only
-        database_path = os.path.join(cfg.database_path, "database.h5")
-        self.db_file, self.db_table = self.load_database(database_path)
+        db_path = os.path.join(self.database_path, "database.h5")
+        self.db_file, self.db_table = self.load_database(db_path)
+
+        # load fingerprint
+        fp_path = os.path.join(self.database_path, "fingerprint")
+        self._fingerprint = self.load_fingerprint(fp_path)
 
         # load / build index
         self.index = self.load_index(
@@ -88,14 +89,30 @@ class DenseRetriever(LocalRetriever):
                 raise ValueError(f"Encoder type {encoder_type} is not supported")
 
     def load_database(self, database_path: str) -> tuple[tables.File, tables.Table]:
+        # open database file
         if os.path.exists(database_path):
-            logger.info(f"Loading database from {database_path}")
             mode = "r" if self.read_only else "r+"
             h5file = tables.open_file(database_path, mode=mode)
-            table = h5file.root.passages.data
-            return h5file, table
-        logger.info(f"Initiate database from {database_path}")
-        return self.init_tables(database_path)
+        else:
+            assert not self.read_only, "Database does not exist"
+            h5file = tables.open_file(
+                database_path, mode="w", title="Retriever Database"
+            )
+
+        # load table from database
+        node_path = f"/{self.source}"
+        if node_path in h5file:
+            table = h5file.get_node(f"/{self.source}")
+        else:
+
+            class RetrieveTableWithEmb(tables.IsDescription):
+                title = tables.StringCol(itemsize=self.max_query_length, pos=1)
+                section = tables.StringCol(itemsize=self.max_query_length, pos=2)
+                text = tables.StringCol(itemsize=self.max_passage_length, pos=3)
+                embedding = tables.Float16Col(self.embedding_size, pos=4)
+
+            table = h5file.create_table("/", self.source, RetrieveTableWithEmb)
+        return h5file, table
 
     def load_index(
         self,
@@ -105,37 +122,32 @@ class DenseRetriever(LocalRetriever):
     ) -> DenseIndex:
         match index_type:
             case "faiss":
+                index_path = os.path.join(self.database_path, f"faiss_{self.source}")
                 if (faiss_index_config.embedding_size is None) and (
                     self.passage_encoder is not None
                 ):
                     faiss_index_config.embedding_size = self.embedding_size
-                return FaissIndex(faiss_index_config)
+                return FaissIndex(index_path, faiss_index_config)
             case "scann":
+                index_path = os.path.join(self.database_path, f"scann_{self.source}")
                 if (scann_index_config.embedding_size is None) and (
                     self.passage_encoder is not None
                 ):
                     scann_index_config.embedding_size = self.embedding_size
-                return ScaNNIndex(scann_index_config)
+                return ScaNNIndex(index_path, scann_index_config)
             case _:
                 raise ValueError(f"Index type {index_type} is not supported")
 
-    def init_tables(self, database_path: str) -> tuple[tables.File, tables.Table]:
-        class RetrieveTableWithEmb(tables.IsDescription):
-            title = tables.StringCol(itemsize=self.max_query_length, pos=1)
-            section = tables.StringCol(itemsize=self.max_query_length, pos=2)
-            text = tables.StringCol(itemsize=self.max_passage_length, pos=3)
-            embedding = tables.Float16Col(self.embedding_size, pos=4)
-            tables.StringAtom
-
-        if not os.path.exists(os.path.dirname(database_path)):
-            os.makedirs(os.path.dirname(database_path))
-
-        assert not self.read_only, "Database does not exist"
-        h5file = tables.open_file(database_path, mode="w", title="Retriever Database")
-
-        group = h5file.create_group("/", "passages", "Passages")
-        table = h5file.create_table(group, "data", RetrieveTableWithEmb, "data")
-        return h5file, table
+    def load_fingerprint(self, fingerprint_path: str) -> str:
+        if os.path.exists(fingerprint_path):
+            with open(fingerprint_path, "r") as f:
+                return f.read()
+        fp = uuid4().hex
+        if len(self) > 0:
+            logger.warning("Fingerprint is missing, regenerate the fingerprint")
+        with open(fingerprint_path, "w") as f:
+            f.write(fp)
+        return fp
 
     def add_passages(
         self, passages: Iterable[dict[str, str]] | Iterable[str], reinit: bool = False
@@ -170,6 +182,7 @@ class DenseRetriever(LocalRetriever):
                 row["embedding"] = embeddings[i]
                 row.append()
             self.db_table.flush()
+            self._fingerprint = uuid4()  # update fingerprint
 
         indices = np.arange(start_idx, len(self.db_table))
         if not self.index.is_trained:  # train index
@@ -188,20 +201,26 @@ class DenseRetriever(LocalRetriever):
         query: list[str],
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[dict[str, str | list]]:
+    ) -> list[list[dict[str, str]]]:
         texts = [self._prepare_text(q) for q in query]
         embeddings = self.query_encoder.encode(texts)
         scores, indices = self.index.search(embeddings, top_k, **search_kwargs)
         results = [
-            {
-                "query": q,
-                "indices": [int(i) for i in r],
-                "scores": [float(i) for i in s],
-                "titles": [i.decode() for i in self.db_table[r]["title"]],
-                "sections": [i.decode() for i in self.db_table[r]["section"]],
-                "texts": [i.decode() for i in self.db_table[r]["text"]],
-            }
-            for q, r, s in zip(query, indices, scores)
+            [
+                {
+                    "retriever": self.name,
+                    "query": q,
+                    "source": self.source,
+                    "chunk_id": chunk_id,
+                    "score": float(s),
+                    "title": self.db_table[chunk_id]["title"],
+                    "section": self.db_table[chunk_id]["section"],
+                    "text": self.db_table[chunk_id]["text"],
+                    "full_text": self.db_table[chunk_id]["text"],
+                }
+                for chunk_id, s in zip(idx, score)
+            ]
+            for q, idx, score in zip(query, indices, scores)
         ]
         return results
 
@@ -238,9 +257,13 @@ class DenseRetriever(LocalRetriever):
             return self.query_encoder.embedding_size
         if self.passage_encoder is not None:
             return self.passage_encoder.embedding_size
-        if self.index is not None:
+        if hasattr(self, "index"):
             return self.index.embedding_size
-        raise ValueError("No encoder is provided")
+        if hasattr(self, "db_table"):
+            return self.db_table.description.embedding.shape[0]
+        raise ValueError(
+            "No encoder or database is provided, embedding size can not be determined."
+        )
 
     def _get_batch(
         self, passages: Iterable[dict[str, str] | str]
@@ -258,3 +281,7 @@ class DenseRetriever(LocalRetriever):
         if batch:
             yield batch, sources
         return
+
+    @property
+    def fingerprint(self) -> str:
+        return self._fingerprint

@@ -3,7 +3,7 @@ import os
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Optional, Iterable
+from typing import Iterable
 
 import numpy as np
 
@@ -17,8 +17,10 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class RetrieverConfig:
-    cache_path: Optional[str] = None
-    cache_size: int = -1
+    cache_path: str = os.path.join(
+        os.path.expanduser("~"), ".cache", "librarian", "cache"
+    )
+    cache_size: int = 10000000
     log_interval: int = 100
 
 
@@ -34,7 +36,7 @@ class LocalRetrieverConfig(RetrieverConfig):
 
 class Retriever(ABC):
     def __init__(self, cfg: RetrieverConfig):
-        self._cache = self.prepare_cache(cfg.cache_size, cfg.cache_path)
+        self._cache = PersistentLRUCache(cfg.cache_path, maxsize=cfg.cache_size)
         self.log_interval = cfg.log_interval
         return
 
@@ -44,23 +46,22 @@ class Retriever(ABC):
         top_k: int = 10,
         disable_cache: bool = False,
         **search_kwargs,
-    ) -> list[dict[str, str | list]]:
-        if (self._cache is None) or disable_cache:
+    ) -> list[list[dict[str, str]]]:
+        if disable_cache:
             return self._search(query, top_k, **search_kwargs)
 
         # search from cache
-        cache_keys = [hashkey(query=q, top_k=top_k, **search_kwargs) for q in query]
+        cache_keys = [
+            hashkey(fingerprint=self.fingerprint, query=q, top_k=top_k, **search_kwargs)
+            for q in query
+        ]
         results = [None] * len(query)
-        new_query = []
-        new_indices = []
-        for n, (q, k) in enumerate(zip(query, cache_keys)):
-            if k in self._cache:
-                results[n] = self._cache[k]
-            else:
-                new_indices.append(n)
-                new_query.append(q)
+        for n, k in enumerate(cache_keys):
+            results[n] = self._cache.get(k, None)
 
         # search from database
+        new_query = [q for q, r in zip(query, results) if r is None]
+        new_indices = [n for n, r in enumerate(results) if r is None]
         if new_query:
             new_results = self._search(new_query, top_k, **search_kwargs)
             for n, r in zip(new_indices, new_results):
@@ -75,7 +76,7 @@ class Retriever(ABC):
         query: list[str],
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[dict[str, str | list]]:
+    ) -> list[list[dict[str, str]]]:
         return
 
     def test_speed(
@@ -102,20 +103,12 @@ class Retriever(ABC):
         )
         return end_time - start_time
 
-    def prepare_cache(
-        self, cache_size: int, cache_path: str = None
-    ) -> PersistentLRUCache | None:
-        # set cache for retrieve
-        if cache_path is not None:
-            cache = PersistentLRUCache(
-                persistant_path=os.path.join(cache_path, "cache"),
-                maxsize=cache_size,
-            )
-        else:
-            cache = None
-        return cache
-
     def close(self):
+        return
+
+    @property
+    @abstractmethod
+    def fingerprint(self):
         return
 
 
@@ -129,7 +122,6 @@ class LocalRetriever(Retriever):
         self.no_title = cfg.no_title
         self.lowercase = cfg.lowercase
         self.normalize_text = cfg.normalize_text
-        self.log_interval = cfg.log_interval
         return
 
     @abstractmethod
@@ -150,7 +142,7 @@ class LocalRetriever(Retriever):
         top_k: int = 10,
         disable_cache: bool = False,
         **search_kwargs,
-    ) -> list[dict[str, str | list]]:
+    ) -> list[list[dict[str, str]]]:
         """Search queries using local retriever.
 
         Args:
@@ -158,13 +150,17 @@ class LocalRetriever(Retriever):
             top_k (int, optional): N documents to return. Defaults to 10.
 
         Returns:
-            list[dict[str, str | list]]: The retrieved documents: [
+            list[list[dict[str, str]]]: A list of retrieved documents: [
                 {
-                    "indices": list[int|str],
-                    "scores": list[float],
-                    "titles": list[str],
-                    "sections": list[str],
-                    "texts": list[str],
+                    "retriever": str,
+                    "query": str,
+                    "source": str,
+                    "chunk_id": int,
+                    "score": float,
+                    "title": str,
+                    "section": str,
+                    "text": str,
+                    "full_text": str,
                 }
             ]
         """
@@ -175,7 +171,7 @@ class LocalRetriever(Retriever):
         query: list[str] | str,
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[dict[str, str | list]]:
+    ) -> list[list[dict[str, str]]]:
         # search for documents
         query = [query] if isinstance(query, str) else query
         final_results = []

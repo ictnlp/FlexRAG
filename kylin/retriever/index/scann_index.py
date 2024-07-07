@@ -20,8 +20,8 @@ class ScaNNIndexConfig(DenseIndexConfig):
 
 
 class ScaNNIndex(DenseIndex):
-    def __init__(self, cfg: ScaNNIndexConfig) -> None:
-        super().__init__(cfg)
+    def __init__(self, index_path: str, cfg: ScaNNIndexConfig) -> None:
+        super().__init__(index_path, cfg)
         # check scann
         try:
             import scann

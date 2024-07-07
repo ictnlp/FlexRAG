@@ -4,36 +4,52 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 
 from kylin.kylin_prompts import *
-from kylin.retriever import BM25Retriever, BM25RetrieverConfig
+from kylin.retriever import (
+    DuckDuckGoRetriever,
+    DuckDuckGoRetrieverConfig,
+    BingRetriever,
+    BingRetrieverConfig,
+)
+from kylin.utils import Choices
 
 from .searcher import BaseSearcher, SearcherConfig
 
 
-logger = logging.getLogger("BM25Searcher")
+logger = logging.getLogger("WebSearcher")
 
 
+# fmt: off
 @dataclass
-class BM25SearcherConfig(SearcherConfig):
-    retriever_config: BM25RetrieverConfig = field(default_factory=BM25RetrieverConfig)
+class WebSearcherConfig(SearcherConfig):
+    ddg_config: DuckDuckGoRetrieverConfig = field(default_factory=DuckDuckGoRetrieverConfig)
+    bing_config: BingRetrieverConfig = field(default_factory=BingRetrieverConfig)
+    retriever_type: Choices(["ddg", "bing"]) = "ddg"  # type: ignore
     rewrite_query: bool = False
     summarize_context: bool = False
     feedback_depth: int = 1
     retriever_top_k: int = 10
     disable_cache: bool = False
+# fmt: on
 
 
-class BM25Searcher(BaseSearcher):
-    def __init__(self, cfg: BM25SearcherConfig) -> None:
+class WebSearcher(BaseSearcher):
+    def __init__(self, cfg: WebSearcherConfig) -> None:
         super().__init__(cfg)
-        # setup BM25 Searcher
+        # setup Web Searcher
         self.rewrite = cfg.rewrite_query
         self.feedback_depth = cfg.feedback_depth
         self.summary_context = cfg.summarize_context
         self.retriever_top_k = cfg.retriever_top_k
         self.disable_cache = cfg.disable_cache
 
-        # load BM25 Retriever
-        self.retriever = BM25Retriever(cfg.retriever_config)
+        # load Web Retrieve
+        match cfg.retriever_type:
+            case "ddg":
+                self.retriever = DuckDuckGoRetriever(cfg.ddg_config)
+            case "bing":
+                self.retriever = BingRetriever(cfg.bing_config)
+            case _:
+                raise ValueError(f"Invalid retriever type: {cfg.retriever_type}")
         return
 
     def search(
@@ -120,7 +136,7 @@ class BM25Searcher(BaseSearcher):
     def rewrite_query(self, info: str) -> str:
         # Rewrite the query to be more informative
         user_prompt = f"Query: {info}"
-        prompt = deepcopy(rewrite_prompts["bm25"])
+        prompt = deepcopy(rewrite_prompts["web"])
         prompt.append({"role": "user", "content": user_prompt})
         query_to_search = self.agent.chat([prompt], generation_config=self.gen_cfg)[0]
         return query_to_search

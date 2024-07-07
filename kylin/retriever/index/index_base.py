@@ -4,7 +4,6 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-from omegaconf import MISSING
 
 from kylin.utils import Choices, SimpleProgressLogger
 
@@ -17,16 +16,15 @@ class DenseIndexConfig:
     distance_function: Choices(["IP", "L2"]) = "IP"  # type: ignore
     embedding_size: Optional[int] = None
     index_train_num: int = 1000000
-    index_path: str = MISSING
     log_interval: int = 10000
     batch_size: int = 512
 
 
 class DenseIndex(ABC):
-    def __init__(self, cfg: DenseIndexConfig):
+    def __init__(self, index_path: str, cfg: DenseIndexConfig):
         self.distance_function = cfg.distance_function
         self.index_train_num = cfg.index_train_num
-        self.index_path = cfg.index_path
+        self.index_path = index_path
         self.batch_size = cfg.batch_size
         self.log_interval = cfg.log_interval
         return

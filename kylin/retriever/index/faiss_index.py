@@ -21,8 +21,8 @@ class FaissIndexConfig(DenseIndexConfig):
 
 
 class FaissIndex(DenseIndex):
-    def __init__(self, cfg: FaissIndexConfig) -> None:
-        super().__init__(cfg)
+    def __init__(self, index_path: str, cfg: FaissIndexConfig) -> None:
+        super().__init__(index_path, cfg)
         # check faiss
         try:
             import faiss
