@@ -2,7 +2,7 @@ import logging
 import os
 from uuid import uuid4
 from dataclasses import dataclass, field
-from typing import Iterable
+from typing import Iterable, Optional
 
 import numpy as np
 import tables
@@ -30,9 +30,9 @@ class DenseRetrieverConfig(LocalRetrieverConfig):
     index_type: Choices(["faiss", "scann"]) = "faiss"  # type: ignore
     faiss_index_config: FaissIndexConfig = field(default_factory=FaissIndexConfig)
     scann_index_config: ScaNNIndexConfig = field(default_factory=ScaNNIndexConfig)
-    query_encoder_type: Choices(["hf", "null"]) = "null"  # type: ignore
+    query_encoder_type: Optional[Choices(["hf"])] = None  # type: ignore
     hf_query_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
-    passage_encoder_type: Choices(["hf", "null"]) = "null"  # type: ignore
+    passage_encoder_type: Optional[Choices(["hf"])] = None  # type: ignore
     hf_passage_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
     source: str = "passages"
 
@@ -83,7 +83,7 @@ class DenseRetriever(LocalRetriever):
         match encoder_type:
             case "hf":
                 return HFEncoder(hf_encoder_config)
-            case "null":
+            case None:
                 return None
             case _:
                 raise ValueError(f"Encoder type {encoder_type} is not supported")

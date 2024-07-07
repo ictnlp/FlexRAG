@@ -8,9 +8,9 @@ from kylin.text_process import normalize_answer
 
 @dataclass
 class MetricsConfig:
-    normalize: bool = False
-    lowercase: bool = False
-    unify: bool = False
+    normalize: bool = True
+    lowercase: bool = True
+    unify: bool = True
 
 
 class MetricsBase(ABC):

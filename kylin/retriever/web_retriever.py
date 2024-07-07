@@ -7,7 +7,7 @@ from typing import Optional
 from uuid import uuid5, NAMESPACE_OID
 
 import requests
-from tenacity import retry, stop_after_attempt
+from tenacity import retry, stop_after_attempt, wait_fixed
 
 from kylin.utils import SimpleProgressLogger
 
@@ -20,6 +20,8 @@ logger = logging.getLogger(__name__)
 @dataclass
 class WebRetrieverConfig(RetrieverConfig):
     timeout: float = 1.0
+    retry_times: int = 1
+    retry_delay: float = 0.5
 
 
 @dataclass
@@ -37,13 +39,14 @@ class WebRetriever(Retriever):
     def __init__(self, cfg: WebRetrieverConfig):
         super().__init__(cfg)
         self.timeout = cfg.timeout
+        self.retry_times = cfg.retry_times
+        self.retry_delay = cfg.retry_delay
         return
 
     def _search(
         self,
         query: list[str] | str,
         top_k: int = 10,
-        retry_times: int = 3,
         delay: float = 0.1,
         **search_kwargs,
     ) -> list[list[dict[str, str]]]:
@@ -51,10 +54,12 @@ class WebRetriever(Retriever):
             query = [query]
 
         # prepare search method
+        retry_times = search_kwargs.get("retry_times", self.retry_times)
+        retry_delay = search_kwargs.get("retry_delay", self.retry_delay)
         if retry_times > 1:
-            search_method = retry(stop=stop_after_attempt(retry_times))(
-                self.search_item
-            )
+            search_method = retry(
+                stop=stop_after_attempt(retry_times), wait=wait_fixed(retry_delay)
+            )(self.search_item)
         else:
             search_method = self.search_item
 
