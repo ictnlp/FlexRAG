@@ -211,7 +211,7 @@ class DenseRetriever(LocalRetriever):
                     "retriever": self.name,
                     "query": q,
                     "source": self.source,
-                    "chunk_id": chunk_id,
+                    "chunk_id": int(chunk_id),
                     "score": float(s),
                     "title": self.db_table[chunk_id]["title"].decode(),
                     "section": self.db_table[chunk_id]["section"].decode(),

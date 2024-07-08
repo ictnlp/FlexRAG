@@ -7,6 +7,7 @@ from time import perf_counter
 from typing import Iterable
 from functools import partial
 
+import numpy as np
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 
@@ -96,6 +97,14 @@ class CustomEncoder(json.JSONEncoder):
             return str(obj)
         if isinstance(obj, DictConfig):
             return OmegaConf.to_container(obj, resolve=True)
+        if isinstance(np.int64):
+            return int(obj)
+        if isinstance(np.int32):
+            return int(obj)
+        if isinstance(np.float64):
+            return float(obj)
+        if isinstance(np.float32):
+            return float(obj)
         return super().default(obj)
 
 
