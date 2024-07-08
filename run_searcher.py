@@ -21,6 +21,8 @@ from kylin.searchers import (
     BM25SearcherConfig,
     WebSearcher,
     WebSearcherConfig,
+    DenseSearcher,
+    DenseSearcherConfig,
 )
 from kylin.utils import SimpleProgressLogger, Choices
 
@@ -38,10 +40,11 @@ class DataConfig:
 class Config:
     data_config: DataConfig = field(default_factory=DataConfig)
     assistant_config: AssistantConfig = field(default_factory=AssistantConfig)
-    searcher_type: Choices(["bm25", "web"]) = "bm25"  # type: ignore
+    searcher_type: Optional[Choices(["bm25", "web", "dense"])] = None  # type: ignore
     bm25_searcher_config: BM25SearcherConfig = field(default_factory=BM25SearcherConfig)
     web_searcher_config: WebSearcherConfig = field(default_factory=WebSearcherConfig)
-    response_type: Optional[Choices(["short", "long"])] = None  # type: ignore
+    dense_searcher_config: DenseSearcherConfig = field(default_factory=DenseSearcherConfig)  # fmt: skip
+    response_type: Choices(["short", "long"]) = "short"  # type: ignore
     retrieval_eval_config: RetrievalEvaluatorConfig = field(default_factory=RetrievalEvaluatorConfig)  # fmt: skip
     short_eval_config: ShortFormEvaluatorConfig = field(default_factory=ShortFormEvaluatorConfig)  # fmt: skip
     long_eval_config: LongFormEvaluatorConfig = field(default_factory=LongFormEvaluatorConfig)  # fmt: skip
@@ -71,40 +74,47 @@ def main(config: Config):
             searcher = BM25Searcher(config.bm25_searcher_config)
         case "web":
             searcher = WebSearcher(config.web_searcher_config)
+        case "dense":
+            searcher = DenseSearcher(config.dense_searcher_config)
+        case None:
+            searcher = None
         case _:
             raise ValueError(f"Invalid searcher type: {config.searcher_type}")
 
     # load assistant
-    if config.response_type is not None:
-        assistant = Assistant(config.assistant_config)
-    else:
-        assistant = None
+    assistant = Assistant(config.assistant_config)
 
     contexts = []
     tracks = []
     responses = []
     prompts = []
-    pbar = SimpleProgressLogger(logger, len(questions), config.log_interval)
+    p_logger = SimpleProgressLogger(logger, len(questions), config.log_interval)
     for q in questions:
+        p_logger.update(desc="Searching")
         # search
-        pbar.update(desc="Searching")
-        ctxs, track = searcher.search(q)
-        contexts.append(ctxs)
-        tracks.append(track)
-
+        if searcher is not None:
+            ctxs, track = searcher.search(q)
+            contexts.append(ctxs)
+            tracks.append(track)
+        else:
+            ctxs = []
         # generate
-        if assistant is not None:
-            r, prompt = assistant.answer(question=q, contexts=ctxs)
-            responses.append(r)
-            prompts.append(prompt)
-    searcher.close()
+        r, prompt = assistant.answer(question=q, contexts=ctxs)
+        responses.append(r)
+        prompts.append(prompt)
+
+    if searcher is not None:
+        searcher.close()
 
     # evaluate retrieval
-    contexts_text = [[i["full_text"] for i in ctx] for ctx in contexts]
-    evaluator = RetrievalEvaluator(config.retrieval_eval_config)
-    ret_score, ret_score_detail = evaluator.evaluate(goldens, contexts_text)
+    if searcher is not None:
+        contexts_text = [[i["full_text"] for i in ctx] for ctx in contexts]
+        evaluator = RetrievalEvaluator(config.retrieval_eval_config)
+        ret_score, ret_score_detail = evaluator.evaluate(goldens, contexts_text)
+    else:
+        ret_score, ret_score_detail = None, None
 
-    # evaluate
+    # evaluate response
     match config.response_type:
         case "long":
             evaluator = LongFormEvaluator(config.long_eval_config)
@@ -112,8 +122,6 @@ def main(config: Config):
         case "short":
             evaluator = ShortFormEvaluator(config.short_eval_config)
             resp_score, resp_score_detail = evaluator.evaluate(goldens, responses)
-        case None:
-            resp_score, resp_score_detail = None, None
 
     # dump results
     final = {

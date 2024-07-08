@@ -34,7 +34,7 @@ class DenseRetrieverConfig(LocalRetrieverConfig):
     hf_query_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
     passage_encoder_type: Optional[Choices(["hf"])] = None  # type: ignore
     hf_passage_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
-    source: str = "passages"
+    source: str = MISSING
 
 
 class DenseRetriever(LocalRetriever):
@@ -204,7 +204,7 @@ class DenseRetriever(LocalRetriever):
     ) -> list[list[dict[str, str]]]:
         texts = [self._prepare_text(q) for q in query]
         embeddings = self.query_encoder.encode(texts)
-        scores, indices = self.index.search(embeddings, top_k, **search_kwargs)
+        indices, scores = self.index.search(embeddings, top_k, **search_kwargs)
         results = [
             [
                 {
@@ -213,10 +213,10 @@ class DenseRetriever(LocalRetriever):
                     "source": self.source,
                     "chunk_id": chunk_id,
                     "score": float(s),
-                    "title": self.db_table[chunk_id]["title"],
-                    "section": self.db_table[chunk_id]["section"],
-                    "text": self.db_table[chunk_id]["text"],
-                    "full_text": self.db_table[chunk_id]["text"],
+                    "title": self.db_table[chunk_id]["title"].decode(),
+                    "section": self.db_table[chunk_id]["section"].decode(),
+                    "text": self.db_table[chunk_id]["text"].decode(),
+                    "full_text": self.db_table[chunk_id]["text"].decode(),
                 }
                 for chunk_id, s in zip(idx, score)
             ]

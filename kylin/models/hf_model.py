@@ -206,7 +206,7 @@ class HFEncoder(EncoderBase):
         return self._encode(texts, encoder)
 
     @torch.no_grad()
-    def _encode(self, texts: list[str], model) -> np.ndarray:
+    def _encode(self, texts: list[str], model: torch.nn.Module | DP) -> np.ndarray:
         input_dict = self.tokenizer.batch_encode_plus(
             texts,
             return_tensors="pt",
@@ -214,6 +214,8 @@ class HFEncoder(EncoderBase):
             padding=True,
             truncation=True,
         )
+        if not isinstance(model, DP):
+            input_dict = input_dict.to(model.device)
         mask = input_dict["attention_mask"]
         output = model(**input_dict).last_hidden_state
         embeddings = self.get_embedding(output, mask)
