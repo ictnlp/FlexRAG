@@ -13,6 +13,8 @@ from .web_retriever import (
     BingRetrieverConfig,
     DuckDuckGoRetriever,
     DuckDuckGoRetrieverConfig,
+    GoogleRetriever,
+    GoogleRetrieverConfig,
 )
 
 __all__ = [
@@ -30,6 +32,8 @@ __all__ = [
     "BingRetrieverConfig",
     "DuckDuckGoRetriever",
     "DuckDuckGoRetrieverConfig",
+    "GoogleRetriever",
+    "GoogleRetrieverConfig",
     "add_args_for_retriever",
     "load_retrievers",
 ]

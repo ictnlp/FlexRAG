@@ -47,6 +47,11 @@ class Retriever(ABC):
         disable_cache: bool = False,
         **search_kwargs,
     ) -> list[list[dict[str, str]]]:
+        # check query
+        if isinstance(query, str):
+            query = [query]
+
+        # direct search
         if disable_cache:
             return self._search(query, top_k, **search_kwargs)
 
@@ -55,9 +60,7 @@ class Retriever(ABC):
             hashkey(fingerprint=self.fingerprint, query=q, top_k=top_k, **search_kwargs)
             for q in query
         ]
-        results = [None] * len(query)
-        for n, k in enumerate(cache_keys):
-            results[n] = self._cache.get(k, None)
+        results = [self._cache.get(k, None) for k in cache_keys]
 
         # search from database
         new_query = [q for q, r in zip(query, results) if r is None]

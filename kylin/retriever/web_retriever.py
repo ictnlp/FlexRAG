@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class WebRetrieverConfig(RetrieverConfig):
-    timeout: float = 1.0
+    timeout: float = 3.0
     retry_times: int = 1
     retry_delay: float = 0.5
 
@@ -32,6 +32,14 @@ class BingRetrieverConfig(WebRetrieverConfig):
 
 @dataclass
 class DuckDuckGoRetrieverConfig(WebRetrieverConfig):
+    proxy: Optional[str] = None
+
+
+@dataclass
+class GoogleRetrieverConfig(WebRetrieverConfig):
+    subscription_key: str = "${oc.env:GOOGLE_SEARCH_KEY}"
+    search_engine_id: str = "${oc.env:GOOGLE_SEARCH_ENGINE_ID}"
+    endpoint: str = "https://customsearch.googleapis.com/customsearch/v1"
     proxy: Optional[str] = None
 
 
@@ -180,3 +188,58 @@ class DuckDuckGoRetriever(WebRetriever):
         time_str = time.strftime("%Y-%m", time.gmtime())
         namespace_uuid = uuid5(NAMESPACE_OID, self.name)
         return uuid5(namespace_uuid, time_str).hex
+
+
+class GoogleRetriever(WebRetriever):
+    name = "google"
+
+    def __init__(self, cfg: GoogleRetrieverConfig):
+        super().__init__(cfg)
+        self.endpoint = cfg.endpoint
+        self.subscription_key = cfg.subscription_key
+        self.engine_id = cfg.search_engine_id
+        self.proxy = {
+            "http": cfg.proxy,
+            "https": cfg.proxy,
+        }
+        return
+
+    def search_item(
+        self,
+        query: str,
+        top_k: int = 10,
+        **search_kwargs,
+    ) -> list[dict[str, str]]:
+        params = {
+            "key": self.subscription_key,
+            "cx": self.engine_id,
+            "q": query,
+            "num": top_k,
+        }
+        response = requests.get(
+            self.endpoint,
+            params=params,
+            proxies=self.proxy,
+            timeout=self.timeout,
+        )
+        response.raise_for_status()
+        result = response.json()
+        result = [
+            {
+                "retriever": self.name,
+                "query": query,
+                "text": i["snippet"],
+                "full_text": i["snippet"],
+                "source": i["link"],
+                "title": i["title"],
+            }
+            for i in result["items"]
+        ]
+        return result
+
+    @property
+    def fingerprint(self) -> str:
+        time_str = time.strftime("%Y-%m", time.gmtime())
+        namespace_uuid = uuid5(NAMESPACE_OID, self.name)
+        feature_str = self.engine_id + self.endpoint
+        return uuid5(namespace_uuid, time_str + feature_str).hex
