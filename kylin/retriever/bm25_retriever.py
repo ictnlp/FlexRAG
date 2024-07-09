@@ -239,13 +239,13 @@ class BM25Retriever(LocalRetriever):
                         {
                             "retriever": self.name,
                             "query": q,
-                            "chunk_id": [],
+                            "chunk_id": "",
                             "source": self.index_name,
-                            "score": [],
-                            "title": [],
-                            "section": [],
-                            "text": [],
-                            "full_text": [],
+                            "score": 0.0,
+                            "title": "",
+                            "section": "",
+                            "text": "",
+                            "full_text": "",
                         }
                     ]
                 )
