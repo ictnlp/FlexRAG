@@ -33,7 +33,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DataConfig:
     data_path: str = MISSING
-    output_path: str = MISSING
+    output_path: Optional[str] = None
 
 
 @dataclass
@@ -135,8 +135,9 @@ def main(config: Config):
         "response_scores": resp_score,
         "response_scores_details": resp_score_detail,
     }
-    with open(data_cfg.output_path, "w") as f:
-        json.dump(final, f, indent=4, ensure_ascii=False)
+    if data_cfg.output_path is not None:
+        with open(data_cfg.output_path, "w") as f:
+            json.dump(final, f, indent=4, ensure_ascii=False)
     return
 
 
