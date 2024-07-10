@@ -5,18 +5,18 @@ from kylin.utils import Choices
 
 from .metrics_base import MetricsBase, MetricsConfig
 
+try:
+    from .lib_rel import contains_any
 
-@dataclass
-class RetrievalMetricsConfig(MetricsConfig):
-    relevance_check: Choices(["contain"]) = "contain"  # type: ignore
+    has_librel = True
+except:
+    has_librel = False
+
+
+RetrievalMetricsConfig = MetricsConfig
 
 
 class RetrievalMetric(MetricsBase):
-    def __init__(self, cfg: RetrievalMetricsConfig) -> None:
-        super().__init__(cfg)
-        self.relevance_check = cfg.relevance_check
-        return
-
     def __call__(
         self, evidences: list[list[str]], retrieved: list[list[str]]
     ) -> dict[str, float]:
@@ -37,6 +37,7 @@ class RetrievalMetric(MetricsBase):
         retrieved = [[self.preprocess_text(y_) for y_ in y] for y in retrieved]
         return self.compute(evidences, retrieved)
 
+    @abstractmethod
     def compute(
         self, evidences: list[list[str]], retrieved: list[list[str]]
     ) -> tuple[float, object]:
@@ -50,35 +51,52 @@ class RetrievalMetric(MetricsBase):
         Returns:
             tuple[float, object]: A tuple containing the metric value and additional metric-specific information.
         """
-        relevance_map: list[list[list[bool]]] = []
-        for evs, rets in zip(evidences, retrieved):
-            relevance_map.append([])
-            for ret in rets:
-                relevance_map[-1].append([self.is_relevance(ev, ret) for ev in evs])
-        return self._get_score(relevance_map), relevance_map
-
-    @abstractmethod
-    def _get_score(self, relevance_map: list[list[list[bool]]]) -> float:
         return
 
-    def is_relevance(self, evidence: str, retrieved: str):
-        if self.relevance_check == "contain":
-            if evidence in retrieved:
-                return True
-            return False
-        else:
-            raise NotImplementedError
 
-
-SuccessRateConfig = RetrievalMetricsConfig
+@dataclass
+class SuccessRateConfig(RetrievalMetricsConfig):
+    relevance_check: Choices(["contain_any"]) = "contain_any"  # type: ignore
 
 
 class SuccessRate(RetrievalMetric):
-    def _get_score(self, relevance_map: list[list[list[bool]]]) -> float:
-        scores = 0.0
-        for line in relevance_map:
-            for ret_line in line:
-                if any(ret_line):
-                    scores += 1.0
-                    break
-        return scores / len(relevance_map)
+    def __init__(self, cfg: SuccessRateConfig) -> None:
+        super().__init__(cfg)
+        self.relevance_check = cfg.relevance_check
+        return
+
+    def compute(
+        self, evidences: list[list[str]], retrieved: list[list[str]]
+    ) -> tuple[float, object]:
+        """
+        Compute the metric value and additional metric-specific information.
+
+        Args:
+            evidences (list[list[str]]): The evidence documents.
+            retrieved (list[list[str]]): The retrieved documents.
+
+        Returns:
+            tuple[float, object]: A tuple containing the metric value and additional metric-specific information.
+        """
+        # compute relevance map
+        relevance_map: list[bool] = []
+        for evds, rets in zip(evidences, retrieved):
+            relevance_map.append(self.is_relevance(evds, rets))
+        score = sum(relevance_map) / len(relevance_map)
+        return score, relevance_map
+
+    def _contains_any(self, evidences: list[str], retrieved: list[str]) -> bool:
+        if has_librel:
+            return contains_any(evidences, retrieved)
+        for evd in evidences:
+            for ret in retrieved:
+                if evd in ret:
+                    return True
+        return False
+
+    def is_relevance(self, evidences: list[str], retrieved: list[str]):
+        match self.relevance_check:
+            case "contain_any":
+                return self._contains_any(evidences, retrieved)
+            case _:
+                raise ValueError(f"Invalid relevance check: {self.relevance_check}")

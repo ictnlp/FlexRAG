@@ -1,4 +1,15 @@
-from setuptools import setup, find_packages
+from setuptools import setup, find_packages, Extension
+import pybind11
+
+ext_modules = [
+    Extension(
+        "kylin.metrics.lib_rel",
+        ["kylin/metrics/lib_rel.cpp"],
+        include_dirs=[pybind11.get_include()],
+        language="c++",
+    ),
+]
+
 
 setup(
     name="Librarian",
@@ -42,4 +53,5 @@ setup(
         "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
     ],
+    ext_modules=ext_modules,
 )
