@@ -39,6 +39,7 @@ class ShortFormEvaluatorConfig:
     em_config: ExactMatchConfig = field(default_factory=ExactMatchConfig)
     precision_config: PrecisionConfig = field(default_factory=PrecisionConfig)
     accuracy_config: AccuracyConfig = field(default_factory=AccuracyConfig)
+    round: int = 2
 
 
 class ShortFormEvaluator:
@@ -58,6 +59,7 @@ class ShortFormEvaluator:
                     self.metrics[metric] = Accuracy(cfg.accuracy_config)
                 case _:
                     raise ValueError(f"Invalid metric type: {metric}")
+        self.round = cfg.round
         return
 
     def evaluate(
@@ -72,7 +74,7 @@ class ShortFormEvaluator:
             metric = str(metric)  # make json serializable
             r, r_detail = self.metrics[metric](trues, preds)
             if log:
-                logger.info(f"{metric}: {r}")
+                logger.info(f"{metric}: {r*100:.{self.round}f}%")
             evaluation_results[metric] = r
             evaluation_details[metric] = r_detail
         return evaluation_results, evaluation_details
@@ -84,6 +86,7 @@ class LongFormEvaluatorConfig:
     bleu_config: BLEUConfig = field(default_factory=BLEUConfig)
     chrf_config: chrFConfig = field(default_factory=chrFConfig)
     rouge_config: RougeConfig = field(default_factory=RougeConfig)
+    round: int = 2
 
 
 class LongFormEvaluator:
@@ -103,6 +106,7 @@ class LongFormEvaluator:
                     self.metrics[metric] = RougeL(cfg.rouge_config)
                 case _:
                     raise ValueError(f"Invalid metric type: {metric}")
+        self.round = cfg.round
         return
 
     def evaluate(
@@ -117,7 +121,7 @@ class LongFormEvaluator:
             metric = str(metric)  # make json serializable
             r, r_detail = self.metrics[metric](trues, preds)
             if log:
-                logger.info(f"{metric}: {r}")
+                logger.info(f"{metric}: {r*100:.{self.round}f}%")
             evaluation_results[metric] = r
             evaluation_details[metric] = r_detail
         return evaluation_results, evaluation_details
@@ -127,6 +131,7 @@ class LongFormEvaluator:
 class RetrievalEvaluatorConfig:
     retrieval_metrics: list[Choices(["success_rate"])] = field(default_factory=list)  # type: ignore
     success_config: SuccessRateConfig = field(default_factory=SuccessRateConfig)
+    round: int = 2
 
 
 class RetrievalEvaluator:
@@ -138,6 +143,7 @@ class RetrievalEvaluator:
                     self.metrics[metric] = SuccessRate(cfg.success_config)
                 case _:
                     raise ValueError(f"Invalid metric type: {metric}")
+        self.round = cfg.round
         return
 
     def evaluate(
@@ -152,7 +158,7 @@ class RetrievalEvaluator:
             metric = str(metric)  # make json serializable
             r, r_detail = self.metrics[metric](evidences, retrieved)
             if log:
-                logger.info(f"{metric}: {r}")
+                logger.info(f"{metric}: {r*100:.{self.round}f}%")
             evaluation_results[metric] = r
             evaluation_details[metric] = r_detail
         return evaluation_results, evaluation_details
