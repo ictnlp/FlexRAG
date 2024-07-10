@@ -68,6 +68,7 @@ rewrite_prompts = {
                 "Please only reply your query and do not output any other words."
             ),
         },
+        # case from popqa
         {
             "role": "user",
             "content": "What is John Mayne's occupation?",
@@ -76,6 +77,7 @@ rewrite_prompts = {
             "role": "assistant",
             "content": '"John Mayne" occupation job career',
         },
+        # case from nq
         {
             "role": "user",
             "content": "how many oar athletes are in the olympics",
@@ -83,6 +85,15 @@ rewrite_prompts = {
         {
             "role": "assistant",
             "content": '"oar athletes" olympics number count participants',
+        },
+        # case from triviaqa
+        {
+            "role": "user",
+            "content": "Which leader did Hitler meet in the Brenner Pass in WWII?",
+        },
+        {
+            "role": "assistant",
+            "content": 'Hitler "Brenner Pass" WWII leader meeting',
         },
     ],
     "bm25_advance": [
