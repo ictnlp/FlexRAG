@@ -86,6 +86,14 @@ rewrite_prompts = {
             "role": "assistant",
             "content": '"oar athletes" olympics number count participants',
         },
+        {
+            "role": "user",
+            "content": "who introduced the system of civil services in india",
+        },
+        {
+            "role": "assistant",
+            "content": "india civil services introduced foundation",
+        },
         # case from triviaqa
         {
             "role": "user",
@@ -94,6 +102,14 @@ rewrite_prompts = {
         {
             "role": "assistant",
             "content": 'Hitler "Brenner Pass" WWII leader meeting',
+        },
+        {
+            "role": "user",
+            "content": "Which country does the airline Garuda come from?",
+        },
+        {
+            "role": "assistant",
+            "content": "Garuda airline country origin",
         },
     ],
     "bm25_advance": [
