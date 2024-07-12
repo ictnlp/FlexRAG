@@ -356,8 +356,7 @@ summary_prompt = [
 ]
 
 
-# TODO: few-shot learning
-generate_prompt = {
+shortform_generate_prompt = {
     "with_contexts": [
         {
             "role": "system",
@@ -375,6 +374,24 @@ generate_prompt = {
                 "Answer the following question. "
                 "Only give me the answer and do not output any other words."
             ),
+        }
+    ],
+}
+
+longform_generate_prompt = {
+    "with_contexts": [
+        {
+            "role": "system",
+            "content": (
+                "Answer the question based on the given contexts. "
+                "Note that the context might not always contain relevant information to answer the question."
+            ),
+        }
+    ],
+    "without_contexts": [
+        {
+            "role": "system",
+            "content": "Answer the following question.",
         }
     ],
 }

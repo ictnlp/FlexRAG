@@ -32,21 +32,40 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ShortFormEvaluatorConfig:
-    short_form_metrics: list[Choices(["f1", "recall", "em", "precision", "accuracy"])] = field(default_factory=list)  # type: ignore
+class ResponseEvaluatorConfig:
+    response_metrics: list[
+        Choices(  # type: ignore
+            [
+                "f1",
+                "recall",
+                "em",
+                "precision",
+                "accuracy",
+                "bleu",
+                "chrf",
+                "rouge-1",
+                "rouge-2",
+                "rouge-l",
+            ]
+        )
+    ] = field(default_factory=list)
     f1_config: F1Config = field(default_factory=F1Config)
     recall_config: RecallConfig = field(default_factory=RecallConfig)
     em_config: ExactMatchConfig = field(default_factory=ExactMatchConfig)
     precision_config: PrecisionConfig = field(default_factory=PrecisionConfig)
     accuracy_config: AccuracyConfig = field(default_factory=AccuracyConfig)
+    bleu_config: BLEUConfig = field(default_factory=BLEUConfig)
+    chrf_config: chrFConfig = field(default_factory=chrFConfig)
+    rouge_config: RougeConfig = field(default_factory=RougeConfig)
     round: int = 2
 
 
-class ShortFormEvaluator:
-    def __init__(self, cfg: ShortFormEvaluatorConfig) -> None:
+class ResponseEvaluator:
+    def __init__(self, cfg: ResponseEvaluatorConfig) -> None:
         self.metrics = {}
-        for metric in cfg.short_form_metrics:
+        for metric in cfg.response_metrics:
             match metric:
+                # shortform metrics
                 case "f1":
                     self.metrics[metric] = F1(cfg.f1_config)
                 case "recall":
@@ -57,43 +76,7 @@ class ShortFormEvaluator:
                     self.metrics[metric] = Precision(cfg.precision_config)
                 case "accuracy":
                     self.metrics[metric] = Accuracy(cfg.accuracy_config)
-                case _:
-                    raise ValueError(f"Invalid metric type: {metric}")
-        self.round = cfg.round
-        return
-
-    def evaluate(
-        self,
-        trues: list[list[str]],
-        preds: list[str],
-        log: bool = True,
-    ) -> tuple[dict[str, float], dict[str, object]]:
-        evaluation_results = {}
-        evaluation_details = {}
-        for metric in self.metrics:
-            metric = str(metric)  # make json serializable
-            r, r_detail = self.metrics[metric](trues, preds)
-            if log:
-                logger.info(f"{metric}: {r*100:.{self.round}f}%")
-            evaluation_results[metric] = r
-            evaluation_details[metric] = r_detail
-        return evaluation_results, evaluation_details
-
-
-@dataclass
-class LongFormEvaluatorConfig:
-    long_form_metrics: list[Choices(["bleu", "chrf", "rouge-1", "rouge-2", "rouge-l"])] = field(default_factory=list)  # type: ignore
-    bleu_config: BLEUConfig = field(default_factory=BLEUConfig)
-    chrf_config: chrFConfig = field(default_factory=chrFConfig)
-    rouge_config: RougeConfig = field(default_factory=RougeConfig)
-    round: int = 2
-
-
-class LongFormEvaluator:
-    def __init__(self, cfg: LongFormEvaluatorConfig) -> None:
-        self.metrics = {}
-        for metric in cfg.long_form_metrics:
-            match metric:
+                # longform metrics
                 case "bleu":
                     self.metrics[metric] = BLEU(cfg.bleu_config)
                 case "chrf":

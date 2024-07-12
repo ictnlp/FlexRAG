@@ -1,7 +1,7 @@
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from kylin.kylin_prompts import generate_prompt
+from kylin.kylin_prompts import shortform_generate_prompt, longform_generate_prompt
 from kylin.models import (
     GenerationConfig,
     GeneratorBase,
@@ -26,6 +26,7 @@ class AssistantConfig:
     ollama_config: OllamaGeneratorConfig = field(default_factory=OllamaGeneratorConfig)
     generation_config: GenerationConfig = field(default_factory=GenerationConfig)
     adaptive_retrieval: bool = False
+    response_type: Choices(["short", "long", "original"]) = "short"  # type: ignore
 
 
 class Assistant:
@@ -39,6 +40,7 @@ class Assistant:
             openai_cfg=cfg.openai_config,
             ollama_cfg=cfg.ollama_config,
         )
+        self.response_type = cfg.response_type
         return
 
     def load_generator(
@@ -77,10 +79,24 @@ class Assistant:
             if not self.decide_search(question):
                 contexts = []
 
-        if len(contexts) > 0:
-            prompt = deepcopy(generate_prompt["with_contexts"])
-        else:
-            prompt = deepcopy(generate_prompt["without_contexts"])
+        # prepare system prompt
+        match self.response_type:
+            case "short":
+                if len(contexts) > 0:
+                    prompt = deepcopy(shortform_generate_prompt["with_contexts"])
+                else:
+                    prompt = deepcopy(shortform_generate_prompt["without_contexts"])
+            case "long":
+                if len(contexts) > 0:
+                    prompt = deepcopy(longform_generate_prompt["with_contexts"])
+                else:
+                    prompt = deepcopy(longform_generate_prompt["without_contexts"])
+            case "original":
+                prompt = []
+            case _:
+                raise ValueError(f"Invalid response type: {self.response_type}")
+
+        # prepare user prompt
         usr_prompt = ""
         for n, context in enumerate(contexts):
             if "summary" in context:
@@ -90,6 +106,7 @@ class Assistant:
             usr_prompt += f"Context {n + 1}: {ctx}\n\n"
         usr_prompt += f"Question: {question}"
 
+        # generate response
         prompt.append({"role": "user", "content": usr_prompt})
         response = self.generator.chat([prompt], generation_config=self.gen_cfg)[0]
         return response, prompt

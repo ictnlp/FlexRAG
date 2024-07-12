@@ -1,10 +1,8 @@
 from .evaluator import (
-    LongFormEvaluator,
-    LongFormEvaluatorConfig,
     RetrievalEvaluator,
     RetrievalEvaluatorConfig,
-    ShortFormEvaluator,
-    ShortFormEvaluatorConfig,
+    ResponseEvaluator,
+    ResponseEvaluatorConfig,
 )
 from .generation_metrics import (
     BLEU,
@@ -54,10 +52,8 @@ __all__ = [
     "RougeConfig",
     "chrF",
     "chrFConfig",
-    "ShortFormEvaluator",
-    "ShortFormEvaluatorConfig",
-    "LongFormEvaluator",
-    "LongFormEvaluatorConfig",
+    "ResponseEvaluator",
+    "ResponseEvaluatorConfig",
     "RetrievalEvaluator",
     "RetrievalEvaluatorConfig",
     "SuccessRate",

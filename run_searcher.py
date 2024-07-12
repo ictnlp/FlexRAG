@@ -11,10 +11,8 @@ from kylin.assistant import Assistant, AssistantConfig
 from kylin.metrics import (
     RetrievalEvaluator,
     RetrievalEvaluatorConfig,
-    ShortFormEvaluator,
-    ShortFormEvaluatorConfig,
-    LongFormEvaluator,
-    LongFormEvaluatorConfig,
+    ResponseEvaluator,
+    ResponseEvaluatorConfig,
 )
 from kylin.searchers import (
     BM25Searcher,
@@ -44,10 +42,8 @@ class Config:
     bm25_searcher_config: BM25SearcherConfig = field(default_factory=BM25SearcherConfig)
     web_searcher_config: WebSearcherConfig = field(default_factory=WebSearcherConfig)
     dense_searcher_config: DenseSearcherConfig = field(default_factory=DenseSearcherConfig)  # fmt: skip
-    response_type: Choices(["short", "long"]) = "short"  # type: ignore
     retrieval_eval_config: RetrievalEvaluatorConfig = field(default_factory=RetrievalEvaluatorConfig)  # fmt: skip
-    short_eval_config: ShortFormEvaluatorConfig = field(default_factory=ShortFormEvaluatorConfig)  # fmt: skip
-    long_eval_config: LongFormEvaluatorConfig = field(default_factory=LongFormEvaluatorConfig)  # fmt: skip
+    response_eval_config: ResponseEvaluatorConfig = field(default_factory=ResponseEvaluatorConfig)  # fmt: skip
     log_interval: int = 10
 
 
@@ -115,13 +111,8 @@ def main(config: Config):
         ret_score, ret_score_detail = None, None
 
     # evaluate response
-    match config.response_type:
-        case "long":
-            evaluator = LongFormEvaluator(config.long_eval_config)
-            resp_score, resp_score_detail = evaluator.evaluate(goldens, responses)
-        case "short":
-            evaluator = ShortFormEvaluator(config.short_eval_config)
-            resp_score, resp_score_detail = evaluator.evaluate(goldens, responses)
+    evaluator = ResponseEvaluator(config.response_eval_config)
+    resp_score, resp_score_detail = evaluator.evaluate(goldens, responses)
 
     # dump results
     final = {
