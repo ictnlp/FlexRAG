@@ -50,38 +50,44 @@ class OpenAIGenerator(GeneratorBase):
         self,
         prompts: list[list[dict[str, str]]],
         generation_config: GenerationConfig = None,
-    ) -> list[str]:
+    ) -> list[list[str]]:
         responses = []
-        if "llama-3" in self.model_name.lower():
-            extra_body = {"stop_token_ids": [128009]}  # hotfix for llama-3
-        else:
-            extra_body = None
+        gen_cfg = self.prepare_generation_config(generation_config)
         for conv in prompts:
             response = self.client.chat.completions.create(
                 model=self.model_name,
                 messages=conv,
-                temperature=generation_config.temperature,
-                max_tokens=generation_config.max_new_tokens,
-                top_p=generation_config.top_p,
-                extra_body=extra_body,
+                **gen_cfg,
             )
-            responses.append(response.choices[0].message.content)
+            responses.append([i.message.content for i in response.choices])
         return responses
 
     def generate(
         self, prefixes: list[str], generation_config: GenerationConfig = None
-    ) -> list[str]:
+    ) -> list[list[str]]:
         responses = []
+        gen_cfg = self.prepare_generation_config(generation_config)
         for prefix in prefixes:
             response = self.client.completions.create(
                 model=self.model_name,
                 prompt=prefix,
-                temperature=generation_config.temperature,
-                max_tokens=generation_config.max_new_tokens,
-                top_p=generation_config.top_p,
+                **gen_cfg,
             )
-            responses.append(response.choices[0].text)
+            responses.append([i.message.content for i in response.choices])
         return responses
+
+    def prepare_generation_config(self, generation_config: GenerationConfig) -> dict:
+        if "llama-3" in self.model_name.lower():
+            extra_body = {"stop_token_ids": [128009]}  # hotfix for llama-3
+        else:
+            extra_body = None
+        return {
+            "temperature": generation_config.temperature,
+            "max_tokens": generation_config.max_new_tokens,
+            "top_p": generation_config.top_p,
+            "n": generation_config.sample_num,
+            "extra_body": extra_body,
+        }
 
     def _check(self):
         model_lists = [i.id for i in self.client.models.list().data]

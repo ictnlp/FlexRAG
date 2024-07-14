@@ -43,12 +43,13 @@ class VLLMGenerator(GeneratorBase):
 
     def generate(
         self, prefixes: list[str], generation_config: GenerationConfig = None
-    ) -> list[str]:
+    ) -> list[list[str]]:
         if generation_config.eos_token_id is not None:
             stop_token_ids = [generation_config.eos_token_id]
         else:
             stop_token_ids = [self.tokenizer.eos_token_id]
         sampling_params = SamplingParams(
+            n=generation_config.sample_num,
             max_tokens=generation_config.max_new_tokens,
             temperature=generation_config.temperature,
             top_k=generation_config.top_k,
@@ -60,13 +61,13 @@ class VLLMGenerator(GeneratorBase):
             sampling_params=sampling_params,
             use_tqdm=False,
         )
-        responses = [i.outputs[0].text for i in responses]
+        responses = [[i.text for i in resp.outputs] for resp in responses]
         return responses
 
     def chat(
         self,
         prompts: list[list[dict[str, str]]],
         generation_config: GenerationConfig = None,
-    ) -> list[str]:
+    ) -> list[list[str]]:
         prefixes = [self.prompt_func(prompt) for prompt in prompts]
         return self.generate(prefixes, generation_config)

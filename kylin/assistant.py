@@ -1,3 +1,4 @@
+import logging
 from copy import deepcopy
 from dataclasses import dataclass, field
 
@@ -16,6 +17,8 @@ from kylin.models import (
 )
 from kylin.utils import Choices
 
+logger = logging.getLogger("Assistant")
+
 
 @dataclass
 class AssistantConfig:
@@ -33,6 +36,9 @@ class Assistant:
     def __init__(self, cfg: AssistantConfig):
         self.adaptive_retrieval = cfg.adaptive_retrieval
         self.gen_cfg = cfg.generation_config
+        if self.gen_cfg.sample_num > 1:
+            logger.warning("Sample num > 1 is not supported for Assistant")
+            self.gen_cfg.sample_num = 1
         self.generator = self.load_generator(
             cfg.generator_type,
             vllm_cfg=cfg.vllm_config,
@@ -108,8 +114,9 @@ class Assistant:
 
         # generate response
         prompt.append({"role": "user", "content": usr_prompt})
-        response = self.generator.chat([prompt], generation_config=self.gen_cfg)[0]
+        response = self.generator.chat([prompt], generation_config=self.gen_cfg)[0][0]
         return response, prompt
 
     def decide_search(self, question: str) -> bool:
+        # TODO implement this
         raise NotImplementedError

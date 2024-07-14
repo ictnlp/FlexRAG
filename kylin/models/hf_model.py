@@ -23,14 +23,21 @@ from .utils import get_prompt_func
 logger = logging.getLogger(__name__)
 
 
-# fmt: off
 @dataclass
 class HFGeneratorConfig(GeneratorConfig):
     model_path: str = MISSING
     tokenizer_path: Optional[str] = None
     pipeline_parallel: bool = False
-    load_dtype: Choices(["bfloat16", "float32", "float16", "8bit", "4bit", "auto"]) = "auto" # type: ignore
-# fmt: on
+    load_dtype: Choices(  # type: ignore
+        [
+            "bfloat16",
+            "float32",
+            "float16",
+            "8bit",
+            "4bit",
+            "auto",
+        ]
+    ) = "auto"
 
 
 class HFGenerator(GeneratorBase):
@@ -86,37 +93,57 @@ class HFGenerator(GeneratorBase):
         self,
         prefixes: list[str],
         generation_config: GenerationConfig = None,
-    ) -> list[str]:
-        inputs = self.tokenizer(prefixes, return_tensors="pt")
+    ) -> list[list[str]]:
+        bsz = len(prefixes)
+        sample_num = generation_config.sample_num
+        inputs = self.tokenizer(
+            prefixes, return_tensors="pt", padding=True, truncation=True
+        )
         inputs = inputs.to(self.model.device)
-        hf_gen_cfg = HFGenerationConfig(
+
+        # prepare generation config
+        hf_gen_cfg = self._get_gen_cfg(generation_config)
+        if generation_config.eos_token_id is not None:
+            inputs["eos_token_id"] = generation_config.eos_token_id
+        else:
+            inputs["eos_token_id"] = self.tokenizer.eos_token_id
+
+        # generate
+        outputs = self.model.generate(
+            **inputs,
+            generation_config=hf_gen_cfg,
+        )
+
+        # truncate the input tokens
+        outputs = outputs.view(bsz, sample_num, -1)
+        input_lengths = inputs["attention_mask"].sum(dim=1)
+        responses = []
+        for i in range(bsz):
+            samples = [sample[input_lengths[i] :] for sample in outputs[i]]
+            samples = [
+                self.tokenizer.decode(sample, skip_special_tokens=True)
+                for sample in samples
+            ]
+            responses.append(samples)
+        return responses
+
+    def chat(
+        self,
+        prompts: list[list[dict[str, str]]],
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
+        prefixes = [self.prompt_func(prompt) for prompt in prompts]
+        return self.generate(prefixes, generation_config)
+
+    def _get_gen_cfg(self, generation_config: GenerationConfig) -> HFGenerationConfig:
+        return HFGenerationConfig(
             do_sample=generation_config.do_sample,
             temperature=generation_config.temperature,
             max_length=generation_config.max_new_tokens,
             top_p=generation_config.top_p,
             top_k=generation_config.top_k,
+            num_return_sequences=generation_config.sample_num,
         )
-        if generation_config.eos_token_id is not None:
-            inputs["eos_token_id"] = generation_config.eos_token_id
-        else:
-            inputs["eos_token_id"] = self.tokenizer.eos_token_id
-        responses = self.model.generate(
-            **inputs,
-            generation_config=hf_gen_cfg,
-        )
-        input_lengths = inputs["attention_mask"].sum(dim=1)
-        responses = [i[l:] for i, l in zip(responses, input_lengths)]
-        texts = [self.tokenizer.decode(i, skip_special_tokens=True) for i in responses]
-        return texts
-
-    @torch.no_grad()
-    def chat(
-        self,
-        prompts: list[list[dict[str, str]]],
-        generation_config: GenerationConfig = None,
-    ) -> list[str]:
-        prefixes = [self.prompt_func(prompt) for prompt in prompts]
-        return self.generate(prefixes, generation_config)
 
 
 # fmt: off

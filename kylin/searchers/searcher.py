@@ -36,6 +36,7 @@ class SearcherConfig:
 
 class BaseSearcher(ABC):
     retriever: Retriever
+
     def __init__(self, cfg: SearcherConfig) -> None:
         self.agent = self.load_agent(
             cfg.agent_type,
@@ -45,6 +46,9 @@ class BaseSearcher(ABC):
             ollama_cfg=cfg.ollama_config,
         )
         self.gen_cfg = cfg.agent_gen_cfg
+        if self.gen_cfg.sample_num > 1:
+            logger.warning("Sample num > 1 is not supported for Searcher")
+            self.gen_cfg.sample_num = 1
         return
 
     @abstractmethod

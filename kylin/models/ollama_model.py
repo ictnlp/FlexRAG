@@ -2,9 +2,7 @@ import logging
 from dataclasses import dataclass
 from omegaconf import MISSING
 
-from transformers import GenerationConfig
-
-from .model_base import GeneratorBase, GeneratorConfig
+from .model_base import GeneratorBase, GeneratorConfig, GenerationConfig
 
 
 logger = logging.getLogger("OllamaGenerator")
@@ -33,42 +31,48 @@ class OllamaGenerator(GeneratorBase):
         self,
         prompts: list[list[dict[str, str]]],
         generation_config: GenerationConfig = None,
-    ) -> list[str]:
-        responses = []
-        options = {
-            "top_k": generation_config.top_k,
-            "top_p": generation_config.top_p,
-            "temperature": generation_config.temperature,
-            "num_predict": generation_config.max_new_tokens,
-        }
+    ) -> list[list[str]]:
+        responses: list[list[str]] = []
+        options = self._get_options(generation_config)
         for conv in prompts:
-            response = self.client.chat(
-                model=self.model_name, messages=conv, options=options
-            )
-            responses.append(response["message"]["content"])
+            # as ollama does not support sample_num, we sample multiple times
+            responses.append([])
+            for _ in range(generation_config.sample_num):
+                response = self.client.chat(
+                    model=self.model_name,
+                    messages=conv,
+                    options=options,
+                )
+                responses[-1].append(response["message"]["content"])
         return responses
 
     def generate(
         self,
         prefixes: list[str],
         generation_config: GenerationConfig = None,
-    ) -> list[str]:
-        responses = []
-        options = {
+    ) -> list[list[str]]:
+        responses: list[list[str]] = []
+        options = self._get_options(generation_config)
+        for prefix in prefixes:
+            # as ollama does not support sample_num, we sample multiple times
+            responses.append([])
+            for _ in range(generation_config.sample_num):
+                response = self.client.generate(
+                    model=self.model_name,
+                    prompt=prefix,
+                    raw=True,
+                    options=options,
+                )
+                responses[-1].append(response["message"]["content"])
+        return responses
+
+    def _get_options(self, generation_config: GenerationConfig) -> dict:
+        return {
             "top_k": generation_config.top_k,
             "top_p": generation_config.top_p,
             "temperature": generation_config.temperature,
             "num_predict": generation_config.max_new_tokens,
         }
-        for prefix in prefixes:
-            response = self.client.generate(
-                model=self.model_name,
-                prompt=prefix,
-                raw=True,
-                options=options,
-            )
-            responses.append(response["message"]["content"])
-        return responses
 
     def _check(self) -> None:
         models = [i["name"] for i in self.client.list()["models"]]

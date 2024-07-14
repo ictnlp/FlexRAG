@@ -103,7 +103,7 @@ class DenseSearcher(BaseSearcher):
             prompt[-1][
                 "content"
             ] += f"\n\nThe information you are looking for: {base_query}"
-            response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0]
+            response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
             if prompt_type == "extend":
                 refined_queries.append(f"{current_query} {response}")
             elif prompt_type == "filter":
@@ -122,8 +122,8 @@ class DenseSearcher(BaseSearcher):
         user_prompt = f"Query: {info}"
         prompt = deepcopy(rewrite_prompts["dense"])
         prompt.append({"role": "user", "content": user_prompt})
-        query_to_search = self.agent.chat([prompt], generation_config=self.gen_cfg)[0]
-        return query_to_search
+        query = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
+        return query
 
     def verify_contexts(
         self,
@@ -136,7 +136,7 @@ class DenseSearcher(BaseSearcher):
             user_prompt += f"Context {n}: {ctx['text']}\n\n"
         user_prompt += f"Topic: {question}"
         prompt.append({"role": "user", "content": user_prompt})
-        response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0]
+        response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
         return "yes" in response.lower()
 
     def close(self) -> None:
