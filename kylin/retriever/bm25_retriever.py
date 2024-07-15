@@ -142,7 +142,7 @@ class BM25Retriever(LocalRetriever):
             )
 
         # search and post-process
-        responses = search_method(body=body)["responses"]
+        responses = search_method(body=body, **search_kwargs)["responses"]
         return self._form_results(query, responses)
 
     def _string_search(
@@ -177,7 +177,7 @@ class BM25Retriever(LocalRetriever):
             )
 
         # search and post-process
-        responses = search_method(body=body)["responses"]
+        responses = search_method(body=body, **search_kwargs)["responses"]
         return self._form_results(query, responses)
 
     def search_batch(

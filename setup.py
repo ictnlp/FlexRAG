@@ -23,7 +23,7 @@ setup(
         "numpy",
         "transformers>=4.41.0",
         "tqdm",
-        "elasticsearch>=7.9.1",
+        "elasticsearch>=8.14.0",
         "torch>=2.3.0",
         "sacrebleu>=2.4.2",
         "rouge",

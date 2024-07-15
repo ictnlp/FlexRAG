@@ -120,7 +120,7 @@ class RetrievalPrecision(RetrievalMetric):
         precision_map: list[float] = []
         for evds, rets in zip(evidences, retrieved):
             rel_map = get_relevance_map(evds, rets, self.relevance_check)
-            precision = sum([any(i) for i in rel_map]) / len(rets)
+            precision = sum([any(i) for i in rel_map]) / max(len(rets), 1)
             precision_map.append(precision)
         score = sum(precision_map) / len(precision_map)
         return score, {"precision_map": precision_map}

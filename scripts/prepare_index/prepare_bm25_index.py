@@ -5,12 +5,12 @@ from dataclasses import dataclass, field
 import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING, OmegaConf
-from utils import read_data
 
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
 
 
 from kylin.retriever import BM25Retriever, BM25RetrieverConfig
+from kylin.utils import read_data
 
 
 @dataclass
