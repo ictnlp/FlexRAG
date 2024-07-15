@@ -8,7 +8,7 @@ from uuid import uuid5, NAMESPACE_OID
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import streaming_bulk
-from tenacity import retry, stop_after_attempt
+from tenacity import retry, stop_after_attempt, RetryCallState
 
 from kylin.utils import Choices
 
@@ -16,6 +16,16 @@ from .retriever_base import LocalRetriever, LocalRetrieverConfig
 
 
 logger = logging.getLogger("BM25Retriever")
+
+
+def _save_error_state(retry_state: RetryCallState):
+    args = {
+        "args": retry_state.args,
+        "kwargs": retry_state.kwargs,
+    }
+    with open("retry_error_state.json", "w") as f:
+        json.dump(args, f)
+    return
 
 
 @dataclass
@@ -119,9 +129,10 @@ class BM25Retriever(LocalRetriever):
     ) -> list[dict[str, str | list]]:
         # prepare retry
         if retry_times > 1:
-            search_method = retry(stop=stop_after_attempt(retry_times))(
-                self.client.msearch
-            )
+            search_method = retry(
+                stop=stop_after_attempt(retry_times),
+                retry_error_callback=_save_error_state,
+            )(self.client.msearch)
         else:
             search_method = self.client.msearch
 
@@ -154,9 +165,10 @@ class BM25Retriever(LocalRetriever):
     ) -> list[dict[str, str | list]]:
         # prepare retry
         if retry_times > 1:
-            search_method = retry(stop=stop_after_attempt(retry_times))(
-                self.client.msearch
-            )
+            search_method = retry(
+                stop=stop_after_attempt(retry_times),
+                retry_error_callback=_save_error_state,
+            )(self.client.msearch)
         else:
             search_method = self.client.msearch
 
