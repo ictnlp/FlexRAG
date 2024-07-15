@@ -25,7 +25,12 @@ from .generation_metrics import (
     RougeL,
     RougeConfig,
 )
-from .retrieval_metrics import SuccessRate, SuccessRateConfig
+from .retrieval_metrics import (
+    SuccessRate,
+    SuccessRateConfig,
+    RetrievalPrecision,
+    RetrievalPrecisionConfig,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -112,8 +117,16 @@ class ResponseEvaluator:
 
 @dataclass
 class RetrievalEvaluatorConfig:
-    retrieval_metrics: list[Choices(["success_rate"])] = field(default_factory=list)  # type: ignore
+    retrieval_metrics: list[
+        Choices(  # type: ignore
+            [
+                "success_rate",
+                "precision",
+            ]
+        )
+    ] = field(default_factory=list)
     success_config: SuccessRateConfig = field(default_factory=SuccessRateConfig)
+    precision_config: RetrievalPrecisionConfig = field(default_factory=RetrievalPrecisionConfig)  # fmt: skip
     round: int = 2
 
 
@@ -124,6 +137,8 @@ class RetrievalEvaluator:
             match metric:
                 case "success_rate":
                     self.metrics[metric] = SuccessRate(cfg.success_config)
+                case "precision":
+                    self.metrics[metric] = RetrievalPrecision(cfg.precision_config)
                 case _:
                     raise ValueError(f"Invalid metric type: {metric}")
         self.round = cfg.round

@@ -3,10 +3,14 @@
 
 
 ## TODO
-- [ ] Optimize search cache
-- [ ] Retrievers
+- [x] Optimize search cache
+- Retrievers
   - [ ] Optimize faiss index
   - [ ] Optimize milvus index
-- [ ] models
-  - [ ] Add Openai encoding models
+- models
+  - [x] Add Openai encoding models
   - [ ] Add Claude models
+  - [ ] Add Minference support
+- searchers
+  - [ ] Add fallback searchers
+  - [ ] Add hybrid searchers

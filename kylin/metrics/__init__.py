@@ -27,7 +27,12 @@ from .matching_metrics import (
     Recall,
     RecallConfig,
 )
-from .retrieval_metrics import SuccessRate, SuccessRateConfig
+from .retrieval_metrics import (
+    SuccessRate,
+    SuccessRateConfig,
+    RetrievalPrecision,
+    RetrievalPrecisionConfig,
+)
 from .metrics_base import MetricsBase, MetricsConfig
 
 __all__ = [
@@ -58,4 +63,6 @@ __all__ = [
     "RetrievalEvaluatorConfig",
     "SuccessRate",
     "SuccessRateConfig",
+    "RetrievalPrecision",
+    "RetrievalPrecisionConfig",
 ]
