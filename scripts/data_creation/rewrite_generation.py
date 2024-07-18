@@ -4,6 +4,7 @@ import pathlib
 import sys
 from copy import deepcopy
 from dataclasses import dataclass, field
+from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
@@ -22,6 +23,7 @@ from kylin.utils import SimpleProgressLogger, read_data
 @dataclass
 class DataConfig:
     data_path: list[str] = field(default_factory=list)
+    data_range: Optional[list[list[int]]] = field(default=None)
     output_path: str = MISSING
 
 
@@ -65,7 +67,7 @@ def main(config: Config):
     logging.info(f"Configs:\n{OmegaConf.to_yaml(config)}")
 
     # load dataset
-    datasets = read_data(config.data_config.data_path)
+    datasets = read_data(config.data_config.data_path, config.data_config.data_range)
 
     # load retriever
     retriever = BM25Retriever(config.retriever_config)

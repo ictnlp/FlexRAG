@@ -4,9 +4,10 @@ from contextlib import contextmanager
 from csv import reader
 from enum import Enum
 from functools import partial
+from itertools import zip_longest
 from logging import Logger
 from time import perf_counter
-from typing import Iterable, Iterator
+from typing import Iterable, Iterator, Optional
 
 import numpy as np
 from omegaconf import OmegaConf
@@ -113,11 +114,32 @@ json.dumps = partial(json.dumps, cls=CustomEncoder)
 json.dump = partial(json.dump, cls=CustomEncoder)
 
 
-def read_data(file_paths: list[str]) -> Iterator:
-    for file_path in file_paths:
+def read_data(
+    file_paths: list[str] | str,
+    data_ranges: Optional[list[list[int, int]] | list[int, int]] = None,
+) -> Iterator:
+    if isinstance(file_paths, str):
+        file_paths = [file_paths]
+        if data_ranges is not None:
+            assert isinstance(data_ranges[0], int), "Invalid data ranges"
+            assert isinstance(data_ranges[1], int), "Invalid data ranges"
+            data_ranges = [data_ranges]
+    if data_ranges is None:
+        data_ranges = []
+
+    for file_path, data_range in zip_longest(
+        file_paths, data_ranges, fillvalue=[0, -1]
+    ):
+        start_point, end_point = data_range
+        if end_point > 0:
+            assert end_point > start_point, f"Invalid data range: {data_range}"
         if file_path.endswith(".jsonl"):
             with open(file_path, "r") as f:
-                for line in f:
+                for i, line in enumerate(f):
+                    if i < start_point:
+                        continue
+                    if (end_point > 0) and (i >= end_point):
+                        break
                     yield json.loads(line)
         elif file_path.endswith(".tsv"):
             title = []
@@ -125,15 +147,23 @@ def read_data(file_paths: list[str]) -> Iterator:
                 for i, row in enumerate(reader(f, delimiter="\t")):
                     if i == 0:
                         title = row
-                    else:
-                        yield dict(zip(title, row))
+                        continue
+                    if i <= start_point:
+                        continue
+                    if (end_point > 0) and (i > end_point):
+                        break
+                    yield dict(zip(title, row))
         elif file_path.endswith(".csv"):
             title = []
             with open(file_path, "r") as f:
                 for i, row in enumerate(reader(f)):
                     if i == 0:
                         title = row
-                    else:
-                        yield dict(zip(title, row))
+                        continue
+                    if i <= start_point:
+                        continue
+                    if (end_point > 0) and (i > end_point):
+                        break
+                    yield dict(zip(title, row))
         else:
             raise ValueError(f"Unsupported file format: {file_path}")
