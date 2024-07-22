@@ -1,13 +1,25 @@
-from .hf_model import HFGenerator, HFGeneratorConfig, HFEncoder, HFEncoderConfig
-from .model_base import EncoderBase, GeneratorBase, GeneratorConfig, GenerationConfig
+from .hf_model import HFEncoder, HFEncoderConfig, HFGenerator, HFGeneratorConfig
+from .model_base import (
+    EncoderBase,
+    GenerationConfig,
+    GeneratorBase,
+    GeneratorBaseConfig,
+)
 from .ollama_model import OllamaGenerator, OllamaGeneratorConfig
 from .openai_model import OpenAIGenerator, OpenAIGeneratorConfig
-from .vllm_model import VLLMGenerator, VLLMGeneratorConfig
 from .utils import get_prompt_func
+from .vllm_model import VLLMGenerator, VLLMGeneratorConfig
+
+from .model_loader import (  # isort:skip
+    EncoderConfig,
+    GeneratorConfig,
+    load_encoder,
+    load_generator,
+)
 
 __all__ = [
     "GeneratorBase",
-    "GeneratorConfig",
+    "GeneratorBaseConfig",
     "GenerationConfig",
     "EncoderBase",
     "HFGenerator",
@@ -20,7 +32,9 @@ __all__ = [
     "OpenAIGeneratorConfig",
     "VLLMGenerator",
     "VLLMGeneratorConfig",
-    "load_generation_config",
     "get_prompt_func",
+    "EncoderConfig",
+    "GeneratorConfig",
+    "load_encoder",
     "load_generator",
 ]

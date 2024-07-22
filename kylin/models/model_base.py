@@ -4,13 +4,19 @@ from typing import Optional
 
 import numpy as np
 
+from kylin.utils import Register
+
+
+Encoders = Register("Encoders")
+Generators = Register("Generators")
+
 
 @dataclass
-class GeneratorConfig: ...
+class GeneratorBaseConfig: ...
 
 
 @dataclass
-class EncoderConfig: ...
+class EncoderBaseConfig: ...
 
 
 @dataclass

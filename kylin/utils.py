@@ -61,6 +61,92 @@ class SimpleProgressLogger:
         return
 
 
+class Register:
+    def __init__(self, register_name: str = None):
+        self.name = register_name
+        self._items = {}
+        self._shortcuts = {}
+        return
+
+    def __call__(self, *short_names: str, config_class=None):
+        def registe_item(item):
+            main_name = str(item).split(".")[-1][:-2]
+            # check name conflict
+            assert main_name not in self._items, f"Name Conflict {main_name}"
+            assert main_name not in self._shortcuts, f"Name Conflict {main_name}"
+            for name in short_names:
+                assert name not in self._items, f"Name Conflict {name}"
+                assert name not in self._shortcuts, f"Name Conflict {name}"
+
+            # register the item
+            self._items[main_name] = {
+                "item": item,
+                "main_name": main_name,
+                "short_names": short_names,
+                "config_class": config_class,
+            }
+            for name in short_names:
+                self._shortcuts[name] = main_name
+            return item
+
+        return registe_item
+
+    def __iter__(self):
+        return self._items.__iter__()
+
+    @property
+    def names(self) -> list[str]:
+        return list(self._items.keys()) + list(self._shortcuts.keys())
+
+    @property
+    def mainnames(self) -> list[str]:
+        return list(self._items.keys())
+
+    @property
+    def shortnames(self) -> list[str]:
+        return list(self._shortcuts.keys())
+
+    def __getitem__(self, key: str) -> dict:
+        if key not in self._items:
+            key = self._shortcuts[key]
+        return self._items[key]
+
+    def get(self, key: str, default=None) -> dict:
+        if key not in self._items:
+            if key not in self._shortcuts:
+                return default
+            key = self._shortcuts[key]
+        return self._items[key]
+
+    def get_item(self, key: str):
+        if key not in self._items:
+            key = self._shortcuts[key]
+        return self._items[key]["item"]
+
+    def __len__(self) -> int:
+        return len(self._items)
+
+    def __contains__(self, key: str) -> bool:
+        return key in self.names
+
+    def __str__(self) -> str:
+        data = {
+            "name": self.name,
+            "items": [
+                {
+                    "main_name": k,
+                    "short_names": v["short_names"],
+                    "config_class": str(v["config_class"]),
+                }
+                for k, v in self._items.items()
+            ],
+        }
+        return json.dumps(data, indent=4)
+
+    def __repr__(self) -> str:
+        return str(self)
+
+
 @contextmanager
 def set_env_var(key, value):
     original_value = os.environ.get(key)

@@ -15,7 +15,12 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
 
 from kylin.kylin_prompts import rewrite_prompts
 from kylin.metrics import RetrievalEvaluator, RetrievalEvaluatorConfig
-from kylin.models import GenerationConfig, OpenAIGenerator, OpenAIGeneratorConfig
+from kylin.models import (
+    GenerationConfig,
+    GeneratorBase,
+    GeneratorConfig,
+    load_generator,
+)
 from kylin.retriever import BM25Retriever, BM25RetrieverConfig
 from kylin.utils import SimpleProgressLogger, read_data
 
@@ -28,13 +33,13 @@ class DataConfig:
 
 
 @dataclass
-class Config:
+class Config(GeneratorConfig):
     data_config: DataConfig = field(default_factory=DataConfig)
     retriever_config: BM25RetrieverConfig = field(default_factory=BM25RetrieverConfig)
-    generator_config: OpenAIGeneratorConfig = field(default_factory=OpenAIGeneratorConfig)  # fmt: skip
     generation_config: GenerationConfig = field(default_factory=GenerationConfig)  # fmt: skip
     eval_config: RetrievalEvaluatorConfig = field(default_factory=RetrievalEvaluatorConfig)  # fmt: skip
     disable_cache: bool = False
+    sampling_by_demonstration: bool = False
     log_interval: int = 10
 
 
@@ -48,14 +53,26 @@ cs.store(name="default", node=Config)
 
 def rewrite_query(
     info: str,
-    generator: OpenAIGenerator,
+    generator: GeneratorBase,
     gen_cfg: GenerationConfig,
+    sampling_by_demonstration: bool = False,
 ) -> list[str]:
-    # Rewrite the query to be more informative
+    """Rewrite the query to be more informative"""
     user_prompt = f"Query: {info}"
     prompt = deepcopy(rewrite_prompts["bm25"])
-    prompt.append({"role": "user", "content": user_prompt})
-    queries = generator.chat([prompt], generation_config=gen_cfg)[0]
+    prompts = []
+    # sample demonstrations
+    if sampling_by_demonstration:
+        sampling_num = gen_cfg.sample_num
+        gen_cfg.sample_num = 1
+        raise NotImplementedError
+    else:
+        prompt.append({"role": "user", "content": user_prompt})
+        prompts.extend(prompt)
+    # generate the rewrite queries
+    queries = []
+    for p in prompts:
+        queries.extend(generator.chat([p], generation_config=gen_cfg)[0])
     return queries
 
 
@@ -73,7 +90,7 @@ def main(config: Config):
     retriever = BM25Retriever(config.retriever_config)
 
     # load generator
-    generator = OpenAIGenerator(config.generator_config)
+    generator = load_generator(config)
 
     # load evaluator
     evaluator = RetrievalEvaluator(config.eval_config)

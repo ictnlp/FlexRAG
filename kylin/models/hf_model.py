@@ -12,11 +12,13 @@ from transformers import GenerationConfig as HFGenerationConfig
 from kylin.utils import Choices
 
 from .model_base import (
+    Encoders,
     EncoderBase,
-    EncoderConfig,
+    EncoderBaseConfig,
+    Generators,
     GenerationConfig,
     GeneratorBase,
-    GeneratorConfig,
+    GeneratorBaseConfig,
 )
 from .utils import get_prompt_func
 
@@ -24,7 +26,7 @@ logger = logging.getLogger(__name__)
 
 
 @dataclass
-class HFGeneratorConfig(GeneratorConfig):
+class HFGeneratorConfig(GeneratorBaseConfig):
     model_path: str = MISSING
     tokenizer_path: Optional[str] = None
     pipeline_parallel: bool = False
@@ -40,6 +42,7 @@ class HFGeneratorConfig(GeneratorConfig):
     ) = "auto"
 
 
+@Generators("hf", config_class=HFGeneratorConfig)
 class HFGenerator(GeneratorBase):
     def __init__(self, cfg: HFGeneratorConfig) -> None:
         # prepare gpu
@@ -148,7 +151,7 @@ class HFGenerator(GeneratorBase):
 
 # fmt: off
 @dataclass
-class HFEncoderConfig(EncoderConfig):
+class HFEncoderConfig(EncoderBaseConfig):
     model_path: str = MISSING
     tokenizer_path: Optional[str] = None
     device_id: list[int] = field(default_factory=list)
@@ -158,6 +161,7 @@ class HFEncoderConfig(EncoderConfig):
 # fmt: on
 
 
+@Encoders("hf", config_class=HFEncoderConfig)
 class HFEncoder(EncoderBase):
     def __init__(self, cfg: HFEncoderConfig):
         # prepare gpu

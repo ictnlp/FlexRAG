@@ -2,19 +2,20 @@ import logging
 from dataclasses import dataclass
 from omegaconf import MISSING
 
-from .model_base import GeneratorBase, GeneratorConfig, GenerationConfig
+from .model_base import Generators, GeneratorBase, GeneratorBaseConfig, GenerationConfig
 
 
 logger = logging.getLogger("OllamaGenerator")
 
 
 @dataclass
-class OllamaGeneratorConfig(GeneratorConfig):
+class OllamaGeneratorConfig(GeneratorBaseConfig):
     model_name: str = MISSING
     base_url: str = MISSING
     verbose: bool = False
 
 
+@Generators("ollama", config_class=OllamaGeneratorConfig)
 class OllamaGenerator(GeneratorBase):
     def __init__(self, cfg: OllamaGeneratorConfig) -> None:
         from ollama import Client

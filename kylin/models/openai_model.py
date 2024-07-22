@@ -1,4 +1,5 @@
 import logging
+import os
 from dataclasses import dataclass
 from typing import Optional
 
@@ -6,31 +7,34 @@ import numpy as np
 from omegaconf import MISSING
 
 from .model_base import (
-    GeneratorBase,
-    GeneratorConfig,
-    GenerationConfig,
     EncoderBase,
-    EncoderConfig,
+    EncoderBaseConfig,
+    Encoders,
+    GenerationConfig,
+    GeneratorBase,
+    GeneratorBaseConfig,
+    Generators,
 )
 
 
 @dataclass
-class OpenAIGeneratorConfig(GeneratorConfig):
+class OpenAIGeneratorConfig(GeneratorBaseConfig):
     model_name: str = MISSING
     base_url: Optional[str] = None
-    api_key: str = "EMPTY"
+    api_key: str = os.environ.get("OPENAI_API_KEY", "EMPTY")
     verbose: bool = False
 
 
 @dataclass
-class OpenAIEncoderConfig(EncoderConfig):
+class OpenAIEncoderConfig(EncoderBaseConfig):
     model_name: str = MISSING
     base_url: Optional[str] = None
-    api_key: str = "EMPTY"
+    api_key: str = os.environ.get("OPENAI_API_KEY", "EMPTY")
     verbose: bool = False
     dimension: int = 512
 
 
+@Generators("openai", config_class=OpenAIGeneratorConfig)
 class OpenAIGenerator(GeneratorBase):
     def __init__(self, cfg: OpenAIGeneratorConfig) -> None:
         from openai import OpenAI
@@ -94,6 +98,7 @@ class OpenAIGenerator(GeneratorBase):
         assert self.model_name in model_lists, f"Model {self.model_name} not found"
 
 
+@Encoders("openai", config_class=OpenAIEncoderConfig)
 class OpenAIEncoder(EncoderBase):
     def __init__(self, cfg: OpenAIEncoderConfig) -> None:
         from openai import OpenAI

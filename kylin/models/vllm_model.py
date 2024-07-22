@@ -6,12 +6,12 @@ from vllm import LLM, SamplingParams
 
 from kylin.utils import Choices
 
-from .model_base import GenerationConfig, GeneratorBase, GeneratorConfig
+from .model_base import Generators, GenerationConfig, GeneratorBase, GeneratorBaseConfig
 from .utils import get_prompt_func
 
 
 @dataclass
-class VLLMGeneratorConfig(GeneratorConfig):
+class VLLMGeneratorConfig(GeneratorBaseConfig):
     model_path: str = MISSING
     gpu_memory_utilization: float = 0.85
     max_model_len: int = 16384
@@ -19,6 +19,7 @@ class VLLMGeneratorConfig(GeneratorConfig):
     load_dtype: Choices(["auto", "float32", "float16", "bfloat16"]) = "auto"  # type: ignore
 
 
+@Generators("vllm", config_class=VLLMGeneratorConfig)
 class VLLMGenerator(GeneratorBase):
     def __init__(self, cfg: VLLMGeneratorConfig) -> None:
         model_cfg = AutoConfig.from_pretrained(cfg.model_path)
