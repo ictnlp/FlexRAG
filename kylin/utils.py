@@ -185,13 +185,13 @@ class CustomEncoder(json.JSONEncoder):
             return str(obj)
         if isinstance(obj, DictConfig):
             return OmegaConf.to_container(obj, resolve=True)
-        if isinstance(np.int64):
+        if isinstance(obj, np.int64):
             return int(obj)
-        if isinstance(np.int32):
+        if isinstance(obj, np.int32):
             return int(obj)
-        if isinstance(np.float64):
+        if isinstance(obj, np.float64):
             return float(obj)
-        if isinstance(np.float32):
+        if isinstance(obj, np.float32):
             return float(obj)
         return super().default(obj)
 

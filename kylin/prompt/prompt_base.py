@@ -53,7 +53,7 @@ class ChatPrompt:
     def to_list(self) -> list[dict[str, str]]:
         data = []
         if self.system is not None:
-            data.append({"role": "system", "content": self.system})
+            data.append({"role": "system", "content": self.system.content})
         for demo in self.demonstrations:
             for turn in demo:
                 data.append(turn.to_dict())

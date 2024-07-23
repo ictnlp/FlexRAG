@@ -4,6 +4,7 @@ import pathlib
 import sys
 from copy import deepcopy
 from dataclasses import dataclass, field
+from itertools import combinations
 from typing import Optional
 
 import hydra
@@ -13,7 +14,8 @@ from omegaconf import MISSING, OmegaConf
 sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
 
 
-from kylin.kylin_prompts import rewrite_prompts
+from kylin.prompt import ChatTurn, ChatPrompt
+from kylin.prompt.searcher_prompts import bm25_rewrite_prompts
 from kylin.metrics import RetrievalEvaluator, RetrievalEvaluatorConfig
 from kylin.models import (
     GenerationConfig,
@@ -51,28 +53,54 @@ cs = ConfigStore.instance()
 cs.store(name="default", node=Config)
 
 
+def sample_by_demonstration(
+    prompt: ChatPrompt, sample_num: int, demonstration_num: int
+) -> list[ChatPrompt]:
+    def factorial(n) -> int:
+        return 1 if n <= 0 else n * factorial(n - 1)
+
+    # check if the sample num is too large
+    max_sample_num = factorial(len(prompt.demonstrations)) // (
+        factorial(demonstration_num)
+        * factorial(len(prompt.demonstrations) - demonstration_num)
+    )
+    assert sample_num <= max_sample_num, f"Sample num {sample_num} is too large"
+
+    # sample the demonstrations
+    indices = combinations(range(len(prompt.demonstrations)), demonstration_num)
+    new_prompts = []
+    for idx in indices:
+        new_prompt = deepcopy(prompt)
+        new_prompt.demonstrations = [prompt.demonstrations[i] for i in idx]
+        new_prompts.append(new_prompt)
+    return new_prompts
+
+
 def rewrite_query(
     info: str,
     generator: GeneratorBase,
     gen_cfg: GenerationConfig,
     sampling_by_demonstration: bool = False,
+    demonstration_num: int = 3,
 ) -> list[str]:
     """Rewrite the query to be more informative"""
-    user_prompt = f"Query: {info}"
-    prompt = deepcopy(rewrite_prompts["bm25"])
-    prompts = []
+    prompt = deepcopy(bm25_rewrite_prompts)
     # sample demonstrations
     if sampling_by_demonstration:
-        sampling_num = gen_cfg.sample_num
+        sample_num = gen_cfg.sample_num
         gen_cfg.sample_num = 1
-        raise NotImplementedError
+        prompts = sample_by_demonstration(prompt, sample_num, demonstration_num)
+        for p in prompts:
+            p.update(ChatTurn(role="user", content=info))
     else:
-        prompt.append({"role": "user", "content": user_prompt})
-        prompts.extend(prompt)
+        prompt.update(ChatTurn(role="user", content=info))
+        prompts = [prompt]
     # generate the rewrite queries
     queries = []
     for p in prompts:
         queries.extend(generator.chat([p], generation_config=gen_cfg)[0])
+    # reduce the same queries
+    queries = list(set(queries))
     return queries
 
 
@@ -111,10 +139,14 @@ def main(config: Config):
 
         # rewrite the query
         while True:
-            rwt_queries = rewrite_query(question, generator, config.generation_config)
+            rwt_queries = rewrite_query(
+                question,
+                generator,
+                config.generation_config,
+                sampling_by_demonstration=config.sampling_by_demonstration,
+            )
             rwt_queries.append(question)
             # filter out noisy queries
-            rwt_queries = list(set(rwt_queries))
             rwt_queries = list(
                 filter(lambda x: len(x) / len(question) < 5, rwt_queries)
             )
