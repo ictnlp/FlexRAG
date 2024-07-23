@@ -9,6 +9,7 @@ from torch.nn.parallel import DataParallel as DP
 from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer
 from transformers import GenerationConfig as HFGenerationConfig
 
+from kylin.prompt import load_template, ChatPrompt
 from kylin.utils import Choices
 
 from .model_base import (
@@ -20,7 +21,6 @@ from .model_base import (
     GeneratorBase,
     GeneratorBaseConfig,
 )
-from .utils import get_prompt_func
 
 logger = logging.getLogger(__name__)
 
@@ -88,14 +88,14 @@ class HFGenerator(GeneratorBase):
             trust_remote_code=True,
         )
         # prepare prompt function
-        self.prompt_func = get_prompt_func(model=self.model, tokenizer=self.tokenizer)
+        self.template = load_template(model=self.model, tokenizer=self.tokenizer)
         return
 
     @torch.no_grad()
     def generate(
         self,
         prefixes: list[str],
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         bsz = len(prefixes)
         sample_num = generation_config.sample_num
@@ -132,10 +132,10 @@ class HFGenerator(GeneratorBase):
 
     def chat(
         self,
-        prompts: list[list[dict[str, str]]],
-        generation_config: GenerationConfig = None,
+        prompts: list[ChatPrompt],
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        prefixes = [self.prompt_func(prompt) for prompt in prompts]
+        prefixes = [self.template.render_to_text(prompt) for prompt in prompts]
         return self.generate(prefixes, generation_config)
 
     def _get_gen_cfg(self, generation_config: GenerationConfig) -> HFGenerationConfig:

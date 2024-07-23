@@ -2,6 +2,8 @@ import logging
 from dataclasses import dataclass
 from omegaconf import MISSING
 
+from kylin.prompt import ChatPrompt
+
 from .model_base import Generators, GeneratorBase, GeneratorBaseConfig, GenerationConfig
 
 
@@ -30,18 +32,19 @@ class OllamaGenerator(GeneratorBase):
 
     def chat(
         self,
-        prompts: list[list[dict[str, str]]],
-        generation_config: GenerationConfig = None,
+        prompts: list[ChatPrompt],
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         responses: list[list[str]] = []
         options = self._get_options(generation_config)
-        for conv in prompts:
+        for prompt in prompts:
             # as ollama does not support sample_num, we sample multiple times
+            prompt = prompt.to_list()
             responses.append([])
             for _ in range(generation_config.sample_num):
                 response = self.client.chat(
                     model=self.model_name,
-                    messages=conv,
+                    messages=prompt,
                     options=options,
                 )
                 responses[-1].append(response["message"]["content"])
@@ -50,7 +53,7 @@ class OllamaGenerator(GeneratorBase):
     def generate(
         self,
         prefixes: list[str],
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         responses: list[list[str]] = []
         options = self._get_options(generation_config)

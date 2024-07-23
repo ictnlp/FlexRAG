@@ -4,6 +4,7 @@ from typing import Optional
 
 import numpy as np
 
+from kylin.prompt import ChatPrompt
 from kylin.utils import Register
 
 
@@ -44,13 +45,13 @@ class GeneratorBase(ABC):
     @abstractmethod
     def chat(
         self,
-        prompts: list[list[dict[str, str]]],
+        prompts: list[ChatPrompt],
         generation_config: GenerationConfig = None,
     ) -> list[list[str]]:
         """chat with the model using model templates.
 
         Args:
-            prompts (list[list[dict[str, str]]]): A batch of chat prompts.
+            prompts (list[ChatPrompt]): A batch of ChatPrompts.
             generation_config (GenerationConfig, optional): GenerationConfig. Defaults to None.
 
         Returns:

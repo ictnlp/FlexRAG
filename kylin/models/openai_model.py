@@ -6,6 +6,8 @@ from typing import Optional
 import numpy as np
 from omegaconf import MISSING
 
+from kylin.prompt import ChatPrompt
+
 from .model_base import (
     EncoderBase,
     EncoderBaseConfig,
@@ -52,22 +54,25 @@ class OpenAIGenerator(GeneratorBase):
 
     def chat(
         self,
-        prompts: list[list[dict[str, str]]],
-        generation_config: GenerationConfig = None,
+        prompts: list[ChatPrompt],
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         responses = []
         gen_cfg = self.prepare_generation_config(generation_config)
-        for conv in prompts:
+        for prompt in prompts:
+            prompt = prompt.to_list()
             response = self.client.chat.completions.create(
                 model=self.model_name,
-                messages=conv,
+                messages=prompt,
                 **gen_cfg,
             )
             responses.append([i.message.content for i in response.choices])
         return responses
 
     def generate(
-        self, prefixes: list[str], generation_config: GenerationConfig = None
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         responses = []
         gen_cfg = self.prepare_generation_config(generation_config)

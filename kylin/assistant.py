@@ -2,7 +2,11 @@ import logging
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from kylin.kylin_prompts import shortform_generate_prompt, longform_generate_prompt
+from kylin.prompt import ChatTurn, ChatPrompt
+from kylin.prompt.searcher_prompts import (
+    shortform_generate_prompt,
+    longform_generate_prompt,
+)
 from kylin.models import (
     GenerationConfig,
     GeneratorBase,
@@ -98,7 +102,7 @@ class Assistant:
                 else:
                     prompt = deepcopy(longform_generate_prompt["without_contexts"])
             case "original":
-                prompt = []
+                prompt = ChatPrompt()
             case _:
                 raise ValueError(f"Invalid response type: {self.response_type}")
 
@@ -113,7 +117,7 @@ class Assistant:
         usr_prompt += f"Question: {question}"
 
         # generate response
-        prompt.append({"role": "user", "content": usr_prompt})
+        prompt.update(ChatTurn(role="user", content=usr_prompt))
         response = self.generator.chat([prompt], generation_config=self.gen_cfg)[0][0]
         return response, prompt
 

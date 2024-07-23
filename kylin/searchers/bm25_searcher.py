@@ -3,7 +3,12 @@ import re
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from kylin.kylin_prompts import *
+from kylin.prompt import ChatTurn
+from kylin.prompt.searcher_prompts import (
+    bm25_rewrite_prompts,
+    verify_prompt,
+    bm25_refine_prompts,
+)
 from kylin.retriever import BM25Retriever, BM25RetrieverConfig
 
 from .searcher import BaseSearcher, SearcherConfig
@@ -91,19 +96,21 @@ class BM25Searcher(BaseSearcher):
         contexts: list[str],
         base_query: str,
         current_query: str,
-    ):
+    ) -> list[str]:
         refined_queries = []
-        for prompt_type in refine_prompt["bm25"]:
-            prompt = deepcopy(refine_prompt["bm25"][prompt_type])
+        for prompt_type in bm25_refine_prompts:
+            # prepare prompt
+            prompt = deepcopy(bm25_refine_prompts[prompt_type])
             ctx_str = ""
             for n, ctx in enumerate(contexts):
                 ctx_str += f"Context {n}: {ctx['text']}\n\n"
-            prompt[-1]["content"] = ctx_str + prompt[-1]["content"]
-            prompt[-1]["content"] += f"\n\nCurrent query: {current_query}"
-            prompt[-1][
-                "content"
-            ] += f"\n\nThe information you are looking for: {base_query}"
+            prompt.history[-1].content = (
+                f"{ctx_str}{prompt.history[-1].content}\n\n"
+                f"Current query: {current_query}\n\n"
+                f"The information you are looking for: {base_query}"
+            )
             response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
+            # append refined query
             if prompt_type == "extend":
                 refined_queries.append(f"{current_query} {response}")
             elif prompt_type == "filter":
@@ -120,8 +127,8 @@ class BM25Searcher(BaseSearcher):
     def rewrite_query(self, info: str) -> str:
         # Rewrite the query to be more informative
         user_prompt = f"Query: {info}"
-        prompt = deepcopy(rewrite_prompts["bm25"])
-        prompt.append({"role": "user", "content": user_prompt})
+        prompt = deepcopy(bm25_rewrite_prompts)
+        prompt.update(ChatTurn(role="user", content=user_prompt))
         query = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
         return query
 
@@ -135,7 +142,7 @@ class BM25Searcher(BaseSearcher):
         for n, ctx in enumerate(contexts):
             user_prompt += f"Context {n}: {ctx['text']}\n\n"
         user_prompt += f"Topic: {question}"
-        prompt.append({"role": "user", "content": user_prompt})
+        prompt.update(ChatTurn(role="user", content=user_prompt))
         response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
         return "yes" in response.lower()
 

@@ -4,10 +4,10 @@ from omegaconf import MISSING
 from transformers import AutoConfig
 from vllm import LLM, SamplingParams
 
+from kylin.prompt import load_template, ChatPrompt
 from kylin.utils import Choices
 
 from .model_base import Generators, GenerationConfig, GeneratorBase, GeneratorBaseConfig
-from .utils import get_prompt_func
 
 
 @dataclass
@@ -36,14 +36,13 @@ class VLLMGenerator(GeneratorBase):
         stop_ids = [self.tokenizer.eos_token_id]
         if cfg_name == "LlamaConfig":
             stop_ids.append(self.tokenizer.convert_tokens_to_ids("<|eot_id|>"))
-        self.prompt_func = get_prompt_func(
-            model=self.model,
-            tokenizer=self.tokenizer,
-        )
+        self.template = load_template(model=self.model, tokenizer=self.tokenizer)
         return
 
     def generate(
-        self, prefixes: list[str], generation_config: GenerationConfig = None
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         if generation_config.eos_token_id is not None:
             stop_token_ids = [generation_config.eos_token_id]
@@ -67,8 +66,8 @@ class VLLMGenerator(GeneratorBase):
 
     def chat(
         self,
-        prompts: list[list[dict[str, str]]],
-        generation_config: GenerationConfig = None,
+        prompts: list[ChatPrompt],
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        prefixes = [self.prompt_func(prompt) for prompt in prompts]
+        prefixes = [self.template.render_to_text(prompt) for prompt in prompts]
         return self.generate(prefixes, generation_config)

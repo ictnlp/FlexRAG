@@ -7,7 +7,6 @@ from .model_base import (
 )
 from .ollama_model import OllamaGenerator, OllamaGeneratorConfig
 from .openai_model import OpenAIGenerator, OpenAIGeneratorConfig
-from .utils import get_prompt_func
 from .vllm_model import VLLMGenerator, VLLMGeneratorConfig
 
 from .model_loader import (  # isort:skip
@@ -32,7 +31,6 @@ __all__ = [
     "OpenAIGeneratorConfig",
     "VLLMGenerator",
     "VLLMGeneratorConfig",
-    "get_prompt_func",
     "EncoderConfig",
     "GeneratorConfig",
     "load_encoder",

@@ -2,7 +2,6 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 
-from kylin.kylin_prompts import *
 from kylin.models import GenerationConfig, GeneratorConfig, load_generator
 from kylin.retriever import Retriever
 
