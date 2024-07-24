@@ -179,9 +179,8 @@ class BM25Searcher(BaseSearcher):
 
     def rewrite_query(self, info: str) -> str:
         # Rewrite the query to be more informative
-        user_prompt = f"Query: {info}"
         prompt = deepcopy(self.rewrite_prompt)
-        prompt.update(ChatTurn(role="user", content=user_prompt))
+        prompt.update(ChatTurn(role="user", content=info))
         query = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
         return query
 
