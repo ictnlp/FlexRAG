@@ -1,0 +1,59 @@
+{
+    "system": {
+        "role": "system",
+        "content": "Please indicate the external knowledge needed to answer the following question. If the question can be answered without external knowledge, answer \"No additional information is required\".\n\n"
+    },
+    "history": [],
+    "demonstrations": [
+        [
+            {
+                "role": "user",
+                "content": "Question: who got the first nobel prize in physics."
+            },
+            {
+                "role": "assistant",
+                "content": "[1] The first physics Nobel Laureate."
+            }
+        ],
+        [
+            {
+                "role": "user",
+                "content": "Question: big little lies season 2 how many episodes"
+            },
+            {
+                "role": "assistant",
+                "content": "[1] The total number of episodes in the first season."
+            }
+        ],
+        [
+            {
+                "role": "user",
+                "content": "Question: who sings i can't stop this feeling anymore?"
+            },
+            {
+                "role": "assistant",
+                "content": "[1] The singer of \"i can't stop this feeling anymore\"."
+            }
+        ],
+        [
+            {
+                "role": "user",
+                "content": "what is 1 radian in terms of pi?"
+            },
+            {
+                "role": "assistant",
+                "content": "No additional information is required."
+            }
+        ],
+        [
+            {
+                "role": "user",
+                "content": "Question: Which magazine was started first Arthur's Magazine or First for Women?"
+            },
+            {
+                "role": "assistant",
+                "content": "[1] The time when Arthur's Magazine was founded.\n[2] The time when First for Women was founded."
+            }
+        ]
+    ]
+}

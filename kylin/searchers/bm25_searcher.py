@@ -1,14 +1,10 @@
 import logging
+import os
 import re
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from kylin.prompt import ChatTurn
-from kylin.prompt.searcher_prompts import (
-    bm25_rewrite_prompts,
-    verify_prompt,
-    bm25_refine_prompts,
-)
+from kylin.prompt import ChatTurn, ChatPrompt
 from kylin.retriever import BM25Retriever, BM25RetrieverConfig
 
 from .searcher import BaseSearcher, SearcherConfig
@@ -39,6 +35,45 @@ class BM25Searcher(BaseSearcher):
 
         # load BM25 Retriever
         self.retriever = BM25Retriever(cfg.retriever_config)
+
+        # load prompts
+        self.rewrite_prompt = ChatPrompt.from_file(
+            os.path.join(
+                os.path.dirname(__file__),
+                "searcher_prompts",
+                "bm25_rewrite_prompt.json",
+            )
+        )
+        self.verify_prompt = ChatPrompt.from_file(
+            os.path.join(
+                os.path.dirname(__file__),
+                "searcher_prompts",
+                "verify_prompt.json",
+            )
+        )
+        self.refine_prompts = {
+            "extend": ChatPrompt.from_file(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "searcher_prompts",
+                    "bm25_refine_extend_prompt.json",
+                )
+            ),
+            "filter": ChatPrompt.from_file(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "searcher_prompts",
+                    "bm25_refine_filter_prompt.json",
+                )
+            ),
+            "emphasize": ChatPrompt.from_file(
+                os.path.join(
+                    os.path.dirname(__file__),
+                    "searcher_prompts",
+                    "bm25_refine_emphasize_prompt.json",
+                )
+            ),
+        }
         return
 
     def search(
@@ -98,9 +133,9 @@ class BM25Searcher(BaseSearcher):
         current_query: str,
     ) -> list[str]:
         refined_queries = []
-        for prompt_type in bm25_refine_prompts:
+        for prompt_type in self.refine_prompts:
             # prepare prompt
-            prompt = deepcopy(bm25_refine_prompts[prompt_type])
+            prompt = deepcopy(self.refine_prompts[prompt_type])
             ctx_str = ""
             for n, ctx in enumerate(contexts):
                 ctx_str += f"Context {n}: {ctx['text']}\n\n"
@@ -127,7 +162,7 @@ class BM25Searcher(BaseSearcher):
     def rewrite_query(self, info: str) -> str:
         # Rewrite the query to be more informative
         user_prompt = f"Query: {info}"
-        prompt = deepcopy(bm25_rewrite_prompts)
+        prompt = deepcopy(self.rewrite_prompt)
         prompt.update(ChatTurn(role="user", content=user_prompt))
         query = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
         return query
@@ -137,7 +172,7 @@ class BM25Searcher(BaseSearcher):
         contexts: list[dict[str, str]],
         question: str,
     ) -> bool:
-        prompt = deepcopy(verify_prompt)
+        prompt = deepcopy(self.verify_prompt)
         user_prompt = ""
         for n, ctx in enumerate(contexts):
             user_prompt += f"Context {n}: {ctx['text']}\n\n"

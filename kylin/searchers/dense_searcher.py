@@ -1,9 +1,9 @@
 import logging
+import os
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from kylin.prompt import ChatTurn
-from kylin.prompt.searcher_prompts import dense_rewrite_prompts
+from kylin.prompt import ChatTurn, ChatPrompt
 from kylin.retriever import DenseRetriever, DenseRetrieverConfig
 
 from .searcher import BaseSearcher, SearcherConfig
@@ -32,6 +32,15 @@ class DenseSearcher(BaseSearcher):
 
         # load Dense Retrieve
         self.retriever = DenseRetriever(cfg.retriever_config)
+
+        # load prompt
+        self.rewrite_prompt = ChatPrompt.from_file(
+            os.path.join(
+                os.path.dirname(__file__),
+                "searcher_prompts",
+                "dense_rewrite_prompt.json",
+            )
+        )
         return
 
     def search(
@@ -51,7 +60,7 @@ class DenseSearcher(BaseSearcher):
     def rewrite_query(self, info: str) -> str:
         # Rewrite the query to be more informative
         user_prompt = f"Query: {info}"
-        prompt = deepcopy(dense_rewrite_prompts)
+        prompt = deepcopy(self.rewrite_prompt)
         prompt.update(ChatTurn(role="user", content=user_prompt))
         query = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
         return query

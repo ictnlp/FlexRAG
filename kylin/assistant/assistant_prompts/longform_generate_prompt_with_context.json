@@ -1,0 +1,8 @@
+{
+    "system": {
+        "role": "system",
+        "content": "Answer the question based on the given contexts. Note that the context might not always contain relevant information to answer the question."
+    },
+    "history": [],
+    "demonstrations": []
+}

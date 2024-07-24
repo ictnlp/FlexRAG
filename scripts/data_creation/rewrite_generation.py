@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import pathlib
 import sys
 from copy import deepcopy
@@ -15,7 +16,6 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
 
 
 from kylin.prompt import ChatTurn, ChatPrompt
-from kylin.prompt.searcher_prompts import bm25_rewrite_prompts
 from kylin.metrics import RetrievalEvaluator, RetrievalEvaluatorConfig
 from kylin.models import (
     GenerationConfig,
@@ -84,7 +84,12 @@ def rewrite_query(
     demonstration_num: int = 3,
 ) -> list[str]:
     """Rewrite the query to be more informative"""
-    prompt = deepcopy(bm25_rewrite_prompts)
+    prompt = ChatPrompt.from_file(
+        os.path.join(
+            os.path.dirname(__file__),
+            "../../kylin/searchers/searcher_prompts/bm25_rewrite_prompt.json",
+        )
+    )
     # sample demonstrations
     if sampling_by_demonstration:
         sample_num = gen_cfg.sample_num

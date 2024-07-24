@@ -1,12 +1,9 @@
 import logging
+import os
 from copy import deepcopy
 from dataclasses import dataclass, field
 
 from kylin.prompt import ChatTurn, ChatPrompt
-from kylin.prompt.searcher_prompts import (
-    shortform_generate_prompt,
-    longform_generate_prompt,
-)
 from kylin.models import (
     GenerationConfig,
     GeneratorBase,
@@ -38,11 +35,14 @@ class AssistantConfig:
 
 class Assistant:
     def __init__(self, cfg: AssistantConfig):
+        # set basic args
         self.adaptive_retrieval = cfg.adaptive_retrieval
         self.gen_cfg = cfg.generation_config
         if self.gen_cfg.sample_num > 1:
             logger.warning("Sample num > 1 is not supported for Assistant")
             self.gen_cfg.sample_num = 1
+
+        # load generator
         self.generator = self.load_generator(
             cfg.generator_type,
             vllm_cfg=cfg.vllm_config,
@@ -50,7 +50,42 @@ class Assistant:
             openai_cfg=cfg.openai_config,
             ollama_cfg=cfg.ollama_config,
         )
-        self.response_type = cfg.response_type
+
+        # load prompts
+        match cfg.response_type:
+            case "short":
+                self.prompt_with_ctx = ChatPrompt.from_file(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        "assistant_prompts",
+                        "shortform_generaete_prompt_with_contexts.json",
+                    )
+                )
+                self.prompt_wo_ctx = ChatPrompt.from_file(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        "assistant_prompts",
+                        "shortform_generaete_prompt_without_contexts.json",
+                    )
+                )
+            case "long":
+                self.prompt_with_ctx = ChatPrompt.from_file(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        "assistant_prompts",
+                        "longform_generaete_prompt_with_contexts.json",
+                    )
+                )
+                self.prompt_wo_ctx = ChatPrompt.from_file(
+                    os.path.join(
+                        os.path.dirname(__file__),
+                        "assistant_prompts",
+                        "longform_generaete_prompt_without_contexts.json",
+                    )
+                )
+            case "original":
+                self.prompt_with_ctx = ChatPrompt()
+                self.prompt_wo_ctx = ChatPrompt()
         return
 
     def load_generator(
@@ -90,21 +125,10 @@ class Assistant:
                 contexts = []
 
         # prepare system prompt
-        match self.response_type:
-            case "short":
-                if len(contexts) > 0:
-                    prompt = deepcopy(shortform_generate_prompt["with_contexts"])
-                else:
-                    prompt = deepcopy(shortform_generate_prompt["without_contexts"])
-            case "long":
-                if len(contexts) > 0:
-                    prompt = deepcopy(longform_generate_prompt["with_contexts"])
-                else:
-                    prompt = deepcopy(longform_generate_prompt["without_contexts"])
-            case "original":
-                prompt = ChatPrompt()
-            case _:
-                raise ValueError(f"Invalid response type: {self.response_type}")
+        if len(contexts) > 0:
+            prompt = deepcopy(self.prompt_with_ctx)
+        else:
+            prompt = deepcopy(self.prompt_wo_ctx)
 
         # prepare user prompt
         usr_prompt = ""

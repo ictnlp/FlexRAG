@@ -1,0 +1,8 @@
+{
+    "system": {
+        "role": "system",
+        "content": "The following context is retrieved using the given query. However, the context may not contain the information you are looking for. Please provide one keyword to filter out irrelevant information. "
+    },
+    "history": [],
+    "demonstrations": []
+}

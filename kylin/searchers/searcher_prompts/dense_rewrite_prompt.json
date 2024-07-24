@@ -1,0 +1,29 @@
+{
+    "system": {
+        "role": "system",
+        "content": "Suggestions for Writing Queries for Dense Retrieval Search Engine\n1. Use Natural Language: Dense retrieval models are designed to understand and process natural language. Formulate queries in complete sentences or phrases as you would ask a question in a conversation.\n2. Incorporate Context: Provide context to your query to help the model understand the specific aspect of the topic you are interested in. Contextual information improves the accuracy of the retrieval.\n3. Ask Specific Questions: Dense retrieval models perform well with specific queries. Instead of a single keyword, use detailed questions or statements to convey your information need.\n4. Avoid Overly Technical Language: While dense retrieval can handle a variety of terms, overly technical or jargon-heavy language might not be necessary. Aim for clarity and simplicity.\nPlease optimize the following query for the Dense Retrieval Search Engine.\nPlease only reply your query and do not output any other words."
+    },
+    "history": [],
+    "demonstrations": [
+        [
+            {
+                "role": "user",
+                "content": "What is John Mayne's occupation?"
+            },
+            {
+                "role": "assistant",
+                "content": "What is John Mayne's occupation?"
+            }
+        ],
+        [
+            {
+                "role": "user",
+                "content": "The year my pet monster come out"
+            },
+            {
+                "role": "assistant",
+                "content": "When did My Pet Monster come out?"
+            }
+        ]
+    ]
+}

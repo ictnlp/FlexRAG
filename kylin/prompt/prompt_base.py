@@ -1,5 +1,7 @@
+import json
 from dataclasses import dataclass, field
 from typing import Optional
+from os import PathLike
 
 from kylin.utils import Choices
 
@@ -61,14 +63,39 @@ class ChatPrompt:
             data.append(turn.to_dict())
         return data
 
+    def to_file(self, path: str | PathLike):
+        data = {"system": self.system.to_dict(), "history": [], "demonstrations": []}
+        for turn in self.history:
+            data["history"].append(turn.to_dict())
+        for demo in self.demonstrations:
+            data["demonstrations"].append([turn.to_dict() for turn in demo])
+        with open(path, "w") as f:
+            json.dump(data, f, indent=4, ensure_ascii=False)
+        return
+
     @classmethod
-    def from_list(cls, prompt: list[dict[str, str]]):
+    def from_list(cls, prompt: list[dict[str, str]]) -> "ChatPrompt":
         history = [ChatTurn.from_dict(turn) for turn in prompt]
         if history[0].role == "system":
             system = history.pop(0)
         else:
             system = None
         return cls(system=system, history=history, demonstrations=[])
+
+    @classmethod
+    def from_file(cls, path: str | PathLike) -> "ChatPrompt":
+        with open(path, "r") as f:
+            data = json.load(f)
+        if isinstance(data, list):
+            return cls.from_list(data)
+        return cls(
+            system=ChatTurn.from_dict(data["system"]),
+            history=[ChatTurn.from_dict(turn) for turn in data["history"]],
+            demonstrations=[
+                [ChatTurn.from_dict(turn) for turn in demo]
+                for demo in data["demonstrations"]
+            ],
+        )
 
     def pop_history(self, n: int) -> ChatTurn:
         return self.history.pop(n)
