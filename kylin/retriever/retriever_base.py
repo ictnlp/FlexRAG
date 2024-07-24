@@ -8,6 +8,7 @@ from typing import Iterable
 import numpy as np
 
 from kylin.text_process import normalize_token
+from kylin.utils import SimpleProgressLogger
 
 from .cache import PersistentLRUCache, hashkey
 
@@ -178,11 +179,9 @@ class LocalRetriever(Retriever):
         # search for documents
         query = [query] if isinstance(query, str) else query
         final_results = []
-        for n, idx in enumerate(range(0, len(query), self.batch_size)):
-            if (n % self.log_interval == 0) and (len(query) > self.batch_size):
-                logger.info(
-                    f"Searching for batch {n} / {len(query) // self.batch_size}"
-                )
+        p_logger = SimpleProgressLogger(logger, len(query), self.log_interval)
+        for idx in range(0, len(query), self.batch_size):
+            p_logger.update(1, "Retrieving")
             batch = query[idx : idx + self.batch_size]
             results_ = self.search_batch(batch, top_k, **search_kwargs)
             final_results.extend(results_)

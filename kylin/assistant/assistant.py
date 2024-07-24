@@ -58,14 +58,14 @@ class Assistant:
                     os.path.join(
                         os.path.dirname(__file__),
                         "assistant_prompts",
-                        "shortform_generaete_prompt_with_contexts.json",
+                        "shortform_generate_prompt_with_context.json",
                     )
                 )
                 self.prompt_wo_ctx = ChatPrompt.from_json(
                     os.path.join(
                         os.path.dirname(__file__),
                         "assistant_prompts",
-                        "shortform_generaete_prompt_without_contexts.json",
+                        "shortform_generate_prompt_without_context.json",
                     )
                 )
             case "long":
@@ -73,14 +73,14 @@ class Assistant:
                     os.path.join(
                         os.path.dirname(__file__),
                         "assistant_prompts",
-                        "longform_generaete_prompt_with_contexts.json",
+                        "longform_generate_prompt_with_context.json",
                     )
                 )
                 self.prompt_wo_ctx = ChatPrompt.from_json(
                     os.path.join(
                         os.path.dirname(__file__),
                         "assistant_prompts",
-                        "longform_generaete_prompt_without_contexts.json",
+                        "longform_generate_prompt_without_context.json",
                     )
                 )
             case "original":

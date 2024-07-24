@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from kylin.prompt import ChatTurn, ChatPrompt
 from kylin.retriever import BM25Retriever, BM25RetrieverConfig
+from kylin.utils import Choices
 
 from .searcher import BaseSearcher, SearcherConfig
 
@@ -16,7 +17,7 @@ logger = logging.getLogger("BM25Searcher")
 @dataclass
 class BM25SearcherConfig(SearcherConfig):
     retriever_config: BM25RetrieverConfig = field(default_factory=BM25RetrieverConfig)
-    rewrite_query: bool = False
+    rewrite_query: Choices(["always", "never", "adaptive"]) = "never"  # type: ignore
     summarize_context: bool = False
     feedback_depth: int = 1
     retriever_top_k: int = 10
@@ -81,15 +82,32 @@ class BM25Searcher(BaseSearcher):
     ) -> tuple[list[dict[str, str]], list[dict[str, object]]]:
         retrieval_history = []
 
-        # initialize search stack
-        if self.rewrite:
-            query_to_search = self.rewrite_query(question)
-        else:
-            query_to_search = question
-        search_stack = [(query_to_search, 1)]
-        total_depth = self.feedback_depth + 1
+        # rewrite the query
+        match self.rewrite:
+            case "always":
+                query_to_search = self.rewrite_query(question)
+            case "never":
+                query_to_search = question
+            case "adaptive":
+                ctxs = self.retriever.search(
+                    query=[question],
+                    top_k=self.retriever_top_k,
+                    disable_cache=self.disable_cache,
+                )[0]
+                verification = self.verify_contexts(ctxs, question)
+                retrieval_history.append(
+                    {
+                        "query": question,
+                        "ctxs": ctxs,
+                    }
+                )
+                if verification:
+                    return ctxs, retrieval_history
+                query_to_search = self.rewrite_query(question)
 
         # begin BFS search
+        search_stack = [(query_to_search, 1)]
+        total_depth = self.feedback_depth + 1
         while len(search_stack) > 0:
             # search
             query_to_search, depth = search_stack.pop(0)
