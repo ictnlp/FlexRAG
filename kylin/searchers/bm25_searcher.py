@@ -37,14 +37,14 @@ class BM25Searcher(BaseSearcher):
         self.retriever = BM25Retriever(cfg.retriever_config)
 
         # load prompts
-        self.rewrite_prompt = ChatPrompt.from_file(
+        self.rewrite_prompt = ChatPrompt.from_json(
             os.path.join(
                 os.path.dirname(__file__),
                 "searcher_prompts",
                 "bm25_rewrite_prompt.json",
             )
         )
-        self.verify_prompt = ChatPrompt.from_file(
+        self.verify_prompt = ChatPrompt.from_json(
             os.path.join(
                 os.path.dirname(__file__),
                 "searcher_prompts",
@@ -52,21 +52,21 @@ class BM25Searcher(BaseSearcher):
             )
         )
         self.refine_prompts = {
-            "extend": ChatPrompt.from_file(
+            "extend": ChatPrompt.from_json(
                 os.path.join(
                     os.path.dirname(__file__),
                     "searcher_prompts",
                     "bm25_refine_extend_prompt.json",
                 )
             ),
-            "filter": ChatPrompt.from_file(
+            "filter": ChatPrompt.from_json(
                 os.path.join(
                     os.path.dirname(__file__),
                     "searcher_prompts",
                     "bm25_refine_filter_prompt.json",
                 )
             ),
-            "emphasize": ChatPrompt.from_file(
+            "emphasize": ChatPrompt.from_json(
                 os.path.join(
                     os.path.dirname(__file__),
                     "searcher_prompts",

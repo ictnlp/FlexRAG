@@ -63,7 +63,7 @@ class ChatPrompt:
             data.append(turn.to_dict())
         return data
 
-    def to_file(self, path: str | PathLike):
+    def to_json(self, path: str | PathLike):
         data = {"system": self.system.to_dict(), "history": [], "demonstrations": []}
         for turn in self.history:
             data["history"].append(turn.to_dict())
@@ -83,7 +83,7 @@ class ChatPrompt:
         return cls(system=system, history=history, demonstrations=[])
 
     @classmethod
-    def from_file(cls, path: str | PathLike) -> "ChatPrompt":
+    def from_json(cls, path: str | PathLike) -> "ChatPrompt":
         with open(path, "r") as f:
             data = json.load(f)
         if isinstance(data, list):
@@ -96,6 +96,14 @@ class ChatPrompt:
                 for demo in data["demonstrations"]
             ],
         )
+
+    def load_demonstrations(self, demo_path: str | PathLike):
+        with open(demo_path, "r") as f:
+            data = json.load(f)
+        self.demonstrations = [
+            [ChatTurn.from_dict(turn) for turn in demo] for demo in data
+        ]
+        return
 
     def pop_history(self, n: int) -> ChatTurn:
         return self.history.pop(n)

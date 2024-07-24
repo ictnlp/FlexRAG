@@ -42,6 +42,7 @@ class Config(GeneratorConfig):
     eval_config: RetrievalEvaluatorConfig = field(default_factory=RetrievalEvaluatorConfig)  # fmt: skip
     disable_cache: bool = False
     sampling_by_demonstration: bool = False
+    demonstration_num: int = 3
     log_interval: int = 10
 
 
@@ -84,7 +85,7 @@ def rewrite_query(
     demonstration_num: int = 3,
 ) -> list[str]:
     """Rewrite the query to be more informative"""
-    prompt = ChatPrompt.from_file(
+    prompt = ChatPrompt.from_json(
         os.path.join(
             os.path.dirname(__file__),
             "../../kylin/searchers/searcher_prompts/bm25_rewrite_prompt.json",
@@ -98,6 +99,8 @@ def rewrite_query(
         for p in prompts:
             p.update(ChatTurn(role="user", content=info))
     else:
+        if demonstration_num >= 0:
+            prompt.demonstrations = prompt.demonstrations[:demonstration_num]
         prompt.update(ChatTurn(role="user", content=info))
         prompts = [prompt]
     # generate the rewrite queries
@@ -106,6 +109,7 @@ def rewrite_query(
         queries.extend(generator.chat([p], generation_config=gen_cfg)[0])
     # reduce the same queries
     queries = list(set(queries))
+    queries = list(filter(lambda x: len(x) / len(info) < 5, queries))
     return queries
 
 
@@ -149,12 +153,9 @@ def main(config: Config):
                 generator,
                 config.generation_config,
                 sampling_by_demonstration=config.sampling_by_demonstration,
+                demonstration_num=config.demonstration_num,
             )
             rwt_queries.append(question)
-            # filter out noisy queries
-            rwt_queries = list(
-                filter(lambda x: len(x) / len(question) < 5, rwt_queries)
-            )
             if len(rwt_queries) > 1:
                 break
 
@@ -179,6 +180,8 @@ def main(config: Config):
     # dump the results
     with open(config.data_config.output_path, "w") as f:
         json.dump(results, f, indent=4, ensure_ascii=False)
+
+    return
 
 
 if __name__ == "__main__":

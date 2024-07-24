@@ -54,14 +54,14 @@ class Assistant:
         # load prompts
         match cfg.response_type:
             case "short":
-                self.prompt_with_ctx = ChatPrompt.from_file(
+                self.prompt_with_ctx = ChatPrompt.from_json(
                     os.path.join(
                         os.path.dirname(__file__),
                         "assistant_prompts",
                         "shortform_generaete_prompt_with_contexts.json",
                     )
                 )
-                self.prompt_wo_ctx = ChatPrompt.from_file(
+                self.prompt_wo_ctx = ChatPrompt.from_json(
                     os.path.join(
                         os.path.dirname(__file__),
                         "assistant_prompts",
@@ -69,14 +69,14 @@ class Assistant:
                     )
                 )
             case "long":
-                self.prompt_with_ctx = ChatPrompt.from_file(
+                self.prompt_with_ctx = ChatPrompt.from_json(
                     os.path.join(
                         os.path.dirname(__file__),
                         "assistant_prompts",
                         "longform_generaete_prompt_with_contexts.json",
                     )
                 )
-                self.prompt_wo_ctx = ChatPrompt.from_file(
+                self.prompt_wo_ctx = ChatPrompt.from_json(
                     os.path.join(
                         os.path.dirname(__file__),
                         "assistant_prompts",

@@ -34,7 +34,7 @@ class DenseSearcher(BaseSearcher):
         self.retriever = DenseRetriever(cfg.retriever_config)
 
         # load prompt
-        self.rewrite_prompt = ChatPrompt.from_file(
+        self.rewrite_prompt = ChatPrompt.from_json(
             os.path.join(
                 os.path.dirname(__file__),
                 "searcher_prompts",
