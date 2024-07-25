@@ -109,7 +109,7 @@ class Assistant:
                 raise ValueError(f"Not supported model: {model_type}")
         return model
 
-    def answer(self, question: str, contexts: list) -> tuple[str, list[dict[str, str]]]:
+    def answer(self, question: str, contexts: list) -> tuple[str, ChatPrompt]:
         """Answer question with given contexts
 
         Args:
@@ -118,7 +118,7 @@ class Assistant:
 
         Returns:
             response (str): response to the question
-            prompt (list[dict[str, str]]): prompt used.
+            prompt (ChatPrompt): prompt used.
         """
         if self.adaptive_retrieval:
             if not self.decide_search(question):

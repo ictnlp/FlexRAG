@@ -97,7 +97,7 @@ def main(config: Config):
         # generate
         r, prompt = assistant.answer(question=q, contexts=ctxs)
         responses.append(r)
-        prompts.append(prompt)
+        prompts.append(prompt.to_list())
 
     if searcher is not None:
         searcher.close()
