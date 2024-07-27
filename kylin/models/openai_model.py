@@ -18,6 +18,8 @@ from .model_base import (
     Generators,
 )
 
+logger = logging.getLogger("OpenaiModel")
+
 
 @dataclass
 class OpenAIGeneratorConfig(GeneratorBaseConfig):
@@ -57,15 +59,26 @@ class OpenAIGenerator(GeneratorBase):
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        from openai import BadRequestError
+
         responses = []
         gen_cfg = self.prepare_generation_config(generation_config)
         for prompt in prompts:
             prompt = prompt.to_list()
-            response = self.client.chat.completions.create(
-                model=self.model_name,
-                messages=prompt,
-                **gen_cfg,
-            )
+            try:
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=prompt,
+                    **gen_cfg,
+                )
+            except BadRequestError as e:
+                match e.code:
+                    case 400:
+                        logger.error(f"{e.message}")
+                        logger.error(f"Prompt: {prompt}")
+                        raise e
+                    case _:
+                        raise e
             responses.append([i.message.content for i in response.choices])
         return responses
 
