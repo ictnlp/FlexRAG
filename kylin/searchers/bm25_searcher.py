@@ -18,7 +18,6 @@ logger = logging.getLogger("BM25Searcher")
 class BM25SearcherConfig(BaseSearcherConfig):
     retriever_config: BM25RetrieverConfig = field(default_factory=BM25RetrieverConfig)
     rewrite_query: Choices(["always", "never", "adaptive"]) = "never"  # type: ignore
-    summarize_context: bool = False
     feedback_depth: int = 1
     retriever_top_k: int = 10
     disable_cache: bool = False
@@ -31,7 +30,6 @@ class BM25Searcher(BaseSearcher):
         # setup BM25 Searcher
         self.rewrite = cfg.rewrite_query
         self.feedback_depth = cfg.feedback_depth
-        self.summary_context = cfg.summarize_context
         self.retriever_top_k = cfg.retriever_top_k
         self.disable_cache = cfg.disable_cache
 

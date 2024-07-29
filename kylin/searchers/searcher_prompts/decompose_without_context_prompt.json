@@ -1,0 +1,65 @@
+{
+    "system": {
+        "role": "system",
+        "content": "Please identify the external knowledge necessary to answer the following question. If multiple concurrent pieces of external knowledge are needed, list them all. If the required external knowledge is interdependent, list only the initial piece of external knowledge needed."
+    },
+    "history": [],
+    "demonstrations": [
+        [
+            {
+                "role": "user",
+                "content": "Question: Which magazine was started first Arthur's Magazine or First for Women?"
+            },
+            {
+                "role": "assistant",
+                "content": "[1] When Arthur's Magazine was founded.\n[2] When First for Women was founded."
+            }
+        ],
+        [
+            {
+                "role": "user",
+                "content": "Question: What nationality was Henry Valentine Miller's wife?"
+            },
+            {
+                "role": "assistant",
+                "content": "[1] Who was Henry Valentine Miller's wife?"
+            }
+        ],
+        [
+            {
+                "role": "user",
+                "content": "Question: Are director of film Move (1970 Film) and director of film Méditerranée (1963 Film) from the same country?"
+            },
+            {
+                "role": "assistant",
+                "content": "[1] Who direct the film Move (1970 Film)?\n[2] Who direct the film Méditerranée (1963 Film)?"
+            }
+        ],
+        [
+            {
+                "role": "user",
+                "content": "Question: Who is Rhescuporis I (Odrysian)'s paternal grandfather?"
+            },
+            {
+                "role": "assistant",
+                "content": "[1] Who is Rhescuporis I (Odrysian)'s father?"
+            }
+        ],
+        [
+            {
+                "role": "user",
+                "content": "Question: Which film came out first, The Love Route or Engal Aasan?"
+            },
+            {
+                "role": "assistant",
+                "content": "[1] When did The Love Route come out?\n[2] When did Engal Aasan come out?"
+            }
+        ]
+    ],
+    "demonstrations_source": [
+        "hotpotqa-train",
+        "hotpotqa-train",
+        "2wikimultihopqa-train",
+        "2wikimultihopqa-train"
+    ]
+}
