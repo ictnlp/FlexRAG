@@ -5,6 +5,7 @@ from dataclasses import dataclass, field
 
 from kylin.prompt import ChatTurn, ChatPrompt
 from kylin.retriever import (
+    RetrievedContext,
     DuckDuckGoRetriever,
     DuckDuckGoRetrieverConfig,
     BingRetriever,
@@ -12,7 +13,7 @@ from kylin.retriever import (
 )
 from kylin.utils import Choices
 
-from .searcher import BaseSearcher, SearcherConfig
+from .searcher import BaseSearcher, BaseSearcherConfig, Searchers
 
 
 logger = logging.getLogger("WebSearcher")
@@ -20,7 +21,7 @@ logger = logging.getLogger("WebSearcher")
 
 # fmt: off
 @dataclass
-class WebSearcherConfig(SearcherConfig):
+class WebSearcherConfig(BaseSearcherConfig):
     ddg_config: DuckDuckGoRetrieverConfig = field(default_factory=DuckDuckGoRetrieverConfig)
     bing_config: BingRetrieverConfig = field(default_factory=BingRetrieverConfig)
     retriever_type: Choices(["ddg", "bing"]) = "ddg"  # type: ignore
@@ -30,6 +31,7 @@ class WebSearcherConfig(SearcherConfig):
 # fmt: on
 
 
+@Searchers("web", config_class=WebSearcherConfig)
 class WebSearcher(BaseSearcher):
     def __init__(self, cfg: WebSearcherConfig) -> None:
         super().__init__(cfg)
@@ -59,7 +61,7 @@ class WebSearcher(BaseSearcher):
 
     def search(
         self, question: str
-    ) -> tuple[list[dict[str, str]], list[dict[str, object]]]:
+    ) -> tuple[list[RetrievedContext], list[dict[str, object]]]:
         # initialize search stack
         if self.rewrite:
             query_to_search = self.rewrite_query(question)

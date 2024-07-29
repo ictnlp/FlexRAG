@@ -16,6 +16,7 @@ from kylin.models import (
     VLLMGenerator,
     VLLMGeneratorConfig,
 )
+from kylin.retriever import RetrievedContext
 from kylin.utils import Choices
 
 logger = logging.getLogger("Assistant")
@@ -109,7 +110,9 @@ class Assistant:
                 raise ValueError(f"Not supported model: {model_type}")
         return model
 
-    def answer(self, question: str, contexts: list) -> tuple[str, ChatPrompt]:
+    def answer(
+        self, question: str, contexts: list[RetrievedContext]
+    ) -> tuple[str, ChatPrompt]:
         """Answer question with given contexts
 
         Args:
@@ -133,10 +136,10 @@ class Assistant:
         # prepare user prompt
         usr_prompt = ""
         for n, context in enumerate(contexts):
-            if "summary" in context:
-                ctx = context["summary"]
+            if context.text:
+                ctx = context.text
             else:
-                ctx = context["text"]
+                ctx = context.full_text
             usr_prompt += f"Context {n + 1}: {ctx}\n\n"
         usr_prompt += f"Question: {question}"
 

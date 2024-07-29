@@ -17,7 +17,7 @@ from .index import (
     ScaNNIndexConfig,
     DenseIndex,
 )
-from .retriever_base import LocalRetriever, LocalRetrieverConfig
+from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
 
 
 logger = logging.getLogger("DenseRetriever")
@@ -201,23 +201,23 @@ class DenseRetriever(LocalRetriever):
         query: list[str],
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[list[dict[str, str]]]:
+    ) -> list[list[RetrievedContext]]:
         texts = [self._prepare_text(q) for q in query]
         embeddings = self.query_encoder.encode(texts)
         indices, scores = self.index.search(embeddings, top_k, **search_kwargs)
         results = [
             [
-                {
-                    "retriever": self.name,
-                    "query": q,
-                    "source": self.source,
-                    "chunk_id": int(chunk_id),
-                    "score": float(s),
-                    "title": self.db_table[chunk_id]["title"].decode(),
-                    "section": self.db_table[chunk_id]["section"].decode(),
-                    "text": self.db_table[chunk_id]["text"].decode(),
-                    "full_text": self.db_table[chunk_id]["text"].decode(),
-                }
+                RetrievedContext(
+                    retriever=self.name,
+                    query=q,
+                    source=self.source,
+                    chunk_id=int(chunk_id),
+                    score=float(s),
+                    title=self.db_table[chunk_id]["title"].decode(),
+                    section=self.db_table[chunk_id]["section"].decode(),
+                    text=self.db_table[chunk_id]["text"].decode(),
+                    full_text=self.db_table[chunk_id]["text"].decode(),
+                )
                 for chunk_id, s in zip(idx, score)
             ]
             for q, idx, score in zip(query, indices, scores)

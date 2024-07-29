@@ -3,6 +3,7 @@ from .retriever_base import (
     LocalRetrieverConfig,
     Retriever,
     RetrieverConfig,
+    RetrievedContext,
 )
 from .dense_retriever import DenseRetriever, DenseRetrieverConfig
 from .bm25_retriever import BM25Retriever, BM25RetrieverConfig

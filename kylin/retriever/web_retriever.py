@@ -11,7 +11,7 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 
 from kylin.utils import SimpleProgressLogger
 
-from .retriever_base import Retriever, RetrieverConfig
+from .retriever_base import Retriever, RetrieverConfig, RetrievedContext
 
 
 logger = logging.getLogger(__name__)
@@ -57,7 +57,7 @@ class WebRetriever(Retriever):
         top_k: int = 10,
         delay: float = 0.1,
         **search_kwargs,
-    ) -> list[list[dict[str, str]]]:
+    ) -> list[list[RetrievedContext]]:
         if isinstance(query, str):
             query = [query]
 
@@ -86,7 +86,7 @@ class WebRetriever(Retriever):
         query: list[str],
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[dict[str, str]]:
+    ) -> list[RetrievedContext]:
         """Search queries using local retriever.
 
         Args:
@@ -94,14 +94,7 @@ class WebRetriever(Retriever):
             top_k (int, optional): N documents to return. Defaults to 10.
 
         Returns:
-            list[dict[str, str | list]]: A list of retrieved documents:
-                {
-                    "retriever": str,
-                    "query": str,
-                    "url": str,
-                    "title": str,
-                    "text": str,
-                }
+            list[RetrievedContext]: k RetrievedContext
         """
         return
 
@@ -120,7 +113,7 @@ class BingRetriever(WebRetriever):
         query: str,
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[dict[str, str]]:
+    ) -> list[RetrievedContext]:
         params = {"q": query, "mkt": "en-US", "count": top_k}
         params.update(search_kwargs)
         response = requests.get(
@@ -132,14 +125,15 @@ class BingRetriever(WebRetriever):
         response.raise_for_status()
         result = response.json()
         result = [
-            {
-                "retriever": self.name,
-                "query": query,
-                "text": i["snippet"],
-                "full_text": i["snippet"],
-                "source": i["url"],
-                "title": i["name"],
-            }
+            RetrievedContext(
+                retriever=self.name,
+                query=query,
+                source=i["url"],
+                text=i["snippet"],
+                full_text=i["snippet"],
+                title=i["name"],
+                chunk_id=i["id"],
+            )
             for i in result["webPages"]["value"]
         ]
         return result
@@ -168,17 +162,17 @@ class DuckDuckGoRetriever(WebRetriever):
         query: str,
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[str, str]:
+    ) -> list[RetrievedContext]:
         result = self.ddgs.text(query, max_results=top_k, **search_kwargs)
         result = [
-            {
-                "retriever": self.name,
-                "query": query,
-                "text": i["body"],
-                "full_text": i["body"],
-                "source": i["href"],
-                "title": i["title"],
-            }
+            RetrievedContext(
+                retriever=self.name,
+                query=query,
+                source=i["href"],
+                text=i["body"],
+                full_text=i["body"],
+                title=i["title"],
+            )
             for i in result
         ]
         return result
@@ -209,7 +203,7 @@ class GoogleRetriever(WebRetriever):
         query: str,
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[dict[str, str]]:
+    ) -> list[RetrievedContext]:
         params = {
             "key": self.subscription_key,
             "cx": self.engine_id,
@@ -225,14 +219,14 @@ class GoogleRetriever(WebRetriever):
         response.raise_for_status()
         result = response.json()
         result = [
-            {
-                "retriever": self.name,
-                "query": query,
-                "text": i["snippet"],
-                "full_text": i["snippet"],
-                "source": i["link"],
-                "title": i["title"],
-            }
+            RetrievedContext(
+                retriever=self.name,
+                query=query,
+                source=i["link"],
+                text=i["snippet"],
+                full_text=i["snippet"],
+                title=i["title"],
+            )
             for i in result["items"]
         ]
         return result

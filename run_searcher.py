@@ -14,14 +14,7 @@ from kylin.metrics import (
     ResponseEvaluator,
     ResponseEvaluatorConfig,
 )
-from kylin.searchers import (
-    BM25Searcher,
-    BM25SearcherConfig,
-    WebSearcher,
-    WebSearcherConfig,
-    DenseSearcher,
-    DenseSearcherConfig,
-)
+from kylin.searchers import SearcherConfig, load_searcher
 from kylin.utils import SimpleProgressLogger, Choices
 
 logging.basicConfig(level=logging.INFO)
@@ -35,13 +28,9 @@ class DataConfig:
 
 
 @dataclass
-class Config:
+class Config(SearcherConfig):
     data_config: DataConfig = field(default_factory=DataConfig)
     assistant_config: AssistantConfig = field(default_factory=AssistantConfig)
-    searcher_type: Optional[Choices(["bm25", "web", "dense"])] = None  # type: ignore
-    bm25_searcher_config: BM25SearcherConfig = field(default_factory=BM25SearcherConfig)
-    web_searcher_config: WebSearcherConfig = field(default_factory=WebSearcherConfig)
-    dense_searcher_config: DenseSearcherConfig = field(default_factory=DenseSearcherConfig)  # fmt: skip
     retrieval_eval_config: RetrievalEvaluatorConfig = field(default_factory=RetrievalEvaluatorConfig)  # fmt: skip
     response_eval_config: ResponseEvaluatorConfig = field(default_factory=ResponseEvaluatorConfig)  # fmt: skip
     log_interval: int = 10
@@ -65,17 +54,7 @@ def main(config: Config):
     goldens = [i["golden_answers"] for i in testdata]
 
     # load searcher
-    match config.searcher_type:
-        case "bm25":
-            searcher = BM25Searcher(config.bm25_searcher_config)
-        case "web":
-            searcher = WebSearcher(config.web_searcher_config)
-        case "dense":
-            searcher = DenseSearcher(config.dense_searcher_config)
-        case None:
-            searcher = None
-        case _:
-            raise ValueError(f"Invalid searcher type: {config.searcher_type}")
+    searcher = load_searcher(config)
 
     # load assistant
     assistant = Assistant(config.assistant_config)

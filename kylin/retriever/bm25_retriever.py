@@ -12,7 +12,7 @@ from tenacity import retry, stop_after_attempt, RetryCallState
 
 from kylin.utils import Choices
 
-from .retriever_base import LocalRetriever, LocalRetrieverConfig
+from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
 
 
 logger = logging.getLogger("BM25Retriever")
@@ -126,7 +126,7 @@ class BM25Retriever(LocalRetriever):
         top_k: int = 10,
         retry_times: int = 3,
         **search_kwargs,
-    ) -> list[dict[str, str | list]]:
+    ) -> list[RetrievedContext]:
         # prepare retry
         if retry_times > 1:
             search_method = retry(
@@ -162,7 +162,7 @@ class BM25Retriever(LocalRetriever):
         top_k: int = 10,
         retry_times: int = 3,
         **search_kwargs,
-    ) -> list[dict[str, str | list]]:
+    ) -> list[RetrievedContext]:
         # prepare retry
         if retry_times > 1:
             search_method = retry(
@@ -198,7 +198,7 @@ class BM25Retriever(LocalRetriever):
         top_k: int = 10,
         retry_times: int = 3,
         **search_kwargs,
-    ) -> list[dict[str, str | list]]:
+    ) -> list[RetrievedContext]:
         search_method = search_kwargs.get("search_method", self.search_method)
         match search_method:
             case "full_text":
@@ -242,40 +242,40 @@ class BM25Retriever(LocalRetriever):
 
     def _form_results(
         self, query: list[str], responses: list
-    ) -> list[list[dict[str, str]]]:
+    ) -> list[list[RetrievedContext]]:
         results = []
         for r, q in zip(responses, query):
             if r["status"] != 200:
                 results.append(
                     [
-                        {
-                            "retriever": self.name,
-                            "query": q,
-                            "chunk_id": "",
-                            "source": self.index_name,
-                            "score": 0.0,
-                            "title": "",
-                            "section": "",
-                            "text": "",
-                            "full_text": "",
-                        }
+                        RetrievedContext(
+                            retriever=self.name,
+                            query=q,
+                            chunk_id="",
+                            source=self.index_name,
+                            score=0.0,
+                            title="",
+                            section="",
+                            text="",
+                            full_text="",
+                        )
                     ]
                 )
                 continue
             r = r["hits"]["hits"]
             results.append(
                 [
-                    {
-                        "retriever": self.name,
-                        "query": q,
-                        "chunk_id": i["_id"],
-                        "source": self.index_name,
-                        "score": i["_score"],
-                        "title": i["_source"]["title"],
-                        "section": i["_source"]["section"],
-                        "text": i["_source"]["text"],
-                        "full_text": i["_source"]["text"],
-                    }
+                    RetrievedContext(
+                        retriever=self.name,
+                        query=q,
+                        chunk_id=i["_id"],
+                        source=self.index_name,
+                        score=i["_score"],
+                        title=i["_source"]["title"],
+                        section=i["_source"]["section"],
+                        text=i["_source"]["text"],
+                        full_text=i["_source"]["text"],
+                    )
                     for i in r
                 ]
             )

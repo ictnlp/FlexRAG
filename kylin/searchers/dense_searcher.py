@@ -4,29 +4,28 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 
 from kylin.prompt import ChatTurn, ChatPrompt
-from kylin.retriever import DenseRetriever, DenseRetrieverConfig
+from kylin.retriever import DenseRetriever, DenseRetrieverConfig, RetrievedContext
 
-from .searcher import BaseSearcher, SearcherConfig
+from .searcher import BaseSearcher, BaseSearcherConfig, Searchers
 
 
 logger = logging.getLogger("WebSearcher")
 
 
 @dataclass
-class DenseSearcherConfig(SearcherConfig):
+class DenseSearcherConfig(BaseSearcherConfig):
     retriever_config: DenseRetrieverConfig = field(default_factory=DenseRetrieverConfig)
     rewrite_query: bool = False
     retriever_top_k: int = 10
     disable_cache: bool = False
 
 
+@Searchers("dense", config_class=DenseSearcherConfig)
 class DenseSearcher(BaseSearcher):
     def __init__(self, cfg: DenseSearcherConfig) -> None:
         super().__init__(cfg)
         # setup Dense Searcher
         self.rewrite = cfg.rewrite_query
-        self.feedback_depth = cfg.feedback_depth
-        self.summary_context = cfg.summarize_context
         self.retriever_top_k = cfg.retriever_top_k
         self.disable_cache = cfg.disable_cache
 
@@ -45,7 +44,7 @@ class DenseSearcher(BaseSearcher):
 
     def search(
         self, question: str
-    ) -> tuple[list[dict[str, str]], list[dict[str, object]]]:
+    ) -> tuple[list[RetrievedContext], list[dict[str, object]]]:
         if self.rewrite:
             query_to_search = self.rewrite_query(question)
         else:

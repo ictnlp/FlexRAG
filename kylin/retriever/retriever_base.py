@@ -3,7 +3,7 @@ import os
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Iterable, Optional
 
 import numpy as np
 
@@ -35,6 +35,19 @@ class LocalRetrieverConfig(RetrieverConfig):
     normalize_text: bool = True
 
 
+@dataclass
+class RetrievedContext:
+    retriever: str
+    query: str
+    text: str
+    full_text: str
+    source: Optional[str] = None
+    chunk_id: Optional[str] = None
+    score: float = 0.0
+    title: Optional[str] = None
+    section: Optional[str] = None
+
+
 class Retriever(ABC):
     def __init__(self, cfg: RetrieverConfig):
         self._cache = PersistentLRUCache(cfg.cache_path, maxsize=cfg.cache_size)
@@ -47,7 +60,16 @@ class Retriever(ABC):
         top_k: int = 10,
         disable_cache: bool = False,
         **search_kwargs,
-    ) -> list[list[dict[str, str]]]:
+    ) -> list[list[RetrievedContext]]:
+        """Search queries.
+
+        Args:
+            query (list[str]): Queries to search.
+            top_k (int, optional): N documents to return. Defaults to 10.
+
+        Returns:
+            list[list[RetrievedContext]]: A batch of list that contains k RetrievedContext.
+        """
         # check query
         if isinstance(query, str):
             query = [query]
@@ -80,7 +102,7 @@ class Retriever(ABC):
         query: list[str],
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[list[dict[str, str]]]:
+    ) -> list[list[RetrievedContext]]:
         return
 
     def test_speed(
@@ -146,7 +168,7 @@ class LocalRetriever(Retriever):
         top_k: int = 10,
         disable_cache: bool = False,
         **search_kwargs,
-    ) -> list[list[dict[str, str]]]:
+    ) -> list[list[RetrievedContext]]:
         """Search queries using local retriever.
 
         Args:
@@ -154,19 +176,7 @@ class LocalRetriever(Retriever):
             top_k (int, optional): N documents to return. Defaults to 10.
 
         Returns:
-            list[list[dict[str, str]]]: A list of retrieved documents: [
-                {
-                    "retriever": str,
-                    "query": str,
-                    "source": str,
-                    "chunk_id": int,
-                    "score": float,
-                    "title": str,
-                    "section": str,
-                    "text": str,
-                    "full_text": str,
-                }
-            ]
+            list[list[RetrievedContext]]: A batch of list that contains k RetrievedContext.
         """
         return
 
@@ -175,7 +185,7 @@ class LocalRetriever(Retriever):
         query: list[str] | str,
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[list[dict[str, str]]]:
+    ) -> list[list[RetrievedContext]]:
         # search for documents
         query = [query] if isinstance(query, str) else query
         final_results = []

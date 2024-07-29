@@ -104,7 +104,9 @@ class OpenAIGenerator(GeneratorBase):
         else:
             extra_body = None
         return {
-            "temperature": generation_config.temperature,
+            "temperature": (
+                generation_config.temperature if generation_config.do_sample else 0.0
+            ),
             "max_tokens": generation_config.max_new_tokens,
             "top_p": generation_config.top_p,
             "n": generation_config.sample_num,

@@ -5,17 +5,17 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 
 from kylin.prompt import ChatTurn, ChatPrompt
-from kylin.retriever import BM25Retriever, BM25RetrieverConfig
+from kylin.retriever import BM25Retriever, BM25RetrieverConfig, RetrievedContext
 from kylin.utils import Choices
 
-from .searcher import BaseSearcher, SearcherConfig
+from .searcher import BaseSearcher, BaseSearcherConfig, Searchers
 
 
 logger = logging.getLogger("BM25Searcher")
 
 
 @dataclass
-class BM25SearcherConfig(SearcherConfig):
+class BM25SearcherConfig(BaseSearcherConfig):
     retriever_config: BM25RetrieverConfig = field(default_factory=BM25RetrieverConfig)
     rewrite_query: Choices(["always", "never", "adaptive"]) = "never"  # type: ignore
     summarize_context: bool = False
@@ -24,6 +24,7 @@ class BM25SearcherConfig(SearcherConfig):
     disable_cache: bool = False
 
 
+@Searchers("bm25", config_class=BM25SearcherConfig)
 class BM25Searcher(BaseSearcher):
     def __init__(self, cfg: BM25SearcherConfig) -> None:
         super().__init__(cfg)
@@ -79,7 +80,7 @@ class BM25Searcher(BaseSearcher):
 
     def search(
         self, question: str
-    ) -> tuple[list[dict[str, str]], list[dict[str, object]]]:
+    ) -> tuple[list[RetrievedContext], list[dict[str, object]]]:
         retrieval_history = []
 
         # rewrite the query
@@ -146,7 +147,7 @@ class BM25Searcher(BaseSearcher):
 
     def refine_query(
         self,
-        contexts: list[str],
+        contexts: list[RetrievedContext],
         base_query: str,
         current_query: str,
     ) -> list[str]:
@@ -156,7 +157,7 @@ class BM25Searcher(BaseSearcher):
             prompt = deepcopy(self.refine_prompts[prompt_type])
             ctx_str = ""
             for n, ctx in enumerate(contexts):
-                ctx_str += f"Context {n}: {ctx['text']}\n\n"
+                ctx_str += f"Context {n}: {ctx.text}\n\n"
             prompt.history[-1].content = (
                 f"{ctx_str}{prompt.history[-1].content}\n\n"
                 f"Current query: {current_query}\n\n"
@@ -186,13 +187,13 @@ class BM25Searcher(BaseSearcher):
 
     def verify_contexts(
         self,
-        contexts: list[dict[str, str]],
+        contexts: list[RetrievedContext],
         question: str,
     ) -> bool:
         prompt = deepcopy(self.verify_prompt)
         user_prompt = ""
         for n, ctx in enumerate(contexts):
-            user_prompt += f"Context {n}: {ctx['text']}\n\n"
+            user_prompt += f"Context {n}: {ctx.text}\n\n"
         user_prompt += f"Topic: {question}"
         prompt.update(ChatTurn(role="user", content=user_prompt))
         response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
