@@ -8,6 +8,7 @@ from .model_base import (
 from .ollama_model import OllamaGenerator, OllamaGeneratorConfig
 from .openai_model import OpenAIGenerator, OpenAIGeneratorConfig
 from .vllm_model import VLLMGenerator, VLLMGeneratorConfig
+from .llamacpp_model import LlamacppGenerator, LlamacppGeneratorConfig
 
 from .model_loader import (  # isort:skip
     EncoderConfig,
@@ -31,6 +32,8 @@ __all__ = [
     "OpenAIGeneratorConfig",
     "VLLMGenerator",
     "VLLMGeneratorConfig",
+    "LlamacppGenerator",
+    "LlamacppGeneratorConfig",
     "EncoderConfig",
     "GeneratorConfig",
     "load_encoder",

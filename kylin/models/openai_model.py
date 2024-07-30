@@ -64,7 +64,7 @@ class OpenAIGenerator(GeneratorBase):
         from openai import BadRequestError
 
         responses = []
-        gen_cfg = self.prepare_generation_config(generation_config)
+        gen_cfg = self._get_options(generation_config)
         for prompt in prompts:
             prompt = prompt.to_list()
             try:
@@ -91,7 +91,7 @@ class OpenAIGenerator(GeneratorBase):
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         responses = []
-        gen_cfg = self.prepare_generation_config(generation_config)
+        gen_cfg = self._get_options(generation_config)
         for prefix in prefixes:
             response = self.client.completions.create(
                 model=self.model_name,
@@ -101,7 +101,7 @@ class OpenAIGenerator(GeneratorBase):
             responses.append([i.message.content for i in response.choices])
         return responses
 
-    def prepare_generation_config(self, generation_config: GenerationConfig) -> dict:
+    def _get_options(self, generation_config: GenerationConfig) -> dict:
         if "llama-3" in self.model_name.lower():
             extra_body = {"stop_token_ids": [128009]}  # hotfix for llama-3
         else:

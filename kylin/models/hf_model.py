@@ -106,7 +106,7 @@ class HFGenerator(GeneratorBase):
         inputs = inputs.to(self.model.device)
 
         # prepare generation config
-        hf_gen_cfg = self._get_gen_cfg(generation_config)
+        hf_gen_cfg = self._get_options(generation_config)
         if generation_config.eos_token_id is not None:
             inputs["eos_token_id"] = generation_config.eos_token_id
         else:
@@ -139,7 +139,7 @@ class HFGenerator(GeneratorBase):
         prefixes = [self.template.render_to_text(prompt) for prompt in prompts]
         return self.generate(prefixes, generation_config)
 
-    def _get_gen_cfg(self, generation_config: GenerationConfig) -> HFGenerationConfig:
+    def _get_options(self, generation_config: GenerationConfig) -> HFGenerationConfig:
         return HFGenerationConfig(
             do_sample=generation_config.do_sample,
             temperature=generation_config.temperature,

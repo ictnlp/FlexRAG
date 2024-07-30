@@ -45,21 +45,9 @@ class VLLMGenerator(GeneratorBase):
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        if generation_config.eos_token_id is not None:
-            stop_token_ids = [generation_config.eos_token_id]
-        else:
-            stop_token_ids = [self.tokenizer.eos_token_id]
-        sampling_params = SamplingParams(
-            n=generation_config.sample_num,
-            max_tokens=generation_config.max_new_tokens,
-            temperature=generation_config.temperature,
-            top_k=generation_config.top_k,
-            top_p=generation_config.top_p,
-            stop_token_ids=stop_token_ids,
-        )
         responses = self.model.generate(
             prompts=prefixes,
-            sampling_params=sampling_params,
+            sampling_params=self._get_options(generation_config),
             use_tqdm=False,
         )
         responses = [[i.text for i in resp.outputs] for resp in responses]
@@ -72,3 +60,17 @@ class VLLMGenerator(GeneratorBase):
     ) -> list[list[str]]:
         prefixes = [self.template.render_to_text(prompt) for prompt in prompts]
         return self.generate(prefixes, generation_config)
+
+    def _get_options(self, generation_config: GenerationConfig) -> SamplingParams:
+        if generation_config.eos_token_id is not None:
+            stop_token_ids = [generation_config.eos_token_id]
+        else:
+            stop_token_ids = [self.tokenizer.eos_token_id]
+        return SamplingParams(
+            n=generation_config.sample_num,
+            max_tokens=generation_config.max_new_tokens,
+            temperature=generation_config.temperature,
+            top_k=generation_config.top_k,
+            top_p=generation_config.top_p,
+            stop_token_ids=stop_token_ids,
+        )
