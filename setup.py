@@ -28,7 +28,7 @@ setup(
         "sacrebleu>=2.4.2",
         "rouge",
         "unidecode",
-        "vllm>=0.5.0",
+        "openai>=1.30.1",
         "cachetools",
         "tenacity",
         "tables",
@@ -37,7 +37,8 @@ setup(
     ],
     extras_require={
         "all": [
-            "openai>=1.30.1",
+            "llama_cpp_python>=0.2.84",
+            "vllm>=0.5.0",
             "ollama>=0.2.1",
             "faiss>=1.8.0",
             "scann>=1.3.2",

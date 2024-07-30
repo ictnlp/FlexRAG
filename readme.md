@@ -13,4 +13,4 @@
   - [ ] Add Minference support
 - searchers
   - [ ] Add fallback searchers
-  - [ ] Add hybrid searchers
+  - [x] Add hybrid searchers

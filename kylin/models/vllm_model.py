@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 from omegaconf import MISSING
 from transformers import AutoConfig
-from vllm import LLM, SamplingParams
 
 from kylin.prompt import load_template, ChatPrompt
 from kylin.utils import Choices, TimeMeter
@@ -22,6 +21,8 @@ class VLLMGeneratorConfig(GeneratorBaseConfig):
 @Generators("vllm", config_class=VLLMGeneratorConfig)
 class VLLMGenerator(GeneratorBase):
     def __init__(self, cfg: VLLMGeneratorConfig) -> None:
+        from vllm import LLM
+
         model_cfg = AutoConfig.from_pretrained(cfg.model_path)
         cfg_name = model_cfg.__class__.__name__
         self.model = LLM(
@@ -61,7 +62,9 @@ class VLLMGenerator(GeneratorBase):
         prefixes = [self.template.render_to_text(prompt) for prompt in prompts]
         return self.generate(prefixes, generation_config)
 
-    def _get_options(self, generation_config: GenerationConfig) -> SamplingParams:
+    def _get_options(self, generation_config: GenerationConfig):
+        from vllm import SamplingParams
+
         if generation_config.eos_token_id is not None:
             stop_token_ids = [generation_config.eos_token_id]
         else:

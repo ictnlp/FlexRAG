@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 
 from omegaconf import MISSING
-from llama_cpp import Llama
 
 from kylin.prompt import ChatPrompt
 from kylin.utils import TimeMeter
@@ -18,6 +17,8 @@ class LlamacppGeneratorConfig(GeneratorBaseConfig):
 @Generators("llamacpp", config_class=LlamacppGeneratorConfig)
 class LlamacppGenerator(GeneratorBase):
     def __init__(self, cfg: LlamacppGeneratorConfig) -> None:
+        from llama_cpp import Llama
+
         self.model = Llama(
             model_path=cfg.model_path,
             n_gpu_layers=-1 if cfg.use_gpu else 0,
