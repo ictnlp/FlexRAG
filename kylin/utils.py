@@ -1,15 +1,18 @@
 import json
 import os
 from contextlib import contextmanager
+from collections import defaultdict
 from csv import reader
 from enum import Enum
 from functools import partial
 from itertools import zip_longest
 from logging import Logger
+from multiprocessing import Manager
 from time import perf_counter
 from typing import Iterable, Iterator, Optional
 
 import numpy as np
+import torch
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 
@@ -193,6 +196,10 @@ class CustomEncoder(json.JSONEncoder):
             return float(obj)
         if isinstance(obj, np.float32):
             return float(obj)
+        if hasattr(obj, "to_list"):
+            return obj.to_list()
+        if hasattr(obj, "to_dict"):
+            return obj.to_dict()
         return super().default(obj)
 
 
@@ -253,3 +260,47 @@ def read_data(
                     yield dict(zip(title, row))
         else:
             raise ValueError(f"Unsupported file format: {file_path}")
+
+
+class _TimeMeterClass:
+    def __init__(self):
+        self._manager = Manager()
+        self.timers = self._manager.dict()
+        return
+
+    def __call__(self, timer_name: str):
+        def time_it(func):
+            def wrapper(*args, **kwargs):
+                start_time = perf_counter()
+                result = func(*args, **kwargs)
+                end_time = perf_counter()
+                if timer_name not in self.timers:
+                    self.timers[timer_name] = self._manager.list()
+                self.timers[timer_name].append(end_time - start_time)
+                return result
+
+            return wrapper
+
+        return time_it
+
+    @property
+    def statistics(self) -> list[dict[str, float]]:
+        statistics = []
+        for k, v in self.timers.items():
+            v = list(v)
+            statistics.append(
+                {
+                    "name": k,
+                    "calls": len(v),
+                    "average call time": np.mean(v),
+                    "total time": np.sum(v),
+                }
+            )
+        return statistics
+
+    @property
+    def details(self) -> dict:
+        return {k: v for k, v in self.timers.items()}
+
+
+TimeMeter = _TimeMeterClass()

@@ -15,7 +15,8 @@ from kylin.metrics import (
     ResponseEvaluatorConfig,
 )
 from kylin.searchers import SearcherConfig, load_searcher
-from kylin.utils import SimpleProgressLogger, Choices
+from kylin.retriever import RetrievedContext
+from kylin.utils import SimpleProgressLogger, read_data, TimeMeter
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -24,6 +25,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class DataConfig:
     data_path: str = MISSING
+    data_range: Optional[list[int]] = None
     output_path: Optional[str] = None
 
 
@@ -49,7 +51,7 @@ def main(config: Config):
 
     # load dataset
     data_cfg = config.data_config
-    testdata = [json.loads(i) for i in open(data_cfg.data_path, "r")]
+    testdata = list(read_data(data_cfg.data_path, data_cfg.data_range))
     questions = [i["question"] for i in testdata]
     goldens = [i["golden_answers"] for i in testdata]
 
@@ -59,7 +61,7 @@ def main(config: Config):
     # load assistant
     assistant = Assistant(config.assistant_config)
 
-    contexts = []
+    contexts: list[list[RetrievedContext]] = []
     tracks = []
     responses = []
     prompts = []
@@ -76,14 +78,14 @@ def main(config: Config):
         # generate
         r, prompt = assistant.answer(question=q, contexts=ctxs)
         responses.append(r)
-        prompts.append(prompt.to_list())
+        prompts.append(prompt)
 
     if searcher is not None:
         searcher.close()
 
     # evaluate retrieval
     if searcher is not None:
-        contexts_text = [[i["full_text"] for i in ctx] for ctx in contexts]
+        contexts_text = [[i.full_text for i in ctx] for ctx in contexts]
         evaluator = RetrievalEvaluator(config.retrieval_eval_config)
         ret_score, ret_score_detail = evaluator.evaluate(goldens, contexts_text)
     else:
@@ -104,6 +106,7 @@ def main(config: Config):
         "retrieval_scores_details": ret_score_detail,
         "response_scores": resp_score,
         "response_scores_details": resp_score_detail,
+        "time_meter": TimeMeter.statistics,
     }
     if data_cfg.output_path is not None:
         with open(data_cfg.output_path, "w") as f:

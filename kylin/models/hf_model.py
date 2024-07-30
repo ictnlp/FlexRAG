@@ -10,7 +10,7 @@ from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer
 from transformers import GenerationConfig as HFGenerationConfig
 
 from kylin.prompt import load_template, ChatPrompt
-from kylin.utils import Choices
+from kylin.utils import Choices, TimeMeter
 
 from .model_base import (
     Encoders,
@@ -91,6 +91,7 @@ class HFGenerator(GeneratorBase):
         self.template = load_template(model=self.model, tokenizer=self.tokenizer)
         return
 
+    @TimeMeter("hf_generate")
     @torch.no_grad()
     def generate(
         self,

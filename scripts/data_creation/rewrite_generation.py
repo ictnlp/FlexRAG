@@ -167,7 +167,7 @@ def main(config: Config):
 
         # evaluate
         for q, ctxs in zip(rwt_queries, contexts):
-            ctxs = [i["text"] for i in ctxs]
+            ctxs = [i.text for i in ctxs]
             r, _ = evaluator.evaluate([golden], [ctxs], log=False)
             results[-1]["rewrite_queries"].append(
                 {

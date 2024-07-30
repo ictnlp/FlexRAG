@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from unidecode import unidecode
 
 from kylin.text_process import normalize_answer
+from kylin.utils import TimeMeter
 
 
 @dataclass
@@ -21,6 +22,7 @@ class MetricsBase(ABC):
         self.unify = cfg.unify
         return
 
+    @TimeMeter("metric")
     def __call__(
         self, y_trues: list[list[str]], y_preds: list[str]
     ) -> dict[str, float]:

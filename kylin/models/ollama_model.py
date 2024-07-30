@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from omegaconf import MISSING
 
 from kylin.prompt import ChatPrompt
+from kylin.utils import TimeMeter
 
 from .model_base import Generators, GeneratorBase, GeneratorBaseConfig, GenerationConfig
 
@@ -30,6 +31,7 @@ class OllamaGenerator(GeneratorBase):
         self._check()
         return
 
+    @TimeMeter("ollama_generate")
     def chat(
         self,
         prompts: list[ChatPrompt],
@@ -50,6 +52,7 @@ class OllamaGenerator(GeneratorBase):
                 responses[-1].append(response["message"]["content"])
         return responses
 
+    @TimeMeter("ollama_generate")
     def generate(
         self,
         prefixes: list[str],

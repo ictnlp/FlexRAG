@@ -7,6 +7,7 @@ import numpy as np
 from omegaconf import MISSING
 
 from kylin.prompt import ChatPrompt
+from kylin.utils import TimeMeter
 
 from .model_base import (
     EncoderBase,
@@ -54,6 +55,7 @@ class OpenAIGenerator(GeneratorBase):
         self._check()
         return
 
+    @TimeMeter("openai_generate")
     def chat(
         self,
         prompts: list[ChatPrompt],
@@ -82,6 +84,7 @@ class OpenAIGenerator(GeneratorBase):
             responses.append([i.message.content for i in response.choices])
         return responses
 
+    @TimeMeter("openai_generate")
     def generate(
         self,
         prefixes: list[str],

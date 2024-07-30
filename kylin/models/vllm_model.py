@@ -5,7 +5,7 @@ from transformers import AutoConfig
 from vllm import LLM, SamplingParams
 
 from kylin.prompt import load_template, ChatPrompt
-from kylin.utils import Choices
+from kylin.utils import Choices, TimeMeter
 
 from .model_base import Generators, GenerationConfig, GeneratorBase, GeneratorBaseConfig
 
@@ -39,6 +39,7 @@ class VLLMGenerator(GeneratorBase):
         self.template = load_template(model=self.model, tokenizer=self.tokenizer)
         return
 
+    @TimeMeter("vllm_generate")
     def generate(
         self,
         prefixes: list[str],

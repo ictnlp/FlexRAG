@@ -8,7 +8,7 @@ from typing import Iterable, Optional
 import numpy as np
 
 from kylin.text_process import normalize_token
-from kylin.utils import SimpleProgressLogger
+from kylin.utils import SimpleProgressLogger, TimeMeter
 
 from .cache import PersistentLRUCache, hashkey
 
@@ -47,6 +47,19 @@ class RetrievedContext:
     title: Optional[str] = None
     section: Optional[str] = None
 
+    def to_dict(self):
+        return {
+            "retriever": self.retriever,
+            "query": self.query,
+            "text": self.text,
+            "full_text": self.full_text,
+            "source": self.source,
+            "chunk_id": self.chunk_id,
+            "score": self.score,
+            "title": self.title,
+            "section": self.section,
+        }
+
 
 class Retriever(ABC):
     def __init__(self, cfg: RetrieverConfig):
@@ -54,6 +67,7 @@ class Retriever(ABC):
         self.log_interval = cfg.log_interval
         return
 
+    @TimeMeter("retrieve")
     def search(
         self,
         query: list[str],
