@@ -44,6 +44,7 @@ class LlamacppGenerator(GeneratorBase):
                 responses[-1].append(response["choices"][0]["text"])
         return responses
 
+    @TimeMeter("llamacpp_generate")
     def chat(
         self,
         prompts: list[ChatPrompt],
