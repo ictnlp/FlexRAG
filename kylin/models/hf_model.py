@@ -6,7 +6,7 @@ import numpy as np
 import torch
 from omegaconf import MISSING
 from torch.nn.parallel import DataParallel as DP
-from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer
+from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer, PreTrainedModel
 from transformers import GenerationConfig as HFGenerationConfig
 
 from kylin.prompt import load_template, ChatPrompt
@@ -44,6 +44,8 @@ class HFGeneratorConfig(GeneratorBaseConfig):
 
 @Generators("hf", config_class=HFGeneratorConfig)
 class HFGenerator(GeneratorBase):
+    model: PreTrainedModel
+
     def __init__(self, cfg: HFGeneratorConfig) -> None:
         # prepare gpu
         if cfg.pipeline_parallel:
@@ -88,7 +90,9 @@ class HFGenerator(GeneratorBase):
             trust_remote_code=True,
         )
         # prepare prompt function
-        self.template = load_template(model=self.model, tokenizer=self.tokenizer)
+        self.template = load_template(
+            model_config=self.model.config, tokenizer=self.tokenizer
+        )
         return
 
     @TimeMeter("hf_generate")

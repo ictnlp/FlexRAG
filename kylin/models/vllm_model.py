@@ -37,7 +37,10 @@ class VLLMGenerator(GeneratorBase):
         stop_ids = [self.tokenizer.eos_token_id]
         if cfg_name == "LlamaConfig":
             stop_ids.append(self.tokenizer.convert_tokens_to_ids("<|eot_id|>"))
-        self.template = load_template(model=self.model, tokenizer=self.tokenizer)
+        self.template = load_template(
+            model_config=self.model.llm_engine.model_config.hf_config,
+            tokenizer=self.tokenizer,
+        )
         return
 
     @TimeMeter("vllm_generate")

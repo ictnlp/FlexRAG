@@ -3,8 +3,7 @@ from copy import deepcopy
 from functools import partial
 from typing import Optional
 
-from transformers import PreTrainedModel, PreTrainedTokenizer
-from vllm import LLM
+from transformers import PreTrainedTokenizer, PretrainedConfig
 
 from kylin.utils import Choices
 
@@ -168,14 +167,11 @@ Phi3Template = HFTemplate
 
 
 def load_template(
-    model: LLM | PreTrainedModel,
+    model_config: PretrainedConfig,
     tokenizer: PreTrainedTokenizer,
 ) -> Template:
     # get cfg name
-    if isinstance(model, LLM):
-        cfg_name = model.llm_engine.model_config.hf_config.__class__.__name__
-    elif isinstance(model, PreTrainedModel):
-        cfg_name = model.config.__class__.__name__
+    cfg_name = model_config.__class__.__name__
 
     # load template
     match cfg_name:
