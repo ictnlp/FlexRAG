@@ -45,6 +45,7 @@ setup(
             "pymilvus>=2.4.3",
             "duckduckgo_search>=6.1.6",
             "PySocks>=1.7.1",
+            "anthropic",
         ]
     },
     classifiers=[
