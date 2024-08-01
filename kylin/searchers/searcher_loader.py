@@ -1,13 +1,12 @@
 from dataclasses import field, make_dataclass
+from typing import Optional
 
 from kylin.utils import Choices
 
 from .searcher import Searchers, BaseSearcher
 
 
-searcher_fields = [
-    ("searcher_type", Choices(Searchers.names), field(default=Searchers.names[0]))
-]
+searcher_fields = [("searcher_type", Optional[Choices(Searchers.names)], None)]
 searcher_fields += [
     (
         f"{Searchers[name]['short_names'][0]}_searcher_config",
@@ -20,6 +19,8 @@ SearcherConfig = make_dataclass("SearcherConfig", searcher_fields)
 
 
 def load_searcher(cfg: SearcherConfig) -> BaseSearcher:  # type: ignore
+    if cfg.searcher_type is None:
+        return None
     if cfg.searcher_type in Searchers:
         cfg_name = f"{Searchers[cfg.searcher_type]['short_names'][0]}_searcher_config"
         sub_cfg = getattr(cfg, cfg_name)
