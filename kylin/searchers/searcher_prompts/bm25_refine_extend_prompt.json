@@ -6,7 +6,7 @@
     "history": [
         {
             "role": "user",
-            "content": "The above context was retrieved using the given query. However, the information may not fully address user needs. To refine the search and obtain more relevant results, please suggest **one** additional keyword or phrases that could help narrow down the search.Please only reply your keyword and do not output any other words."
+            "content": "The above context was retrieved using the given query. However, the information may not fully address user needs. To refine the search and obtain more relevant results, please suggest **one** additional keyword or phrases that could help narrow down the search. Please only reply your keyword and do not output any other words."
         }
     ],
     "demonstrations": []

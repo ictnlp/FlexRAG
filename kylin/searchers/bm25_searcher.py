@@ -166,15 +166,22 @@ class BM25Searcher(BaseSearcher):
             if prompt_type == "extend":
                 refined_queries.append(f"{current_query} {response}")
             elif prompt_type == "filter":
-                refined_queries.append(f"{current_query} -{response}")
+                if re.search(response, current_query) is not None:
+                    refined_queries.append(re.sub(response, "", current_query))
+                else:
+                    refined_queries.append(f"{current_query} -{response}")
             elif prompt_type == "emphasize":
-                if re.search(f'"{response}"', current_query) is None:
+                if re.search(f'"{response}"', current_query) is not None:
                     new_query = re.sub(
                         f'"{response}"', f'"{response}"^2', current_query
                     )
                     refined_queries.append(new_query)
-                refined_queries
-            return refined_queries
+                elif re.search(response, current_query) is not None:
+                    new_query = re.sub(response, f'"{response}"^2', current_query)
+                    refined_queries.append(new_query)
+                else:
+                    refined_queries.append(f'"{response}"^2 {current_query}')
+        return refined_queries
 
     def rewrite_query(self, info: str) -> str:
         # Rewrite the query to be more informative

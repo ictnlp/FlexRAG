@@ -77,7 +77,9 @@ class OllamaGenerator(GeneratorBase):
         return {
             "top_k": generation_config.top_k,
             "top_p": generation_config.top_p,
-            "temperature": generation_config.temperature,
+            "temperature": (
+                generation_config.temperature if generation_config.do_sample else 0.0
+            ),
             "num_predict": generation_config.max_new_tokens,
         }
 
