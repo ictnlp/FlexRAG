@@ -1,7 +1,7 @@
 {
     "system": {
         "role": "system",
-        "content": "Please answer the following question using your own knowledge."
+        "content": "Please write a passage to answer the question."
     },
     "history": [],
     "demonstrations": []

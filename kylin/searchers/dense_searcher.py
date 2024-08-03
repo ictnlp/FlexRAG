@@ -118,7 +118,7 @@ class DenseSearcher(BaseSearcher):
             user_prompt += f"Question: {question}"
         prompt.update(ChatTurn(role="user", content=user_prompt))
         query = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
-        return query
+        return f"{question} {query}"
 
     def verify_contexts(
         self,
