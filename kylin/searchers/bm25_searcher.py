@@ -162,25 +162,32 @@ class BM25Searcher(BaseSearcher):
                 f"The information you are looking for: {base_query}"
             )
             response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
+
+            # prepare re patterns
+            response_ = re.escape(response)
+            pattern = f'("{response_}"(\^\d)?)|({response_})'
+
             # append refined query
             if prompt_type == "extend":
                 refined_queries.append(f"{current_query} {response}")
             elif prompt_type == "filter":
-                if re.search(response, current_query) is not None:
-                    refined_queries.append(re.sub(response, "", current_query))
+                if re.search(pattern, current_query):
+                    refined_queries.append(re.sub(pattern, "", current_query))
                 else:
                     refined_queries.append(f"{current_query} -{response}")
             elif prompt_type == "emphasize":
-                if re.search(f'"{response}"', current_query) is not None:
+                if re.search(pattern, current_query):
+                    try:
+                        current_weight = re.search(pattern, current_query).group(2)
+                        current_weight = int(current_weight[1:])
+                    except:
+                        current_weight = 1
                     new_query = re.sub(
-                        f'"{response}"', f'"{response}"^2', current_query
+                        pattern, f'"{response}"^{current_weight + 1}', current_query
                     )
                     refined_queries.append(new_query)
-                elif re.search(response, current_query) is not None:
-                    new_query = re.sub(response, f'"{response}"^2', current_query)
-                    refined_queries.append(new_query)
                 else:
-                    refined_queries.append(f'"{response}"^2 {current_query}')
+                    refined_queries.append(f'"{response}" {current_query}')
         return refined_queries
 
     def rewrite_query(self, info: str) -> str:
