@@ -1,18 +1,17 @@
+import json
 import logging
 import time
-import json
 from dataclasses import dataclass
 from typing import Iterable, Optional
-from uuid import uuid5, NAMESPACE_OID
+from uuid import NAMESPACE_OID, uuid5
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import streaming_bulk
-from tenacity import retry, stop_after_attempt, RetryCallState
+from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
 from kylin.utils import Choices
 
 from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
-
 
 logger = logging.getLogger("BM25Retriever")
 
@@ -22,7 +21,7 @@ def _save_error_state(retry_state: RetryCallState) -> Exception:
         "args": retry_state.args,
         "kwargs": retry_state.kwargs,
     }
-    with open("retry_error_state.json", "w") as f:
+    with open("bm25_retriever_error_state.json", "w") as f:
         json.dump(args, f)
     raise retry_state.outcome.exception()
 
@@ -34,6 +33,8 @@ class BM25RetrieverConfig(LocalRetrieverConfig):
     index_name: str = "documents"
     verbose: bool = False
     search_method: Choices(["full_text", "string"]) = "string"  # type: ignore
+    retry_times: int = 3
+    retry_delay: float = 0.5
 
 
 class BM25Retriever(LocalRetriever):
@@ -41,11 +42,14 @@ class BM25Retriever(LocalRetriever):
 
     def __init__(self, cfg: BM25RetrieverConfig) -> None:
         super().__init__(cfg)
+        # set basic args
         self.host = cfg.host
         self.api_key = cfg.api_key
         self.index_name = cfg.index_name
         self.verbose = cfg.verbose
         self.search_method = cfg.search_method
+        self.retry_times = cfg.retry_times
+        self.retry_delay = cfg.retry_delay
         self._prep_client()
         return
 
@@ -123,13 +127,15 @@ class BM25Retriever(LocalRetriever):
         self,
         query: list[str],
         top_k: int = 10,
-        retry_times: int = 3,
         **search_kwargs,
     ) -> list[RetrievedContext]:
         # prepare retry
+        retry_times = search_kwargs.get("retry_times", self.retry_times)
+        retry_delay = search_kwargs.get("retry_delay", self.retry_delay)
         if retry_times > 1:
             search_method = retry(
                 stop=stop_after_attempt(retry_times),
+                wait=wait_fixed(retry_delay),
                 retry_error_callback=_save_error_state,
             )(self.client.msearch)
         else:
@@ -159,13 +165,15 @@ class BM25Retriever(LocalRetriever):
         self,
         query: list[str],
         top_k: int = 10,
-        retry_times: int = 3,
         **search_kwargs,
     ) -> list[RetrievedContext]:
         # prepare retry
+        retry_times = search_kwargs.get("retry_times", self.retry_times)
+        retry_delay = search_kwargs.get("retry_delay", self.retry_delay)
         if retry_times > 1:
             search_method = retry(
                 stop=stop_after_attempt(retry_times),
+                wait=wait_fixed(retry_delay),
                 retry_error_callback=_save_error_state,
             )(self.client.msearch)
         else:

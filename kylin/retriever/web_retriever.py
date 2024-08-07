@@ -1,26 +1,35 @@
+import json
 import logging
 import time
-import json
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Optional
-from uuid import uuid5, NAMESPACE_OID
+from uuid import NAMESPACE_OID, uuid5
 
 import requests
-from tenacity import retry, stop_after_attempt, wait_fixed
+from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
 from kylin.utils import SimpleProgressLogger
 
-from .retriever_base import Retriever, RetrieverConfig, RetrievedContext
-
+from .retriever_base import RetrievedContext, Retriever, RetrieverConfig
 
 logger = logging.getLogger(__name__)
+
+
+def _save_error_state(retry_state: RetryCallState) -> Exception:
+    args = {
+        "args": retry_state.args,
+        "kwargs": retry_state.kwargs,
+    }
+    with open("web_retriever_error_state.json", "w") as f:
+        json.dump(args, f)
+    raise retry_state.outcome.exception()
 
 
 @dataclass
 class WebRetrieverConfig(RetrieverConfig):
     timeout: float = 3.0
-    retry_times: int = 1
+    retry_times: int = 3
     retry_delay: float = 0.5
 
 
@@ -66,7 +75,9 @@ class WebRetriever(Retriever):
         retry_delay = search_kwargs.get("retry_delay", self.retry_delay)
         if retry_times > 1:
             search_method = retry(
-                stop=stop_after_attempt(retry_times), wait=wait_fixed(retry_delay)
+                stop=stop_after_attempt(retry_times),
+                wait=wait_fixed(retry_delay),
+                retry_error_callback=_save_error_state,
             )(self.search_item)
         else:
             search_method = self.search_item
