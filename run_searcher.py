@@ -1,6 +1,8 @@
 import json
 import logging
+import os
 from dataclasses import dataclass, field
+from hashlib import sha256
 from typing import Optional
 
 import hydra
@@ -9,14 +11,14 @@ from omegaconf import MISSING, OmegaConf
 
 from kylin.assistant import Assistant, AssistantConfig
 from kylin.metrics import (
-    RetrievalEvaluator,
-    RetrievalEvaluatorConfig,
     ResponseEvaluator,
     ResponseEvaluatorConfig,
+    RetrievalEvaluator,
+    RetrievalEvaluatorConfig,
 )
-from kylin.searchers import SearcherConfig, load_searcher
 from kylin.retriever import RetrievedContext
-from kylin.utils import SimpleProgressLogger, read_data, TimeMeter
+from kylin.searchers import SearcherConfig, load_searcher
+from kylin.utils import SimpleProgressLogger, TimeMeter, read_data, COMMIT_ID
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -61,22 +63,54 @@ def main(config: Config):
     # load assistant
     assistant = Assistant(config.assistant_config)
 
+    # prepare containers
     contexts: list[list[RetrievedContext]] = []
     tracks = []
     responses = []
     prompts = []
-    p_logger = SimpleProgressLogger(logger, len(questions), config.log_interval)
-    for q in questions:
+    ckpt_path = os.path.join(
+        hydra.utils.get_original_cwd(),
+        f"ckpt_{sha256((COMMIT_ID + json.dumps(config)).encode()).hexdigest()}.json",
+    )
+    if os.path.exists(ckpt_path):
+        state = json.load(open(ckpt_path, "r"))
+        contexts = state["contexts"]
+        tracks = state["search_trackback"]
+        responses = state["responses"]
+        prompts = state["response_prompts"]
+        questions_ = questions[len(responses) :]
+    else:
+        questions_ = questions
+
+    # search and generate
+    p_logger = SimpleProgressLogger(logger, len(questions_), config.log_interval)
+    for q in questions_:
         p_logger.update(desc="Searching")
-        # search
-        if searcher is not None:
-            ctxs, track = searcher.search(q)
-            contexts.append(ctxs)
-            tracks.append(track)
-        else:
-            ctxs = []
-        # generate
-        r, prompt = assistant.answer(question=q, contexts=ctxs)
+        try:
+            # search
+            if searcher is not None:
+                ctxs, track = searcher.search(q)
+                contexts.append(ctxs)
+                tracks.append(track)
+            else:
+                ctxs = []
+            # generate
+            r, prompt = assistant.answer(question=q, contexts=ctxs)
+        # save running state and raise error
+        except Exception as e:
+            logger.error(f"Error when processing question: {q}")
+            with open(ckpt_path, "w") as f:
+                json.dump(
+                    {
+                        "contexts": contexts,
+                        "search_trackback": tracks,
+                        "responses": responses,
+                        "response_prompts": prompts,
+                    },
+                    f,
+                    indent=4,
+                )
+            raise e
         responses.append(r)
         prompts.append(prompt)
 
@@ -97,6 +131,7 @@ def main(config: Config):
 
     # dump results
     final = {
+        "commit_id": COMMIT_ID,
         "config": config,
         "contexts": contexts,
         "responses": responses,

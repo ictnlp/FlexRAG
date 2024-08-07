@@ -1,7 +1,7 @@
 import json
 import os
+import subprocess
 from contextlib import contextmanager
-from collections import defaultdict
 from csv import reader
 from enum import Enum
 from functools import partial
@@ -12,7 +12,6 @@ from time import perf_counter
 from typing import Iterable, Iterator, Optional
 
 import numpy as np
-import torch
 from omegaconf import OmegaConf
 from omegaconf.dictconfig import DictConfig
 
@@ -304,3 +303,8 @@ class _TimeMeterClass:
 
 
 TimeMeter = _TimeMeterClass()
+
+
+COMMIT_ID = (
+    subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
+)

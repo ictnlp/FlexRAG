@@ -130,8 +130,8 @@ class BM25Retriever(LocalRetriever):
         **search_kwargs,
     ) -> list[RetrievedContext]:
         # prepare retry
-        retry_times = search_kwargs.get("retry_times", self.retry_times)
-        retry_delay = search_kwargs.get("retry_delay", self.retry_delay)
+        retry_times = search_kwargs.pop("retry_times", self.retry_times)
+        retry_delay = search_kwargs.pop("retry_delay", self.retry_delay)
         if retry_times > 1:
             search_method = retry(
                 stop=stop_after_attempt(retry_times),
@@ -168,8 +168,8 @@ class BM25Retriever(LocalRetriever):
         **search_kwargs,
     ) -> list[RetrievedContext]:
         # prepare retry
-        retry_times = search_kwargs.get("retry_times", self.retry_times)
-        retry_delay = search_kwargs.get("retry_delay", self.retry_delay)
+        retry_times = search_kwargs.pop("retry_times", self.retry_times)
+        retry_delay = search_kwargs.pop("retry_delay", self.retry_delay)
         if retry_times > 1:
             search_method = retry(
                 stop=stop_after_attempt(retry_times),
@@ -203,7 +203,6 @@ class BM25Retriever(LocalRetriever):
         self,
         query: list[str],
         top_k: int = 10,
-        retry_times: int = 3,
         **search_kwargs,
     ) -> list[RetrievedContext]:
         search_method = search_kwargs.get("search_method", self.search_method)
@@ -212,14 +211,12 @@ class BM25Retriever(LocalRetriever):
                 results = self._full_text_search(
                     query=query,
                     top_k=top_k,
-                    retry_times=retry_times,
                     **search_kwargs,
                 )
             case "string":
                 results = self._string_search(
                     query=query,
                     top_k=top_k,
-                    retry_times=retry_times,
                     **search_kwargs,
                 )
             case _:
