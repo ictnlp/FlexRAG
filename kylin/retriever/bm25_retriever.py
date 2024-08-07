@@ -1,5 +1,4 @@
 import logging
-import re
 import time
 import json
 from dataclasses import dataclass
@@ -18,14 +17,14 @@ from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedConte
 logger = logging.getLogger("BM25Retriever")
 
 
-def _save_error_state(retry_state: RetryCallState):
+def _save_error_state(retry_state: RetryCallState) -> Exception:
     args = {
         "args": retry_state.args,
         "kwargs": retry_state.kwargs,
     }
     with open("retry_error_state.json", "w") as f:
         json.dump(args, f)
-    return
+    raise retry_state.outcome.exception()
 
 
 @dataclass
@@ -241,9 +240,11 @@ class BM25Retriever(LocalRetriever):
         return uuid5(namespace, feature_str).hex
 
     def _form_results(
-        self, query: list[str], responses: list
+        self, query: list[str], responses: list[dict] | None
     ) -> list[list[RetrievedContext]]:
         results = []
+        if responses is None:
+            responses = [{"status": 500}] * len(query)
         for r, q in zip(responses, query):
             if r["status"] != 200:
                 results.append(

@@ -174,7 +174,7 @@ class BM25Searcher(BaseSearcher):
                 if re.search(pattern, current_query):
                     refined_queries.append(re.sub(pattern, "", current_query))
                 else:
-                    refined_queries.append(f"{current_query} -{response}")
+                    refined_queries.append(f'{current_query} -"{response}"')
             elif prompt_type == "emphasize":
                 if re.search(pattern, current_query):
                     try:
