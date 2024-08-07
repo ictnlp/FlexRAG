@@ -135,6 +135,8 @@ class BingRetriever(WebRetriever):
         )
         response.raise_for_status()
         result = response.json()
+        if "webPages" not in result:
+            return []
         result = [
             RetrievedContext(
                 retriever=self.name,
