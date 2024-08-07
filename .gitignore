@@ -142,8 +142,8 @@ yala/model/third_party_models
 .aim
 
 # test files
-test*.py
-test*.ipynb
+_test*.py
+_test*.ipynb
 
 # experimental configs
 experimental_configs/
