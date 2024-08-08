@@ -18,7 +18,7 @@ from kylin.metrics import (
 )
 from kylin.retriever import RetrievedContext
 from kylin.searchers import SearcherConfig, load_searcher
-from kylin.utils import SimpleProgressLogger, TimeMeter, read_data, COMMIT_ID
+from kylin.utils import COMMIT_ID, SimpleProgressLogger, TimeMeter, read_data
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

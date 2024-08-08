@@ -304,7 +304,13 @@ class _TimeMeterClass:
 
 TimeMeter = _TimeMeterClass()
 
-
-COMMIT_ID = (
-    subprocess.check_output(["git", "rev-parse", "HEAD"]).strip().decode("utf-8")
-)
+try:
+    COMMIT_ID = (
+        subprocess.check_output(
+            ["git", "-C", f"{os.path.dirname(__file__)}", "rev-parse", "HEAD"]
+        )
+        .strip()
+        .decode("utf-8")
+    )
+except:
+    COMMIT_ID = "Unknown"
