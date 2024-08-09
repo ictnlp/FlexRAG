@@ -133,6 +133,8 @@ def main(config: Config):
     final = {
         "commit_id": COMMIT_ID,
         "config": config,
+        "questions": questions,
+        "golden_answers": goldens,
         "contexts": contexts,
         "responses": responses,
         "response_prompts": prompts,
