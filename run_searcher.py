@@ -146,6 +146,8 @@ def main(config: Config):
         "time_meter": TimeMeter.statistics,
     }
     if data_cfg.output_path is not None:
+        if not os.path.exists(os.path.dirname(data_cfg.output_path)):
+            os.makedirs(os.path.dirname(data_cfg.output_path))
         with open(data_cfg.output_path, "w") as f:
             json.dump(final, f, indent=4, ensure_ascii=False)
     return
