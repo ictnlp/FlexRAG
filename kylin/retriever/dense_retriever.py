@@ -25,7 +25,7 @@ logger = logging.getLogger("DenseRetriever")
 
 @dataclass
 class DenseRetrieverConfig(LocalRetrieverConfig):
-    read_only: bool = False
+    read_only: bool = True
     database_path: str = MISSING
     index_type: Choices(["faiss", "scann"]) = "faiss"  # type: ignore
     faiss_index_config: FaissIndexConfig = field(default_factory=FaissIndexConfig)
