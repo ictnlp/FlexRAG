@@ -5,6 +5,10 @@ from .searchers import (
     WebSearcherConfig,
     DenseSearcher,
     DenseSearcherConfig,
+    HybridSearcher,
+    HybridSearcherConfig,
+    HighLevalSearcher,
+    HighLevelSearcherConfig,
 )
 from .retriever import (
     BM25Retriever,
@@ -27,6 +31,10 @@ __all__ = [
     "WebSearcherConfig",
     "DenseSearcher",
     "DenseSearcherConfig",
+    "HybridSearcher",
+    "HybridSearcherConfig",
+    "HighLevalSearcher",
+    "HighLevelSearcherConfig",
     "BM25Retriever",
     "BM25RetrieverConfig",
     "DenseRetriever",
