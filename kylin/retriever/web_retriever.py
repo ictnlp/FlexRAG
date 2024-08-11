@@ -1,5 +1,6 @@
 import json
 import logging
+import os
 import time
 from abc import abstractmethod
 from dataclasses import dataclass
@@ -35,7 +36,7 @@ class WebRetrieverConfig(RetrieverConfig):
 
 @dataclass
 class BingRetrieverConfig(WebRetrieverConfig):
-    subscription_key: str = "${oc.env:BING_SEARCH_KEY}"
+    subscription_key: str = os.environ.get("BING_SEARCH_KEY", "EMPTY")
     endpoint: str = "https://api.bing.microsoft.com"
 
 
@@ -46,8 +47,8 @@ class DuckDuckGoRetrieverConfig(WebRetrieverConfig):
 
 @dataclass
 class GoogleRetrieverConfig(WebRetrieverConfig):
-    subscription_key: str = "${oc.env:GOOGLE_SEARCH_KEY}"
-    search_engine_id: str = "${oc.env:GOOGLE_SEARCH_ENGINE_ID}"
+    subscription_key: str = os.environ.get("GOOGLE_SEARCH_KEY", "EMPTY")
+    search_engine_id: str = os.environ.get("GOOGLE_SEARCH_ENGINE_ID", "EMPTY")
     endpoint: str = "https://customsearch.googleapis.com/customsearch/v1"
     proxy: Optional[str] = None
 
