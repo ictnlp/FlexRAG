@@ -182,9 +182,8 @@ class BM25Searcher(BaseSearcher):
                         current_weight = int(current_weight[1:])
                     except:
                         current_weight = 1
-                    new_query = re.sub(
-                        pattern, f'"{response}"^{current_weight + 1}', current_query
-                    )
+                    repl = re.escape(f'"{response}"^{current_weight + 1}')
+                    new_query = re.sub(pattern, repl, current_query)
                     refined_queries.append(new_query)
                 else:
                     refined_queries.append(f'"{response}" {current_query}')
