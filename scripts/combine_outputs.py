@@ -5,11 +5,11 @@ from dataclasses import dataclass
 
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import MISSING, OmegaConf
+from omegaconf import MISSING, OmegaConf, DictConfig
+
+sys.path.append(str(pathlib.Path(__file__).resolve().parents[1]))
 
 from kylin.metrics import ResponseEvaluator, RetrievalEvaluator
-
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
 
 
 @dataclass
@@ -55,8 +55,10 @@ def main(cfg: Config):
     ret_eval_configs = [i["config"]["retrieval_eval_config"] for i in results]
     assert all([i == res_eval_configs[0] for i in res_eval_configs])
     assert all([i == ret_eval_configs[0] for i in ret_eval_configs])
-    res_eval = ResponseEvaluator(results[0]["config"]["response_eval_config"])
-    ret_eval = RetrievalEvaluator(results[0]["config"]["retrieval_eval_config"])
+    res_eval_cfg = DictConfig(results[0]["config"]["response_eval_config"])
+    ret_eval_cfg = DictConfig(results[0]["config"]["retrieval_eval_config"])
+    res_eval = ResponseEvaluator(res_eval_cfg)
+    ret_eval = RetrievalEvaluator(ret_eval_cfg)
 
     # re-evaluate
     if len(responses) > 0:
