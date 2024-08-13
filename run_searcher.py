@@ -73,6 +73,7 @@ def main(config: Config):
         f"ckpt_{sha256((COMMIT_ID + json.dumps(config)).encode()).hexdigest()}.json",
     )
     if os.path.exists(ckpt_path):
+        logger.info(f"Found checkpoint file: {ckpt_path}")
         state = json.load(open(ckpt_path, "r"))
         contexts = state["contexts"]
         tracks = state["search_trackback"]
