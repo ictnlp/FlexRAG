@@ -16,6 +16,7 @@ class OllamaGeneratorConfig(GeneratorBaseConfig):
     model_name: str = MISSING
     base_url: str = MISSING
     verbose: bool = False
+    num_ctx: int = 4096
 
 
 @Generators("ollama", config_class=OllamaGeneratorConfig)
@@ -25,6 +26,7 @@ class OllamaGenerator(GeneratorBase):
 
         self.client = Client(host=cfg.base_url)
         self.model_name = cfg.model_name
+        self.max_length = cfg.num_ctx
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)
@@ -81,6 +83,7 @@ class OllamaGenerator(GeneratorBase):
                 generation_config.temperature if generation_config.do_sample else 0.0
             ),
             "num_predict": generation_config.max_new_tokens,
+            "num_ctx": self.max_length,
         }
 
     def _check(self) -> None:
