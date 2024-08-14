@@ -13,6 +13,7 @@ from .hybrid_searcher import HybridSearcher, HybridSearcherConfig
 @dataclass
 class HighLevelSearcherConfig(HybridSearcherConfig):
     decompose: bool = False
+    max_decompose_times: int = 100
     summarize_for_decompose: bool = False
     summarize_for_answer: bool = False
 
@@ -22,7 +23,10 @@ class HighLevalSearcher(HybridSearcher):
     def __init__(self, cfg: HighLevelSearcherConfig) -> None:
         super().__init__(cfg)
         # set basic args
-        self.decompose = cfg.decompose
+        if not cfg.decompose:
+            self.max_decompose_times = 0
+        else:
+            self.max_decompose_times = cfg.max_decompose_times
         self.summarize_for_decompose = cfg.summarize_for_decompose
         self.summarize_for_answer = cfg.summarize_for_answer
 
@@ -117,8 +121,10 @@ class HighLevalSearcher(HybridSearcher):
     ) -> tuple[list[RetrievedContext], list[dict[str, object]]]:
         contexts = []
         search_history = []
-        if self.decompose:
+        decompose_times = self.max_decompose_times
+        if decompose_times > 0:
             decomposed_questions = self.decompose_question(question)
+            decompose_times -= 1
         else:
             decomposed_questions = [question]
 
@@ -128,8 +134,9 @@ class HighLevalSearcher(HybridSearcher):
             ctxs, _ = super().search(q)
             search_history.append({"question": q, "contexts": ctxs})
             contexts.extend(ctxs)
-            if (len(decomposed_questions) == 0) and self.decompose:
+            if (len(decomposed_questions) == 0) and (decompose_times > 0):
                 decomposed_questions = self.decompose_question(question, search_history)
+                decompose_times -= 1
 
         # post process
         if self.summarize_for_answer:
