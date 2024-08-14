@@ -68,4 +68,6 @@ class HybridSearcher(BaseSearcher):
         return contexts, search_history
 
     def close(self) -> None:
+        for name in self.searchers:
+            self.searchers[name].close()
         return
