@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+import pickle
 from dataclasses import dataclass, field
 from hashlib import sha256
 from typing import Optional
@@ -70,11 +71,11 @@ def main(config: Config):
     prompts = []
     ckpt_path = os.path.join(
         hydra.utils.get_original_cwd(),
-        f"ckpt_{sha256((COMMIT_ID + json.dumps(config)).encode()).hexdigest()}.json",
+        f"ckpt_{sha256((COMMIT_ID + json.dumps(config)).encode()).hexdigest()}.pkl",
     )
     if os.path.exists(ckpt_path):
         logger.info(f"Found checkpoint file: {ckpt_path}")
-        state = json.load(open(ckpt_path, "r"))
+        state = pickle.load(open(ckpt_path, "rb"))
         contexts = state["contexts"]
         tracks = state["search_trackback"]
         responses = state["responses"]
@@ -100,8 +101,8 @@ def main(config: Config):
         # save running state and raise error
         except Exception as e:
             logger.error(f"Error when processing question: {q}")
-            with open(ckpt_path, "w") as f:
-                json.dump(
+            with open(ckpt_path, "wb") as f:
+                pickle.dump(
                     {
                         "contexts": contexts,
                         "search_trackback": tracks,
@@ -109,7 +110,6 @@ def main(config: Config):
                         "response_prompts": prompts,
                     },
                     f,
-                    indent=4,
                 )
             raise e
         responses.append(r)
