@@ -50,6 +50,21 @@ def main(cfg: Config):
         assert len(questions) == len(responses)
         assert len(questions) == len(response_prompts)
 
+    # combine the meters
+    time_meters = [i["time_meter"] for i in results]
+    time_meter = []
+    for items in zip(*time_meters):
+        total_time = sum([i["total time"] for i in items])
+        total_calls = sum([i["calls"] for i in items])
+        time_meter.append(
+            {
+                "name": items[0]["name"],
+                "calls": total_calls,
+                "average call time": total_time / total_calls,
+                "total time": total_time,
+            }
+        )
+
     # load evaluator
     res_eval_configs = [i["config"]["response_eval_config"] for i in results]
     ret_eval_configs = [i["config"]["retrieval_eval_config"] for i in results]
@@ -85,7 +100,7 @@ def main(cfg: Config):
         "retrieval_scores_details": ret_score_detail,
         "response_scores": resp_score,
         "response_scores_details": resp_score_detail,
-        "time_meter": None,
+        "time_meter": time_meter,
     }
     with open(cfg.output_path, "w") as f:
         json.dump(combined_results, f, indent=4, ensure_ascii=False)
