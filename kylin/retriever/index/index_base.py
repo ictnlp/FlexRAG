@@ -1,6 +1,7 @@
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+from time import perf_counter
 from typing import Optional
 
 import numpy as np
@@ -30,34 +31,23 @@ class DenseIndex(ABC):
         return
 
     @abstractmethod
-    def build_index(self, embeddings: np.ndarray, ids: np.ndarray | list[int] = None):
+    def build_index(self, embeddings: np.ndarray):
         return
 
-    def add_embeddings(
-        self, embeddings: np.ndarray, ids: np.ndarray | list[int] = None
-    ) -> None:
-        if ids is None:
-            ids = list(range(len(self), len(self) + len(embeddings)))
-        assert len(ids) == len(embeddings)
-
+    def add_embeddings(self, embeddings: np.ndarray) -> None:
+        """Add embeddings to the index."""
         p_logger = SimpleProgressLogger(
             logger, total=embeddings.shape[0], interval=self.log_interval
         )
         for idx in range(0, len(embeddings), self.batch_size):
             p_logger.update(step=self.batch_size, desc="Adding embeddings")
             embeds_to_add = embeddings[idx : idx + self.batch_size]
-            if ids is not None:
-                ids_to_add = ids[idx : idx + self.batch_size]
-            else:
-                ids_to_add = None
-            self._add_embeddings_batch(embeds_to_add, ids_to_add)
+            self._add_embeddings_batch(embeds_to_add)
         self.serialize()
         return
 
     @abstractmethod
-    def _add_embeddings_batch(
-        self, embeddings: np.ndarray, ids: np.ndarray | list[int]
-    ) -> None:
+    def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:
         return
 
     def search(
@@ -74,7 +64,8 @@ class DenseIndex(ABC):
             search_kwargs (dict, optional): Additional search arguments. Defaults to {}.
 
         Returns:
-            tuple[np.ndarray, np.ndarray]: (ids [n, k], scores [n, k])
+            ids (np.ndarray): [n, k]
+            scores (np.ndarray): [n, k]
         """
         scores = []
         indices = []
@@ -128,3 +119,23 @@ class DenseIndex(ABC):
     def __len__(self) -> int:
         """Return the number of embeddings in the index."""
         return
+
+    def test_accuracy(self, queries: np.ndarray, labels: np.ndarray, top_k: int = 10):
+        """Test the top-k accuracy of the index."""
+        # search
+        start_time = perf_counter()
+        retrieved, _ = self.search(queries, top_k)
+        end_time = perf_counter()
+        time_cost = end_time - start_time
+
+        # compute accuracy
+        acc_map = labels.reshape(-1, 1) == retrieved
+        top_k_acc = [acc_map[:, : k + 1].sum() / len(queries) for k in range(top_k)]
+
+        # log accuracy and search time
+        acc_info_str = "\n".join(
+            [f"Top {k + 1} accuracy: {acc*100:.2f}%" for k, acc in enumerate(top_k_acc)]
+        )
+        logger.info(f"Top k accuracy:\n{acc_info_str}")
+        logger.info(f"Search time: {time_cost:.4f} s")
+        return top_k_acc

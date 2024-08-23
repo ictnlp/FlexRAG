@@ -44,12 +44,11 @@ class ScaNNIndex(DenseIndex):
             self.index = self._prepare_index()
         return
 
-    def build_index(self, embeddings: np.ndarray, ids: np.ndarray | list[int] = None):
+    def build_index(self, embeddings: np.ndarray) -> None:
         if self.is_trained:
             self.clear()
         self.index.db = embeddings
-        if ids is None:
-            ids = list(np.arange(len(embeddings)))
+        ids = list(np.arange(len(embeddings)))
         ids = [str(i) for i in ids]
         self.index = self.index.build(docids=ids)
         self.index.set_num_threads(self.threads)
@@ -81,15 +80,11 @@ class ScaNNIndex(DenseIndex):
         builder.set_n_training_threads(self.threads)
         return builder
 
-    def _add_embeddings_batch(
-        self,
-        embeddings: np.ndarray,
-        ids: np.ndarray,
-    ) -> None:
+    def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:
         embeddings = embeddings.astype("float32")
         assert self.is_trained, "Index should be trained first"
+        ids = list(range(len(self), len(self) + len(embeddings)))
         ids = [str(i) for i in ids]
-        assert len(ids) == len(embeddings)
         self.index.upsert(docids=ids, database=embeddings, batch_size=self.batch_size)
         return
 

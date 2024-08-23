@@ -184,14 +184,14 @@ class DenseRetriever(LocalRetriever):
             self.db_table.flush()
             self._fingerprint = uuid4()  # update fingerprint
 
-        indices = np.arange(start_idx, len(self.db_table))
         if not self.index.is_trained:  # train index
             logger.info("Training index")
             logger.warning("Training index will consume a lot of memory")
-            full_embeddings = np.array(self.db_table.cols.embedding[start_idx:])
-            self.index.build_index(full_embeddings, indices)
+            full_embeddings = np.array(self.db_table.cols.embedding[:])
+            self.index.build_index(full_embeddings)
         else:  # add embeddings to index
-            self.index.add_embeddings(full_embeddings, indices, self.batch_size)
+            full_embeddings = np.array(self.db_table.cols.embedding[start_idx:])
+            self.index.add_embeddings(full_embeddings)
             self.index.serialize()
             logger.info("Finished adding passages")
         return
