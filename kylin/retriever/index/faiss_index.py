@@ -190,6 +190,13 @@ class FaissIndex(DenseIndex):
 
     @property
     def is_trained(self) -> bool:
+        if isinstance(self.index, self.faiss.IndexReplicas):
+            trained = True
+            for i in range(self.index.count()):
+                sub_index = self.faiss.downcast_index(self.index.at(i))
+                if not sub_index.is_trained:
+                    trained = False
+            return trained
         return self.index.is_trained
 
     @property
