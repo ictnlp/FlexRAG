@@ -127,6 +127,9 @@ class FaissIndex(DenseIndex):
         return index
 
     def train_index(self, embeddings: np.ndarray) -> None:
+        if self.is_flat:
+            logger.info("Index is flat, no need to train")
+            return
         logger.info("Training index")
         embeddings = embeddings.astype("float32")
         train_num = min(self.index_train_num, embeddings.shape[0])
@@ -186,8 +189,28 @@ class FaissIndex(DenseIndex):
         return
 
     @property
-    def is_trained(self):
+    def is_trained(self) -> bool:
         return self.index.is_trained
+
+    @property
+    def is_flat(self) -> bool:
+        if isinstance(
+            self.index,
+            (self.faiss.IndexFlat, self.faiss.GpuIndexFlat),
+        ):
+            return True
+        if isinstance(self.index, self.faiss.IndexReplicas):
+            all_flat = True
+            for i in range(self.index.count()):
+                sub_index = self.faiss.downcast_index(self.index.at(i))
+                if not isinstance(
+                    sub_index,
+                    (self.faiss.IndexFlat, self.faiss.GpuIndexFlat),
+                ):
+                    all_flat = False
+            if all_flat:
+                return True
+        return False
 
     @property
     def embedding_size(self):
