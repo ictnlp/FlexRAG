@@ -167,22 +167,14 @@ Phi3Template = HFTemplate
 
 
 def load_template(
-    model_config: PretrainedConfig,
+    model_name: str,
     tokenizer: PreTrainedTokenizer,
 ) -> Template:
-    # get cfg name
-    cfg_name = model_config.__class__.__name__
-
-    # load template
-    match cfg_name:
-        case "Phi3Config":
-            template = Phi3Template(tokenizer=tokenizer)
-        case "Phi3SmallConfig":
-            template = Phi3Template(tokenizer=tokenizer)
-        case "LlamaConfig":
-            template = Llama3Template(tokenizer=tokenizer)
-        case "Qwen2Config":
-            template = Qwen2Template(tokenizer=tokenizer)
-        case _:
-            raise ValueError(f"Unsupported config: {cfg_name}")
-    return template
+    """Load template for different models."""
+    if "Phi-3" in model_name:
+        return Phi3Template(tokenizer=tokenizer)
+    elif "Meta-Llama-3" in model_name:
+        return Llama3Template(tokenizer=tokenizer)
+    elif "Qwen/Qwen2" in model_name:
+        return Qwen2Template(tokenizer=tokenizer)
+    raise ValueError(f"Unsupported architecture: {model_name}")

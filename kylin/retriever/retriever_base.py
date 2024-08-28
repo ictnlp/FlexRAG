@@ -165,11 +165,7 @@ class LocalRetriever(Retriever):
         return
 
     @abstractmethod
-    def add_passages(
-        self,
-        passages: Iterable[dict[str, str]] | Iterable[str],
-        reinit: bool = False,
-    ):
+    def add_passages(self, passages: Iterable[dict[str, str]] | Iterable[str]):
         """
         Add passages to the retriever database
         """
@@ -180,7 +176,6 @@ class LocalRetriever(Retriever):
         self,
         query: list[str],
         top_k: int = 10,
-        disable_cache: bool = False,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         """Search queries using local retriever.
@@ -215,7 +210,10 @@ class LocalRetriever(Retriever):
     def close(self):
         return
 
-    @property
+    @abstractmethod
+    def clean(self) -> None:
+        return
+
     @abstractmethod
     def __len__(self):
         return

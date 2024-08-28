@@ -18,6 +18,7 @@ from .index import (
     DenseIndex,
 )
 from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
+from .fingerprint import Fingerprint
 
 
 logger = logging.getLogger("DenseRetriever")
@@ -61,8 +62,7 @@ class DenseRetriever(LocalRetriever):
         self.db_file, self.db_table = self.load_database(db_path)
 
         # load fingerprint
-        fp_path = os.path.join(self.database_path, "fingerprint")
-        self._fingerprint = self.load_fingerprint(fp_path)
+        self._fingerprint = Fingerprint(features=cfg)
 
         # load / build index
         self.index = self.load_index(
@@ -138,30 +138,10 @@ class DenseRetriever(LocalRetriever):
             case _:
                 raise ValueError(f"Index type {index_type} is not supported")
 
-    def load_fingerprint(self, fingerprint_path: str) -> str:
-        if os.path.exists(fingerprint_path):
-            with open(fingerprint_path, "r") as f:
-                return f.read()
-        fp = uuid4().hex
-        if len(self) > 0:
-            logger.warning("Fingerprint is missing, regenerate the fingerprint")
-        with open(fingerprint_path, "w") as f:
-            f.write(fp)
-        return fp
-
-    def add_passages(
-        self, passages: Iterable[dict[str, str]] | Iterable[str], reinit: bool = False
-    ):
+    def add_passages(self, passages: Iterable[dict[str, str]] | Iterable[str]):
         """
         Add passages to the retriever database
         """
-        # reinitialize database
-        if reinit:
-            logger.info("Reinitializing database")
-            self.db_table.remove_rows(0, len(self.db_table))
-            self.index.clear()
-            self.db_table.flush()
-
         # generate embeddings
         assert self.passage_encoder is not None, "Passage encoder is not provided"
         total_length = len(passages) if isinstance(passages, list) else None
@@ -182,7 +162,7 @@ class DenseRetriever(LocalRetriever):
                 row["embedding"] = embeddings[i]
                 row.append()
             self.db_table.flush()
-            self._fingerprint = uuid4()  # update fingerprint
+            self._fingerprint.update(batch)
 
         if not self.index.is_trained:  # train index
             logger.info("Training index")
@@ -223,6 +203,13 @@ class DenseRetriever(LocalRetriever):
             for q, idx, score in zip(query, indices, scores)
         ]
         return results
+
+    def clean(self) -> None:
+        self.db_table.remove_rows(0, len(self.db_table))
+        self.db_table.flush()
+        self.index.clear()
+        self._fingerprint.clean()
+        return
 
     def close(self):
         self.db_table.flush()
@@ -284,4 +271,4 @@ class DenseRetriever(LocalRetriever):
 
     @property
     def fingerprint(self) -> str:
-        return self._fingerprint
+        return self._fingerprint.hexdigest()

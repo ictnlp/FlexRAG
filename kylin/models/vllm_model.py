@@ -1,12 +1,16 @@
+import logging
 from dataclasses import dataclass
 
 from omegaconf import MISSING
-from transformers import AutoConfig
+from transformers import AutoConfig, PretrainedConfig
 
 from kylin.prompt import load_template, ChatPrompt
 from kylin.utils import Choices, TimeMeter
 
 from .model_base import Generators, GenerationConfig, GeneratorBase, GeneratorBaseConfig
+from .utils import guess_model_name
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -16,6 +20,7 @@ class VLLMGeneratorConfig(GeneratorBaseConfig):
     max_model_len: int = 16384
     tensor_parallel: int = 1
     load_dtype: Choices(["auto", "float32", "float16", "bfloat16"]) = "auto"  # type: ignore
+    use_minference: bool = False
 
 
 @Generators("vllm", config_class=VLLMGeneratorConfig)
@@ -23,24 +28,37 @@ class VLLMGenerator(GeneratorBase):
     def __init__(self, cfg: VLLMGeneratorConfig) -> None:
         from vllm import LLM
 
-        model_cfg = AutoConfig.from_pretrained(cfg.model_path)
-        cfg_name = model_cfg.__class__.__name__
+        # try to load model arguments from model config
+        model_cfg: PretrainedConfig = AutoConfig.from_pretrained(cfg.model_path)
+        model_name = guess_model_name(model_cfg)
+        max_length = min(
+            getattr(model_cfg, "max_position_embeddings", cfg.max_model_len),
+            cfg.max_model_len,
+        )
+
+        # load model
         self.model = LLM(
             cfg.model_path,
             dtype=str(cfg.load_dtype),
             gpu_memory_utilization=cfg.gpu_memory_utilization,
             tensor_parallel_size=cfg.tensor_parallel,
-            max_model_len=min(model_cfg.max_position_embeddings, cfg.max_model_len),
+            max_model_len=max_length,
             trust_remote_code=True,
+            enforce_eager=True if cfg.use_minference else False,
         )
         self.tokenizer = self.model.get_tokenizer()
-        stop_ids = [self.tokenizer.eos_token_id]
-        if cfg_name == "LlamaConfig":
-            stop_ids.append(self.tokenizer.convert_tokens_to_ids("<|eot_id|>"))
-        self.template = load_template(
-            model_config=self.model.llm_engine.model_config.hf_config,
-            tokenizer=self.tokenizer,
-        )
+        self.template = load_template(model_name=model_name, tokenizer=self.tokenizer)
+
+        # load minference
+        if cfg.use_minference:
+            from minference import MInference
+
+            try:
+                inf_patch = MInference("vllm", model_name)
+                self.model = inf_patch(self.model)
+            except Exception as e:
+                logger.warning(f"Unable to load minference: {e}")
+                logger.warning("Fallback to normal mode.")
         return
 
     @TimeMeter("vllm_generate")

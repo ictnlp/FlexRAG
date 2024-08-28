@@ -17,12 +17,14 @@ from .web_retriever import (
     GoogleRetriever,
     GoogleRetrieverConfig,
 )
+from .milvus_retriever import MilvusRetriever, MilvusRetrieverConfig
 
 __all__ = [
     "LocalRetriever",
     "LocalRetrieverConfig",
     "Retriever",
     "RetrieverConfig",
+    "RetrievedContext",
     "DenseRetriever",
     "DenseRetrieverConfig",
     "BM25Retriever",
@@ -35,6 +37,6 @@ __all__ = [
     "DuckDuckGoRetrieverConfig",
     "GoogleRetriever",
     "GoogleRetrieverConfig",
-    "add_args_for_retriever",
-    "load_retrievers",
+    "MilvusRetriever",
+    "MilvusRetrieverConfig",
 ]

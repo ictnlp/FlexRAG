@@ -5,12 +5,40 @@
 ## TODO
 - [x] Optimize search cache
 - Retrievers
-  - [ ] Optimize faiss index
+  - [x] Optimize faiss index
   - [ ] Optimize milvus index
 - models
   - [x] Add Openai encoding models
-  - [ ] Add Claude models
+  - [x] Add Claude models
   - [ ] Add Minference support
 - searchers
-  - [ ] Add fallback searchers
   - [x] Add hybrid searchers
+- [ ] Add Async support
+
+
+
+
+## Overview
+
+
+## Installation
+
+### Install from pip
+```bash
+pip install librarian
+```
+
+
+### Install from source
+```bash
+pip install pybind11
+
+git clone https://tencent.zhangzhuocheng.top:3000/zhangzhuocheng/kylin
+cd librarian
+pip install ./
+```
+
+## Usage
+
+
+

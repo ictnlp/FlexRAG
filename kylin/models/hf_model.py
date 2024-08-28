@@ -21,6 +21,7 @@ from .model_base import (
     GeneratorBase,
     GeneratorBaseConfig,
 )
+from .utils import guess_model_name
 
 logger = logging.getLogger(__name__)
 
@@ -40,6 +41,7 @@ class HFGeneratorConfig(GeneratorBaseConfig):
             "auto",
         ]
     ) = "auto"
+    use_minference: bool = False
 
 
 @Generators("hf", config_class=HFGeneratorConfig)
@@ -89,10 +91,23 @@ class HFGenerator(GeneratorBase):
             tokenizer_path,
             trust_remote_code=True,
         )
+
         # prepare prompt function
-        self.template = load_template(
-            model_config=self.model.config, tokenizer=self.tokenizer
-        )
+        model_name = guess_model_name(self.model.config)
+        self.template = load_template(model_name=model_name, tokenizer=self.tokenizer)
+
+        # load minference
+        if cfg.use_minference:
+            assert (
+                not cfg.pipeline_parallel
+            ), "Minference does not support pipeline parallel"
+            from minference import MInference
+
+            try:
+                inf_patch = MInference("minference", model_name)
+                self.model = inf_patch(self.model)
+            except Exception as e:
+                logger.warning(f"Unable to load minference: {e}")
         return
 
     @TimeMeter("hf_generate")
@@ -147,7 +162,7 @@ class HFGenerator(GeneratorBase):
         return HFGenerationConfig(
             do_sample=generation_config.do_sample,
             temperature=generation_config.temperature,
-            max_length=generation_config.max_new_tokens,
+            max_new_tokens=generation_config.max_new_tokens,
             top_p=generation_config.top_p,
             top_k=generation_config.top_k,
             num_return_sequences=generation_config.sample_num,

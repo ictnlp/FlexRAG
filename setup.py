@@ -21,7 +21,7 @@ setup(
     install_requires=[
         "pandas",
         "numpy",
-        "transformers>=4.41.0",
+        "transformers>=4.44.0",
         "tqdm",
         "elasticsearch>=8.14.0",
         "torch>=2.3.0",
@@ -46,6 +46,7 @@ setup(
             "duckduckgo_search>=6.1.6",
             "PySocks>=1.7.1",
             "anthropic",
+            "minference>=0.1.5",
         ]
     },
     classifiers=[

@@ -1,13 +1,16 @@
 import logging
 import os
-from argparse import ArgumentParser, Namespace
-from typing import Iterable
+from dataclasses import dataclass, field
+from functools import partial
+from typing import Iterable, Optional
 
-import numpy as np
-import torch
-from transformers import AutoModel, AutoTokenizer
+from omegaconf import MISSING
 
-from .retriever_base import LocalRetriever
+from kylin.utils import Choices, SimpleProgressLogger
+from kylin.models import HFEncoderConfig, EncoderBase, HFEncoder
+
+from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
+from .fingerprint import Fingerprint
 
 
 logging.basicConfig(level=logging.INFO)
@@ -22,105 +25,29 @@ VALID_INDEX_TYPE = [
     "IVF_SQ8",
     "IVF_PQ",
     "HNSW",
-    "BIN_FLAT",
-    "BIN_IVF_FLAT",
     "DISKANN",
-    "AUTOINDEX",
-    "GPU_CAGRA",
-    "GPU_BRUTE_FORCE",
 ]
 
 
-class MilvusRetriever(LocalRetriever):
-    @staticmethod
-    def add_args(parser: ArgumentParser) -> ArgumentParser:
-        # model arguments
-        parser.add_argument(
-            "--query_encoder",
-            type=str,
-            default="facebook/contriever-msmarco",
-            help="The model to use for the query encoder",
-        )
-        parser.add_argument(
-            "--passage_encoder",
-            type=str,
-            default=None,
-            help="The model to use for the passage encoder",
-        )
-        parser.add_argument(
-            "--retriever_tokenizer",
-            type=str,
-            default=None,
-            help="The tokenizer to use for the retriever",
-        )
-        parser.add_argument(
-            "--retriever_device_id",
-            type=int,
-            default=-1,
-            help="The device id to use for the retriever(query and passage encoder)",
-        )
-        # database arguments
-        parser.add_argument(
-            "--read_only",
-            action="store_true",
-            default=False,
-            help="Whether to open the database in read only mode",
-        )
-        # encoding arguments
-        parser.add_argument(
-            "--batch_size",
-            type=int,
-            default=512,
-            help="The batch size to use for encoding",
-        )
-        parser.add_argument(
-            "--max_query_length",
-            type=int,
-            default=256,
-            help="The maximum length of the queries",
-        )
-        parser.add_argument(
-            "--max_passage_length",
-            type=int,
-            default=512,
-            help="The maximum length of the passages",
-        )
-        parser.add_argument(
-            "--no_title",
-            action="store_true",
-            default=False,
-            help="Whether to include the title in the passage",
-        )
-        parser.add_argument(
-            "--lowercase",
-            action="store_true",
-            default=False,
-            help="Whether to lowercase the text",
-        )
-        parser.add_argument(
-            "--normalize_text",
-            action="store_true",
-            default=False,
-            help="Whether to normalize the text",
-        )
-        parser.add_argument(
-            "--metric_type",
-            type=str,
-            default="IP",
-            choices=["IP", "L2", "cosine"],
-            help="The metric type to use for the Milvus index",
-        )
-        parser.add_argument(
-            "--index_type",
-            type=str,
-            default="AUTOINDEX",
-            choices=VALID_INDEX_TYPE,
-            help="The index type to use for the Milvus index",
-        )
-        return parser
+@dataclass
+class MilvusRetrieverConfig(LocalRetrieverConfig):
+    read_only: bool = True
+    uri: str = MISSING
+    user: Optional[str] = None
+    password: Optional[str] = None
+    db_name: str = MISSING
+    source: str = MISSING
+    index_type: Choices(VALID_INDEX_TYPE) = "FLAT"  # type: ignore
+    distance_function: Choices(["IP", "L2", "COSINE"]) = "IP"  # type: ignore
+    query_encoder_type: Optional[Choices(["hf"])] = None  # type: ignore
+    hf_query_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
+    passage_encoder_type: Optional[Choices(["hf"])] = None  # type: ignore
+    hf_passage_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
 
-    def __init__(self, args: Namespace) -> None:
-        super().__init__(args)
+
+class MilvusRetriever(LocalRetriever):
+    def __init__(self, cfg: MilvusRetrieverConfig) -> None:
+        super().__init__(cfg)
         # check pymilvus
         try:
             import pymilvus
@@ -131,46 +58,60 @@ class MilvusRetriever(LocalRetriever):
                 "Please install pymilvus by running `pip install pymilvus`"
             )
 
-        # set args
-        if args.retriever_tokenizer is None:
-            args.retriever_tokenizer = args.query_encoder
-        self.batch_size = args.batch_size
-        self.max_query_length = args.max_query_length
-        self.max_passage_length = args.max_passage_length
-        self.no_title = args.no_title
-        self.lowercase = args.lowercase
-        self.normalize_text = args.normalize_text
-        self.log_interval = args.log_interval
-        self.index_type = args.index_type
-        self.metric_type = args.metric_type
+        # load encoder
+        self.query_encoder = self.load_encoder(
+            cfg.query_encoder_type, cfg.hf_query_encoder_config
+        )
+        self.passage_encoder = self.load_encoder(
+            cfg.passage_encoder_type, cfg.hf_passage_encoder_config
+        )
 
-        # prepare models
-        self.tokenizer = AutoTokenizer.from_pretrained(args.retriever_tokenizer)
-        self.query_encoder = AutoModel.from_pretrained(args.query_encoder)
-        if args.passage_encoder is not None:
-            self.passage_encoder = AutoModel.from_pretrained(args.passage_encoder)
+        # load milvus database
+        self.source = cfg.source
+        client_args = {"uri": cfg.uri}
+        if cfg.user is not None:
+            client_args["user"] = cfg.user
+        if cfg.password is not None:
+            client_args["password"] = cfg.password
+        self.client = self.pymilvus.MilvusClient(**client_args)
+        self.schema, self.index_param = self._prep_param(
+            index_type=cfg.index_type,
+            distance_function=cfg.distance_function,
+            embedding_dim=self.passage_encoder.embedding_size,
+        )
+        if self.client.has_collection(self.source):
+            self.client.load_collection(self.source)
         else:
-            self.passage_encoder = None
-        if args.retriever_device_id >= 0:
-            self.query_encoder.to(args.retriever_device_id)
-            if self.passage_encoder is not None:
-                self.passage_encoder.to(args.retriever_device_id)
-        self.embedding_size = self.query_encoder.config.hidden_size
+            self.client.create_collection(
+                self.source,
+                schema=self.schema,
+                index_params=self.index_param,
+            )
 
-        # load database
-        self.database_path = os.path.join(args.database_path, "database.db")
-        self.indices_path = os.path.join(args.database_path, "indices.npy")
-        self.client = self.pymilvus.MilvusClient(self.database_path)
-        if self.client.has_collection("database"):
-            self.db = self.client.load_collection("database")
-            self.indices = np.load(self.indices_path)
-        else:
-            self.db = self._init_database()
-            self.indices = np.zeros(0, dtype=np.int64)
+        # prepare fingerprint
+        self._fingerprint = Fingerprint(features=cfg)
         return
 
-    def _init_database(self):
-        # prepare schema
+    def load_encoder(
+        self,
+        encoder_type: str,
+        hf_encoder_config: HFEncoderConfig,
+    ) -> EncoderBase:
+        match encoder_type:
+            case "hf":
+                return HFEncoder(hf_encoder_config)
+            case None:
+                return None
+            case _:
+                raise ValueError(f"Encoder type {encoder_type} is not supported")
+
+    def _prep_param(
+        self,
+        index_type: str,
+        distance_function: str,
+        embedding_dim: int,
+    ):
+        # setup schema
         schema = self.client.create_schema(
             auto_id=True,
             enable_dynamic_field=False,
@@ -183,57 +124,44 @@ class MilvusRetriever(LocalRetriever):
         schema.add_field(
             field_name="embedding",
             datatype=self.pymilvus.DataType.FLOAT_VECTOR,
-            dim=768,
+            dim=embedding_dim,
         )
         schema.add_field(
             field_name="data",
             datatype=self.pymilvus.DataType.JSON,
         )
-
-        # prepare index
+        # setup index
         index_params = self.client.prepare_index_params()
         index_params.add_index(
             field_name="embedding",
-            index_type=self.index_type,
-            metric_type=self.metric_type,
+            index_type=index_type,
+            metric_type=distance_function,
         )
-        milvus_db = self.client.create_collection(
-            "database",
-            schema=schema,
-            index_params=index_params,
-        )
-        return milvus_db
+        return schema, index_params
 
-    def add_passages(
-        self, passages: list[dict[str, str]] | list[str], source: str = None
-    ):
+    def add_passages(self, passages: Iterable[dict[str, str]] | Iterable[str]):
         """
         Add passages to the retriever database
         """
-        # generate embeddings
-        for n, idx in enumerate(range(0, len(passages), self.batch_size)):
-            if n % self.log_interval == 0:
-                logger.info(f"Generating embeddings for batch {n}")
-
-            # prepare batch
-            batch = passages[idx : idx + self.batch_size]
-            embeddings = self._encode_batch(batch)
-
-            # add embeddings to database
-            rows = []
-            for emb, p in zip(embeddings, batch):
-                row = {
-                    "embedding": emb.astype(np.float32),
-                    "data": {
-                        "title": p["title"],
-                        "text": p["text"],
-                        "section": p["section"],
-                    },
+        assert self.passage_encoder is not None, "Passage encoder is not provided"
+        total_length = len(passages) if isinstance(passages, list) else None
+        p_logger = SimpleProgressLogger(
+            logger, total=total_length, interval=self.log_interval
+        )
+        for batch, sources in self._get_batch(passages):
+            # generate embeddings
+            embeddings = self.passage_encoder.encode(batch)
+            p_logger.update(step=self.batch_size, desc="Encoding passages")
+            data = [
+                {
+                    "embedding": emb,
+                    "data": src,
                 }
-                rows.append(row)
-            r = self.client.insert(collection_name="database", data=rows)
-            self.indices = np.concatenate([self.indices, r["ids"]])
-        np.save(self.indices, self.indices_path)
+                for emb, src in zip(embeddings, sources)
+            ]
+            self.client.insert(collection_name=self.source, data=data)
+            # update fingerprint
+            self._fingerprint.update(batch)
         return
 
     def search_batch(
@@ -241,62 +169,67 @@ class MilvusRetriever(LocalRetriever):
         query: list[str],
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[dict[str, str | list]]:
-        embeddings = self._encode_batch(query, is_query=True)
+    ) -> list[list[RetrievedContext]]:
+        embeddings = self.query_encoder.encode(query)
         results_ = self.client.search(
-            collection_name="database",
+            collection_name=self.source,
             data=embeddings,
             limit=top_k,
             search_params=search_kwargs,
         )
+        get = partial(self.client.get, collection_name=self.source)
         results = [
-            {
-                "scores": [i["distance"] for i in result_],
-                "titles": [i["entity"]["data"]["title"] for i in result_],
-                "sections": [i["entity"]["data"]["section"] for i in result_],
-                "texts": [i["entity"]["data"]["text"] for i in result_],
-            }
-            for result_ in results_
+            [
+                RetrievedContext(
+                    retriever="milvus",
+                    query=q,
+                    text=get(id=i["id"])[0]["text"],
+                    full_text=get(id=i["id"])[0]["text"],
+                    title=get(id=i["id"])[0]["title"],
+                    section=get(id=i["id"])[0]["section"],
+                    source=self.source,
+                    score=i["distance"],
+                )
+                for i in result_
+            ]
+            for q, result_ in zip(query, results_)
         ]
         return results
+
+    def __len__(self):
+        return self.client.get_collection_stats(self.source)["row_count"]
+
+    def clean(self) -> None:
+        self.client.drop_collection(self.source)
+        self.client.create_collection(
+            self.source,
+            schema=self.schema,
+            index_params=self.index_param,
+        )
+        self._fingerprint.clean()
+        return
 
     def close(self):
         self.client.close()
         return
 
-    @torch.no_grad()
-    def _encode_batch(
-        self,
-        batch: Iterable[dict[str, str]] | Iterable[str],
-        is_query: bool = False,
-    ) -> np.ndarray:
-        # prepare batch
-        batch_text = [self._prepare_text(doc) for doc in batch]
+    @property
+    def fingerprint(self) -> str:
+        return self._fingerprint.hexdigest()
 
-        # get encoder
-        if is_query:
-            encoder = self.query_encoder
-        else:
-            encoder = self.passage_encoder
-
-        # tokenize text
-        device = encoder.device
-        input_dict = self.tokenizer.batch_encode_plus(
-            batch_text,
-            return_tensors="pt",
-            max_length=self.max_passage_length,
-            padding=True,
-            truncation=True,
-        )
-        input_dict = {k: v.to(device) for k, v in input_dict.items()}
-        mask = input_dict["attention_mask"]
-
-        # encode text
-        token_embeddings = encoder(**input_dict).last_hidden_state
-        token_embeddings = token_embeddings.masked_fill(~mask[..., None].bool(), 0.0)
-        embeddings = token_embeddings.sum(dim=1) / mask.sum(dim=1)[..., None]
-        embeddings = embeddings.cpu().numpy()
-        return embeddings
-
-    def __len__(self):
-        return len(self.indices)
+    def _get_batch(
+        self, passages: Iterable[dict[str, str] | str]
+    ) -> Iterable[tuple[list[str], list[dict[str, str]]]]:
+        batch = []
+        sources = []
+        for passage in passages:
+            passage = {"text": passage} if isinstance(passage, str) else passage
+            if len(batch) == self.batch_size:
+                yield batch, sources
+                batch = []
+                sources = []
+            batch.append(self._prepare_text(passage))
+            sources.append(passage)
+        if batch:
+            yield batch, sources
+        return

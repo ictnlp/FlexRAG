@@ -86,17 +86,7 @@ class BM25Retriever(LocalRetriever):
             es_logger.setLevel(logging.WARNING)
         return
 
-    def add_passages(
-        self,
-        passages: Iterable[dict[str, str]] | list[str],
-        reinit: bool = False,
-    ):
-        if reinit:
-            logger.warning("Reinitializing the index")
-            self.client.indices.delete(index=self.index_name)
-            time.sleep(5)
-            self._prep_client()
-
+    def add_passages(self, passages: Iterable[dict[str, str]] | list[str]):
         def generate_actions():
             for passage in passages:
                 p = passage if isinstance(passage, dict) else {"text": passage}
@@ -222,6 +212,12 @@ class BM25Retriever(LocalRetriever):
             case _:
                 raise ValueError(f"Invalid search method: {search_method}")
         return results
+
+    def clean(self) -> None:
+        self.client.indices.delete(index=self.index_name)
+        time.sleep(5)
+        self._prep_client()
+        return
 
     def close(self) -> None:
         self.client.close()
