@@ -57,7 +57,7 @@ class FaissIndex(DenseIndex):
         return
 
     def build_index(self, embeddings: np.ndarray):
-        self.clear()
+        self.clean()
         self.train_index(embeddings=embeddings)
         self.add_embeddings(embeddings=embeddings)
         return
@@ -181,7 +181,7 @@ class FaissIndex(DenseIndex):
         index = self._set_index(cpu_index)
         return index
 
-    def clear(self):
+    def clean(self):
         if os.path.exists(self.index_path):
             os.remove(self.index_path)
         self.index.reset()

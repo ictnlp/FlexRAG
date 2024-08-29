@@ -207,7 +207,7 @@ class DenseRetriever(LocalRetriever):
     def clean(self) -> None:
         self.db_table.remove_rows(0, len(self.db_table))
         self.db_table.flush()
-        self.index.clear()
+        self.index.clean()
         self._fingerprint.clean()
         return
 

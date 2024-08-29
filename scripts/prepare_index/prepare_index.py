@@ -54,7 +54,7 @@ def main(cfg: Config):
 
     # add passages
     if cfg.reinit:
-        retriever.clear()
+        retriever.clean()
     retriever.add_passages(passages=read_data(cfg.corpus_path, cfg.data_ranges))
     retriever.close()
     return

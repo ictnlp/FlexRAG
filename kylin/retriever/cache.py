@@ -36,6 +36,9 @@ class PersistentLRUCache(LRUCache):
                 del db[key]
         return super().__delitem__(key)
 
+    def clean(self):
+        return super().clear()
+
 
 class SQLLRUCache(MutableMapping):
     """A simple LRU cache using SQLite3 as a persistent backend."""
@@ -159,6 +162,9 @@ class SQLLRUCache(MutableMapping):
             )
             conn.commit()
         return
+
+    def clean(self):
+        return super().clear()
 
 
 def hashkey(*args, **kwargs) -> str:

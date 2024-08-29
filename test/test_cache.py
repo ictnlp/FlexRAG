@@ -51,8 +51,8 @@ def test_cache():
     assert cache.to_dict() == OrderedDict({"d": "d"})
     assert len(cache) == 1
 
-    # test clear
-    cache.clear()
+    # test clean
+    cache.clean()
     assert len(cache) == 0
 
     # cleanup

@@ -46,7 +46,7 @@ class ScaNNIndex(DenseIndex):
 
     def build_index(self, embeddings: np.ndarray) -> None:
         if self.is_trained:
-            self.clear()
+            self.clean()
         self.index.db = embeddings
         ids = list(np.arange(len(embeddings)))
         ids = [str(i) for i in ids]
@@ -111,7 +111,7 @@ class ScaNNIndex(DenseIndex):
         self.index = self.scann.scann_ops_pybind.load_searcher(self.index_path)
         return
 
-    def clear(self):
+    def clean(self):
         if not self.is_trained:
             return
         if os.path.exists(self.index_path):

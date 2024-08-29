@@ -99,8 +99,8 @@ class DenseIndex(ABC):
         return
 
     @abstractmethod
-    def clear(self) -> None:
-        """Clear the index."""
+    def clean(self) -> None:
+        """Clean the index."""
         return
 
     @property

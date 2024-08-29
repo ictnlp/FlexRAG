@@ -218,9 +218,9 @@ class LocalRetriever(Retriever):
     def __len__(self):
         return
 
-    def _clear_cache(self):
+    def _clean_cache(self):
         if self._cache is not None:
-            self._cache.clear()
+            self._cache.clean()
         return
 
     def _prepare_text(self, document: dict[str, str] | str) -> str:

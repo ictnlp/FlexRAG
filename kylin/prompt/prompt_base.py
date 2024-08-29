@@ -115,8 +115,8 @@ class ChatPrompt:
         self.history.append(chat_turn)
         return
 
-    def clear(self, clear_system: bool = False):
-        if clear_system:
+    def clean(self, clean_system: bool = False):
+        if clean_system:
             self.system = None
         self.history = []
         self.demonstrations = []
