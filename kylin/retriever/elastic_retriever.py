@@ -12,6 +12,7 @@ from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 from kylin.utils import Choices, SimpleProgressLogger
 
 from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
+from .fingerprint import Fingerprint
 
 logger = logging.getLogger("ElasticRetriever")
 
@@ -51,6 +52,15 @@ class ElasticRetriever(LocalRetriever):
         self.retry_times = cfg.retry_times
         self.retry_delay = cfg.retry_delay
         self._prep_client()
+
+        # prepare fingerprint
+        self._fingerprint = Fingerprint(
+            features={
+                "host": cfg.host,
+                "api_key": cfg.api_key,
+                "index_name": cfg.index_name,
+            }
+        )
         return
 
     def _prep_client(self):
@@ -97,6 +107,7 @@ class ElasticRetriever(LocalRetriever):
                     "section": p.get("section", ""),
                     "text": self._prepare_text(p),
                 }
+                self._fingerprint.update(p["text"])
                 yield es_doc
 
         p_logger = SimpleProgressLogger(logger, interval=self.log_interval)
@@ -110,7 +121,7 @@ class ElasticRetriever(LocalRetriever):
         ):
             if not ok:
                 raise RuntimeError(f"Failed to index passage {n}: {result}")
-            p_logger.update(self.batch_size)
+            p_logger.update(1)
         return
 
     def _full_text_search(
@@ -232,13 +243,7 @@ class ElasticRetriever(LocalRetriever):
 
     @property
     def fingerprint(self) -> str:
-        for index_info in self.client.cat.indices(format="json"):
-            if index_info["index"] == self.index_name:
-                break
-        client_info = self.client.info()
-        feature_str = self.host + json.dumps(client_info) + json.dumps(index_info)
-        namespace = uuid5(NAMESPACE_OID, self.name)
-        return uuid5(namespace, feature_str).hex
+        return self._fingerprint.hexdigest()
 
     def _form_results(
         self, query: list[str], responses: list[dict] | None
