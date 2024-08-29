@@ -236,7 +236,7 @@ class MilvusRetriever(LocalRetriever):
                 yield batch, sources
                 batch = []
                 sources = []
-            batch.append(self._prepare_text(passage))
+            batch.append(self._preprocess_text(passage))
             sources.append(passage)
         if batch:
             yield batch, sources

@@ -18,6 +18,7 @@ from .web_retriever import (
     GoogleRetrieverConfig,
 )
 from .milvus_retriever import MilvusRetriever, MilvusRetrieverConfig
+from .typesense_retriever import TypesenseRetriever, TypesenseRetrieverConfig
 
 __all__ = [
     "LocalRetriever",
@@ -39,4 +40,6 @@ __all__ = [
     "GoogleRetrieverConfig",
     "MilvusRetriever",
     "MilvusRetrieverConfig",
+    "TypesenseRetriever",
+    "TypesenseRetrieverConfig",
 ]

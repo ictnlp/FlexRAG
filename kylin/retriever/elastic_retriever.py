@@ -104,7 +104,7 @@ class ElasticRetriever(LocalRetriever):
                     "refresh": "wait_for",
                     "title": p.get("title", ""),
                     "section": p.get("section", ""),
-                    "text": self._prepare_text(p),
+                    "text": self._preprocess_text(p),
                 }
                 self._fingerprint.update(p["text"])
                 yield es_doc

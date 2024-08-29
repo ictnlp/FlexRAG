@@ -1,30 +1,24 @@
-import json
 import logging
-import time
 from dataclasses import dataclass
-from typing import Iterable, Optional
+from typing import Iterable
 
-from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
+from omegaconf import MISSING
 
-from kylin.utils import Choices
+from kylin.utils import Choices, SimpleProgressLogger
 
 from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
+from .fingerprint import Fingerprint
 
 logger = logging.getLogger("TypesenseRetriever")
 
 
-def _save_error_state(retry_state: RetryCallState) -> Exception:
-    args = {
-        "args": retry_state.args,
-        "kwargs": retry_state.kwargs,
-    }
-    with open("typesense_retriever_error_state.json", "w") as f:
-        json.dump(args, f)
-    raise retry_state.outcome.exception()
-
-
 @dataclass
-class TypesenseRetrieverConfig(LocalRetrieverConfig): ...
+class TypesenseRetrieverConfig(LocalRetrieverConfig):
+    host: str = MISSING
+    port: int = 8108
+    protocol: Choices(["https", "http"]) = "http"  # type: ignore
+    api_key: str = MISSING
+    source: str = MISSING
 
 
 class TypesenseRetriever(LocalRetriever):
@@ -32,37 +26,143 @@ class TypesenseRetriever(LocalRetriever):
 
     def __init__(self, cfg: TypesenseRetrieverConfig) -> None:
         super().__init__(cfg)
+        import typesense
+
+        # load database
+        self.typesense = typesense
+        self.client = typesense.Client(
+            {
+                "nodes": [
+                    {
+                        "host": cfg.host,
+                        "port": cfg.port,
+                        "protocol": cfg.protocol,
+                    }
+                ],
+                "api_key": cfg.api_key,
+                "connection_timeout_seconds": 2,
+            }
+        )
+        self.source = cfg.source
+        if cfg.source not in self._sources:
+            schema = self._prepare_schema()
+            self.client.collections.create(schema)
+
+        # prepare fingerprint
+        self._fingerprint = Fingerprint(
+            features={
+                "host": cfg.host,
+                "port": cfg.port,
+                "protocol": cfg.protocol,
+                "api_key": cfg.api_key,
+                "source": cfg.source,
+            }
+        )
         return
 
-    def add_passages(self, passages: Iterable[dict[str, str]] | list[str]):
+    def _prepare_schema(self) -> None:
+        return {
+            "name": self.source,
+            "fields": [
+                {"name": "title", "type": "string"},
+                {"name": "section", "type": "string"},
+                {"name": "text", "type": "string"},
+            ],
+        }
+
+    def add_passages(self, passages: Iterable[dict[str, str]] | list[str]) -> None:
+        p_logger = SimpleProgressLogger(
+            logger=logger,
+            total=len(passages) if isinstance(passages, list) else None,
+            interval=self.log_interval,
+        )
+        for batch, texts in self._prepare_batch(passages):
+            r = self.client.collections[self.source].documents.import_(batch)
+            assert all([i["success"] for i in r])
+            self._fingerprint.update(texts)
+            p_logger.update(self.batch_size, desc="Adding passages")
         return
+
+    def _prepare_batch(
+        self, passages: Iterable[dict[str, str]] | list[str]
+    ) -> Iterable[tuple[list[dict[str, str]], list[str]]]:
+        batch = []
+        texts = []
+        for passage in passages:
+            text = self._preprocess_text(passage)
+            if isinstance(passage, str):
+                passage = {"title": "", "section": "", "text": text}
+            else:
+                passage = {
+                    "title": passage.get("title", ""),
+                    "section": passage.get("section", ""),
+                    "text": text,
+                }
+            batch.append(passage)
+            texts.append(text)
+            if len(batch) == self.batch_size:
+                yield batch, texts
+                batch = []
+                texts = []
+        if batch:
+            yield batch, texts
 
     def search_batch(
         self,
         query: list[str],
         top_k: int = 10,
         **search_kwargs,
+    ) -> list[list[RetrievedContext]]:
+        return [self._full_text_search(q, top_k, **search_kwargs) for q in query]
+
+    def _full_text_search(
+        self,
+        query: str,
+        top_k: int = 10,
+        **search_kwargs,
     ) -> list[RetrievedContext]:
-        return
+        search_parameters = {
+            "q": query,
+            "query_by": "title,section,text",
+            "per_page": top_k,
+            **search_kwargs,
+        }
+        responses = self.client.collections[self.source].documents.search(
+            search_parameters
+        )
+        retrieved = [
+            RetrievedContext(
+                retriever="Typesense",
+                query=query,
+                text=i["document"]["text"],
+                full_text=i["document"]["text"],
+                title=i["document"]["title"],
+                section=i["document"]["section"],
+                source=self.source,
+            )
+            for i in responses["hits"]
+        ]
+        return retrieved
 
     def clean(self) -> None:
+        if self.source in self._sources:
+            self.client.collections[self.source].delete()
+        schema = self._prepare_schema()
+        self.client.collections.create(schema)
         return
 
     def close(self) -> None:
         return
 
     def __len__(self) -> int:
-        return
-
-    @property
-    def indices(self) -> list[str]:
-        return
+        info = self.client.collections.retrieve()
+        info = [i for i in info if i["name"] == self.source][0]
+        return info["num_documents"]
 
     @property
     def fingerprint(self) -> str:
-        return
+        return self._fingerprint.hexdigest()
 
-    def _form_results(
-        self, query: list[str], responses: list[dict] | None
-    ) -> list[list[RetrievedContext]]:
-        return
+    @property
+    def _sources(self) -> list[str]:
+        return [i["name"] for i in self.client.collections.retrieve()]

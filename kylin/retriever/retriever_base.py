@@ -223,7 +223,7 @@ class LocalRetriever(Retriever):
             self._cache.clean()
         return
 
-    def _prepare_text(self, document: dict[str, str] | str) -> str:
+    def _preprocess_text(self, document: dict[str, str] | str) -> str:
         # add title
         if isinstance(document, dict):
             if ("title" in document) and (not self.no_title):

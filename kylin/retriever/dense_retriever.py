@@ -188,7 +188,7 @@ class DenseRetriever(LocalRetriever):
         top_k: int = 10,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
-        texts = [self._prepare_text(q) for q in query]
+        texts = [self._preprocess_text(q) for q in query]
         embeddings = self.query_encoder.encode(texts)
         indices, scores = self.index.search(embeddings, top_k, **search_kwargs)
         results = [
@@ -269,7 +269,7 @@ class DenseRetriever(LocalRetriever):
                 yield batch, sources
                 batch = []
                 sources = []
-            batch.append(self._prepare_text(passage))
+            batch.append(self._preprocess_text(passage))
             sources.append(passage)
         if batch:
             yield batch, sources

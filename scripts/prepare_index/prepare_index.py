@@ -1,3 +1,4 @@
+import logging
 import pathlib
 import sys
 from dataclasses import dataclass, field
@@ -11,27 +12,32 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
 
 
 from kylin.retriever import (
-    MilvusRetriever,
-    MilvusRetrieverConfig,
-    ElasticRetriever,
-    ElasticRetrieverConfig,
     DenseRetriever,
     DenseRetrieverConfig,
+    ElasticRetriever,
+    ElasticRetrieverConfig,
+    MilvusRetriever,
+    MilvusRetrieverConfig,
+    TypesenseRetriever,
+    TypesenseRetrieverConfig,
 )
-from kylin.utils import read_data, Choices
+from kylin.utils import Choices, read_data
+
+logging.basicConfig(level=logging.INFO)
 
 
+# fmt: off
 @dataclass
 class Config:
-    retriever_type: Choices(["dense", "elastic", "milvus"]) = "dense"  # type: ignore
+    retriever_type: Choices(["dense", "elastic", "milvus", "typesense"]) = "dense"  # type: ignore
     dense_config: DenseRetrieverConfig = field(default_factory=DenseRetrieverConfig)
-    elastic_config: ElasticRetrieverConfig = field(
-        default_factory=ElasticRetrieverConfig
-    )
-    milvus_config: MilvusRetrieverConfig = field(default_factory=MilvusRetrieverConfig)  # fmt: skip
+    elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)
+    milvus_config: MilvusRetrieverConfig = field(default_factory=MilvusRetrieverConfig)
+    typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)
     corpus_path: list[str] = MISSING
     data_ranges: Optional[list[list[int]]] = field(default=None)
     reinit: bool = False
+# fmt: on
 
 
 cs = ConfigStore.instance()
@@ -51,12 +57,17 @@ def main(cfg: Config):
             retriever = ElasticRetriever(cfg.elastic_config)
         case "milvus":
             retriever = MilvusRetriever(cfg.milvus_config)
+        case "typesense":
+            retriever = TypesenseRetriever(cfg.typesense_config)
 
     # add passages
     if cfg.reinit:
         retriever.clean()
     retriever.add_passages(passages=read_data(cfg.corpus_path, cfg.data_ranges))
     retriever.close()
+
+    # retrieve
+    retriever.search(["hello world"])
     return
 
 
