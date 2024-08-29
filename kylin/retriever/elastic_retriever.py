@@ -9,7 +9,7 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import streaming_bulk
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
-from kylin.utils import Choices
+from kylin.utils import Choices, SimpleProgressLogger
 
 from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
 
@@ -99,6 +99,7 @@ class ElasticRetriever(LocalRetriever):
                 }
                 yield es_doc
 
+        p_logger = SimpleProgressLogger(logger, interval=self.log_interval)
         for n, (ok, result) in enumerate(
             streaming_bulk(
                 client=self.client,
@@ -109,8 +110,7 @@ class ElasticRetriever(LocalRetriever):
         ):
             if not ok:
                 raise RuntimeError(f"Failed to index passage {n}: {result}")
-            if (n / self.batch_size) % self.log_interval == 0:
-                print(f"Indexed {n} passages")
+            p_logger.update(self.batch_size)
         return
 
     def _full_text_search(
