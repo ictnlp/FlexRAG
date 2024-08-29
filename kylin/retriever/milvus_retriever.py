@@ -89,7 +89,15 @@ class MilvusRetriever(LocalRetriever):
             )
 
         # prepare fingerprint
-        self._fingerprint = Fingerprint(features=cfg)
+        self._fingerprint = Fingerprint(
+            features={
+                "uri": cfg.uri,
+                "user": cfg.user,
+                "password": cfg.password,
+                "db_name": cfg.db_name,
+                "source": cfg.source,
+            }
+        )
         return
 
     def load_encoder(

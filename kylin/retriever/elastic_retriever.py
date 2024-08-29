@@ -3,7 +3,6 @@ import logging
 import time
 from dataclasses import dataclass
 from typing import Iterable, Optional
-from uuid import NAMESPACE_OID, uuid5
 
 from elasticsearch import Elasticsearch
 from elasticsearch.helpers import streaming_bulk

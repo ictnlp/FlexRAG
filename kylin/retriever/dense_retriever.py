@@ -62,7 +62,13 @@ class DenseRetriever(LocalRetriever):
         self.db_file, self.db_table = self.load_database(db_path)
 
         # load fingerprint
-        self._fingerprint = Fingerprint(features=cfg)
+        self._fingerprint = Fingerprint(
+            features={
+                "database_path": cfg.database_path,
+                "source": cfg.source,
+                "index_type": cfg.index_type,
+            }
+        )
 
         # load / build index
         self.index = self.load_index(
