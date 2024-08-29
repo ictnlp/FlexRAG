@@ -5,43 +5,45 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 
 from kylin.prompt import ChatTurn, ChatPrompt
-from kylin.retriever import BM25Retriever, BM25RetrieverConfig, RetrievedContext
+from kylin.retriever import ElasticRetriever, ElasticRetrieverConfig, RetrievedContext
 from kylin.utils import Choices
 
 from .searcher import BaseSearcher, BaseSearcherConfig, Searchers
 
 
-logger = logging.getLogger("BM25Searcher")
+logger = logging.getLogger("LuceneSearcher")
 
 
 @dataclass
-class BM25SearcherConfig(BaseSearcherConfig):
-    retriever_config: BM25RetrieverConfig = field(default_factory=BM25RetrieverConfig)
+class LuceneSearcherConfig(BaseSearcherConfig):
+    retriever_config: ElasticRetrieverConfig = field(
+        default_factory=ElasticRetrieverConfig
+    )
     rewrite_query: Choices(["always", "never", "adaptive"]) = "never"  # type: ignore
     feedback_depth: int = 1
     retriever_top_k: int = 10
     disable_cache: bool = False
 
 
-@Searchers("bm25", config_class=BM25SearcherConfig)
-class BM25Searcher(BaseSearcher):
-    def __init__(self, cfg: BM25SearcherConfig) -> None:
+@Searchers("lucene", config_class=LuceneSearcherConfig)
+class LuceneSearcher(BaseSearcher):
+    def __init__(self, cfg: LuceneSearcherConfig) -> None:
         super().__init__(cfg)
-        # setup BM25 Searcher
+        # setup Lucene Searcher
         self.rewrite = cfg.rewrite_query
         self.feedback_depth = cfg.feedback_depth
         self.retriever_top_k = cfg.retriever_top_k
         self.disable_cache = cfg.disable_cache
 
-        # load BM25 Retriever
-        self.retriever = BM25Retriever(cfg.retriever_config)
+        # load Lucene Retriever
+        self.retriever = ElasticRetriever(cfg.retriever_config)
 
         # load prompts
         self.rewrite_prompt = ChatPrompt.from_json(
             os.path.join(
                 os.path.dirname(__file__),
                 "searcher_prompts",
-                "bm25_rewrite_prompt.json",
+                "lucene_rewrite_prompt.json",
             )
         )
         self.verify_prompt = ChatPrompt.from_json(
@@ -56,21 +58,21 @@ class BM25Searcher(BaseSearcher):
                 os.path.join(
                     os.path.dirname(__file__),
                     "searcher_prompts",
-                    "bm25_refine_extend_prompt.json",
+                    "lucene_refine_extend_prompt.json",
                 )
             ),
             "filter": ChatPrompt.from_json(
                 os.path.join(
                     os.path.dirname(__file__),
                     "searcher_prompts",
-                    "bm25_refine_filter_prompt.json",
+                    "lucene_refine_filter_prompt.json",
                 )
             ),
             "emphasize": ChatPrompt.from_json(
                 os.path.join(
                     os.path.dirname(__file__),
                     "searcher_prompts",
-                    "bm25_refine_emphasize_prompt.json",
+                    "lucene_refine_emphasize_prompt.json",
                 )
             ),
         }

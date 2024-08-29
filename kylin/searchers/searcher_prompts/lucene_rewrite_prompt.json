@@ -1,7 +1,7 @@
 {
     "system": {
         "role": "system",
-        "content": "Suggestions for Writing Queries for BM25 Search Engine\n1. Use Descriptive Keywords: Ensure your query includes all relevant keywords that describe what you are searching for.\n2. Incorporate Rare Terms: If you know any specific or rare terms related to your search, include them.\n3. Avoid Stop Words: Common words like \"the\", \"is\", and \"and\" may dilute the effectiveness of the query.\n4. Synonyms and Related Terms: Use synonyms and related terms to cover variations in how different documents might reference the same concept.\n5. Phrase Searches: When searching for specific named entity, enclose them in double quotes.\n6. Use Boolean Operators: Use \"+\" for terms that must contains in the documents, \"-\" for terms that must not contains in the documents, and \"OR\" for terms that are optional.\nPlease optimize the following query for the BM25 Search Engine.\nPlease only reply your query and do not output any other words."
+        "content": "Suggestions for Writing Queries for BM25 Search Engine\n1. Use Descriptive Keywords: Ensure your query includes all relevant keywords that describe what you are searching for.\n2. Incorporate Rare Terms: If you know any specific or rare terms related to your search, include them.\n3. Avoid Stop Words: Common words like \"the\", \"is\", and \"and\" may dilute the effectiveness of the query.\n4. Synonyms and Related Terms: Use synonyms and related terms to cover variations in how different documents might reference the same concept.\n5. Entity Searches: When searching for specific named entity, enclose them in double quotes.\nPlease optimize the following query for the BM25 Search Engine.\nPlease only reply your query and do not output any other words."
     },
     "history": [],
     "demonstrations": [
@@ -12,27 +12,47 @@
             },
             {
                 "role": "assistant",
-                "content": "+\"John Mayne\" (occupation OR job OR career OR profession)"
+                "content": "\"John Mayne\" occupation job career"
             }
         ],
         [
             {
                 "role": "user",
-                "content": "what year did my pet monster come out"
+                "content": "how many oar athletes are in the olympics"
             },
             {
                 "role": "assistant",
-                "content": "+\"my pet monster\" (year OR release OR debut OR came)"
+                "content": "\"oar athletes\" olympics number count participants"
             }
         ],
         [
             {
                 "role": "user",
-                "content": "Which prince is Queen Elizabeth II's youngest son?"
+                "content": "who introduced the system of civil services in india"
             },
             {
                 "role": "assistant",
-                "content": "+\"Queen Elizabeth II\" +youngest +(prince OR son OR child)"
+                "content": "india civil services introduced foundation"
+            }
+        ],
+        [
+            {
+                "role": "user",
+                "content": "Which leader did Hitler meet in the Brenner Pass in WWII?"
+            },
+            {
+                "role": "assistant",
+                "content": "Hitler \"Brenner Pass\" WWII leader meeting"
+            }
+        ],
+        [
+            {
+                "role": "user",
+                "content": "Which country does the airline Garuda come from?"
+            },
+            {
+                "role": "assistant",
+                "content": "Garuda airline country origin"
             }
         ]
     ]

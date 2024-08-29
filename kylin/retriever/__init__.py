@@ -6,7 +6,7 @@ from .retriever_base import (
     RetrievedContext,
 )
 from .dense_retriever import DenseRetriever, DenseRetrieverConfig
-from .bm25_retriever import BM25Retriever, BM25RetrieverConfig
+from .elastic_retriever import ElasticRetriever, ElasticRetrieverConfig
 from .web_retriever import (
     WebRetriever,
     WebRetrieverConfig,
@@ -27,8 +27,8 @@ __all__ = [
     "RetrievedContext",
     "DenseRetriever",
     "DenseRetrieverConfig",
-    "BM25Retriever",
-    "BM25RetrieverConfig",
+    "ElasticRetriever",
+    "ElasticRetrieverConfig",
     "WebRetriever",
     "WebRetrieverConfig",
     "BingRetriever",

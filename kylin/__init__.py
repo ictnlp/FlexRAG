@@ -1,6 +1,6 @@
 from .searchers import (
-    BM25Searcher,
-    BM25SearcherConfig,
+    LuceneSearcher,
+    LuceneSearcherConfig,
     WebSearcher,
     WebSearcherConfig,
     DenseSearcher,
@@ -11,8 +11,8 @@ from .searchers import (
     HighLevelSearcherConfig,
 )
 from .retriever import (
-    BM25Retriever,
-    BM25RetrieverConfig,
+    ElasticRetriever,
+    ElasticRetrieverConfig,
     DenseRetriever,
     DenseRetrieverConfig,
     BingRetriever,
@@ -25,8 +25,8 @@ from .retriever import (
 
 
 __all__ = [
-    "BM25Searcher",
-    "BM25SearcherConfig",
+    "LuceneSearcher",
+    "LuceneSearcherConfig",
     "WebSearcher",
     "WebSearcherConfig",
     "DenseSearcher",
@@ -35,8 +35,8 @@ __all__ = [
     "HybridSearcherConfig",
     "HighLevalSearcher",
     "HighLevelSearcherConfig",
-    "BM25Retriever",
-    "BM25RetrieverConfig",
+    "ElasticRetriever",
+    "ElasticRetrieverConfig",
     "DenseRetriever",
     "DenseRetrieverConfig",
     "BingRetriever",

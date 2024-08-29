@@ -13,8 +13,8 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
 from kylin.retriever import (
     MilvusRetriever,
     MilvusRetrieverConfig,
-    BM25Retriever,
-    BM25RetrieverConfig,
+    ElasticRetriever,
+    ElasticRetrieverConfig,
     DenseRetriever,
     DenseRetrieverConfig,
 )
@@ -23,9 +23,11 @@ from kylin.utils import read_data, Choices
 
 @dataclass
 class Config:
-    retriever_type: Choices(["dense", "bm25", "milvus"]) = "dense"  # type: ignore
+    retriever_type: Choices(["dense", "elastic", "milvus"]) = "dense"  # type: ignore
     dense_config: DenseRetrieverConfig = field(default_factory=DenseRetrieverConfig)
-    bm25_config: BM25RetrieverConfig = field(default_factory=BM25RetrieverConfig)
+    elastic_config: ElasticRetrieverConfig = field(
+        default_factory=ElasticRetrieverConfig
+    )
     milvus_config: MilvusRetrieverConfig = field(default_factory=MilvusRetrieverConfig)  # fmt: skip
     corpus_path: list[str] = MISSING
     data_ranges: Optional[list[list[int]]] = field(default=None)
@@ -45,8 +47,8 @@ def main(cfg: Config):
     match cfg.retriever_type:
         case "dense":
             retriever = DenseRetriever(cfg.dense_config)
-        case "bm25":
-            retriever = BM25Retriever(cfg.bm25_config)
+        case "elastic":
+            retriever = ElasticRetriever(cfg.elastic_config)
         case "milvus":
             retriever = MilvusRetriever(cfg.milvus_config)
 

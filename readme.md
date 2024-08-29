@@ -5,6 +5,7 @@
 ## TODO
 - [ ] Add Async support
 - [ ] Add reranking support
+- [ ] Add Typesense retriever
 
 
 

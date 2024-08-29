@@ -13,7 +13,7 @@ from kylin.utils import Choices
 
 from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
 
-logger = logging.getLogger("BM25Retriever")
+logger = logging.getLogger("ElasticRetriever")
 
 
 def _save_error_state(retry_state: RetryCallState) -> Exception:
@@ -21,13 +21,13 @@ def _save_error_state(retry_state: RetryCallState) -> Exception:
         "args": retry_state.args,
         "kwargs": retry_state.kwargs,
     }
-    with open("bm25_retriever_error_state.json", "w") as f:
+    with open("elastic_retriever_error_state.json", "w") as f:
         json.dump(args, f)
     raise retry_state.outcome.exception()
 
 
 @dataclass
-class BM25RetrieverConfig(LocalRetrieverConfig):
+class ElasticRetrieverConfig(LocalRetrieverConfig):
     host: str = "http://localhost:9200"
     api_key: Optional[str] = None
     index_name: str = "documents"
@@ -37,10 +37,10 @@ class BM25RetrieverConfig(LocalRetrieverConfig):
     retry_delay: float = 0.5
 
 
-class BM25Retriever(LocalRetriever):
-    name = "BM25"
+class ElasticRetriever(LocalRetriever):
+    name = "ElasticSearch"
 
-    def __init__(self, cfg: BM25RetrieverConfig) -> None:
+    def __init__(self, cfg: ElasticRetrieverConfig) -> None:
         super().__init__(cfg)
         # set basic args
         self.host = cfg.host

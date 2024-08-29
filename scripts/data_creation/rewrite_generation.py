@@ -23,7 +23,7 @@ from kylin.models import (
     GeneratorConfig,
     load_generator,
 )
-from kylin.retriever import BM25Retriever, BM25RetrieverConfig
+from kylin.retriever import ElasticRetriever, ElasticRetrieverConfig
 from kylin.utils import SimpleProgressLogger, read_data
 
 
@@ -37,7 +37,9 @@ class DataConfig:
 @dataclass
 class Config(GeneratorConfig):
     data_config: DataConfig = field(default_factory=DataConfig)
-    retriever_config: BM25RetrieverConfig = field(default_factory=BM25RetrieverConfig)
+    retriever_config: ElasticRetrieverConfig = field(
+        default_factory=ElasticRetrieverConfig
+    )
     generation_config: GenerationConfig = field(default_factory=GenerationConfig)  # fmt: skip
     eval_config: RetrievalEvaluatorConfig = field(default_factory=RetrievalEvaluatorConfig)  # fmt: skip
     disable_cache: bool = False
@@ -88,7 +90,7 @@ def rewrite_query(
     prompt = ChatPrompt.from_json(
         os.path.join(
             os.path.dirname(__file__),
-            "../../kylin/searchers/searcher_prompts/bm25_rewrite_prompt.json",
+            "../../kylin/searchers/searcher_prompts/lucene_rewrite_prompt.json",
         )
     )
     # sample demonstrations
@@ -124,7 +126,7 @@ def main(config: Config):
     datasets = read_data(config.data_config.data_path, config.data_config.data_range)
 
     # load retriever
-    retriever = BM25Retriever(config.retriever_config)
+    retriever = ElasticRetriever(config.retriever_config)
 
     # load generator
     generator = load_generator(config)

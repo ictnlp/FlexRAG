@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from kylin.retriever import RetrievedContext
 from kylin.utils import Choices
 
-from .bm25_searcher import BM25Searcher, BM25SearcherConfig
+from .lucene_searcher import LuceneSearcher, LuceneSearcherConfig
 from .dense_searcher import DenseSearcher, DenseSearcherConfig
 from .searcher import BaseSearcher, BaseSearcherConfig, Searchers
 from .web_searcher import WebSearcher, WebSearcherConfig
@@ -11,8 +11,10 @@ from .web_searcher import WebSearcher, WebSearcherConfig
 
 @dataclass
 class HybridSearcherConfig(BaseSearcherConfig):
-    searchers: list[Choices(["bm25", "web", "dense"])] = field(default_factory=list)  # type: ignore
-    bm25_searcher_config: BM25SearcherConfig = field(default_factory=BM25SearcherConfig)
+    searchers: list[Choices(["lucene", "web", "dense"])] = field(default_factory=list)  # type: ignore
+    lucene_searcher_config: LuceneSearcherConfig = field(
+        default_factory=LuceneSearcherConfig
+    )
     web_searcher_config: WebSearcherConfig = field(default_factory=WebSearcherConfig)
     dense_searcher_config: DenseSearcherConfig = field(default_factory=DenseSearcherConfig)  # fmt: skip
 
@@ -24,7 +26,7 @@ class HybridSearcher(BaseSearcher):
         # load searchers
         self.searchers = self.load_searchers(
             searchers=cfg.searchers,
-            bm25_cfg=cfg.bm25_searcher_config,
+            lucene_cfg=cfg.lucene_searcher_config,
             web_cfg=cfg.web_searcher_config,
             dense_cfg=cfg.dense_searcher_config,
         )
@@ -33,15 +35,15 @@ class HybridSearcher(BaseSearcher):
     def load_searchers(
         self,
         searchers: list[str],
-        bm25_cfg: BM25SearcherConfig,
+        lucene_cfg: LuceneSearcherConfig,
         web_cfg: WebSearcherConfig,
         dense_cfg: DenseSearcherConfig,
     ) -> dict[str, BaseSearcher]:
         searcher_list = {}
         for searcher in searchers:
             match searcher:
-                case "bm25":
-                    searcher_list[searcher] = BM25Searcher(bm25_cfg)
+                case "lucene":
+                    searcher_list[searcher] = LuceneSearcher(lucene_cfg)
                 case "web":
                     searcher_list[searcher] = WebSearcher(web_cfg)
                 case "dense":
