@@ -1,6 +1,6 @@
 from .searchers import (
-    LuceneSearcher,
-    LuceneSearcherConfig,
+    KeywordSearcher,
+    KeywordSearcherConfig,
     WebSearcher,
     WebSearcherConfig,
     DenseSearcher,
@@ -25,8 +25,8 @@ from .retriever import (
 
 
 __all__ = [
-    "LuceneSearcher",
-    "LuceneSearcherConfig",
+    "KeywordSearcher",
+    "KeywordSearcherConfig",
     "WebSearcher",
     "WebSearcherConfig",
     "DenseSearcher",

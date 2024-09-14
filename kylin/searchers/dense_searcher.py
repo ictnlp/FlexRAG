@@ -7,7 +7,7 @@ from kylin.prompt import ChatTurn, ChatPrompt
 from kylin.retriever import DenseRetriever, DenseRetrieverConfig, RetrievedContext
 from kylin.utils import Choices
 
-from .searcher import BaseSearcher, BaseSearcherConfig, Searchers
+from .searcher import BaseSearcher, BaseSearcherConfig, Searchers, SearchHistory
 
 
 logger = logging.getLogger("WebSearcher")
@@ -24,6 +24,8 @@ class DenseSearcherConfig(BaseSearcherConfig):
 
 @Searchers("dense", config_class=DenseSearcherConfig)
 class DenseSearcher(BaseSearcher):
+    is_hybrid = False
+
     def __init__(self, cfg: DenseSearcherConfig) -> None:
         super().__init__(cfg)
         # setup Dense Searcher
@@ -61,7 +63,7 @@ class DenseSearcher(BaseSearcher):
 
     def search(
         self, question: str
-    ) -> tuple[list[RetrievedContext], list[dict[str, object]]]:
+    ) -> tuple[list[RetrievedContext], list[SearchHistory]]:
         # rewrite the query
         if self.rewrite == "pseudo":
             query_to_search = self.rewrite_query(question)
@@ -70,7 +72,7 @@ class DenseSearcher(BaseSearcher):
 
         # begin adaptive search
         ctxs = []
-        search_history = []
+        history: list[SearchHistory] = []
         verification = False
         rewrite_depth = 0
         while (not verification) and (rewrite_depth < self.rewrite_depth):
@@ -82,12 +84,7 @@ class DenseSearcher(BaseSearcher):
                 top_k=self.retriever_top_k,
                 disable_cache=self.disable_cache,
             )[0]
-            search_history.append(
-                {
-                    "query": query_to_search,
-                    "ctxs": ctxs,
-                }
-            )
+            history.append(SearchHistory(query=query_to_search, contexts=ctxs))
 
             # verify the contexts
             if self.rewrite == "adaptive":
@@ -101,7 +98,7 @@ class DenseSearcher(BaseSearcher):
                     query_to_search = self.rewrite_query(question)
                 else:
                     query_to_search = self.rewrite_query(question, ctxs)
-        return ctxs, search_history
+        return ctxs, history
 
     def rewrite_query(
         self, question: str, contexts: list[RetrievedContext] = []

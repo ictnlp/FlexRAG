@@ -1,10 +1,9 @@
 import logging
-import os
 from dataclasses import dataclass, field
 from functools import partial
-from typing import Iterable, Optional
+from typing import Generator, Iterable, Optional
 
-from omegaconf import MISSING
+from omegaconf import MISSING, OmegaConf
 
 from kylin.utils import Choices, SimpleProgressLogger
 from kylin.models import HFEncoderConfig, EncoderBase, HFEncoder
@@ -18,27 +17,75 @@ logger = logging.getLogger(__name__)
 
 
 VALID_INDEX_TYPE = [
-    "GPU_IVF_FLAT",
-    "GPU_IVF_PQ",
     "FLAT",
     "IVF_FLAT",
     "IVF_SQ8",
     "IVF_PQ",
+    "GPU_BRUTE_FORCE",
+    "GPU_IVF_FLAT",
+    "GPU_IVF_PQ",
     "HNSW",
-    "DISKANN",
+    "SCANN",
 ]
 
 
 @dataclass
+class FLATIndexConfig:
+    metric_type: Choices(["IP", "L2", "COSINE"]) = "IP"  # type: ignore
+
+
+@dataclass
+class IVFIndexConfig:
+    metric_type: Choices(["IP", "L2", "COSINE"]) = "IP"  # type: ignore
+    nlist: int = 128
+    nprobe: int = 8
+
+
+@dataclass
+class IVFPQIndexConfig:
+    metric_type: Choices(["IP", "L2", "COSINE"]) = "IP"  # type: ignore
+    nlist: int = 128
+    nbits: int = 8
+    m: int = 8
+
+
+@dataclass
+class IVFSQ8IndexConfig:
+    metric_type: Choices(["IP", "L2", "COSINE"]) = "IP"  # type: ignore
+    nlist: int = 128
+
+
+@dataclass
+class SCANNIndexConfig:
+    metric_type: Choices(["IP", "L2", "COSINE"]) = "IP"  # type: ignore
+    nlist: int = 8
+    with_raw_data: bool = True
+
+
+@dataclass
+class HNSWIndexConfig:
+    metric_type: Choices(["IP", "L2", "COSINE"]) = "IP"  # type: ignore
+    M: int = 16
+    efConstruction: int = 8
+
+
+@dataclass
 class MilvusRetrieverConfig(LocalRetrieverConfig):
+    # database configs
     read_only: bool = True
     uri: str = MISSING
     user: Optional[str] = None
     password: Optional[str] = None
-    db_name: str = MISSING
     source: str = MISSING
     index_type: Choices(VALID_INDEX_TYPE) = "FLAT"  # type: ignore
-    distance_function: Choices(["IP", "L2", "COSINE"]) = "IP"  # type: ignore
+    # index configs
+    flat_config: FLATIndexConfig = field(default_factory=FLATIndexConfig)
+    ivf_config: IVFIndexConfig = field(default_factory=IVFIndexConfig)
+    ivf_sq_config: IVFSQ8IndexConfig = field(default_factory=IVFSQ8IndexConfig)
+    ivf_pq_config: IVFPQIndexConfig = field(default_factory=IVFPQIndexConfig)
+    scann_config: SCANNIndexConfig = field(default_factory=SCANNIndexConfig)
+    hnsw_config: HNSWIndexConfig = field(default_factory=HNSWIndexConfig)
+    # encoder configs
     query_encoder_type: Optional[Choices(["hf"])] = None  # type: ignore
     hf_query_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
     passage_encoder_type: Optional[Choices(["hf"])] = None  # type: ignore
@@ -76,17 +123,28 @@ class MilvusRetriever(LocalRetriever):
         self.client = self.pymilvus.MilvusClient(**client_args)
         self.schema, self.index_param = self._prep_param(
             index_type=cfg.index_type,
-            distance_function=cfg.distance_function,
             embedding_dim=self.passage_encoder.embedding_size,
+            flat_config=cfg.flat_config,
+            ivf_config=cfg.ivf_config,
+            ivf_pq_config=cfg.ivf_pq_config,
+            ivf_sq_config=cfg.ivf_sq_config,
+            scann_config=cfg.scann_config,
+            hnsw_config=cfg.hnsw_config,
         )
         if self.client.has_collection(self.source):
             self.client.load_collection(self.source)
         else:
-            self.client.create_collection(
-                self.source,
-                schema=self.schema,
-                index_params=self.index_param,
-            )
+            try:
+                self.client.create_collection(
+                    self.source,
+                    schema=self.schema,
+                    index_params=self.index_param,
+                )
+            except Exception as e:
+                # clean up if failed
+                if self.client.has_collection(self.source):
+                    self.client.drop_collection(self.source)
+                raise e
 
         # prepare fingerprint
         self._fingerprint = Fingerprint(
@@ -94,7 +152,6 @@ class MilvusRetriever(LocalRetriever):
                 "uri": cfg.uri,
                 "user": cfg.user,
                 "password": cfg.password,
-                "db_name": cfg.db_name,
                 "source": cfg.source,
             }
         )
@@ -116,8 +173,13 @@ class MilvusRetriever(LocalRetriever):
     def _prep_param(
         self,
         index_type: str,
-        distance_function: str,
         embedding_dim: int,
+        flat_config: FLATIndexConfig,
+        ivf_config: IVFIndexConfig,
+        ivf_pq_config: IVFPQIndexConfig,
+        ivf_sq_config: IVFSQ8IndexConfig,
+        scann_config: SCANNIndexConfig,
+        hnsw_config: HNSWIndexConfig,
     ):
         # setup schema
         schema = self.client.create_schema(
@@ -139,11 +201,32 @@ class MilvusRetriever(LocalRetriever):
             datatype=self.pymilvus.DataType.JSON,
         )
         # setup index
+        match index_type:
+            case "FLAT":
+                index_param_ = OmegaConf.to_container(flat_config, resolve=True)
+            case "IVF_FLAT":
+                index_param_ = OmegaConf.to_container(ivf_config, resolve=True)
+            case "IVF_SQ8":
+                index_param_ = OmegaConf.to_container(ivf_sq_config, resolve=True)
+            case "IVF_PQ":
+                index_param_ = OmegaConf.to_container(ivf_pq_config, resolve=True)
+            case "GPU_BRUTE_FORCE":
+                index_param_ = OmegaConf.to_container(flat_config, resolve=True)
+            case "GPU_IVF_FLAT":
+                index_param_ = OmegaConf.to_container(ivf_config, resolve=True)
+            case "GPU_IVF_PQ":
+                index_param_ = OmegaConf.to_container(ivf_pq_config, resolve=True)
+            case "SCANN":
+                index_param_ = OmegaConf.to_container(scann_config, resolve=True)
+            case "HNSW":
+                index_param_ = OmegaConf.to_container(hnsw_config, resolve=True)
+            case _:
+                raise ValueError(f"Index type {index_type} is not supported")
         index_params = self.client.prepare_index_params()
         index_params.add_index(
             field_name="embedding",
             index_type=index_type,
-            metric_type=distance_function,
+            **index_param_,
         )
         return schema, index_params
 
@@ -151,25 +234,38 @@ class MilvusRetriever(LocalRetriever):
         """
         Add passages to the retriever database
         """
+
+        def get_batch() -> Generator[list[dict[str, str]]]:
+            batch = []
+            for passage in passages:
+                if len(batch) == self.batch_size:
+                    yield batch
+                    batch = []
+                batch.append(passage)
+            if batch:
+                yield batch
+            return
+
         assert self.passage_encoder is not None, "Passage encoder is not provided"
         total_length = len(passages) if isinstance(passages, list) else None
         p_logger = SimpleProgressLogger(
             logger, total=total_length, interval=self.log_interval
         )
-        for batch, sources in self._get_batch(passages):
+        for batch in get_batch():
             # generate embeddings
-            embeddings = self.passage_encoder.encode(batch)
+            texts = [i["text"] for i in batch]
+            embeddings = self.passage_encoder.encode(texts)
             p_logger.update(step=self.batch_size, desc="Encoding passages")
             data = [
                 {
                     "embedding": emb,
                     "data": src,
                 }
-                for emb, src in zip(embeddings, sources)
+                for emb, src in zip(embeddings, batch)
             ]
             self.client.insert(collection_name=self.source, data=data)
             # update fingerprint
-            self._fingerprint.update(batch)
+            self._fingerprint.update(texts)
         return
 
     def search_batch(
@@ -209,11 +305,17 @@ class MilvusRetriever(LocalRetriever):
 
     def clean(self) -> None:
         self.client.drop_collection(self.source)
-        self.client.create_collection(
-            self.source,
-            schema=self.schema,
-            index_params=self.index_param,
-        )
+        try:
+            self.client.create_collection(
+                self.source,
+                schema=self.schema,
+                index_params=self.index_param,
+            )
+        except Exception as e:
+            # clean up if failed
+            if self.client.has_collection(self.source):
+                self.client.drop_collection(self.source)
+            raise e
         self._fingerprint.clean()
         return
 
@@ -224,20 +326,3 @@ class MilvusRetriever(LocalRetriever):
     @property
     def fingerprint(self) -> str:
         return self._fingerprint.hexdigest()
-
-    def _get_batch(
-        self, passages: Iterable[dict[str, str] | str]
-    ) -> Iterable[tuple[list[str], list[dict[str, str]]]]:
-        batch = []
-        sources = []
-        for passage in passages:
-            passage = {"text": passage} if isinstance(passage, str) else passage
-            if len(batch) == self.batch_size:
-                yield batch, sources
-                batch = []
-                sources = []
-            batch.append(self._preprocess_text(passage))
-            sources.append(passage)
-        if batch:
-            yield batch, sources
-        return

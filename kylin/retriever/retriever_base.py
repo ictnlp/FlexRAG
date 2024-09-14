@@ -2,12 +2,12 @@ import logging
 import os
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Iterable, Optional
 
 import numpy as np
 
-from kylin.text_process import normalize_token
+from kylin.text_process import Pipeline, PipelineConfig
 from kylin.utils import SimpleProgressLogger, TimeMeter
 
 from .cache import PersistentLRUCache, hashkey
@@ -28,11 +28,14 @@ class RetrieverConfig:
 @dataclass
 class LocalRetrieverConfig(RetrieverConfig):
     batch_size: int = 32
-    max_query_length: int = 512
-    max_passage_length: int = 512
-    no_title: bool = False
-    lowercase: bool = False
-    normalize_text: bool = True
+    add_title_to_passage: bool = False
+    # max_query_length: int = 512
+    # max_passage_length: int = 512
+    # no_title: bool = False
+    # lowercase: bool = False
+    # normalize_text: bool = True
+    passage_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
+    query_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
 
 
 @dataclass
@@ -157,18 +160,34 @@ class LocalRetriever(Retriever):
         super().__init__(cfg)
         # set args for process documents
         self.batch_size = cfg.batch_size
-        self.max_query_length = cfg.max_query_length
-        self.max_passage_length = cfg.max_passage_length
-        self.no_title = cfg.no_title
-        self.lowercase = cfg.lowercase
-        self.normalize_text = cfg.normalize_text
+        self.passage_preprocess_pipeline = Pipeline(cfg.passage_preprocess_pipeline)
+        self.query_preprocess_pipeline = Pipeline(cfg.query_preprocess_pipeline)
+        self.add_title_to_passage = cfg.add_title_to_passage
         return
 
-    @abstractmethod
-    def add_passages(self, passages: Iterable[dict[str, str]] | Iterable[str]):
+    def add_passages(self, passages: Iterable[dict[str, str] | str]):
         """
         Add passages to the retriever database
         """
+
+        def get_passage():
+            for p in passages:
+                if isinstance(p, str):
+                    p = {"text": p}
+                p["title"] = p.get("title", "")
+                p["section"] = p.get("section", "")
+                if self.add_title_to_passage:
+                    p["text"] = f"{p['title']} {p['text']}"
+                text = self.passage_preprocess_pipeline(p["text"])
+                if text is None:
+                    continue
+                p["text"] = text
+                yield p
+
+        return self._add_passages(get_passage())
+
+    @abstractmethod
+    def _add_passages(self, passages: Iterable[dict[str, str]]):
         return
 
     @abstractmethod
@@ -193,10 +212,13 @@ class LocalRetriever(Retriever):
         self,
         query: list[str] | str,
         top_k: int = 10,
+        no_preprocess: bool = False,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         # search for documents
         query = [query] if isinstance(query, str) else query
+        if not no_preprocess:
+            query = [self.query_preprocess_pipeline(q) for q in query]
         final_results = []
         p_logger = SimpleProgressLogger(logger, len(query), self.log_interval)
         for idx in range(0, len(query), self.batch_size):
@@ -222,21 +244,3 @@ class LocalRetriever(Retriever):
         if self._cache is not None:
             self._cache.clean()
         return
-
-    def _preprocess_text(self, document: dict[str, str] | str) -> str:
-        # add title
-        if isinstance(document, dict):
-            if ("title" in document) and (not self.no_title):
-                text = f"{document['title']} {document['text']}"
-            else:
-                text = document["text"]
-        else:
-            assert isinstance(document, str)
-            text = document
-        # lowercase
-        if self.lowercase:
-            text = text.lower()
-        # normalize
-        if self.normalize_text:
-            text = normalize_token(text)
-        return text

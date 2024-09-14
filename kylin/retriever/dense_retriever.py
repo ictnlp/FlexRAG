@@ -1,8 +1,7 @@
 import logging
 import os
-from uuid import uuid4
 from dataclasses import dataclass, field
-from typing import Iterable, Optional
+from typing import Generator, Iterable, Optional
 
 import numpy as np
 import tables
@@ -112,9 +111,9 @@ class DenseRetriever(LocalRetriever):
         else:
 
             class RetrieveTableWithEmb(tables.IsDescription):
-                title = tables.StringCol(itemsize=self.max_query_length, pos=1)
-                section = tables.StringCol(itemsize=self.max_query_length, pos=2)
-                text = tables.StringCol(itemsize=self.max_passage_length, pos=3)
+                title = tables.StringCol(itemsize=self.max_query_length * 4, pos=1)
+                section = tables.StringCol(itemsize=self.max_query_length * 4, pos=2)
+                text = tables.StringCol(itemsize=self.max_passage_length * 4, pos=3)
                 embedding = tables.Float16Col(self.embedding_size, pos=4)
 
             table = h5file.create_table("/", self.source, RetrieveTableWithEmb)
@@ -144,10 +143,22 @@ class DenseRetriever(LocalRetriever):
             case _:
                 raise ValueError(f"Index type {index_type} is not supported")
 
-    def add_passages(self, passages: Iterable[dict[str, str]] | Iterable[str]):
+    def _add_passages(self, passages: Iterable[dict[str, str]]):
         """
         Add passages to the retriever database
         """
+
+        def get_batch() -> Generator[list[dict[str, str]]]:
+            batch = []
+            for passage in passages:
+                if len(batch) == self.batch_size:
+                    yield batch
+                    batch = []
+                batch.append(passage)
+            if batch:
+                yield batch
+            return
+
         # generate embeddings
         assert self.passage_encoder is not None, "Passage encoder is not provided"
         total_length = len(passages) if isinstance(passages, list) else None
@@ -155,20 +166,21 @@ class DenseRetriever(LocalRetriever):
             logger, total=total_length, interval=self.log_interval
         )
         start_idx = len(self.db_table)
-        for batch, sources in self._get_batch(passages):
-            embeddings = self.passage_encoder.encode(batch)
+        for batch in get_batch():
+            texts = [i["text"] for i in batch]
+            embeddings = self.passage_encoder.encode(texts)
             p_logger.update(step=self.batch_size, desc="Encoding passages")
 
             # add embeddings to database
-            for i, p in enumerate(sources):
+            for i, p in enumerate(batch):
                 row = self.db_table.row
-                row["title"] = self._safe_encode(p.get("title", ""))
-                row["section"] = self._safe_encode(p.get("section", ""))
-                row["text"] = self._safe_encode(p.get("text", ""))
+                row["title"] = p["title"].encode("utf-8")
+                row["section"] = p["section"].encode("utf-8")
+                row["text"] = p["text"].encode("utf-8")
                 row["embedding"] = embeddings[i]
                 row.append()
             self.db_table.flush()
-            self._fingerprint.update(batch)
+            self._fingerprint.update(texts)
 
         if not self.index.is_trained:  # train index
             logger.info("Training index")
@@ -188,8 +200,7 @@ class DenseRetriever(LocalRetriever):
         top_k: int = 10,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
-        texts = [self._preprocess_text(q) for q in query]
-        embeddings = self.query_encoder.encode(texts)
+        embeddings = self.query_encoder.encode(query)
         indices, scores = self.index.search(embeddings, top_k, **search_kwargs)
         results = [
             [
@@ -222,25 +233,6 @@ class DenseRetriever(LocalRetriever):
         self.db_file.close()
         return
 
-    def _safe_encode(self, text: str) -> bytes:
-        text = text.encode("utf-8")
-        if len(text) <= self.max_passage_length:
-            return text
-
-        # do not truncate in the middle of a character
-        trunc_point = self.max_passage_length
-        while trunc_point > 0 and (text[trunc_point] & 0xC0) == 0x80:
-            trunc_point -= 1
-
-        # ensure utf-8 encoding
-        while trunc_point > 0:
-            try:
-                _ = text[:trunc_point].decode("utf-8")
-                break
-            except:
-                trunc_point -= 1
-        return text[:trunc_point]
-
     def __len__(self):
         return len(self.db_table)
 
@@ -257,23 +249,6 @@ class DenseRetriever(LocalRetriever):
         raise ValueError(
             "No encoder or database is provided, embedding size can not be determined."
         )
-
-    def _get_batch(
-        self, passages: Iterable[dict[str, str] | str]
-    ) -> Iterable[tuple[list[str], list[dict[str, str]]]]:
-        batch = []
-        sources = []
-        for passage in passages:
-            passage = {"text": passage} if isinstance(passage, str) else passage
-            if len(batch) == self.batch_size:
-                yield batch, sources
-                batch = []
-                sources = []
-            batch.append(self._preprocess_text(passage))
-            sources.append(passage)
-        if batch:
-            yield batch, sources
-        return
 
     @property
     def fingerprint(self) -> str:

@@ -13,7 +13,7 @@ from kylin.retriever import (
 )
 from kylin.utils import Choices
 
-from .searcher import BaseSearcher, BaseSearcherConfig, Searchers
+from .searcher import BaseSearcher, BaseSearcherConfig, Searchers, SearchHistory
 
 
 logger = logging.getLogger("WebSearcher")
@@ -33,6 +33,8 @@ class WebSearcherConfig(BaseSearcherConfig):
 
 @Searchers("web", config_class=WebSearcherConfig)
 class WebSearcher(BaseSearcher):
+    is_hybrid = False
+
     def __init__(self, cfg: WebSearcherConfig) -> None:
         super().__init__(cfg)
         # setup Web Searcher
@@ -61,7 +63,7 @@ class WebSearcher(BaseSearcher):
 
     def search(
         self, question: str
-    ) -> tuple[list[RetrievedContext], list[dict[str, object]]]:
+    ) -> tuple[list[RetrievedContext], list[SearchHistory]]:
         # initialize search stack
         if self.rewrite:
             query_to_search = self.rewrite_query(question)
@@ -72,7 +74,7 @@ class WebSearcher(BaseSearcher):
             top_k=self.retriever_top_k,
             disable_cache=self.disable_cache,
         )[0]
-        return ctxs, []
+        return ctxs, [SearchHistory(query=question, contexts=ctxs)]
 
     def rewrite_query(self, info: str) -> str:
         # Rewrite the query to be more informative

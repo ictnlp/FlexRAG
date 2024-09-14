@@ -1,7 +1,7 @@
 {
     "system": {
         "role": "system",
-        "content": "Suggestions for Writing Queries for BM25 Search Engine\n1. Use Descriptive Keywords: Ensure your query includes all relevant keywords that describe what you are searching for.\n2. Incorporate Rare Terms: If you know any specific or rare terms related to your search, include them.\n3. Avoid Stop Words: Common words like \"the\", \"is\", and \"and\" may dilute the effectiveness of the query.\n4. Synonyms and Related Terms: Use synonyms and related terms to cover variations in how different documents might reference the same concept.\n5. Entity Searches: When searching for specific named entity, enclose them in double quotes.\nPlease optimize the following query for the BM25 Search Engine.\nPlease only reply your query and do not output any other words."
+        "content": "Suggestions for Writing Queries for BM25 Search Engine\n1. Use Descriptive Keywords: Ensure your query includes all relevant keywords that describe what you are searching for.\n2. Incorporate Rare Terms: If you know any specific or rare terms related to your search, include them.\n3. Avoid Stop Words: Common words like \"the\", \"is\", and \"and\" may dilute the effectiveness of the query.\n4. Synonyms and Related Terms: Use synonyms and related terms to cover variations in how different documents might reference the same concept.\nPlease optimize the following query for the BM25 Search Engine.\nPlease output one keyword per line and do not output any other words."
     },
     "history": [],
     "demonstrations": [
@@ -12,7 +12,7 @@
             },
             {
                 "role": "assistant",
-                "content": "\"John Mayne\" occupation job career"
+                "content": "John Mayne\noccupation\njob\ncareer"
             }
         ],
         [
@@ -22,7 +22,7 @@
             },
             {
                 "role": "assistant",
-                "content": "\"oar athletes\" olympics number count participants"
+                "content": "oar athletes\nolympics\nnumber\ncount\nparticipants"
             }
         ],
         [
@@ -32,7 +32,7 @@
             },
             {
                 "role": "assistant",
-                "content": "india civil services introduced foundation"
+                "content": "india\ncivil\nservices\nintroduced\nfoundation"
             }
         ],
         [
@@ -42,7 +42,7 @@
             },
             {
                 "role": "assistant",
-                "content": "Hitler \"Brenner Pass\" WWII leader meeting"
+                "content": "Hitler\nBrenner Pass\nWWII\nleader\nmeeting"
             }
         ],
         [
@@ -52,7 +52,7 @@
             },
             {
                 "role": "assistant",
-                "content": "Garuda airline country origin"
+                "content": "Garuda\nairline\ncountry\norigin"
             }
         ]
     ]

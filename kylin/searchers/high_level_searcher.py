@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from kylin.prompt import ChatTurn, ChatPrompt
 from kylin.retriever import RetrievedContext
 
-from .searcher import Searchers
+from .searcher import Searchers, SearchHistory
 from .hybrid_searcher import HybridSearcher, HybridSearcherConfig
 
 
@@ -20,6 +20,8 @@ class HighLevelSearcherConfig(HybridSearcherConfig):
 
 @Searchers("highlevel", config_class=HighLevelSearcherConfig)
 class HighLevalSearcher(HybridSearcher):
+    is_hybrid = True
+
     def __init__(self, cfg: HighLevelSearcherConfig) -> None:
         super().__init__(cfg)
         # set basic args
@@ -57,12 +59,12 @@ class HighLevalSearcher(HybridSearcher):
     def decompose_question(
         self,
         question: str,
-        search_history: list[dict[str, str | RetrievedContext]] = [],
+        history: list[SearchHistory] = [],
     ) -> list[str]:
         # form prompt
-        if len(search_history) > 0:
+        if len(history) > 0:
             prompt = deepcopy(self.decompose_prompt_w_ctx)
-            ctx_str = self.compose_contexts(search_history)
+            ctx_str = self.compose_contexts(history)
             prompt.update(
                 ChatTurn(role="user", content=f"Question: {question}\n\n{ctx_str}")
             )
@@ -77,15 +79,13 @@ class HighLevalSearcher(HybridSearcher):
         split_pattern = r"\[\d+\] ([^\[]+)"
         decompsed = re.findall(split_pattern, response)
         # If the question is not decomposed, fallback to original question
-        if (len(decompsed) == 0) and (len(search_history) == 0):
+        if (len(decompsed) == 0) and (len(history) == 0):
             decompsed = [question]
         return decompsed
 
-    def compose_contexts(
-        self, search_history: list[dict[str, str | list[RetrievedContext]]]
-    ) -> str:
+    def compose_contexts(self, history: list[SearchHistory]) -> str:
         if self.summarize_for_decompose:
-            summed_text = self.summarize_history(search_history)
+            summed_text = self.summarize_history(history)
             ctx_text = ""
             for n, text in enumerate(summed_text):
                 ctx_text += f"Context {n + 1}: {text}\n\n"
@@ -93,22 +93,20 @@ class HighLevalSearcher(HybridSearcher):
         else:
             ctx_text = ""
             n = 1
-            for item in search_history:
-                for ctx in item["contexts"]:
+            for item in history:
+                for ctx in item.contexts:
                     ctx_text += f"Context {n}: {ctx.text}\n\n"
                     n += 1
             ctx_text = ctx_text[:-2]
         return ctx_text
 
-    def summarize_history(
-        self, search_history: list[dict[str, str | list[RetrievedContext]]]
-    ) -> list[str]:
+    def summarize_history(self, history: list[SearchHistory]) -> list[str]:
         summed_text = []
-        for item in search_history:
+        for item in history:
             prompt = deepcopy(self.summarize_prompt)
-            q = item["question"]
+            q = item.query
             usr_prompt = ""
-            for n, ctx in enumerate(item["contexts"]):
+            for n, ctx in enumerate(item.contexts):
                 usr_prompt += f"Context {n + 1}: {ctx.text}\n\n"
             usr_prompt += f"Question: {q}"
             prompt.update(ChatTurn(role="user", content=usr_prompt))
@@ -118,9 +116,9 @@ class HighLevalSearcher(HybridSearcher):
 
     def search(
         self, question: str
-    ) -> tuple[list[RetrievedContext], list[dict[str, object]]]:
+    ) -> tuple[list[RetrievedContext], list[SearchHistory]]:
         contexts = []
-        search_history = []
+        history = []
         decompose_times = self.max_decompose_times
         if decompose_times > 0:
             decomposed_questions = self.decompose_question(question)
@@ -132,15 +130,15 @@ class HighLevalSearcher(HybridSearcher):
         while len(decomposed_questions) > 0:
             q = decomposed_questions.pop(0)
             ctxs, _ = super().search(q)
-            search_history.append({"question": q, "contexts": ctxs})
+            history.append(SearchHistory(query=q, contexts=ctxs))
             contexts.extend(ctxs)
             if (len(decomposed_questions) == 0) and (decompose_times > 0):
-                decomposed_questions = self.decompose_question(question, search_history)
+                decomposed_questions = self.decompose_question(question, history)
                 decompose_times -= 1
 
         # post process
         if self.summarize_for_answer:
-            summed_text = self.summarize_history(search_history)
+            summed_text = self.summarize_history(history)
             contexts = [
                 RetrievedContext(
                     retriever="summarize",
@@ -148,6 +146,6 @@ class HighLevalSearcher(HybridSearcher):
                     text=i,
                     full_text=i,
                 )
-                for i, j in zip(summed_text, search_history)
+                for i, j in zip(summed_text, history)
             ]
-        return contexts, search_history
+        return contexts, history

@@ -75,13 +75,13 @@ class WebRetriever(Retriever):
         retry_times = search_kwargs.get("retry_times", self.retry_times)
         retry_delay = search_kwargs.get("retry_delay", self.retry_delay)
         if retry_times > 1:
-            search_method = retry(
+            search_func = retry(
                 stop=stop_after_attempt(retry_times),
                 wait=wait_fixed(retry_delay),
                 retry_error_callback=_save_error_state,
             )(self.search_item)
         else:
-            search_method = self.search_item
+            search_func = self.search_item
 
         # search
         results = []
@@ -89,7 +89,7 @@ class WebRetriever(Retriever):
         for q in query:
             time.sleep(delay)
             p_logger.update(1, "Searching")
-            results.append(search_method(q, top_k, **search_kwargs))
+            results.append(search_func(q, top_k, **search_kwargs))
         return results
 
     @abstractmethod

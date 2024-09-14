@@ -1,5 +1,4 @@
 from abc import abstractmethod
-from collections import Counter
 from dataclasses import dataclass
 
 from sacrebleu import sentence_bleu
@@ -35,8 +34,8 @@ class RetrievalMetric(MetricsBase):
         assert len(evidences) == len(
             retrieved
         ), "The length of y_true and y_pred should be the same"
-        evidences = [[self.preprocess_text(y_) for y_ in y] for y in evidences]
-        retrieved = [[self.preprocess_text(y_) for y_ in y] for y in retrieved]
+        evidences = [[self.preprocess_pipeline(y_) for y_ in y] for y in evidences]
+        retrieved = [[self.preprocess_pipeline(y_) for y_ in y] for y in retrieved]
         return self.compute(evidences, retrieved)
 
     @abstractmethod

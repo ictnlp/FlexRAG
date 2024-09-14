@@ -1,13 +1,14 @@
 import logging
 from dataclasses import dataclass
-from typing import Iterable
+from typing import Generator, Iterable
 
 from omegaconf import MISSING
 
 from kylin.utils import Choices, SimpleProgressLogger
 
-from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
 from .fingerprint import Fingerprint
+from .keyword import Keywords
+from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
 
 logger = logging.getLogger("TypesenseRetriever")
 
@@ -70,42 +71,31 @@ class TypesenseRetriever(LocalRetriever):
             ],
         }
 
-    def add_passages(self, passages: Iterable[dict[str, str]] | list[str]) -> None:
+    def add_passages(self, passages: Iterable[dict[str, str]]) -> None:
+
+        def get_batch() -> Generator[list[dict[str, str]]]:
+            batch = []
+            for passage in passages:
+                if len(batch) == self.batch_size:
+                    yield batch
+                    batch = []
+                batch.append(passage)
+            if batch:
+                yield batch
+            return
+
         p_logger = SimpleProgressLogger(
             logger=logger,
             total=len(passages) if isinstance(passages, list) else None,
             interval=self.log_interval,
         )
-        for batch, texts in self._prepare_batch(passages):
+        for batch in get_batch():
+            texts = [i["text"] for i in batch]
             r = self.client.collections[self.source].documents.import_(batch)
             assert all([i["success"] for i in r])
             self._fingerprint.update(texts)
             p_logger.update(self.batch_size, desc="Adding passages")
         return
-
-    def _prepare_batch(
-        self, passages: Iterable[dict[str, str]] | list[str]
-    ) -> Iterable[tuple[list[dict[str, str]], list[str]]]:
-        batch = []
-        texts = []
-        for passage in passages:
-            text = self._preprocess_text(passage)
-            if isinstance(passage, str):
-                passage = {"title": "", "section": "", "text": text}
-            else:
-                passage = {
-                    "title": passage.get("title", ""),
-                    "section": passage.get("section", ""),
-                    "text": text,
-                }
-            batch.append(passage)
-            texts.append(text)
-            if len(batch) == self.batch_size:
-                yield batch, texts
-                batch = []
-                texts = []
-        if batch:
-            yield batch, texts
 
     def search_batch(
         self,
@@ -113,34 +103,109 @@ class TypesenseRetriever(LocalRetriever):
         top_k: int = 10,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
-        return [self._full_text_search(q, top_k, **search_kwargs) for q in query]
+        search_method = search_kwargs.get("search_method", "full_text")
+        match search_method:
+            case "full_text":
+                results = self._full_text_search(
+                    query,
+                    top_k,
+                    **search_kwargs,
+                )
+            case "keyword":
+                results = self._keywords_search(
+                    query,
+                    top_k,
+                    **search_kwargs,
+                )
+            case _:
+                raise ValueError(f"Unknown search method: {search_method}")
+        return results
 
     def _full_text_search(
         self,
-        query: str,
+        query: list[str],
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[RetrievedContext]:
-        search_parameters = {
-            "q": query,
-            "query_by": "title,section,text",
-            "per_page": top_k,
-            **search_kwargs,
-        }
-        responses = self.client.collections[self.source].documents.search(
-            search_parameters
+    ) -> list[list[RetrievedContext]]:
+        search_params = [
+            {
+                "collection": self.source,
+                "q": q,
+                "query_by": "title,section,text",
+                "per_page": top_k,
+                **search_kwargs,
+            }
+            for q in query
+        ]
+        responses = self.client.multi_search.perform(
+            search_queries={"searches": search_params},
+            common_params={},
         )
         retrieved = [
-            RetrievedContext(
-                retriever="Typesense",
-                query=query,
-                text=i["document"]["text"],
-                full_text=i["document"]["text"],
-                title=i["document"]["title"],
-                section=i["document"]["section"],
-                source=self.source,
+            [
+                RetrievedContext(
+                    retriever="Typesense",
+                    query=q,
+                    text=i["document"]["text"],
+                    full_text=i["document"]["text"],
+                    title=i["document"]["title"],
+                    section=i["document"]["section"],
+                    source=self.source,
+                )
+                for i in response["hits"]
+            ]
+            for q, response in zip(query, responses["results"])
+        ]
+        return retrieved
+
+    def _keywords_search(
+        self,
+        query: list[Keywords],
+        top_k: int = 10,
+        **search_kwargs,
+    ) -> list[list[RetrievedContext]]:
+        search_params = []
+        for kws in query:
+            # convert keywords to typesense query
+            filter_by = []
+            q = []
+            for keyword in kws:
+                if keyword.must or (keyword.weight >= 2):
+                    filter_by.append(f"text: {keyword.keyword}")
+                elif keyword.must_not:
+                    filter_by.append(f"text:! {keyword.keyword}")
+                else:
+                    q.append(keyword.keyword)
+            if len(q) == 0:
+                q = ["*"]
+            search_params.append(
+                {
+                    "collection": self.source,
+                    "q": " ".join(q),
+                    "query_by": "title,section,text",
+                    "filter_by": " && ".join(filter_by),
+                    "per_page": top_k,
+                    **search_kwargs,
+                }
             )
-            for i in responses["hits"]
+        responses = self.client.multi_search.perform(
+            search_queries={"searches": search_params},
+            common_params={},
+        )
+        retrieved = [
+            [
+                RetrievedContext(
+                    retriever="Typesense",
+                    query=str(q),
+                    text=i["document"]["text"],
+                    full_text=i["document"]["text"],
+                    title=i["document"]["title"],
+                    section=i["document"]["section"],
+                    source=self.source,
+                )
+                for i in response["hits"]
+            ]
+            for q, response in zip(query, responses["results"])
         ]
         return retrieved
 

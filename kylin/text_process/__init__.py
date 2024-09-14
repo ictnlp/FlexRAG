@@ -1,8 +1,31 @@
-from .normalize_tokens import normalize_token
-from .normalize_answers import normalize_answer
+from .processor import PROCESSORS, Processor, TextUnit
+from .basic_processors import (
+    TokenNormalizerConfig,
+    TokenNormalizer,
+    ChineseSimplifier,
+    Lowercase,
+    Unifier,
+    TruncatorConfig,
+    Truncator,
+    AnswerSimplifier,
+)
+from .basic_filters import ExactDeduplicate
+from .pipeline import Pipeline, PipelineConfig
 
 
 __all__ = [
-    "normalize_tokens",
-    "normalize_answer",
+    "Pipeline",
+    "PipelineConfig",
+    "PROCESSORS",
+    "Processor",
+    "TextUnit",
+    "TokenNormalizerConfig",
+    "TokenNormalizer",
+    "ChineseSimplifier",
+    "Lowercase",
+    "Unifier",
+    "TruncatorConfig",
+    "Truncator",
+    "AnswerSimplifier",
+    "ExactDeduplicate",
 ]

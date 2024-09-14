@@ -170,8 +170,10 @@ class FaissIndex(DenseIndex):
         return
 
     def deserialize(self):
-        logger.info(f"Loading index from {self.index_path}")
-        if os.path.getsize(self.index_path) / (1024**3) > 10:
+        logger.info(f"Loading index from {self.index_path}.")
+        if (os.path.getsize(self.index_path) / (1024**3) > 10) and (
+            len(self.device_id) == 0
+        ):
             logger.info("Index file is too large. Loading on CPU with memory map.")
             cpu_index = self.faiss.read_index(self.index_path, self.faiss.IO_FLAG_MMAP)
         else:
@@ -227,9 +229,12 @@ class FaissIndex(DenseIndex):
 
     def _set_index(self, index):
         if len(self.device_id) > 0:
+            logger.info("Accelerating index with GPU.")
             option = self.faiss.GpuMultipleClonerOptions()
             option.useFloat16 = True
             option.shard = True
+            if isinstance(index, self.faiss.IndexIVFFlat):
+                option.common_ivf_quantizer = True
             index = self.faiss.index_cpu_to_gpus_list(
                 index,
                 co=option,

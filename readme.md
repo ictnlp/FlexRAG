@@ -5,7 +5,10 @@
 ## TODO
 - [ ] Add Async support
 - [ ] Add reranking support
-- [ ] Add Typesense retriever
+- [x] Add Typesense retriever
+- [x] optimize text processor
+- [ ] optimize keyword searcher
+- [ ] try to merge TextUnit RetrievedContext Passage
 
 
 

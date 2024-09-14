@@ -1,25 +1,19 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
-from unidecode import unidecode
-
-from kylin.text_process import normalize_answer
+from kylin.text_process import PipelineConfig, Pipeline
 from kylin.utils import TimeMeter
 
 
 @dataclass
 class MetricsConfig:
-    normalize: bool = True
-    lowercase: bool = True
-    unify: bool = True
+    answer_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
 
 
 class MetricsBase(ABC):
     def __init__(self, cfg: MetricsConfig) -> None:
         self.args = cfg
-        self.normalize_answer = cfg.normalize
-        self.lowercase = cfg.lowercase
-        self.unify = cfg.unify
+        self.preprocess_pipeline = Pipeline(cfg.answer_preprocess_pipeline)
         return
 
     @TimeMeter("metric")
@@ -29,8 +23,8 @@ class MetricsBase(ABC):
         assert len(y_trues) == len(
             y_preds
         ), "The length of y_true and y_pred should be the same"
-        y_preds = [self.preprocess_text(y) for y in y_preds]
-        y_trues = [[self.preprocess_text(y_) for y_ in y] for y in y_trues]
+        y_preds = [self.preprocess_pipeline(y) for y in y_preds]
+        y_trues = [[self.preprocess_pipeline(y_) for y_ in y] for y in y_trues]
         return self.compute(y_trues, y_preds)
 
     @abstractmethod
@@ -48,12 +42,3 @@ class MetricsBase(ABC):
             tuple[float, object]: A tuple containing the metric value and additional metric-specific information.
         """
         return
-
-    def preprocess_text(self, text: str) -> str:
-        if self.normalize_answer:
-            text = normalize_answer(text)
-        if self.unify:
-            text = unidecode(text)
-        if self.lowercase:
-            text = text.lower()
-        return text

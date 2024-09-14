@@ -8,10 +8,11 @@ from elasticsearch import Elasticsearch
 from elasticsearch.helpers import streaming_bulk
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
-from kylin.utils import Choices, SimpleProgressLogger
+from kylin.utils import SimpleProgressLogger
 
-from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
 from .fingerprint import Fingerprint
+from .keyword import Keywords
+from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
 
 logger = logging.getLogger("ElasticRetriever")
 
@@ -32,7 +33,6 @@ class ElasticRetrieverConfig(LocalRetrieverConfig):
     api_key: Optional[str] = None
     index_name: str = "documents"
     verbose: bool = False
-    search_method: Choices(["full_text", "string"]) = "string"  # type: ignore
     retry_times: int = 3
     retry_delay: float = 0.5
 
@@ -47,7 +47,6 @@ class ElasticRetriever(LocalRetriever):
         self.api_key = cfg.api_key
         self.index_name = cfg.index_name
         self.verbose = cfg.verbose
-        self.search_method = cfg.search_method
         self.retry_times = cfg.retry_times
         self.retry_delay = cfg.retry_delay
         self._prep_client()
@@ -95,16 +94,16 @@ class ElasticRetriever(LocalRetriever):
             es_logger.setLevel(logging.WARNING)
         return
 
-    def add_passages(self, passages: Iterable[dict[str, str]] | list[str]):
+    def add_passages(self, passages: Iterable[dict[str, str]]):
         def generate_actions():
             for passage in passages:
                 p = passage if isinstance(passage, dict) else {"text": passage}
                 es_doc = {
                     "_op_type": "index",
                     "refresh": "wait_for",
-                    "title": p.get("title", ""),
-                    "section": p.get("section", ""),
-                    "text": self._preprocess_text(p),
+                    "title": p["title"],
+                    "section": p["section"],
+                    "text": p["text"],
                 }
                 self._fingerprint.update(p["text"])
                 yield es_doc
@@ -128,18 +127,18 @@ class ElasticRetriever(LocalRetriever):
         query: list[str],
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[RetrievedContext]:
+    ) -> list[list[RetrievedContext]]:
         # prepare retry
         retry_times = search_kwargs.pop("retry_times", self.retry_times)
         retry_delay = search_kwargs.pop("retry_delay", self.retry_delay)
         if retry_times > 1:
-            search_method = retry(
+            search_func = retry(
                 stop=stop_after_attempt(retry_times),
                 wait=wait_fixed(retry_delay),
                 retry_error_callback=_save_error_state,
             )(self.client.msearch)
         else:
-            search_method = self.client.msearch
+            search_func = self.client.msearch
 
         # prepare search body
         body = []
@@ -158,36 +157,51 @@ class ElasticRetriever(LocalRetriever):
             )
 
         # search and post-process
-        responses = search_method(body=body, **search_kwargs)["responses"]
+        responses = search_func(body=body, **search_kwargs)["responses"]
         return self._form_results(query, responses)
 
-    def _string_search(
+    def _keyword_search(
         self,
-        query: list[str],
+        query: list[Keywords],
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[RetrievedContext]:
+    ) -> list[list[RetrievedContext]]:
         # prepare retry
         retry_times = search_kwargs.pop("retry_times", self.retry_times)
         retry_delay = search_kwargs.pop("retry_delay", self.retry_delay)
         if retry_times > 1:
-            search_method = retry(
+            search_func = retry(
                 stop=stop_after_attempt(retry_times),
                 wait=wait_fixed(retry_delay),
                 retry_error_callback=_save_error_state,
             )(self.client.msearch)
         else:
-            search_method = self.client.msearch
+            search_func = self.client.msearch
 
         # prepare search body
         body = []
-        for q in query:
+        for kws in query:
+            # convert keywords to lucene query
+            lucene_string = []
+            for keyword in kws:
+                kw_str = ""
+                if keyword.must:
+                    kw_str += "+"
+                if keyword.must_not:
+                    kw_str += "-"
+                if keyword.weight != 1:
+                    kw_str += f'"{keyword.keyword}"^{keyword.weight}'
+                else:
+                    kw_str += f'"{keyword.keyword}"'
+                lucene_string.append(kw_str)
+            lucene_string = " ".join(lucene_string)
+            # append to body
             body.append({"index": self.index_name})
             body.append(
                 {
                     "query": {
                         "query_string": {
-                            "query": q,
+                            "query": lucene_string,
                             "fields": ["title", "section", "text"],
                         },
                     },
@@ -196,7 +210,7 @@ class ElasticRetriever(LocalRetriever):
             )
 
         # search and post-process
-        responses = search_method(body=body, **search_kwargs)["responses"]
+        responses = search_func(body=body, **search_kwargs)["responses"]
         return self._form_results(query, responses)
 
     def search_batch(
@@ -204,8 +218,8 @@ class ElasticRetriever(LocalRetriever):
         query: list[str],
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[RetrievedContext]:
-        search_method = search_kwargs.get("search_method", self.search_method)
+    ) -> list[list[RetrievedContext]]:
+        search_method = search_kwargs.get("search_method", "full_text")
         match search_method:
             case "full_text":
                 results = self._full_text_search(
@@ -213,8 +227,8 @@ class ElasticRetriever(LocalRetriever):
                     top_k=top_k,
                     **search_kwargs,
                 )
-            case "string":
-                results = self._string_search(
+            case "keyword":
+                results = self._keyword_search(
                     query=query,
                     top_k=top_k,
                     **search_kwargs,
@@ -245,7 +259,7 @@ class ElasticRetriever(LocalRetriever):
         return self._fingerprint.hexdigest()
 
     def _form_results(
-        self, query: list[str], responses: list[dict] | None
+        self, query: list[str | Keywords], responses: list[dict] | None
     ) -> list[list[RetrievedContext]]:
         results = []
         if responses is None:
@@ -256,7 +270,7 @@ class ElasticRetriever(LocalRetriever):
                     [
                         RetrievedContext(
                             retriever=self.name,
-                            query=q,
+                            query=q if isinstance(q, str) else str(q),
                             chunk_id="",
                             source=self.index_name,
                             score=0.0,
@@ -273,7 +287,7 @@ class ElasticRetriever(LocalRetriever):
                 [
                     RetrievedContext(
                         retriever=self.name,
-                        query=q,
+                        query=q if isinstance(q, str) else str(q),
                         chunk_id=i["_id"],
                         source=self.index_name,
                         score=i["_score"],

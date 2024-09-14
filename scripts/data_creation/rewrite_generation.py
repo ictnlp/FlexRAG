@@ -90,7 +90,7 @@ def rewrite_query(
     prompt = ChatPrompt.from_json(
         os.path.join(
             os.path.dirname(__file__),
-            "../../kylin/searchers/searcher_prompts/lucene_rewrite_prompt.json",
+            "../../kylin/searchers/searcher_prompts/keyword_rewrite_prompt.json",
         )
     )
     # sample demonstrations

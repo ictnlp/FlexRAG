@@ -37,3 +37,9 @@ class BaseSearcher(ABC):
     def close(self) -> None:
         self.retriever.close()
         return
+
+
+@dataclass
+class SearchHistory:
+    query: str
+    contexts: list[RetrievedContext]

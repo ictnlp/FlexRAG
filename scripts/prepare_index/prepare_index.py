@@ -61,7 +61,7 @@ def main(cfg: Config):
             retriever = TypesenseRetriever(cfg.typesense_config)
 
     # add passages
-    if cfg.reinit:
+    if cfg.reinit and (len(retriever) > 0):
         retriever.clean()
     retriever.add_passages(passages=read_data(cfg.corpus_path, cfg.data_ranges))
     retriever.close()

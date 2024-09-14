@@ -5,45 +5,60 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 
 from kylin.prompt import ChatTurn, ChatPrompt
-from kylin.retriever import ElasticRetriever, ElasticRetrieverConfig, RetrievedContext
+from kylin.retriever import (
+    ElasticRetriever,
+    ElasticRetrieverConfig,
+    RetrievedContext,
+    TypesenseRetriever,
+    TypesenseRetrieverConfig,
+)
 from kylin.utils import Choices
+from kylin.retriever.keyword import Keywords, Keyword
 
-from .searcher import BaseSearcher, BaseSearcherConfig, Searchers
+from .searcher import BaseSearcher, BaseSearcherConfig, Searchers, SearchHistory
 
 
-logger = logging.getLogger("LuceneSearcher")
+logger = logging.getLogger("KeywordSearcher")
 
 
 @dataclass
-class LuceneSearcherConfig(BaseSearcherConfig):
-    retriever_config: ElasticRetrieverConfig = field(
-        default_factory=ElasticRetrieverConfig
-    )
+class KeywordSearcherConfig(BaseSearcherConfig):
+    retriever_type: Choices(["elastic", "typesense"]) = "elastic"  # type: ignore
+    elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)  # fmt: skip
+    typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)  # fmt: skip
     rewrite_query: Choices(["always", "never", "adaptive"]) = "never"  # type: ignore
     feedback_depth: int = 1
     retriever_top_k: int = 10
     disable_cache: bool = False
 
 
-@Searchers("lucene", config_class=LuceneSearcherConfig)
-class LuceneSearcher(BaseSearcher):
-    def __init__(self, cfg: LuceneSearcherConfig) -> None:
+@Searchers("keyword", config_class=KeywordSearcherConfig)
+class KeywordSearcher(BaseSearcher):
+    is_hybrid = False
+
+    def __init__(self, cfg: KeywordSearcherConfig) -> None:
         super().__init__(cfg)
-        # setup Lucene Searcher
+        # setup Keyword Searcher
         self.rewrite = cfg.rewrite_query
         self.feedback_depth = cfg.feedback_depth
         self.retriever_top_k = cfg.retriever_top_k
         self.disable_cache = cfg.disable_cache
 
-        # load Lucene Retriever
-        self.retriever = ElasticRetriever(cfg.retriever_config)
+        # load Retriever
+        match cfg.retriever_type:
+            case "elastic":
+                self.retriever = ElasticRetriever(cfg.elastic_config)
+            case "typesense":
+                self.retriever = TypesenseRetriever(cfg.typesense_config)
+            case _:
+                raise ValueError(f"Retriever {cfg.retriever_type} not supported")
 
         # load prompts
         self.rewrite_prompt = ChatPrompt.from_json(
             os.path.join(
                 os.path.dirname(__file__),
                 "searcher_prompts",
-                "lucene_rewrite_prompt.json",
+                "keyword_rewrite_prompt.json",
             )
         )
         self.verify_prompt = ChatPrompt.from_json(
@@ -58,21 +73,21 @@ class LuceneSearcher(BaseSearcher):
                 os.path.join(
                     os.path.dirname(__file__),
                     "searcher_prompts",
-                    "lucene_refine_extend_prompt.json",
+                    "keyword_refine_extend_prompt.json",
                 )
             ),
             "filter": ChatPrompt.from_json(
                 os.path.join(
                     os.path.dirname(__file__),
                     "searcher_prompts",
-                    "lucene_refine_filter_prompt.json",
+                    "keyword_refine_filter_prompt.json",
                 )
             ),
             "emphasize": ChatPrompt.from_json(
                 os.path.join(
                     os.path.dirname(__file__),
                     "searcher_prompts",
-                    "lucene_refine_emphasize_prompt.json",
+                    "keyword_refine_emphasize_prompt.json",
                 )
             ),
         }
@@ -80,30 +95,33 @@ class LuceneSearcher(BaseSearcher):
 
     def search(
         self, question: str
-    ) -> tuple[list[RetrievedContext], list[dict[str, object]]]:
-        retrieval_history = []
+    ) -> tuple[list[RetrievedContext], list[SearchHistory]]:
+        history: list[SearchHistory] = []
 
-        # rewrite the query
+        # rewrite the query into keywords
         match self.rewrite:
             case "always":
                 query_to_search = self.rewrite_query(question)
             case "never":
-                query_to_search = question
+                ctxs = self.retriever.search(
+                    query=[question],
+                    top_k=self.retriever_top_k,
+                    disable_cache=self.disable_cache,
+                    search_method="full_text",
+                )[0]
+                history.append(SearchHistory(query=question, contexts=ctxs))
+                return ctxs, history
             case "adaptive":
                 ctxs = self.retriever.search(
                     query=[question],
                     top_k=self.retriever_top_k,
                     disable_cache=self.disable_cache,
+                    search_method="full_text",
                 )[0]
                 verification = self.verify_contexts(ctxs, question)
-                retrieval_history.append(
-                    {
-                        "query": question,
-                        "ctxs": ctxs,
-                    }
-                )
+                history.append(SearchHistory(query=question, contexts=ctxs))
                 if verification:
-                    return ctxs, retrieval_history
+                    return ctxs, history
                 query_to_search = self.rewrite_query(question)
 
         # begin BFS search
@@ -116,13 +134,9 @@ class LuceneSearcher(BaseSearcher):
                 query=[query_to_search],
                 top_k=self.retriever_top_k,
                 disable_cache=self.disable_cache,
+                search_method="keyword",
             )[0]
-            retrieval_history.append(
-                {
-                    "query": query_to_search,
-                    "ctxs": ctxs,
-                }
-            )
+            history.append(SearchHistory(query=str(query_to_search), contexts=ctxs))
 
             # verify contexts
             if total_depth > 1:
@@ -143,29 +157,51 @@ class LuceneSearcher(BaseSearcher):
                 current_query=query_to_search,
             )
             search_stack.extend([(rq, depth + 1) for rq in refined])
-        return ctxs, retrieval_history
+        return ctxs, history
 
     def refine_query(
         self,
         contexts: list[RetrievedContext],
         base_query: str,
-        current_query: str,
-    ) -> list[str]:
+        current_query: Keywords,
+    ) -> list[Keywords]:
         refined_queries = []
+        prompts = []
         for prompt_type in self.refine_prompts:
             # prepare prompt
             prompt = deepcopy(self.refine_prompts[prompt_type])
             ctx_str = ""
             for n, ctx in enumerate(contexts):
                 ctx_str += f"Context {n}: {ctx.text}\n\n"
+            q_str = "Current keywords:\n"
+            must_contains = []
+            must_not_contains = []
+            for kw in current_query:
+                if kw.must:
+                    must_contains.append(kw.keyword)
+                elif kw.must_not:
+                    must_not_contains.append(kw.keyword)
+                else:
+                    q_str += f"Keyword: {kw.keyword}\nWeight: {kw.weight}\n\n"
+            q_str += f"Must contained keywords:\n"
+            for kw in must_contains:
+                q_str += f"{kw}\n"
+            q_str += f"\nMust not contained keywords:\n"
+            for kw in must_not_contains:
+                q_str += f"{kw}\n"
+            q_str += "\n"
             prompt.history[-1].content = (
-                f"{ctx_str}{prompt.history[-1].content}\n\n"
-                f"Current query: {current_query}\n\n"
+                f"{ctx_str}"
+                f"{prompt.history[-1].content}\n\n"
+                f"{q_str}\n\n"
                 f"The information you are looking for: {base_query}"
             )
-            response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
+            prompts.append(prompt)
+        responses = self.agent.chat(prompts, generation_config=self.gen_cfg)
 
+        for prompt_type, response in zip(self.refine_prompts, responses):
             # prepare re patterns
+            response = response[0]
             response_ = re.escape(response)
             pattern = f'("{response_}"(\^\d)?)|({response_})'
 
@@ -191,12 +227,15 @@ class LuceneSearcher(BaseSearcher):
                     refined_queries.append(f'"{response}" {current_query}')
         return refined_queries
 
-    def rewrite_query(self, info: str) -> str:
+    def rewrite_query(self, query: str) -> Keywords:
         # Rewrite the query to be more informative
         prompt = deepcopy(self.rewrite_prompt)
-        prompt.update(ChatTurn(role="user", content=info))
-        query = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
-        return query
+        prompt.update(ChatTurn(role="user", content=query))
+        response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
+        # Parse the response into keywords
+        keywords = response.split("\n")
+        keywords = [Keyword(keyword=kw) for kw in keywords if kw]
+        return keywords
 
     def verify_contexts(
         self,

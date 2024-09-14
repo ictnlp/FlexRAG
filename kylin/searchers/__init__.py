@@ -1,4 +1,4 @@
-from .lucene_searcher import LuceneSearcher, LuceneSearcherConfig
+from .keyword_searcher import KeywordSearcher, KeywordSearcherConfig
 from .dense_searcher import DenseSearcher, DenseSearcherConfig
 from .high_level_searcher import HighLevalSearcher, HighLevelSearcherConfig
 from .hybrid_searcher import HybridSearcher, HybridSearcherConfig
@@ -10,8 +10,8 @@ from .searcher_loader import Searchers, SearcherConfig, load_searcher  # isort: 
 __all__ = [
     "BaseSearcher",
     "BaseSearcherConfig",
-    "LuceneSearcher",
-    "LuceneSearcherConfig",
+    "KeywordSearcher",
+    "KeywordSearcherConfig",
     "WebSearcher",
     "WebSearcherConfig",
     "DenseSearcher",

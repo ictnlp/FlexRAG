@@ -3,30 +3,30 @@ from dataclasses import dataclass, field
 from kylin.retriever import RetrievedContext
 from kylin.utils import Choices
 
-from .lucene_searcher import LuceneSearcher, LuceneSearcherConfig
 from .dense_searcher import DenseSearcher, DenseSearcherConfig
-from .searcher import BaseSearcher, BaseSearcherConfig, Searchers
+from .keyword_searcher import KeywordSearcher, KeywordSearcherConfig
+from .searcher import BaseSearcher, BaseSearcherConfig, Searchers, SearchHistory
 from .web_searcher import WebSearcher, WebSearcherConfig
 
 
 @dataclass
 class HybridSearcherConfig(BaseSearcherConfig):
-    searchers: list[Choices(["lucene", "web", "dense"])] = field(default_factory=list)  # type: ignore
-    lucene_searcher_config: LuceneSearcherConfig = field(
-        default_factory=LuceneSearcherConfig
-    )
+    searchers: list[Choices(["keyword", "web", "dense"])] = field(default_factory=list)  # type: ignore
+    keyword_searcher_config: KeywordSearcherConfig = field(default_factory=KeywordSearcherConfig)  # fmt: skip
     web_searcher_config: WebSearcherConfig = field(default_factory=WebSearcherConfig)
     dense_searcher_config: DenseSearcherConfig = field(default_factory=DenseSearcherConfig)  # fmt: skip
 
 
 @Searchers("hybrid", config_class=HybridSearcherConfig)
 class HybridSearcher(BaseSearcher):
+    is_hybrid = True
+
     def __init__(self, cfg: HybridSearcherConfig) -> None:
         super().__init__(cfg)
         # load searchers
         self.searchers = self.load_searchers(
             searchers=cfg.searchers,
-            lucene_cfg=cfg.lucene_searcher_config,
+            keyword_cfg=cfg.keyword_searcher_config,
             web_cfg=cfg.web_searcher_config,
             dense_cfg=cfg.dense_searcher_config,
         )
@@ -35,15 +35,15 @@ class HybridSearcher(BaseSearcher):
     def load_searchers(
         self,
         searchers: list[str],
-        lucene_cfg: LuceneSearcherConfig,
+        keyword_cfg: KeywordSearcherConfig,
         web_cfg: WebSearcherConfig,
         dense_cfg: DenseSearcherConfig,
     ) -> dict[str, BaseSearcher]:
         searcher_list = {}
         for searcher in searchers:
             match searcher:
-                case "lucene":
-                    searcher_list[searcher] = LuceneSearcher(lucene_cfg)
+                case "keyword":
+                    searcher_list[searcher] = KeywordSearcher(keyword_cfg)
                 case "web":
                     searcher_list[searcher] = WebSearcher(web_cfg)
                 case "dense":
@@ -54,20 +54,15 @@ class HybridSearcher(BaseSearcher):
 
     def search(
         self, question: str
-    ) -> tuple[list[RetrievedContext], list[dict[str, object]]]:
+    ) -> tuple[list[RetrievedContext], list[SearchHistory]]:
         # search the question using sub-searchers
         contexts = []
-        search_history = []
+        history = []
         for name, searcher in self.searchers.items():
             ctxs = searcher.search(question)[0]
             contexts.extend(ctxs)
-            search_history.append(
-                {
-                    "searcher": name,
-                    "context": ctxs,
-                }
-            )
-        return contexts, search_history
+            history.append(SearchHistory(query=question, contexts=ctxs))
+        return contexts, history
 
     def close(self) -> None:
         for name in self.searchers:
