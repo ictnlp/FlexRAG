@@ -58,7 +58,9 @@ class DenseRetriever(LocalRetriever):
         # load database
         self.read_only = cfg.read_only
         db_path = os.path.join(self.database_path, "database.h5")
-        self.db_file, self.db_table = self.load_database(db_path)
+        self.db_file, self.titles, self.sections, self.texts, self.embeddings = (
+            self.load_database(db_path)
+        )
 
         # load fingerprint
         self._fingerprint = Fingerprint(
@@ -77,7 +79,10 @@ class DenseRetriever(LocalRetriever):
         )
 
         # consistency check
-        assert len(self.db_table) == len(self.index), "Inconsistent database and index"
+        assert len(self.titles) == len(self.index), "Inconsistent database and index"
+        assert len(self.sections) == len(self.index), "Inconsistent database and index"
+        assert len(self.texts) == len(self.index), "Inconsistent database and index"
+        assert len(self.embeddings) == len(self.index), "Inconsistent database and index"  # fmt: skip
         return
 
     def load_encoder(
@@ -93,7 +98,13 @@ class DenseRetriever(LocalRetriever):
             case _:
                 raise ValueError(f"Encoder type {encoder_type} is not supported")
 
-    def load_database(self, database_path: str) -> tuple[tables.File, tables.Table]:
+    def load_database(self, database_path: str) -> tuple[
+        tables.File,
+        tables.VLArray,
+        tables.VLArray,
+        tables.VLArray,
+        tables.EArray,
+    ]:
         # open database file
         if os.path.exists(database_path):
             mode = "r" if self.read_only else "r+"
@@ -107,17 +118,23 @@ class DenseRetriever(LocalRetriever):
         # load table from database
         node_path = f"/{self.source}"
         if node_path in h5file:
-            table = h5file.get_node(f"/{self.source}")
+            group = h5file.get_node(f"/{self.source}")
+            titles = group.titles
+            sections = group.sections
+            texts = group.texts
+            embeddings = group.embeddings
         else:
-
-            class RetrieveTableWithEmb(tables.IsDescription):
-                title = tables.StringCol(itemsize=self.max_query_length * 4, pos=1)
-                section = tables.StringCol(itemsize=self.max_query_length * 4, pos=2)
-                text = tables.StringCol(itemsize=self.max_passage_length * 4, pos=3)
-                embedding = tables.Float16Col(self.embedding_size, pos=4)
-
-            table = h5file.create_table("/", self.source, RetrieveTableWithEmb)
-        return h5file, table
+            group = h5file.create_group("/", self.source)
+            titles = h5file.create_vlarray(group, "titles", tables.VLUnicodeAtom())
+            sections = h5file.create_vlarray(group, "sections", tables.VLUnicodeAtom())
+            texts = h5file.create_vlarray(group, "texts", tables.VLUnicodeAtom())
+            embeddings = h5file.create_earray(
+                group,
+                "embeddings",
+                tables.Float16Atom,
+                shape=(0, self.embedding_size),
+            )
+        return h5file, titles, sections, texts, embeddings
 
     def load_index(
         self,
@@ -165,30 +182,27 @@ class DenseRetriever(LocalRetriever):
         p_logger = SimpleProgressLogger(
             logger, total=total_length, interval=self.log_interval
         )
-        start_idx = len(self.db_table)
+        start_idx = len(self.embeddings)
         for batch in get_batch():
             texts = [i["text"] for i in batch]
             embeddings = self.passage_encoder.encode(texts)
             p_logger.update(step=self.batch_size, desc="Encoding passages")
 
-            # add embeddings to database
-            for i, p in enumerate(batch):
-                row = self.db_table.row
-                row["title"] = p["title"].encode("utf-8")
-                row["section"] = p["section"].encode("utf-8")
-                row["text"] = p["text"].encode("utf-8")
-                row["embedding"] = embeddings[i]
-                row.append()
-            self.db_table.flush()
+            # add data to database
+            for p in batch:
+                self.titles.append(p["title"])
+                self.sections.append(p["section"])
+                self.texts.append(p["text"])
+            self.embeddings.append(embeddings)
             self._fingerprint.update(texts)
 
         if not self.index.is_trained:  # train index
             logger.info("Training index")
             logger.warning("Training index will consume a lot of memory")
-            full_embeddings = np.array(self.db_table.cols.embedding[:])
+            full_embeddings = np.array(self.embeddings[:])
             self.index.build_index(full_embeddings)
         else:  # add embeddings to index
-            full_embeddings = np.array(self.db_table.cols.embedding[start_idx:])
+            full_embeddings = np.array(self.embeddings[start_idx:])
             self.index.add_embeddings(full_embeddings)
             self.index.serialize()
             logger.info("Finished adding passages")
@@ -210,10 +224,10 @@ class DenseRetriever(LocalRetriever):
                     source=self.source,
                     chunk_id=int(chunk_id),
                     score=float(s),
-                    title=self.db_table[chunk_id]["title"].decode(),
-                    section=self.db_table[chunk_id]["section"].decode(),
-                    text=self.db_table[chunk_id]["text"].decode(),
-                    full_text=self.db_table[chunk_id]["text"].decode(),
+                    title=self.titles[chunk_id],
+                    section=self.sections[chunk_id],
+                    text=self.texts[chunk_id],
+                    full_text=self.texts[chunk_id],
                 )
                 for chunk_id, s in zip(idx, score)
             ]
@@ -222,19 +236,31 @@ class DenseRetriever(LocalRetriever):
         return results
 
     def clean(self) -> None:
-        self.db_table.remove_rows(0, len(self.db_table))
-        self.db_table.flush()
-        self.index.clean()
+        embed_dim = self.embedding_size
+        self.db_file.remove_node(f"/{self.source}", recursive=True)
+        group = self.db_file.create_group("/", self.source)
+        self.titles = self.db_file.create_vlarray(
+            group, "titles", tables.VLUnicodeAtom()
+        )
+        self.sections = self.db_file.create_vlarray(
+            group, "sections", tables.VLUnicodeAtom()
+        )
+        self.texts = self.db_file.create_vlarray(group, "texts", tables.VLUnicodeAtom())
+        self.embeddings = self.db_file.create_earray(
+            group,
+            "embeddings",
+            tables.Float16Atom,
+            shape=(0, embed_dim),
+        )
         self._fingerprint.clean()
         return
 
     def close(self):
-        self.db_table.flush()
         self.db_file.close()
         return
 
     def __len__(self):
-        return len(self.db_table)
+        return self.embeddings.nrows
 
     @property
     def embedding_size(self) -> int:
@@ -244,8 +270,8 @@ class DenseRetriever(LocalRetriever):
             return self.passage_encoder.embedding_size
         if hasattr(self, "index"):
             return self.index.embedding_size
-        if hasattr(self, "db_table"):
-            return self.db_table.description.embedding.shape[0]
+        if hasattr(self, "embeddings"):
+            return self.embeddings.ndim
         raise ValueError(
             "No encoder or database is provided, embedding size can not be determined."
         )

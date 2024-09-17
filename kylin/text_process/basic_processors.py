@@ -81,6 +81,9 @@ class Truncator(Processor):
     def __init__(self, cfg: TruncatorConfig) -> None:
         self.max_tokens = cfg.max_tokens
         self.max_bytes = cfg.max_bytes
+        assert (
+            self.max_tokens is not None or self.max_bytes is not None
+        ), "At least one of max_tokens and max_bytes should be set"
         return
 
     def process(self, input_text: TextUnit) -> TextUnit:

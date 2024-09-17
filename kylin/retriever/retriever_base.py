@@ -29,11 +29,6 @@ class RetrieverConfig:
 class LocalRetrieverConfig(RetrieverConfig):
     batch_size: int = 32
     add_title_to_passage: bool = False
-    # max_query_length: int = 512
-    # max_passage_length: int = 512
-    # no_title: bool = False
-    # lowercase: bool = False
-    # normalize_text: bool = True
     passage_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
     query_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
 

@@ -9,6 +9,7 @@
 - [x] optimize text processor
 - [ ] optimize keyword searcher
 - [ ] try to merge TextUnit RetrievedContext Passage
+- [ ] optimize h5file resource manage
 
 
 
