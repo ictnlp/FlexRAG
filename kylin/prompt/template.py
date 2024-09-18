@@ -1,15 +1,19 @@
+import logging
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from functools import partial
 from typing import Optional
 
-from transformers import PreTrainedTokenizer, PretrainedConfig
+from transformers import PreTrainedTokenizer
 
 from kylin.utils import Choices
 
 from .prompt_base import ChatPrompt
 
 TRUNCATION_STRATEGIES = ["left", "right", "history", "demo", "auto"]
+
+
+logger = logging.getLogger(__name__)
 
 
 class Template(ABC):
@@ -167,10 +171,13 @@ Phi3Template = HFTemplate
 
 
 def load_template(
-    model_name: str,
     tokenizer: PreTrainedTokenizer,
+    model_name: Optional[str] = None,
 ) -> Template:
     """Load template for different models."""
+    if model_name is None:
+        logger.warning("model_name is not provided, using default template.")
+        return HFTemplate(tokenizer=tokenizer)
     if "Phi-3" in model_name:
         return Phi3Template(tokenizer=tokenizer)
     elif "Meta-Llama-3" in model_name:
