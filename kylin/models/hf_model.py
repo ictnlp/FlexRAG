@@ -4,6 +4,7 @@ from typing import Optional
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from omegaconf import MISSING
 from torch.nn.parallel import DataParallel as DP
 from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer, PreTrainedModel
@@ -91,6 +92,7 @@ class HFGenerator(GeneratorBase):
             tokenizer_path,
             trust_remote_code=True,
         )
+        self._patch_model()
 
         # prepare prompt function
         model_name = guess_model_name(self.model.config)
@@ -155,8 +157,24 @@ class HFGenerator(GeneratorBase):
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        assert self.template is not None, "Chat function is disabled."
         prefixes = [self.template.render_to_text(prompt) for prompt in prompts]
         return self.generate(prefixes, generation_config)
+
+    @TimeMeter("hf_score")
+    @torch.no_grad()
+    def score(self, texts: list[str]) -> list[float]:
+        inputs = self.tokenizer(
+            texts, return_tensors="pt", padding=True, truncation=True
+        )
+        inputs = inputs.to(self.model.device)
+        input_ids = inputs["input_ids"].unsqueeze(-1)
+        padding_mask = inputs["input_ids"] == self.tokenizer.pad_token_id
+        logits = F.log_softmax(self.model(**inputs).logits, dim=-1)
+        token_scores = torch.gather(logits, -1, input_ids).squeeze(-1)
+        token_scores = token_scores.masked_fill(padding_mask, 0.0)
+        text_scores = torch.sum(token_scores, dim=1).cpu().numpy().tolist()
+        return text_scores
 
     def _get_options(self, generation_config: GenerationConfig) -> HFGenerationConfig:
         return HFGenerationConfig(
@@ -167,6 +185,12 @@ class HFGenerator(GeneratorBase):
             top_k=generation_config.top_k,
             num_return_sequences=generation_config.sample_num,
         )
+
+    def _patch_model(self) -> None:
+        if self.tokenizer.pad_token_id is None:
+            self.tokenizer.add_special_tokens({"pad_token": "<pad>"})
+            self.model.resize_token_embeddings(len(self.tokenizer))
+        return
 
 
 # fmt: off

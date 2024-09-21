@@ -3,13 +3,13 @@
 
 
 ## TODO
-- [ ] Add Async support
 - [ ] Add reranking support
 - [x] Add Typesense retriever
 - [x] optimize text processor
 - [ ] optimize keyword searcher
-- [ ] try to merge TextUnit RetrievedContext Passage
-- [ ] optimize h5file resource manage
+- [ ] try to merge TextUnit/RetrievedContext/Passage
+- [x] optimize h5file resource manage
+- [ ] Add new test cases & benchmark
 
 
 

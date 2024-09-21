@@ -65,6 +65,27 @@ class GeneratorBase(ABC):
         prefixes: list[str],
         generation_config: GenerationConfig = None,
     ) -> list[list[str]]:
+        """generate text with the model using the given prefixes.
+
+        Args:
+            prefixes (list[str]): A batch of prefixes.
+            generation_config (GenerationConfig, optional): GenerationConfig. Defaults to None.
+
+        Returns:
+            list[list[str]]: A batch of generated text.
+        """
+        return
+
+    @abstractmethod
+    def score(self, texts: list[str]) -> list[float]:
+        """score the given texts.
+
+        Args:
+            texts (list[str]): A batch of texts.
+
+        Returns:
+            list[float]: The log probability of the given texts.
+        """
         return
 
 

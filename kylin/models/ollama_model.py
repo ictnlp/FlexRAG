@@ -1,12 +1,13 @@
 import logging
 from dataclasses import dataclass
+
+import numpy as np
 from omegaconf import MISSING
 
 from kylin.prompt import ChatPrompt
 from kylin.utils import TimeMeter
 
-from .model_base import Generators, GeneratorBase, GeneratorBaseConfig, GenerationConfig
-
+from .model_base import GenerationConfig, GeneratorBase, GeneratorBaseConfig, Generators
 
 logger = logging.getLogger("OllamaGenerator")
 
@@ -74,6 +75,9 @@ class OllamaGenerator(GeneratorBase):
                 )
                 responses[-1].append(response["message"]["content"])
         return responses
+
+    def score(self, texts: list[str]) -> tuple[np.ndarray, np.ndarray]:
+        raise NotImplementedError("API based model does not support scoring")
 
     def _get_options(self, generation_config: GenerationConfig) -> dict:
         return {

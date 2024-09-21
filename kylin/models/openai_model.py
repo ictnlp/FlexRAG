@@ -101,6 +101,9 @@ class OpenAIGenerator(GeneratorBase):
             responses.append([i.message.content for i in response.choices])
         return responses
 
+    def score(self, texts: list[str]) -> tuple[np.ndarray, np.ndarray]:
+        raise NotImplementedError("API based model does not support scoring")
+
     def _get_options(self, generation_config: GenerationConfig) -> dict:
         if "llama-3" in self.model_name.lower():
             extra_body = {"stop_token_ids": [128009]}  # hotfix for llama-3

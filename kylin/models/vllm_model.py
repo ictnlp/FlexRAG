@@ -21,6 +21,7 @@ class VLLMGeneratorConfig(GeneratorBaseConfig):
     tensor_parallel: int = 1
     load_dtype: Choices(["auto", "float32", "float16", "bfloat16"]) = "auto"  # type: ignore
     use_minference: bool = False
+    trust_remote_code: bool = False
 
 
 @Generators("vllm", config_class=VLLMGeneratorConfig)
@@ -29,7 +30,10 @@ class VLLMGenerator(GeneratorBase):
         from vllm import LLM
 
         # try to load model arguments from model config
-        model_cfg: PretrainedConfig = AutoConfig.from_pretrained(cfg.model_path)
+        model_cfg: PretrainedConfig = AutoConfig.from_pretrained(
+            cfg.model_path,
+            trust_remote_code=cfg.trust_remote_code,
+        )
         model_name = guess_model_name(model_cfg)
         max_length = min(
             getattr(model_cfg, "max_position_embeddings", cfg.max_model_len),
@@ -43,7 +47,7 @@ class VLLMGenerator(GeneratorBase):
             gpu_memory_utilization=cfg.gpu_memory_utilization,
             tensor_parallel_size=cfg.tensor_parallel,
             max_model_len=max_length,
-            trust_remote_code=True,
+            trust_remote_code=cfg.trust_remote_code,
             enforce_eager=True if cfg.use_minference else False,
         )
         self.tokenizer = self.model.get_tokenizer()
@@ -82,6 +86,9 @@ class VLLMGenerator(GeneratorBase):
     ) -> list[list[str]]:
         prefixes = [self.template.render_to_text(prompt) for prompt in prompts]
         return self.generate(prefixes, generation_config)
+
+    def score(self, texts: list[str]) -> list[float]:
+        raise NotImplementedError("Scoring is not supported")
 
     def _get_options(self, generation_config: GenerationConfig):
         from vllm import SamplingParams

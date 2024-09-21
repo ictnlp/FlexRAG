@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
+import numpy as np
 from omegaconf import MISSING
 
 from kylin.prompt import ChatPrompt
@@ -81,6 +82,9 @@ class AnthropicGenerator(GeneratorBase):
                 )
                 responses[-1].append(response.completion)
         return responses
+
+    def score(self, texts: list[str]) -> tuple[np.ndarray, np.ndarray]:
+        raise NotImplementedError("API based model does not support scoring")
 
     def _get_options(
         self, generation_config: GenerationConfig, is_chat: bool = False

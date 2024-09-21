@@ -63,6 +63,9 @@ class LlamacppGenerator(GeneratorBase):
                 responses[-1].append(response["choices"][0]["message"]["content"])
         return responses
 
+    def score(self, texts: list[str]) -> list[float]:
+        raise NotImplementedError("llamacpp does not support scoring")
+
     def _get_options(self, generation_config: GenerationConfig) -> dict:
         return {
             "temperature": (
