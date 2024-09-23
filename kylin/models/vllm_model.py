@@ -87,9 +87,6 @@ class VLLMGenerator(GeneratorBase):
         prefixes = [self.template.render_to_text(prompt) for prompt in prompts]
         return self.generate(prefixes, generation_config)
 
-    def score(self, texts: list[str]) -> list[float]:
-        raise NotImplementedError("Scoring is not supported")
-
     def _get_options(self, generation_config: GenerationConfig):
         from vllm import SamplingParams
 

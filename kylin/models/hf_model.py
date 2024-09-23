@@ -4,44 +4,143 @@ from typing import Optional
 
 import numpy as np
 import torch
-import torch.nn.functional as F
 from omegaconf import MISSING
 from torch.nn.parallel import DataParallel as DP
-from transformers import AutoModel, AutoModelForCausalLM, AutoTokenizer, PreTrainedModel
+from transformers import (
+    AutoModel,
+    AutoModelForCausalLM,
+    AutoModelForSeq2SeqLM,
+    AutoModelForSequenceClassification,
+    AutoTokenizer,
+)
 from transformers import GenerationConfig as HFGenerationConfig
+from transformers import PreTrainedModel, PreTrainedTokenizer
 
-from kylin.prompt import load_template, ChatPrompt
+from kylin.prompt import ChatPrompt, load_template
 from kylin.utils import Choices, TimeMeter
 
 from .model_base import (
-    Encoders,
     EncoderBase,
     EncoderBaseConfig,
-    Generators,
+    Encoders,
     GenerationConfig,
     GeneratorBase,
     GeneratorBaseConfig,
+    Generators,
+    RankerBase,
+    RankerConfig,
+    RankingResult,
 )
 from .utils import guess_model_name
 
 logger = logging.getLogger(__name__)
 
 
+def load_hf_model(
+    model_path: str,
+    tokenizer_path: Optional[str] = None,
+    model_type: Optional[str] = None,
+    device_id: list[int] = [],
+    load_dtype: str = "auto",
+    trust_remote_code: bool = False,
+    pipeline_parallel: bool = False,
+    is_training: bool = False,
+) -> tuple[PreTrainedModel, PreTrainedTokenizer]:
+    # prepare dtype
+    load_in_4bit = False
+    load_in_8bit = False
+    match load_dtype:
+        case "bfloat16":
+            load_dtype = torch.bfloat16
+        case "bf16":
+            load_dtype = torch.bfloat16
+        case "float32":
+            load_dtype = torch.float32
+        case "fp32":
+            load_dtype = torch.float32
+        case "float16":
+            load_dtype = torch.float16
+        case "fp16":
+            load_dtype = torch.float16
+        case "half":
+            load_dtype = torch.float16
+        case "8bit":
+            load_dtype = None
+            load_in_8bit = True
+        case "4bit":
+            load_dtype = None
+            load_in_4bit = True
+        case "auto":
+            load_dtype = "auto"
+        case _:
+            raise ValueError(f"Unsupported load_dtype: {load_dtype}")
+
+    # prepare device
+    if pipeline_parallel:
+        device_map = "auto"
+    elif torch.cuda.is_available() and (len(device_id) > 0):
+        device_map = device_id[0]
+    else:
+        device_map = None
+
+    # load model
+    match model_type:
+        case "causal_lm":
+            model_class = AutoModelForCausalLM
+        case "seq2seq":
+            model_class = AutoModelForSeq2SeqLM
+        case "sequence_classification":
+            model_class = AutoModelForSequenceClassification
+        case _:
+            model_class = AutoModel
+    model = model_class.from_pretrained(
+        model_path,
+        device_map=device_map,
+        torch_dtype=load_dtype,
+        load_in_4bit=load_in_4bit,
+        load_in_8bit=load_in_8bit,
+        trust_remote_code=trust_remote_code,
+    )
+    if not is_training:
+        model.eval()
+
+    # load tokenizer
+    if tokenizer_path is not None:
+        tokenizer_path = tokenizer_path
+    else:
+        tokenizer_path = model_path
+    tokenizer = AutoTokenizer.from_pretrained(
+        tokenizer_path,
+        trust_remote_code=trust_remote_code,
+    )
+    return model, tokenizer
+
+
 @dataclass
-class HFGeneratorConfig(GeneratorBaseConfig):
+class HFModelConfig:
     model_path: str = MISSING
     tokenizer_path: Optional[str] = None
-    pipeline_parallel: bool = False
+    trust_remote_code: bool = False
+    device_id: list[int] = field(default_factory=list)
     load_dtype: Choices(  # type: ignore
         [
             "bfloat16",
+            "bf16",
             "float32",
+            "fp32",
             "float16",
+            "fp16",
+            "half",
             "8bit",
             "4bit",
             "auto",
         ]
     ) = "auto"
+
+
+@dataclass
+class HFGeneratorConfig(GeneratorBaseConfig, HFModelConfig):
+    pipeline_parallel: bool = False
     use_minference: bool = False
 
 
@@ -50,47 +149,15 @@ class HFGenerator(GeneratorBase):
     model: PreTrainedModel
 
     def __init__(self, cfg: HFGeneratorConfig) -> None:
-        # prepare gpu
-        if cfg.pipeline_parallel:
-            device_map = "auto"
-        elif torch.cuda.is_available():
-            device_map = 0
-        else:
-            device_map = None
-
-        # prepare dtype
-        match cfg.load_dtype:
-            case "bfloat16":
-                load_dtype = torch.bfloat16
-            case "float32":
-                load_dtype = torch.float32
-            case "float16":
-                load_dtype = torch.float16
-            case "8bit":
-                load_dtype = None
-            case "4bit":
-                load_dtype = None
-            case "auto":
-                load_dtype = "auto"
-
         # load model
-        self.model = AutoModelForCausalLM.from_pretrained(
-            cfg.model_path,
-            device_map=device_map,
-            torch_dtype=load_dtype,
-            load_in_4bit=cfg.load_dtype == "4bit",
-            load_in_8bit=cfg.load_dtype == "8bit",
-            trust_remote_code=True,
-        )
-
-        # load tokenizer
-        if cfg.tokenizer_path is not None:
-            tokenizer_path = cfg.tokenizer_path
-        else:
-            tokenizer_path = cfg.model_path
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            tokenizer_path,
-            trust_remote_code=True,
+        self.model, self.tokenizer = load_hf_model(
+            model_path=cfg.model_path,
+            tokenizer_path=cfg.tokenizer_path,
+            model_type="causal_lm",
+            device_id=cfg.device_id,
+            load_dtype=cfg.load_dtype,
+            trust_remote_code=cfg.trust_remote_code,
+            pipeline_parallel=cfg.pipeline_parallel,
         )
         self._patch_model()
 
@@ -161,21 +228,6 @@ class HFGenerator(GeneratorBase):
         prefixes = [self.template.render_to_text(prompt) for prompt in prompts]
         return self.generate(prefixes, generation_config)
 
-    @TimeMeter("hf_score")
-    @torch.no_grad()
-    def score(self, texts: list[str]) -> list[float]:
-        inputs = self.tokenizer(
-            texts, return_tensors="pt", padding=True, truncation=True
-        )
-        inputs = inputs.to(self.model.device)
-        input_ids = inputs["input_ids"].unsqueeze(-1)
-        padding_mask = inputs["input_ids"] == self.tokenizer.pad_token_id
-        logits = F.log_softmax(self.model(**inputs).logits, dim=-1)
-        token_scores = torch.gather(logits, -1, input_ids).squeeze(-1)
-        token_scores = token_scores.masked_fill(padding_mask, 0.0)
-        text_scores = torch.sum(token_scores, dim=1).cpu().numpy().tolist()
-        return text_scores
-
     def _get_options(self, generation_config: GenerationConfig) -> HFGenerationConfig:
         return HFGenerationConfig(
             do_sample=generation_config.do_sample,
@@ -193,66 +245,28 @@ class HFGenerator(GeneratorBase):
         return
 
 
-# fmt: off
 @dataclass
-class HFEncoderConfig(EncoderBaseConfig):
-    model_path: str = MISSING
-    tokenizer_path: Optional[str] = None
-    device_id: list[int] = field(default_factory=list)
-    load_dtype: Choices(["bfloat16", "float32", "float16", "8bit", "4bit", "auto"]) = "auto" # type: ignore
+class HFEncoderConfig(EncoderBaseConfig, HFModelConfig):
     max_encode_length: int = 512
-    encode_method: Choices(["cls", "mean"]) = "mean" # type: ignore
-# fmt: on
+    encode_method: Choices(["cls", "mean"]) = "mean"  # type: ignore
 
 
 @Encoders("hf", config_class=HFEncoderConfig)
 class HFEncoder(EncoderBase):
     def __init__(self, cfg: HFEncoderConfig):
-        # prepare gpu
         self.devices = cfg.device_id
-        if len(cfg.device_id) < 1:
-            device_map = None
-        else:
-            device_map = cfg.device_id[0]
-
-        # prepare dtype
-        match cfg.load_dtype:
-            case "bfloat16":
-                load_dtype = torch.bfloat16
-            case "float32":
-                load_dtype = torch.float32
-            case "float16":
-                load_dtype = torch.float16
-            case "8bit":
-                load_dtype = None
-            case "4bit":
-                load_dtype = None
-            case "auto":
-                load_dtype = "auto"
-
         # load model
-        self.model = AutoModel.from_pretrained(
-            cfg.model_path,
-            device_map=device_map,
-            torch_dtype=load_dtype,
-            load_in_4bit=cfg.load_dtype == "4bit",
-            load_in_8bit=cfg.load_dtype == "8bit",
-            trust_remote_code=True,
+        self.model, self.tokenizer = load_hf_model(
+            model_path=cfg.model_path,
+            tokenizer_path=cfg.tokenizer_path,
+            load_dtype=cfg.load_dtype,
+            device_id=cfg.device_id,
+            trust_remote_code=cfg.trust_remote_code,
         )
         if len(self.devices) > 1:
             self.dp_model = DP(self.model, device_ids=self.devices)
         else:
             self.dp_model = None
-
-        # load tokenizer
-        if cfg.tokenizer_path is not None:
-            tokenizer_path = cfg.tokenizer_path
-        else:
-            tokenizer_path = cfg.model_path
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            tokenizer_path,
-            trust_remote_code=True,
-        )
 
         # setup arguments
         self.max_encode_length = cfg.max_encode_length
@@ -299,3 +313,111 @@ class HFEncoder(EncoderBase):
     @property
     def embedding_size(self) -> int:
         return self.model.config.hidden_size
+
+
+@dataclass
+class HFCrossEncoderRankerConfig(RankerConfig, HFModelConfig):
+    max_encode_length: int = 512
+
+
+class HFCrossEncoderRanker(RankerBase):
+    def __init__(self, cfg: HFCrossEncoderRankerConfig):
+        # load model
+        self.model, self.tokenizer = load_hf_model(
+            cfg.model_path,
+            tokenizer_path=cfg.tokenizer_path,
+            model_type="sequence_classification",
+            device_id=cfg.device_id,
+            load_dtype=cfg.load_dtype,
+            trust_remote_code=cfg.trust_remote_code,
+        )
+        self.max_encode_length = cfg.max_encode_length
+        return
+
+    @TimeMeter("hf_rank")
+    @torch.no_grad()
+    def rank(self, query: str, candidates: list[str]) -> RankingResult:
+        # score the candidates
+        input_texts = [(query, cand) for cand in candidates]
+        inputs = self.tokenizer(
+            input_texts,
+            return_tensors="pt",
+            max_length=self.max_encode_length,
+            padding=True,
+            truncation=True,
+        )
+        inputs = inputs.to(self.model.device)
+        scores = self.model(**inputs).logits.squeeze().cpu().numpy()
+        # rank the candidates
+        rank_indices = np.argsort(-scores)
+        return RankingResult(
+            query=query,
+            candidates=candidates,
+            scores=list(scores),
+            ranking=list(rank_indices),
+        )
+
+
+@dataclass
+class HFSeq2SeqRankerConfig(RankerConfig, HFModelConfig):
+    max_encode_length: int = 512
+    input_template: str = "Query: {query} Document: {candidate} Relevant:"
+    positive_token: str = "▁true"
+    negative_token: str = "▁false"
+
+
+class HFSeq2SeqRanker(RankerBase):
+    def __init__(self, cfg: HFSeq2SeqRankerConfig):
+        # load model
+        self.model, self.tokenizer = load_hf_model(
+            cfg.model_path,
+            tokenizer_path=cfg.tokenizer_path,
+            model_type="seq2seq",
+            device_id=cfg.device_id,
+            load_dtype=cfg.load_dtype,
+            trust_remote_code=cfg.trust_remote_code,
+        )
+        self.max_encode_length = cfg.max_encode_length
+        self.input_template = cfg.input_template
+        self.positive_token = self.tokenizer.convert_tokens_to_ids(cfg.positive_token)
+        self.negative_token = self.tokenizer.convert_tokens_to_ids(cfg.negative_token)
+        self.generation_config = HFGenerationConfig(
+            max_new_tokens=1, output_logits=True
+        )
+        return
+
+    @TimeMeter("hf_rank")
+    @torch.no_grad()
+    def rank(self, query: str, candidates: list[str]) -> RankingResult:
+        # prepare prompts
+        input_texts = [
+            self.input_template.format(query=query, candidate=cand)
+            for cand in candidates
+        ]
+        inputs = self.tokenizer(
+            input_texts,
+            return_tensors="pt",
+            max_length=self.max_encode_length,
+            padding=True,
+            truncation=True,
+        )
+        inputs = inputs.to(self.model.device)
+        outputs = self.model.generate(
+            **inputs,
+            generation_config=self.generation_config,
+            return_dict_in_generate=True,
+        )
+        logits = outputs.logits[0]
+        positive_scores = logits[:, self.positive_token : self.positive_token + 1]
+        negative_scores = logits[:, self.negative_token : self.negative_token + 1]
+        scores = torch.softmax(
+            torch.cat([positive_scores, negative_scores], dim=1), dim=1
+        )[:, 0].cpu().numpy()  # fmt: skip
+        # rank the candidates
+        rank_indices = np.argsort(-scores)
+        return RankingResult(
+            query=query,
+            candidates=candidates,
+            scores=list(scores),
+            ranking=list(rank_indices),
+        )

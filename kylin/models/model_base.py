@@ -17,10 +17,6 @@ class GeneratorBaseConfig: ...
 
 
 @dataclass
-class EncoderBaseConfig: ...
-
-
-@dataclass
 class GenerationConfig:
     do_sample: bool = True
     sample_num: int = 1
@@ -76,17 +72,9 @@ class GeneratorBase(ABC):
         """
         return
 
-    @abstractmethod
-    def score(self, texts: list[str]) -> list[float]:
-        """score the given texts.
 
-        Args:
-            texts (list[str]): A batch of texts.
-
-        Returns:
-            list[float]: The log probability of the given texts.
-        """
-        return
+@dataclass
+class EncoderBaseConfig: ...
 
 
 class EncoderBase(ABC):
@@ -97,4 +85,26 @@ class EncoderBase(ABC):
     @property
     @abstractmethod
     def embedding_size(self) -> int:
+        return
+
+
+@dataclass
+class RankerConfig: ...
+
+
+@dataclass
+class RankingResult:
+    query: str
+    candidates: list[str]
+    scores: Optional[list[float]] = None
+    ranking: Optional[list[int]] = None
+
+
+class RankerBase(ABC):
+    @abstractmethod
+    def rank(
+        self,
+        query: str,
+        candidates: list[str],
+    ) -> RankingResult:
         return
