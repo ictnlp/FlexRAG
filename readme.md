@@ -3,7 +3,7 @@
 
 
 ## TODO
-- [ ] Add reranking support
+- [x] Add reranking support
 - [x] Add Typesense retriever
 - [x] optimize text processor
 - [ ] optimize keyword searcher
