@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
+import httpx
 import numpy as np
 from omegaconf import MISSING
 
@@ -24,34 +25,60 @@ logger = logging.getLogger("OpenaiModel")
 
 @dataclass
 class OpenAIGeneratorConfig(GeneratorBaseConfig):
+    is_azure: bool = False
     model_name: str = MISSING
     base_url: Optional[str] = None
     api_key: str = os.environ.get("OPENAI_API_KEY", "EMPTY")
+    api_version: str = "2024-07-01-preview"
     verbose: bool = False
+    proxy: Optional[str] = None
 
 
 @dataclass
 class OpenAIEncoderConfig(EncoderBaseConfig):
+    is_azure: bool = False
     model_name: str = MISSING
     base_url: Optional[str] = None
     api_key: str = os.environ.get("OPENAI_API_KEY", "EMPTY")
+    api_version: str = "2024-07-01-preview"
     verbose: bool = False
     dimension: int = 512
+    proxy: Optional[str] = None
 
 
 @Generators("openai", config_class=OpenAIGeneratorConfig)
 class OpenAIGenerator(GeneratorBase):
     def __init__(self, cfg: OpenAIGeneratorConfig) -> None:
-        from openai import OpenAI
+        from openai import OpenAI, AzureOpenAI
 
-        self.client = OpenAI(
-            api_key=cfg.api_key,
-            base_url=cfg.base_url,
-        )
+        # prepare proxy
+        if cfg.proxy is not None:
+            httpx_client = httpx.Client(proxies=cfg.proxy)
+        else:
+            httpx_client = None
+
+        # prepare client
+        if cfg.is_azure:
+            self.client = AzureOpenAI(
+                api_key=cfg.api_key,
+                api_version=cfg.api_version,
+                azure_endpoint=cfg.base_url,
+                http_client=httpx_client,
+            )
+        else:
+            self.client = OpenAI(
+                api_key=cfg.api_key,
+                base_url=cfg.base_url,
+                http_client=httpx_client,
+            )
+
+        # set logger
         self.model_name = cfg.model_name
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)
+
+        # check client
         self._check()
         return
 
@@ -124,30 +151,46 @@ class OpenAIGenerator(GeneratorBase):
 @Encoders("openai", config_class=OpenAIEncoderConfig)
 class OpenAIEncoder(EncoderBase):
     def __init__(self, cfg: OpenAIEncoderConfig) -> None:
-        from openai import OpenAI
+        from openai import OpenAI, AzureOpenAI
 
-        self.client = OpenAI(
-            api_key=cfg.api_key,
-            base_url=cfg.base_url,
-        )
+        # prepare proxy
+        if cfg.proxy is not None:
+            httpx_client = httpx.Client(proxies=cfg.proxy)
+        else:
+            httpx_client = None
+
+        # prepare client
+        if cfg.is_azure:
+            self.client = AzureOpenAI(
+                api_key=cfg.api_key,
+                api_version=cfg.api_version,
+                azure_endpoint=cfg.base_url,
+                http_client=httpx_client,
+            )
+        else:
+            self.client = OpenAI(
+                api_key=cfg.api_key,
+                base_url=cfg.base_url,
+                http_client=httpx_client,
+            )
+
+        # set logger
         self.model_name = cfg.model_name
         self.dimension = cfg.dimension
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)
+
+        # check client
         self._check()
         return
 
     @TimeMeter("openai_encode")
     def encode(self, texts: list[str]) -> np.ndarray:
-        embeddings = []
-        for text in texts:
-            text = text.replace("\n", " ")
-            embeddings.append(
-                self.client.embeddings.create(model=self.model_name, text=text)
-                .data[0]
-                .embedding
-            )[: self.dimension]
+        r = self.client.embeddings.create(
+            model=self.model_name, input=texts, dimensions=self.dimension
+        )
+        embeddings = [i.embedding for i in r.data]
         return np.array(embeddings)
 
     @property
