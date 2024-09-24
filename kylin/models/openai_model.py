@@ -138,6 +138,7 @@ class OpenAIEncoder(EncoderBase):
         self._check()
         return
 
+    @TimeMeter("openai_encode")
     def encode(self, texts: list[str]) -> np.ndarray:
         embeddings = []
         for text in texts:

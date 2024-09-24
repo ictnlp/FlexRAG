@@ -16,7 +16,6 @@ from transformers import (
     AutoTokenizer,
     BertPreTrainedModel,
     BertModel,
-    RobertaModel,
     XLMRobertaModel,
     XLMRobertaPreTrainedModel,
 )
@@ -38,6 +37,7 @@ from .model_base import (
     RankerBase,
     RankerConfig,
     RankingResult,
+    Rankers,
 )
 from .utils import guess_model_name
 
@@ -397,6 +397,7 @@ class HFCrossEncoderRankerConfig(RankerConfig, HFModelConfig):
     max_encode_length: int = 512
 
 
+@Rankers("hf_cross_encoder", config_class=HFCrossEncoderRankerConfig)
 class HFCrossEncoderRanker(RankerBase):
     def __init__(self, cfg: HFCrossEncoderRankerConfig):
         # load model
@@ -443,6 +444,7 @@ class HFSeq2SeqRankerConfig(RankerConfig, HFModelConfig):
     negative_token: str = "▁false"
 
 
+@Rankers("hf_seq2seq")
 class HFSeq2SeqRanker(RankerBase):
     def __init__(self, cfg: HFSeq2SeqRankerConfig):
         # load model
@@ -510,6 +512,7 @@ class HFColBertRankerConfig(RankerConfig, HFModelConfig):
     normalize_embeddings: bool = True
 
 
+@Rankers("hf_colbert", config_class=HFColBertRankerConfig)
 class HFColBertRanker(RankerBase):
     """Code adapted from https://github.com/hotchpotch/JQaRA/blob/main/evaluator/reranker/colbert_reranker.py"""
 

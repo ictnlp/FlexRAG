@@ -10,6 +10,7 @@
 - [ ] try to merge TextUnit/RetrievedContext/Passage
 - [x] optimize h5file resource manage
 - [ ] Add new test cases & benchmark
+- [ ] using httpx client optimize the API based methods
 
 
 

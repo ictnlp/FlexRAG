@@ -10,6 +10,7 @@ from kylin.utils import Register
 
 Encoders = Register("Encoders")
 Generators = Register("Generators")
+Rankers = Register("Rankers")
 
 
 @dataclass
