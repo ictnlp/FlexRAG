@@ -249,7 +249,7 @@ class DenseRetriever(LocalRetriever):
         self.embeddings = self.db_file.create_earray(
             group,
             "embeddings",
-            tables.Float16Atom,
+            tables.Float16Atom(),
             shape=(0, embed_dim),
         )
         self._fingerprint.clean()
