@@ -21,7 +21,7 @@ cs = ConfigStore.instance()
 cs.store(name="default", node=Config)
 
 
-@hydra.main(version_base="1.1", config_path=None, config_name="default")
+@hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(config: Config):
     # merge config
     default_cfg = OmegaConf.structured(Config)
