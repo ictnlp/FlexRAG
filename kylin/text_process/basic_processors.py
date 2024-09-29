@@ -1,6 +1,7 @@
 import re
 import string
 from dataclasses import dataclass
+from typing import Optional
 
 from .processor import PROCESSORS, Processor, TextUnit
 
@@ -72,8 +73,8 @@ class Unifier(Processor):
 
 @dataclass
 class TruncatorConfig:
-    max_tokens: int = None
-    max_bytes: int = None
+    max_tokens: Optional[int] = None
+    max_bytes: Optional[int] = None
 
 
 @PROCESSORS("truncate", config_class=TruncatorConfig)
