@@ -132,16 +132,17 @@ class FaissIndex(DenseIndex):
             return
         logger.info("Training index")
         embeddings = embeddings.astype("float32")
-        train_num = min(self.index_train_num, embeddings.shape[0])
-        if train_num < embeddings.shape[0]:
+        if (self.index_train_num >= embeddings.shape[0]) or (
+            self.index_train_num == -1
+        ):
+            self.index.train(embeddings)
+        else:
             selected_indices = np.random.choice(
                 embeddings.shape[0],
-                train_num,
+                self.index_train_num,
                 replace=False,
             )
             self.index.train(embeddings[selected_indices])
-        else:
-            self.index.train(embeddings)
         return
 
     def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:

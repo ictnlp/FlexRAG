@@ -4,6 +4,9 @@
 
 ## TODO
 - [x] Add reranking support
+  - [ ] Add LLM Rankers
+  - [ ] Add Voyage Rankers
+  - [ ] Add mixedbread Rankers
 - [x] Add Typesense retriever
 - [x] optimize text processor
 - [ ] optimize keyword searcher
@@ -11,6 +14,8 @@
 - [x] optimize h5file resource manage
 - [ ] Add new test cases & benchmark
 - [ ] using httpx client optimize the API based methods(add proxy & retry support)
+- [ ] Add Lance DB as a retriever
+- [ ] Optimize the cache system
 
 
 
