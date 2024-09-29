@@ -5,7 +5,9 @@ from kylin.utils import Choices
 
 from .processor import PROCESSORS, Processor, TextUnit
 
-pipeline_fields = [("processors", Optional[Choices(PROCESSORS.names)], None)]
+pipeline_fields = [
+    ("processors", list[Choices(PROCESSORS.names)], field(default_factory=list))
+]
 pipeline_fields += [
     (
         f"{PROCESSORS[name]['short_names'][0]}_config",
