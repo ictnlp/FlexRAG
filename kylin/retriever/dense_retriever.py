@@ -1,3 +1,4 @@
+import atexit
 import logging
 import os
 from dataclasses import dataclass, field
@@ -60,6 +61,7 @@ class DenseRetriever(LocalRetriever):
         self.db_file, self.titles, self.sections, self.texts, self.embeddings = (
             self.load_database()
         )
+        atexit.register(self.close)
 
         # load fingerprint
         self._fingerprint = Fingerprint(
@@ -182,7 +184,6 @@ class DenseRetriever(LocalRetriever):
         p_logger = SimpleProgressLogger(
             logger, total=total_length, interval=self.log_interval
         )
-        start_idx = len(self.embeddings)
         for batch in get_batch():
             texts = [i["text"] for i in batch]
             embeddings = self.passage_encoder.encode(texts)
@@ -196,16 +197,18 @@ class DenseRetriever(LocalRetriever):
             self.embeddings.append(embeddings)
             self._fingerprint.update(texts)
 
-        if not self.index.is_trained:  # train index
+            # add embeddings to index
+            if self.index.is_trained:
+                self.index.add_embeddings(embeddings)
+
+        if not self.index.is_trained:  # train index from scratch
             logger.info("Training index")
             logger.warning("Training index will consume a lot of memory")
             full_embeddings = np.array(self.embeddings[:])
             self.index.build_index(full_embeddings)
-        else:  # add embeddings to index
-            full_embeddings = np.array(self.embeddings[start_idx:])
-            self.index.add_embeddings(full_embeddings)
+        else:
             self.index.serialize()
-            logger.info("Finished adding passages")
+        logger.info("Finished adding passages")
         return
 
     def search_batch(
@@ -256,6 +259,7 @@ class DenseRetriever(LocalRetriever):
         return
 
     def close(self):
+        logger.info("Closing DenseRetriever")
         self.db_file.close()
         return
 
