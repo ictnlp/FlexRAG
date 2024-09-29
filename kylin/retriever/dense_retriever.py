@@ -165,7 +165,7 @@ class DenseRetriever(LocalRetriever):
         Add passages to the retriever database
         """
 
-        def get_batch() -> Generator[list[dict[str, str]]]:
+        def get_batch() -> Generator[list[dict[str, str]], None, None]:
             batch = []
             for passage in passages:
                 if len(batch) == self.batch_size:
