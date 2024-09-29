@@ -65,9 +65,6 @@ def main(cfg: Config):
         retriever.clean()
     retriever.add_passages(passages=read_data(cfg.corpus_path, cfg.data_ranges))
     retriever.close()
-
-    # retrieve
-    retriever.search(["hello world"])
     return
 
 

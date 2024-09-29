@@ -61,7 +61,7 @@ class DenseRetriever(LocalRetriever):
         self.db_file, self.titles, self.sections, self.texts, self.embeddings = (
             self.load_database()
         )
-        atexit.register(self.close)
+        atexit.register(self._close)
 
         # load fingerprint
         self._fingerprint = Fingerprint(
@@ -199,7 +199,7 @@ class DenseRetriever(LocalRetriever):
 
             # add embeddings to index
             if self.index.is_trained:
-                self.index.add_embeddings(embeddings)
+                self.index.add_embeddings(embeddings, serialize=False)
 
         if not self.index.is_trained:  # train index from scratch
             logger.info("Training index")
@@ -259,6 +259,11 @@ class DenseRetriever(LocalRetriever):
         return
 
     def close(self):
+        atexit.unregister(self._close)
+        self._close()
+        return
+
+    def _close(self):
         logger.info("Closing DenseRetriever")
         self.db_file.close()
         return

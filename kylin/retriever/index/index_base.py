@@ -34,7 +34,7 @@ class DenseIndex(ABC):
     def build_index(self, embeddings: np.ndarray):
         return
 
-    def add_embeddings(self, embeddings: np.ndarray) -> None:
+    def add_embeddings(self, embeddings: np.ndarray, serialize: bool = True) -> None:
         """Add embeddings to the index."""
         p_logger = SimpleProgressLogger(
             logger, total=embeddings.shape[0], interval=self.log_interval
@@ -43,7 +43,8 @@ class DenseIndex(ABC):
             p_logger.update(step=self.batch_size, desc="Adding embeddings")
             embeds_to_add = embeddings[idx : idx + self.batch_size]
             self._add_embeddings_batch(embeds_to_add)
-        self.serialize()
+        if serialize:
+            self.serialize()
         return
 
     @abstractmethod
