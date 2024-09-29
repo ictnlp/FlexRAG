@@ -57,9 +57,8 @@ class DenseRetriever(LocalRetriever):
 
         # load database
         self.read_only = cfg.read_only
-        db_path = os.path.join(self.database_path, "database.h5")
         self.db_file, self.titles, self.sections, self.texts, self.embeddings = (
-            self.load_database(db_path)
+            self.load_database()
         )
 
         # load fingerprint
@@ -98,7 +97,7 @@ class DenseRetriever(LocalRetriever):
             case _:
                 raise ValueError(f"Encoder type {encoder_type} is not supported")
 
-    def load_database(self, database_path: str) -> tuple[
+    def load_database(self) -> tuple[
         tables.File,
         tables.VLArray,
         tables.VLArray,
@@ -106,14 +105,15 @@ class DenseRetriever(LocalRetriever):
         tables.EArray,
     ]:
         # open database file
-        if os.path.exists(database_path):
+        h5path = os.path.join(self.database_path, "database.h5")
+        if os.path.exists(h5path):
             mode = "r" if self.read_only else "r+"
-            h5file = tables.open_file(database_path, mode=mode)
+            h5file = tables.open_file(h5path, mode=mode)
         else:
             assert not self.read_only, "Database does not exist"
-            h5file = tables.open_file(
-                database_path, mode="w", title="Retriever Database"
-            )
+            if not os.path.exists(self.database_path):
+                os.makedirs(self.database_path)
+            h5file = tables.open_file(h5path, mode="w", title="Retriever Database")
 
         # load table from database
         node_path = f"/{self.source}"
@@ -131,7 +131,7 @@ class DenseRetriever(LocalRetriever):
             embeddings = h5file.create_earray(
                 group,
                 "embeddings",
-                tables.Float16Atom,
+                tables.Float16Atom(),
                 shape=(0, self.embedding_size),
             )
         return h5file, titles, sections, texts, embeddings
