@@ -1,26 +1,29 @@
+from .bm25s_retriever import BM25SRetriever, BM25SRetrieverConfig
+from .dense_retriever import DenseRetriever, DenseRetrieverConfig
+from .elastic_retriever import ElasticRetriever, ElasticRetrieverConfig
+from .milvus_retriever import MilvusRetriever, MilvusRetrieverConfig
 from .retriever_base import (
     LocalRetriever,
     LocalRetrieverConfig,
+    RetrievedContext,
     Retriever,
     RetrieverConfig,
-    RetrievedContext,
 )
-from .dense_retriever import DenseRetriever, DenseRetrieverConfig
-from .elastic_retriever import ElasticRetriever, ElasticRetrieverConfig
+from .typesense_retriever import TypesenseRetriever, TypesenseRetrieverConfig
 from .web_retriever import (
-    WebRetriever,
-    WebRetrieverConfig,
     BingRetriever,
     BingRetrieverConfig,
     DuckDuckGoRetriever,
     DuckDuckGoRetrieverConfig,
     GoogleRetriever,
     GoogleRetrieverConfig,
+    WebRetriever,
+    WebRetrieverConfig,
 )
-from .milvus_retriever import MilvusRetriever, MilvusRetrieverConfig
-from .typesense_retriever import TypesenseRetriever, TypesenseRetrieverConfig
 
 __all__ = [
+    "BM25SRetriever",
+    "BM25SRetrieverConfig",
     "LocalRetriever",
     "LocalRetrieverConfig",
     "Retriever",

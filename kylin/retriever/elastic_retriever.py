@@ -215,7 +215,7 @@ class ElasticRetriever(LocalRetriever):
 
     def search_batch(
         self,
-        query: list[str],
+        query: list[str | Keywords],
         top_k: int = 10,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:

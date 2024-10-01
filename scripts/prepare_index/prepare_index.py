@@ -12,6 +12,8 @@ sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
 
 
 from kylin.retriever import (
+    BM25SRetriever,
+    BM25SRetrieverConfig,
     DenseRetriever,
     DenseRetrieverConfig,
     ElasticRetriever,
@@ -29,7 +31,8 @@ logging.basicConfig(level=logging.INFO)
 # fmt: off
 @dataclass
 class Config:
-    retriever_type: Choices(["dense", "elastic", "milvus", "typesense"]) = "dense"  # type: ignore
+    retriever_type: Choices(["dense", "elastic", "milvus", "typesense", "bm25s"]) = "dense"  # type: ignore
+    bm25s_config: BM25SRetrieverConfig = field(default_factory=BM25SRetrieverConfig)
     dense_config: DenseRetrieverConfig = field(default_factory=DenseRetrieverConfig)
     elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)
     milvus_config: MilvusRetrieverConfig = field(default_factory=MilvusRetrieverConfig)
@@ -51,6 +54,8 @@ def main(cfg: Config):
 
     # load retriever
     match cfg.retriever_type:
+        case "bm25s":
+            retriever = BM25SRetriever(cfg.bm25s_config)
         case "dense":
             retriever = DenseRetriever(cfg.dense_config)
         case "elastic":
