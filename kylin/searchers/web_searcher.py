@@ -13,7 +13,7 @@ from kylin.retriever import (
 )
 from kylin.utils import Choices
 
-from .searcher import BaseSearcher, BaseSearcherConfig, Searchers, SearchHistory
+from .searcher import AgentSearcher, AgentSearcherConfig, Searchers, SearchHistory
 
 
 logger = logging.getLogger("WebSearcher")
@@ -21,7 +21,7 @@ logger = logging.getLogger("WebSearcher")
 
 # fmt: off
 @dataclass
-class WebSearcherConfig(BaseSearcherConfig):
+class WebSearcherConfig(AgentSearcherConfig):
     ddg_config: DuckDuckGoRetrieverConfig = field(default_factory=DuckDuckGoRetrieverConfig)
     bing_config: BingRetrieverConfig = field(default_factory=BingRetrieverConfig)
     retriever_type: Choices(["ddg", "bing"]) = "ddg"  # type: ignore
@@ -32,7 +32,7 @@ class WebSearcherConfig(BaseSearcherConfig):
 
 
 @Searchers("web", config_class=WebSearcherConfig)
-class WebSearcher(BaseSearcher):
+class WebSearcher(AgentSearcher):
     is_hybrid = False
 
     def __init__(self, cfg: WebSearcherConfig) -> None:

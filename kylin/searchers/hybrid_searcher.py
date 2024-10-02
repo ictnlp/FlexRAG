@@ -5,12 +5,18 @@ from kylin.utils import Choices
 
 from .dense_searcher import DenseSearcher, DenseSearcherConfig
 from .keyword_searcher import KeywordSearcher, KeywordSearcherConfig
-from .searcher import BaseSearcher, BaseSearcherConfig, Searchers, SearchHistory
+from .searcher import (
+    AgentSearcher,
+    AgentSearcherConfig,
+    BaseSearcher,
+    Searchers,
+    SearchHistory,
+)
 from .web_searcher import WebSearcher, WebSearcherConfig
 
 
 @dataclass
-class HybridSearcherConfig(BaseSearcherConfig):
+class HybridSearcherConfig(AgentSearcherConfig):
     searchers: list[Choices(["keyword", "web", "dense"])] = field(default_factory=list)  # type: ignore
     keyword_searcher_config: KeywordSearcherConfig = field(default_factory=KeywordSearcherConfig)  # fmt: skip
     web_searcher_config: WebSearcherConfig = field(default_factory=WebSearcherConfig)
@@ -18,7 +24,7 @@ class HybridSearcherConfig(BaseSearcherConfig):
 
 
 @Searchers("hybrid", config_class=HybridSearcherConfig)
-class HybridSearcher(BaseSearcher):
+class HybridSearcher(AgentSearcher):
     is_hybrid = True
 
     def __init__(self, cfg: HybridSearcherConfig) -> None:

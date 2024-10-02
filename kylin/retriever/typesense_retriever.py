@@ -8,7 +8,12 @@ from kylin.utils import Choices, SimpleProgressLogger
 
 from .fingerprint import Fingerprint
 from .keyword import Keywords
-from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
+from .retriever_base import (
+    SPARSE_RETRIEVERS,
+    LocalRetriever,
+    LocalRetrieverConfig,
+    RetrievedContext,
+)
 
 logger = logging.getLogger("TypesenseRetriever")
 
@@ -20,8 +25,10 @@ class TypesenseRetrieverConfig(LocalRetrieverConfig):
     protocol: Choices(["https", "http"]) = "http"  # type: ignore
     api_key: str = MISSING
     source: str = MISSING
+    timeout: float = 200.0
 
 
+@SPARSE_RETRIEVERS("typesense", config_class=TypesenseRetrieverConfig)
 class TypesenseRetriever(LocalRetriever):
     name = "Typesense"
 
@@ -41,7 +48,7 @@ class TypesenseRetriever(LocalRetriever):
                     }
                 ],
                 "api_key": cfg.api_key,
-                "connection_timeout_seconds": 2,
+                "connection_timeout_seconds": cfg.timeout,
             }
         )
         self.source = cfg.source
@@ -71,9 +78,9 @@ class TypesenseRetriever(LocalRetriever):
             ],
         }
 
-    def add_passages(self, passages: Iterable[dict[str, str]]) -> None:
+    def _add_passages(self, passages: Iterable[dict[str, str]]) -> None:
 
-        def get_batch() -> Generator[list[dict[str, str]]]:
+        def get_batch() -> Generator[list[dict[str, str]], None, None]:
             batch = []
             for passage in passages:
                 if len(batch) == self.batch_size:

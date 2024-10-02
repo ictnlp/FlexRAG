@@ -8,12 +8,17 @@ from typing import Iterable, Optional
 import numpy as np
 
 from kylin.text_process import Pipeline, PipelineConfig
-from kylin.utils import SimpleProgressLogger, TimeMeter
+from kylin.utils import SimpleProgressLogger, TimeMeter, Register
 
 from .cache import PersistentLRUCache, hashkey
 
 
 logger = logging.getLogger(__name__)
+
+
+SEMANTIC_RETRIEVERS = Register("semantic_retriever")
+SPARSE_RETRIEVERS = Register("sparse_retriever")
+WEB_RETRIEVERS = Register("web_retriever")
 
 
 @dataclass

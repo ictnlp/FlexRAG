@@ -12,7 +12,7 @@ from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
 from kylin.utils import SimpleProgressLogger
 
-from .retriever_base import RetrievedContext, Retriever, RetrieverConfig
+from .retriever_base import WEB_RETRIEVERS, RetrievedContext, Retriever, RetrieverConfig
 
 logger = logging.getLogger(__name__)
 
@@ -111,6 +111,7 @@ class WebRetriever(Retriever):
         return
 
 
+@WEB_RETRIEVERS("bing", config_class=BingRetrieverConfig)
 class BingRetriever(WebRetriever):
     name = "bing"
 
@@ -160,6 +161,7 @@ class BingRetriever(WebRetriever):
         return uuid5(namespace_uuid, time_str + feature_str).hex
 
 
+@WEB_RETRIEVERS("ddg", config_class=DuckDuckGoRetrieverConfig)
 class DuckDuckGoRetriever(WebRetriever):
     name = "ddg"
 
@@ -198,6 +200,7 @@ class DuckDuckGoRetriever(WebRetriever):
         return uuid5(namespace_uuid, time_str).hex
 
 
+@WEB_RETRIEVERS("google", config_class=GoogleRetrieverConfig)
 class GoogleRetriever(WebRetriever):
     name = "google"
 

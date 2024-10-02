@@ -148,6 +148,12 @@ class Register:
     def __repr__(self) -> str:
         return str(self)
 
+    def __add__(self, register: "Register"):
+        new_register = Register()
+        new_register._items = {**self._items, **register._items}
+        new_register._shortcuts = {**self._shortcuts, **register._shortcuts}
+        return new_register
+
 
 @contextmanager
 def set_env_var(key, value):

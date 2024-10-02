@@ -13,19 +13,17 @@ Searchers = Register("searchers")
 
 
 @dataclass
-class BaseSearcherConfig(GeneratorConfig):
-    generation_config: GenerationConfig = field(default_factory=GenerationConfig)
+class BaseSearcherConfig:
+    retriever_top_k: int = 10
+    disable_cache: bool = False
 
 
 class BaseSearcher(ABC):
     retriever: Retriever
 
     def __init__(self, cfg: BaseSearcherConfig) -> None:
-        self.agent = load_generator(cfg)
-        self.gen_cfg = cfg.generation_config
-        if self.gen_cfg.sample_num > 1:
-            logger.warning("Sample num > 1 is not supported for Searcher")
-            self.gen_cfg.sample_num = 1
+        self.retriever_top_k = cfg.retriever_top_k
+        self.disable_cache = cfg.disable_cache
         return
 
     @abstractmethod
@@ -40,6 +38,30 @@ class BaseSearcher(ABC):
 
 
 @dataclass
+class AgentSearcherConfig(BaseSearcherConfig):
+    generation_config: GenerationConfig = field(default_factory=GenerationConfig)
+    generator_config: GeneratorConfig = field(default_factory=GeneratorConfig)  # type: ignore
+
+
+class AgentSearcher(BaseSearcher):
+    def __init__(self, cfg: AgentSearcherConfig) -> None:
+        super().__init__(cfg)
+        self.agent = load_generator(cfg.generator_config)
+        self.gen_cfg = cfg.generation_config
+        if self.gen_cfg.sample_num > 1:
+            logger.warning("sample_num > 1 is not supported by the AgentSearcher")
+            logger.warning("Setting the sample_num to 1")
+            self.gen_cfg.sample_num = 1
+        return
+
+
+@dataclass
 class SearchHistory:
     query: str
     contexts: list[RetrievedContext]
+
+    def to_dict(self) -> dict[str, str | list[dict]]:
+        return {
+            "query": self.query,
+            "contexts": [ctx.to_dict() for ctx in self.contexts],
+        }

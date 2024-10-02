@@ -10,7 +10,7 @@ from kylin.utils import Choices
 from .searcher import BaseSearcher, BaseSearcherConfig, Searchers, SearchHistory
 
 
-logger = logging.getLogger("WebSearcher")
+logger = logging.getLogger("DenseSearcher")
 
 
 @dataclass

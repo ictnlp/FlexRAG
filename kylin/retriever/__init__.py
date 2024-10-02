@@ -21,6 +21,18 @@ from .web_retriever import (
     WebRetrieverConfig,
 )
 
+from .retriever_loader import (  # isort:skip
+    WEB_RETRIEVERS,
+    WebRetrieverConfig,
+    SEMANTIC_RETRIEVERS,
+    SemanticRetrieverConfig,
+    SPARSE_RETRIEVERS,
+    SparseRetrieverConfig,
+    RETRIEVERS,
+    RetrieverConfig,
+    load_retriever,
+)
+
 __all__ = [
     "BM25SRetriever",
     "BM25SRetrieverConfig",
@@ -45,4 +57,13 @@ __all__ = [
     "MilvusRetrieverConfig",
     "TypesenseRetriever",
     "TypesenseRetrieverConfig",
+    "WEB_RETRIEVERS",
+    "WebRetrieverConfig",
+    "SEMANTIC_RETRIEVERS",
+    "SemanticRetrieverConfig",
+    "SPARSE_RETRIEVERS",
+    "SparseRetrieverConfig",
+    "RETRIEVERS",
+    "RetrieverConfig",
+    "load_retriever",
 ]

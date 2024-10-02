@@ -1,17 +1,20 @@
-import os
 import logging
+import os
 from dataclasses import dataclass
 from typing import Iterable, Optional
 
 import bm25s
-from bm25s.tokenization import Tokenized
 from omegaconf import MISSING
 
 from kylin.utils import Choices
 
 from .fingerprint import Fingerprint
-from .keyword import Keywords
-from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
+from .retriever_base import (
+    SPARSE_RETRIEVERS,
+    LocalRetriever,
+    LocalRetrieverConfig,
+    RetrievedContext,
+)
 
 logger = logging.getLogger("BM25SRetriever")
 
@@ -26,6 +29,7 @@ class BM25SRetrieverConfig(LocalRetrieverConfig):
     index_name: str = "documents"
 
 
+@SPARSE_RETRIEVERS("bm25s", config_class=BM25SRetrieverConfig)
 class BM25SRetriever(LocalRetriever):
     name = "BM25SSearch"
 

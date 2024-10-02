@@ -12,7 +12,12 @@ from kylin.utils import SimpleProgressLogger
 
 from .fingerprint import Fingerprint
 from .keyword import Keywords
-from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
+from .retriever_base import (
+    SPARSE_RETRIEVERS,
+    LocalRetriever,
+    LocalRetrieverConfig,
+    RetrievedContext,
+)
 
 logger = logging.getLogger("ElasticRetriever")
 
@@ -37,6 +42,7 @@ class ElasticRetrieverConfig(LocalRetrieverConfig):
     retry_delay: float = 0.5
 
 
+@SPARSE_RETRIEVERS("elastic", config_class=ElasticRetrieverConfig)
 class ElasticRetriever(LocalRetriever):
     name = "ElasticSearch"
 
@@ -94,18 +100,17 @@ class ElasticRetriever(LocalRetriever):
             es_logger.setLevel(logging.WARNING)
         return
 
-    def add_passages(self, passages: Iterable[dict[str, str]]):
+    def _add_passages(self, passages: Iterable[dict[str, str]]):
         def generate_actions():
             for passage in passages:
-                p = passage if isinstance(passage, dict) else {"text": passage}
                 es_doc = {
                     "_op_type": "index",
                     "refresh": "wait_for",
-                    "title": p["title"],
-                    "section": p["section"],
-                    "text": p["text"],
+                    "title": passage["title"],
+                    "section": passage["section"],
+                    "text": passage["text"],
                 }
-                self._fingerprint.update(p["text"])
+                self._fingerprint.update(passage["text"])
                 yield es_doc
 
         p_logger = SimpleProgressLogger(logger, interval=self.log_interval)

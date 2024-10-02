@@ -5,12 +5,16 @@ from typing import Generator, Iterable, Optional
 
 from omegaconf import MISSING, OmegaConf
 
+from kylin.models import EncoderBase, HFEncoder, HFEncoderConfig
 from kylin.utils import Choices, SimpleProgressLogger
-from kylin.models import HFEncoderConfig, EncoderBase, HFEncoder
 
-from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
 from .fingerprint import Fingerprint
-
+from .retriever_base import (
+    SEMANTIC_RETRIEVERS,
+    LocalRetriever,
+    LocalRetrieverConfig,
+    RetrievedContext,
+)
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -92,6 +96,7 @@ class MilvusRetrieverConfig(LocalRetrieverConfig):
     hf_passage_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
 
 
+@SEMANTIC_RETRIEVERS("milvus", config_class=MilvusRetrieverConfig)
 class MilvusRetriever(LocalRetriever):
     def __init__(self, cfg: MilvusRetrieverConfig) -> None:
         super().__init__(cfg)
@@ -230,7 +235,7 @@ class MilvusRetriever(LocalRetriever):
         )
         return schema, index_params
 
-    def add_passages(self, passages: Iterable[dict[str, str]] | Iterable[str]):
+    def _add_passages(self, passages: Iterable[dict[str, str]] | Iterable[str]):
         """
         Add passages to the retriever database
         """

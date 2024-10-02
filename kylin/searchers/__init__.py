@@ -1,3 +1,4 @@
+from .naive_searcher import NaiveSearcher, NaiveSearcherConfig
 from .keyword_searcher import KeywordSearcher, KeywordSearcherConfig
 from .dense_searcher import DenseSearcher, DenseSearcherConfig
 from .high_level_searcher import HighLevalSearcher, HighLevelSearcherConfig
@@ -8,6 +9,8 @@ from .web_searcher import WebSearcher, WebSearcherConfig
 from .searcher_loader import Searchers, SearcherConfig, load_searcher  # isort: skip
 
 __all__ = [
+    "NaiveSearcher",
+    "NaiveSearcherConfig",
     "BaseSearcher",
     "BaseSearcherConfig",
     "KeywordSearcher",

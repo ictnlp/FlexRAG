@@ -15,25 +15,23 @@ from kylin.retriever import (
 from kylin.utils import Choices
 from kylin.retriever.keyword import Keywords, Keyword
 
-from .searcher import BaseSearcher, BaseSearcherConfig, Searchers, SearchHistory
+from .searcher import AgentSearcher, AgentSearcherConfig, Searchers, SearchHistory
 
 
 logger = logging.getLogger("KeywordSearcher")
 
 
 @dataclass
-class KeywordSearcherConfig(BaseSearcherConfig):
+class KeywordSearcherConfig(AgentSearcherConfig):
     retriever_type: Choices(["elastic", "typesense"]) = "elastic"  # type: ignore
     elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)  # fmt: skip
     typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)  # fmt: skip
     rewrite_query: Choices(["always", "never", "adaptive"]) = "never"  # type: ignore
     feedback_depth: int = 1
-    retriever_top_k: int = 10
-    disable_cache: bool = False
 
 
 @Searchers("keyword", config_class=KeywordSearcherConfig)
-class KeywordSearcher(BaseSearcher):
+class KeywordSearcher(AgentSearcher):
     is_hybrid = False
 
     def __init__(self, cfg: KeywordSearcherConfig) -> None:

@@ -8,18 +8,23 @@ import numpy as np
 import tables
 from omegaconf import MISSING
 
-from kylin.utils import SimpleProgressLogger, Choices
 from kylin.models import EncoderBase, HFEncoder, HFEncoderConfig
+from kylin.utils import Choices, SimpleProgressLogger
+
+from .fingerprint import Fingerprint
 from .index import (
+    DenseIndex,
     FaissIndex,
     FaissIndexConfig,
     ScaNNIndex,
     ScaNNIndexConfig,
-    DenseIndex,
 )
-from .retriever_base import LocalRetriever, LocalRetrieverConfig, RetrievedContext
-from .fingerprint import Fingerprint
-
+from .retriever_base import (
+    SEMANTIC_RETRIEVERS,
+    LocalRetriever,
+    LocalRetrieverConfig,
+    RetrievedContext,
+)
 
 logger = logging.getLogger("DenseRetriever")
 
@@ -38,6 +43,7 @@ class DenseRetrieverConfig(LocalRetrieverConfig):
     source: str = MISSING
 
 
+@SEMANTIC_RETRIEVERS("dense", config_class=DenseRetrieverConfig)
 class DenseRetriever(LocalRetriever):
     name = "Dense Retrieval"
     index: DenseIndex
