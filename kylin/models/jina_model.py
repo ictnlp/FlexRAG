@@ -10,11 +10,7 @@ from kylin.utils import TimeMeter
 from .model_base import (
     EncoderBase,
     EncoderBaseConfig,
-    RankerBase,
-    RankerConfig,
-    RankingResult,
     Encoders,
-    Rankers,
 )
 
 
@@ -56,44 +52,3 @@ class JinaEncoder(EncoderBase):
     @property
     def embedding_size(self) -> int:
         return self._data_template["dimension"]
-
-
-@dataclass
-class JinaRankerConfig(RankerConfig):
-    model: str = "jina-reranker-v2-base-multilingual"
-    base_url: str = "https://api.jina.ai/v1/rerank"
-    api_key: str = MISSING
-
-
-@Rankers("jina", config_class=JinaRankerConfig)
-class JinaRanker(RankerBase):
-    def __init__(self, cfg: JinaRankerConfig) -> None:
-        self.headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {cfg.api_key}",
-        }
-        self.base_url = cfg.base_url
-        self._data_template = {
-            "model": cfg.model,
-            "query": "",
-            "top_n": 0,
-            "documents": [],
-        }
-        return
-
-    @TimeMeter("jina_rank")
-    def rank(self, query: str, candidates: list[str]) -> RankingResult:
-        data = self._data_template.copy()
-        data["query"] = query
-        data["documents"] = candidates
-        data["top_n"] = len(candidates)
-        response = requests.post(self.base_url, json=data, headers=self.headers)
-        response.raise_for_status()
-        scores = [i["relevance_score"] for i in response.json()["results"]]
-        ranking = np.argsort(scores)[::-1]
-        return RankingResult(
-            query=query,
-            candidates=candidates,
-            scores=scores,
-            ranking=ranking.tolist(),
-        )

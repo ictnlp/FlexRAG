@@ -2,22 +2,14 @@ from .anthropic_model import AnthropicGenerator, AnthropicGeneratorConfig
 from .cohere_model import (
     CohereEncoder,
     CohereEncoderConfig,
-    CohereRanker,
-    CohereRankerConfig,
 )
 from .hf_model import (
-    HFColBertRanker,
-    HFColBertRankerConfig,
-    HFCrossEncoderRanker,
-    HFCrossEncoderRankerConfig,
     HFEncoder,
     HFEncoderConfig,
     HFGenerator,
     HFGeneratorConfig,
-    HFSeq2SeqRanker,
-    HFSeq2SeqRankerConfig,
 )
-from .jina_model import JinaEncoder, JinaEncoderConfig, JinaRanker, JinaRankerConfig
+from .jina_model import JinaEncoder, JinaEncoderConfig
 from .llamacpp_model import LlamacppGenerator, LlamacppGeneratorConfig
 from .model_base import (
     EncoderBase,
@@ -39,7 +31,6 @@ from .model_loader import (  # isort:skip
     GeneratorConfig,
     load_encoder,
     load_generator,
-    load_ranker,
 )
 
 __all__ = [
@@ -53,12 +44,6 @@ __all__ = [
     "HFGeneratorConfig",
     "HFEncoder",
     "HFEncoderConfig",
-    "HFCrossEncoderRanker",
-    "HFCrossEncoderRankerConfig",
-    "HFSeq2SeqRanker",
-    "HFSeq2SeqRankerConfig",
-    "HFColBertRanker",
-    "HFColBertRankerConfig",
     "OllamaGenerator",
     "OllamaGeneratorConfig",
     "OpenAIGenerator",
@@ -71,15 +56,10 @@ __all__ = [
     "LlamacppGeneratorConfig",
     "JinaEncoder",
     "JinaEncoderConfig",
-    "JinaRanker",
-    "JinaRankerConfig",
     "CohereEncoder",
     "CohereEncoderConfig",
-    "CohereRanker",
-    "CohereRankerConfig",
     "EncoderConfig",
     "GeneratorConfig",
     "load_encoder",
     "load_generator",
-    "load_ranker",
 ]

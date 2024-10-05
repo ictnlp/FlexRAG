@@ -10,7 +10,6 @@ from kylin.utils import Register
 
 Encoders = Register("Encoders")
 Generators = Register("Generators")
-Rankers = Register("Rankers")
 
 
 @dataclass
@@ -86,26 +85,4 @@ class EncoderBase(ABC):
     @property
     @abstractmethod
     def embedding_size(self) -> int:
-        return
-
-
-@dataclass
-class RankerConfig: ...
-
-
-@dataclass
-class RankingResult:
-    query: str
-    candidates: list[str]
-    scores: Optional[list[float]] = None
-    ranking: Optional[list[int]] = None
-
-
-class RankerBase(ABC):
-    @abstractmethod
-    def rank(
-        self,
-        query: str,
-        candidates: list[str],
-    ) -> RankingResult:
         return
