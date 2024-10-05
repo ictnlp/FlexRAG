@@ -7,14 +7,14 @@ from kylin.prompt import ChatTurn, ChatPrompt
 from kylin.retriever import DenseRetriever, DenseRetrieverConfig, RetrievedContext
 from kylin.utils import Choices
 
-from .searcher import BaseSearcher, BaseSearcherConfig, Searchers, SearchHistory
+from .searcher import AgentSearcher, AgentSearcherConfig, Searchers, SearchHistory
 
 
 logger = logging.getLogger("DenseSearcher")
 
 
 @dataclass
-class DenseSearcherConfig(BaseSearcherConfig):
+class DenseSearcherConfig(AgentSearcherConfig):
     retriever_config: DenseRetrieverConfig = field(default_factory=DenseRetrieverConfig)
     rewrite_query: Choices(["never", "pseudo", "adaptive"]) = "never"  # type: ignore
     max_rewrite_depth: int = 3
@@ -23,7 +23,7 @@ class DenseSearcherConfig(BaseSearcherConfig):
 
 
 @Searchers("dense", config_class=DenseSearcherConfig)
-class DenseSearcher(BaseSearcher):
+class DenseSearcher(AgentSearcher):
     is_hybrid = False
 
     def __init__(self, cfg: DenseSearcherConfig) -> None:

@@ -11,6 +11,7 @@ from transformers import (
     AutoConfig,
     AutoModel,
     AutoModelForCausalLM,
+    AutoModelForMaskedLM,
     AutoModelForSeq2SeqLM,
     AutoModelForSequenceClassification,
     AutoTokenizer,
@@ -168,6 +169,8 @@ def load_hf_model(
             model_class = AutoModelForSequenceClassification
         case "colbert":
             model_class = get_colbert_model(colbert_base_model, colbert_dim, model_path)
+        case "masked_lm":
+            model_class = AutoModelForMaskedLM
         case _:
             model_class = AutoModel
     model = model_class.from_pretrained(
@@ -326,6 +329,9 @@ class HFGenerator(GeneratorBase):
 class HFEncoderConfig(EncoderBaseConfig, HFModelConfig):
     max_encode_length: int = 512
     encode_method: Choices(["cls", "mean"]) = "mean"  # type: ignore
+    normalize: bool = False
+    prompt: str = ""  # used in nomic-text-embedding
+    task: str = ""  # used in jina-embedding
 
 
 @Encoders("hf", config_class=HFEncoderConfig)
@@ -341,13 +347,20 @@ class HFEncoder(EncoderBase):
             trust_remote_code=cfg.trust_remote_code,
         )
         if len(self.devices) > 1:
-            self.dp_model = DP(self.model, device_ids=self.devices)
+            if hasattr(self.model, "encode"):
+                logger.warning("Data parallel does not support self implemented model.")
+                self.dp_model = None
+            else:
+                self.dp_model = DP(self.model, device_ids=self.devices)
         else:
             self.dp_model = None
 
         # setup arguments
         self.max_encode_length = cfg.max_encode_length
         self.encode_method = cfg.encode_method
+        self.normalize = cfg.normalize
+        self.prompt = cfg.prompt
+        self.task = cfg.task
         return
 
     def get_embedding(
@@ -357,14 +370,18 @@ class HFEncoder(EncoderBase):
             attn_mask = attn_mask.to(hidden.device)
             embeddings = hidden.masked_fill(~attn_mask[..., None].bool(), 0.0)
             embeddings = embeddings.sum(dim=1) / attn_mask.sum(dim=1)[..., None]
-            embeddings = embeddings.cpu().numpy()
         elif self.encode_method == "cls":
-            embeddings = hidden[:, 0].cpu().numpy()
+            embeddings = hidden[:, 0]
         else:
             raise ValueError(f"Unsupported encode method: {self.encode_method}")
-        return embeddings
+        if self.normalize:
+            embeddings = torch.nn.functional.normalize(embeddings, dim=1)
+        return embeddings.cpu().numpy()
 
     def encode(self, texts: list[str]) -> np.ndarray:
+        if hasattr(self.model, "encode"):  # for jina-embedding
+            return self.model.encode(texts, task=self.task)
+        texts = [f"{self.prompt}{i}" for i in texts]
         if (len(texts) >= len(self.devices) * 8) and (self.dp_model is not None):
             encoder = self.dp_model
         else:
