@@ -31,13 +31,13 @@ logger = logging.getLogger("DenseRetriever")
 
 @dataclass
 class DenseRetrieverConfig(LocalRetrieverConfig):
-    read_only: bool = True
+    inference_only: bool = True
     database_path: str = MISSING
     index_type: Choices(["faiss", "scann"]) = "faiss"  # type: ignore
     faiss_index_config: FaissIndexConfig = field(default_factory=FaissIndexConfig)
     scann_index_config: ScaNNIndexConfig = field(default_factory=ScaNNIndexConfig)
-    query_encoder_config: Optional[EncoderConfig] = None  # type: ignore
-    passage_encoder_config: Optional[EncoderConfig] = None  # type: ignore
+    query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
+    passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     source: str = MISSING
 
 
@@ -53,13 +53,15 @@ class DenseRetriever(LocalRetriever):
         self.source = cfg.source
 
         # load encoder
-        if cfg.query_encoder_config is not None:
+        if cfg.inference_only:
             self.query_encoder = load_encoder(cfg.query_encoder_config)
-        if cfg.passage_encoder_config is not None:
+            self.passage_encoder = None
+        else:
+            self.query_encoder = None
             self.passage_encoder = load_encoder(cfg.passage_encoder_config)
 
         # load database
-        self.read_only = cfg.read_only
+        self.inference_only = cfg.inference_only
         self.db_file, self.titles, self.sections, self.texts, self.embeddings = (
             self.load_database()
         )
@@ -98,10 +100,10 @@ class DenseRetriever(LocalRetriever):
         # open database file
         h5path = os.path.join(self.database_path, "database.h5")
         if os.path.exists(h5path):
-            mode = "r" if self.read_only else "r+"
+            mode = "r" if self.inference_only else "r+"
             h5file = tables.open_file(h5path, mode=mode)
         else:
-            assert not self.read_only, "Database does not exist"
+            assert not self.inference_only, "Database does not exist"
             if not os.path.exists(self.database_path):
                 os.makedirs(self.database_path)
             h5file = tables.open_file(h5path, mode="w", title="Retriever Database")
