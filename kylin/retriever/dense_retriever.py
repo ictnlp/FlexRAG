@@ -8,7 +8,7 @@ import numpy as np
 import tables
 from omegaconf import MISSING
 
-from kylin.models import EncoderBase, HFEncoder, HFEncoderConfig
+from kylin.models import EncoderConfig, load_encoder
 from kylin.utils import Choices, SimpleProgressLogger
 
 from .fingerprint import Fingerprint
@@ -36,10 +36,8 @@ class DenseRetrieverConfig(LocalRetrieverConfig):
     index_type: Choices(["faiss", "scann"]) = "faiss"  # type: ignore
     faiss_index_config: FaissIndexConfig = field(default_factory=FaissIndexConfig)
     scann_index_config: ScaNNIndexConfig = field(default_factory=ScaNNIndexConfig)
-    query_encoder_type: Optional[Choices(["hf"])] = None  # type: ignore
-    hf_query_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
-    passage_encoder_type: Optional[Choices(["hf"])] = None  # type: ignore
-    hf_passage_encoder_config: HFEncoderConfig = field(default_factory=HFEncoderConfig)
+    query_encoder_config: Optional[EncoderConfig] = None  # type: ignore
+    passage_encoder_config: Optional[EncoderConfig] = None  # type: ignore
     source: str = MISSING
 
 
@@ -55,12 +53,10 @@ class DenseRetriever(LocalRetriever):
         self.source = cfg.source
 
         # load encoder
-        self.query_encoder = self.load_encoder(
-            cfg.query_encoder_type, cfg.hf_query_encoder_config
-        )
-        self.passage_encoder = self.load_encoder(
-            cfg.passage_encoder_type, cfg.hf_passage_encoder_config
-        )
+        if cfg.query_encoder_config is not None:
+            self.query_encoder = load_encoder(cfg.query_encoder_config)
+        if cfg.passage_encoder_config is not None:
+            self.passage_encoder = load_encoder(cfg.passage_encoder_config)
 
         # load database
         self.read_only = cfg.read_only
@@ -91,19 +87,6 @@ class DenseRetriever(LocalRetriever):
         assert len(self.texts) == len(self.index), "Inconsistent database and index"
         assert len(self.embeddings) == len(self.index), "Inconsistent database and index"  # fmt: skip
         return
-
-    def load_encoder(
-        self,
-        encoder_type: str,
-        hf_encoder_config: HFEncoderConfig,
-    ) -> EncoderBase:
-        match encoder_type:
-            case "hf":
-                return HFEncoder(hf_encoder_config)
-            case None:
-                return None
-            case _:
-                raise ValueError(f"Encoder type {encoder_type} is not supported")
 
     def load_database(self) -> tuple[
         tables.File,
