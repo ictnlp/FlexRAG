@@ -1,20 +1,13 @@
 import logging
 import os
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 from kylin.prompt import ChatTurn, ChatPrompt
 from kylin.models import (
     GenerationConfig,
-    GeneratorBase,
-    HFGenerator,
-    HFGeneratorConfig,
-    OllamaGenerator,
-    OllamaGeneratorConfig,
-    OpenAIGenerator,
-    OpenAIGeneratorConfig,
-    VLLMGenerator,
-    VLLMGeneratorConfig,
+    GeneratorConfig,
+    load_generator,
 )
 from kylin.retriever import RetrievedContext
 from kylin.utils import Choices
@@ -23,13 +16,7 @@ logger = logging.getLogger("Assistant")
 
 
 @dataclass
-class AssistantConfig:
-    generator_type: Choices(["vllm", "openai", "hf", "ollama"]) = "openai"  # type: ignore
-    openai_config: OpenAIGeneratorConfig = field(default_factory=OpenAIGeneratorConfig)
-    vllm_config: VLLMGeneratorConfig = field(default_factory=VLLMGeneratorConfig)
-    hf_config: HFGeneratorConfig = field(default_factory=HFGeneratorConfig)
-    ollama_config: OllamaGeneratorConfig = field(default_factory=OllamaGeneratorConfig)
-    generation_config: GenerationConfig = field(default_factory=GenerationConfig)
+class AssistantConfig(GeneratorConfig, GenerationConfig):
     adaptive_retrieval: bool = False
     response_type: Choices(["short", "long", "original"]) = "short"  # type: ignore
 
@@ -38,19 +25,13 @@ class Assistant:
     def __init__(self, cfg: AssistantConfig):
         # set basic args
         self.adaptive_retrieval = cfg.adaptive_retrieval
-        self.gen_cfg = cfg.generation_config
+        self.gen_cfg = cfg
         if self.gen_cfg.sample_num > 1:
             logger.warning("Sample num > 1 is not supported for Assistant")
             self.gen_cfg.sample_num = 1
 
         # load generator
-        self.generator = self.load_generator(
-            cfg.generator_type,
-            vllm_cfg=cfg.vllm_config,
-            hf_cfg=cfg.hf_config,
-            openai_cfg=cfg.openai_config,
-            ollama_cfg=cfg.ollama_config,
-        )
+        self.generator = load_generator(cfg)
 
         # load prompts
         match cfg.response_type:
@@ -88,27 +69,6 @@ class Assistant:
                 self.prompt_with_ctx = ChatPrompt()
                 self.prompt_wo_ctx = ChatPrompt()
         return
-
-    def load_generator(
-        self,
-        model_type: str,
-        vllm_cfg: VLLMGeneratorConfig,
-        hf_cfg: HFGeneratorConfig,
-        openai_cfg: OpenAIGeneratorConfig,
-        ollama_cfg: OllamaGeneratorConfig,
-    ) -> GeneratorBase:
-        match model_type:
-            case "vllm":
-                model = VLLMGenerator(vllm_cfg)
-            case "hf":
-                model = HFGenerator(hf_cfg)
-            case "openai":
-                model = OpenAIGenerator(openai_cfg)
-            case "ollama":
-                model = OllamaGenerator(ollama_cfg)
-            case _:
-                raise ValueError(f"Not supported model: {model_type}")
-        return model
 
     def answer(
         self, question: str, contexts: list[RetrievedContext]
