@@ -1,4 +1,3 @@
-from .ranker import RankerBase, Rankers
 from .cohere_ranker import CohereRanker, CohereRankerConfig
 from .hf_ranker import (
     HFColBertRanker,
@@ -9,6 +8,9 @@ from .hf_ranker import (
     HFSeq2SeqRankerConfig,
 )
 from .jina_ranker import JinaRanker, JinaRankerConfig
+from .mixedbread_ranker import MixedbreadRanker, MixedbreadRankerConfig
+from .ranker import RankerBase, Rankers
+from .voyage_ranker import VoyageRanker, VoyageRankerConfig
 
 from .ranker_loader import RankerConfig, load_ranker  # isort:skip
 
@@ -26,6 +28,10 @@ __all__ = [
     "CohereRankerConfig",
     "JinaRanker",
     "JinaRankerConfig",
+    "MixedbreadRanker",
+    "MixedbreadRankerConfig",
+    "VoyageRanker",
+    "VoyageRankerConfig",
     "RankerConfig",
     "load_ranker",
 ]

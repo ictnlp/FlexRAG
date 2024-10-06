@@ -15,7 +15,6 @@ logger = logging.getLogger("NaiveSearcher")
 @dataclass
 class NaiveSearcherConfig(BaseSearcherConfig, RetrieverConfig, RankerConfig):
     ranker_type: Optional[Choices(Rankers.names)] = None  # type: ignore
-    ...
 
 
 @Searchers("naive", config_class=NaiveSearcherConfig)
