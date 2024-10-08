@@ -2,27 +2,28 @@ import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from time import perf_counter
-from typing import Optional
 
 import numpy as np
+from tables import EArray
 
-from kylin.utils import Choices, SimpleProgressLogger
+from kylin.utils import Choices, SimpleProgressLogger, Register
 
 
 logger = logging.getLogger("DenseIndex")
+DENSE_INDEX = Register("dense_index")
 
 
 @dataclass
-class DenseIndexConfig:
+class DenseIndexConfigBase:
     distance_function: Choices(["IP", "L2"]) = "IP"  # type: ignore
-    embedding_size: Optional[int] = None
     index_train_num: int = 1000000
     log_interval: int = 10000
     batch_size: int = 512
 
 
 class DenseIndex(ABC):
-    def __init__(self, index_path: str, cfg: DenseIndexConfig):
+    def __init__(self, index_path: str, embedding_size: int, cfg: DenseIndexConfigBase):
+        self.embedding_size = embedding_size
         self.distance_function = cfg.distance_function
         self.index_train_num = cfg.index_train_num
         self.index_path = index_path
@@ -31,7 +32,7 @@ class DenseIndex(ABC):
         return
 
     @abstractmethod
-    def build_index(self, embeddings: np.ndarray):
+    def build_index(self, embeddings: np.ndarray | EArray) -> None:
         return
 
     def add_embeddings(self, embeddings: np.ndarray, serialize: bool = True) -> None:
@@ -108,12 +109,6 @@ class DenseIndex(ABC):
     @abstractmethod
     def is_trained(self) -> bool:
         """Return True if the index is trained."""
-        return
-
-    @property
-    @abstractmethod
-    def embedding_size(self) -> int:
-        """Return the embedding size of the index."""
         return
 
     @abstractmethod

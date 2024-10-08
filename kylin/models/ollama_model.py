@@ -1,12 +1,23 @@
 import logging
 from dataclasses import dataclass
+from typing import Optional
 
+import numpy as np
+from numpy import ndarray
 from omegaconf import MISSING
 
 from kylin.prompt import ChatPrompt
 from kylin.utils import TimeMeter
 
-from .model_base import GenerationConfig, GeneratorBase, GeneratorBaseConfig, Generators
+from .model_base import (
+    GenerationConfig,
+    GeneratorBase,
+    GeneratorBaseConfig,
+    Generators,
+    EncoderBase,
+    EncoderBaseConfig,
+    Encoders,
+)
 
 logger = logging.getLogger("OllamaGenerator")
 
@@ -85,6 +96,54 @@ class OllamaGenerator(GeneratorBase):
             "num_predict": generation_config.max_new_tokens,
             "num_ctx": self.max_length,
         }
+
+    def _check(self) -> None:
+        models = [i["name"] for i in self.client.list()["models"]]
+        if self.model_name not in models:
+            raise ValueError(f"Model {self.model_name} not found in {models}")
+        return
+
+
+@dataclass
+class OllamaEncoderConfig(EncoderBaseConfig):
+    model_name: str = MISSING
+    base_url: str = MISSING
+    prompt: Optional[str] = None
+    verbose: bool = False
+    embedding_size: int = 768
+
+
+@Encoders("ollama", config_class=OllamaEncoderConfig)
+class OllamaEncoder(EncoderBase):
+    def __init__(self, cfg: OllamaEncoderConfig) -> None:
+        super().__init__()
+        from ollama import Client
+
+        self.client = Client(host=cfg.base_url)
+        self.model_name = cfg.model_name
+        self.prompt = cfg.prompt
+        self._embedding_size = cfg.embedding_size
+        if not cfg.verbose:
+            logger = logging.getLogger("httpx")
+            logger.setLevel(logging.WARNING)
+        self._check()
+        return
+
+    @TimeMeter("ollama_encode")
+    def encode(self, texts: list[str]) -> ndarray:
+        if self.prompt:
+            texts = [f"{self.prompt} {text}" for text in texts]
+        embeddings = []
+        for text in texts:
+            embeddings.append(
+                self.client.embeddings(model=self.model_name, prompt=text)["embedding"]
+            )
+        embeddings = np.array(embeddings)
+        return embeddings[:, : self.embedding_size]
+
+    @property
+    def embedding_size(self) -> int:
+        return self._embedding_size
 
     def _check(self) -> None:
         models = [i["name"] for i in self.client.list()["models"]]

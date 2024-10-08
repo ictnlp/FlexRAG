@@ -36,4 +36,14 @@ pip install ./
 ## Usage
 
 
+## Tested Models
+
+### Tested Encoders
+- jina-embeddings-v3
+- bge-m3
+- contriever
+- nomic-embed-text-v1.5
+- msmarco-MiniLM-L-12-v3
+
+### Tested Generators
 

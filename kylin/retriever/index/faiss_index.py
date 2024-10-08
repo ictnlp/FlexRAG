@@ -4,16 +4,17 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
+from tables import EArray
 
 from kylin.utils import Choices
 
-from .index_base import DenseIndex, DenseIndexConfig
+from .index_base import DenseIndex, DenseIndexConfigBase, DENSE_INDEX
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class FaissIndexConfig(DenseIndexConfig):
+class FaissIndexConfig(DenseIndexConfigBase):
     index_type: Choices(["FLAT", "IVF", "PQ", "IVFPQ"]) = "FLAT"  # type: ignore
     n_subquantizers: int = 8
     n_bits: int = 8
@@ -23,9 +24,12 @@ class FaissIndexConfig(DenseIndexConfig):
     device_id: list[int] = field(default_factory=list)
 
 
+@DENSE_INDEX("faiss", config_class=FaissIndexConfig)
 class FaissIndex(DenseIndex):
-    def __init__(self, index_path: str, cfg: FaissIndexConfig) -> None:
-        super().__init__(index_path, cfg)
+    def __init__(
+        self, index_path: str, embedding_size: int, cfg: FaissIndexConfig
+    ) -> None:
+        super().__init__(index_path, embedding_size, cfg)
         # check faiss
         try:
             import faiss
@@ -47,7 +51,7 @@ class FaissIndex(DenseIndex):
             self.index = self._prepare_index(
                 index_type=cfg.index_type,
                 distance_function=cfg.distance_function,
-                embedding_size=cfg.embedding_size,
+                embedding_size=self.embedding_size,
                 n_list=cfg.n_list,
                 n_probe=cfg.n_probe,
                 n_subquantizers=cfg.n_subquantizers,
@@ -56,8 +60,10 @@ class FaissIndex(DenseIndex):
             )
         return
 
-    def build_index(self, embeddings: np.ndarray):
+    def build_index(self, embeddings: np.ndarray | EArray) -> None:
         self.clean()
+        if isinstance(embeddings, EArray):
+            embeddings = embeddings.read()
         self.train_index(embeddings=embeddings)
         self.add_embeddings(embeddings=embeddings)
         return
@@ -182,6 +188,7 @@ class FaissIndex(DenseIndex):
         if hasattr(cpu_index, "nprobe"):
             cpu_index.nprobe = self.n_probe
         index = self._set_index(cpu_index)
+        assert index.d == self.embedding_size, "Index dimension mismatch"
         return index
 
     def clean(self):
@@ -220,10 +227,6 @@ class FaissIndex(DenseIndex):
             if all_flat:
                 return True
         return False
-
-    @property
-    def embedding_size(self):
-        return self.index.d
 
     def __len__(self):
         return self.index.ntotal

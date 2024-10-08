@@ -17,7 +17,12 @@ from .model_base import (
     GeneratorBase,
     GeneratorBaseConfig,
 )
-from .ollama_model import OllamaGenerator, OllamaGeneratorConfig
+from .ollama_model import (
+    OllamaGenerator,
+    OllamaGeneratorConfig,
+    OllamaEncoder,
+    OllamaEncoderConfig,
+)
 from .openai_model import (
     OpenAIEncoder,
     OpenAIEncoderConfig,
@@ -46,6 +51,8 @@ __all__ = [
     "HFEncoderConfig",
     "OllamaGenerator",
     "OllamaGeneratorConfig",
+    "OllamaEncoder",
+    "OllamaEncoderConfig",
     "OpenAIGenerator",
     "OpenAIGeneratorConfig",
     "OpenAIEncoder",

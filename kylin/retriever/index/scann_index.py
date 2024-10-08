@@ -4,14 +4,15 @@ import shutil
 from dataclasses import dataclass
 
 import numpy as np
+from tables import EArray
 
-from .index_base import DenseIndex, DenseIndexConfig
+from .index_base import DenseIndex, DenseIndexConfigBase, DENSE_INDEX
 
 logger = logging.getLogger(__name__)
 
 
 @dataclass
-class ScaNNIndexConfig(DenseIndexConfig):
+class ScaNNIndexConfig(DenseIndexConfigBase):
     num_leaves: int = 2000
     num_leaves_to_search: int = 500
     num_neighbors: int = 10
@@ -19,9 +20,12 @@ class ScaNNIndexConfig(DenseIndexConfig):
     threads: int = 0
 
 
+@DENSE_INDEX("scann", config_class=ScaNNIndexConfig)
 class ScaNNIndex(DenseIndex):
-    def __init__(self, index_path: str, cfg: ScaNNIndexConfig) -> None:
-        super().__init__(index_path, cfg)
+    def __init__(
+        self, index_path: str, embedding_size: int, cfg: ScaNNIndexConfig
+    ) -> None:
+        super().__init__(index_path, embedding_size, cfg)
         # check scann
         try:
             import scann
@@ -44,9 +48,11 @@ class ScaNNIndex(DenseIndex):
             self.index = self._prepare_index()
         return
 
-    def build_index(self, embeddings: np.ndarray) -> None:
+    def build_index(self, embeddings: np.ndarray | EArray) -> None:
         if self.is_trained:
             self.clean()
+        if isinstance(embeddings, EArray):
+            embeddings = embeddings.read()
         self.index.db = embeddings
         ids = list(np.arange(len(embeddings)))
         ids = [str(i) for i in ids]
@@ -109,6 +115,7 @@ class ScaNNIndex(DenseIndex):
     def deserialize(self) -> None:
         logger.info(f"Loading index from {self.index_path}")
         self.index = self.scann.scann_ops_pybind.load_searcher(self.index_path)
+        assert self.index.num_columns == self.embedding_size, "Index dimension mismatch"
         return
 
     def clean(self):
@@ -122,10 +129,6 @@ class ScaNNIndex(DenseIndex):
     @property
     def is_trained(self):
         return not isinstance(self.index, self.scann.ScannBuilder)
-
-    @property
-    def embedding_size(self):
-        return self.index.num_columns
 
     def __len__(self) -> int:
         if isinstance(self.index, self.scann.ScannBuilder):

@@ -2,7 +2,7 @@ import atexit
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Generator, Iterable, Optional
+from typing import Generator, Iterable
 
 import numpy as np
 import tables
@@ -12,13 +12,7 @@ from kylin.models import EncoderConfig, load_encoder
 from kylin.utils import Choices, SimpleProgressLogger
 
 from .fingerprint import Fingerprint
-from .index import (
-    DenseIndex,
-    FaissIndex,
-    FaissIndexConfig,
-    ScaNNIndex,
-    ScaNNIndexConfig,
-)
+from .index import DenseIndexConfig, load_index, DenseIndex
 from .retriever_base import (
     SEMANTIC_RETRIEVERS,
     LocalRetriever,
@@ -30,12 +24,9 @@ logger = logging.getLogger("DenseRetriever")
 
 
 @dataclass
-class DenseRetrieverConfig(LocalRetrieverConfig):
+class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
     inference_only: bool = True
     database_path: str = MISSING
-    index_type: Choices(["faiss", "scann"]) = "faiss"  # type: ignore
-    faiss_index_config: FaissIndexConfig = field(default_factory=FaissIndexConfig)
-    scann_index_config: ScaNNIndexConfig = field(default_factory=ScaNNIndexConfig)
     query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     source: str = MISSING
@@ -77,11 +68,8 @@ class DenseRetriever(LocalRetriever):
         )
 
         # load / build index
-        self.index = self.load_index(
-            index_type=cfg.index_type,
-            faiss_index_config=cfg.faiss_index_config,
-            scann_index_config=cfg.scann_index_config,
-        )
+        index_path = os.path.join(self.database_path, f"{cfg.index_type}_{cfg.source}")
+        self.index = load_index(index_path, self.embedding_size, cfg)
 
         # consistency check
         assert len(self.titles) == len(self.index), "Inconsistent database and index"
@@ -129,30 +117,6 @@ class DenseRetriever(LocalRetriever):
             )
         return h5file, titles, sections, texts, embeddings
 
-    def load_index(
-        self,
-        index_type: str,
-        faiss_index_config: FaissIndexConfig,
-        scann_index_config: ScaNNIndexConfig,
-    ) -> DenseIndex:
-        match index_type:
-            case "faiss":
-                index_path = os.path.join(self.database_path, f"faiss_{self.source}")
-                if (faiss_index_config.embedding_size is None) and (
-                    self.passage_encoder is not None
-                ):
-                    faiss_index_config.embedding_size = self.embedding_size
-                return FaissIndex(index_path, faiss_index_config)
-            case "scann":
-                index_path = os.path.join(self.database_path, f"scann_{self.source}")
-                if (scann_index_config.embedding_size is None) and (
-                    self.passage_encoder is not None
-                ):
-                    scann_index_config.embedding_size = self.embedding_size
-                return ScaNNIndex(index_path, scann_index_config)
-            case _:
-                raise ValueError(f"Index type {index_type} is not supported")
-
     def _add_passages(self, passages: Iterable[dict[str, str]]):
         """
         Add passages to the retriever database
@@ -194,9 +158,8 @@ class DenseRetriever(LocalRetriever):
 
         if not self.index.is_trained:  # train index from scratch
             logger.info("Training index")
-            logger.warning("Training index will consume a lot of memory")
-            full_embeddings = np.array(self.embeddings[:])
-            self.index.build_index(full_embeddings)
+            logger.warning("Training index may consume a lot of memory")
+            self.index.build_index(self.embeddings)
         else:
             self.index.serialize()
         logger.info("Finished adding passages")

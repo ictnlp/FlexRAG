@@ -34,8 +34,7 @@ class NaiveSearcher(BaseSearcher):
     def search(
         self, question: str
     ) -> tuple[list[RetrievedContext], list[SearchHistory]]:
-        # begin adaptive search
-        ctxs = []
+        # retrieve
         history: list[SearchHistory] = []
         ctxs = self.retriever.search(
             query=[question],
@@ -44,6 +43,7 @@ class NaiveSearcher(BaseSearcher):
         )[0]
         history.append(SearchHistory(query=question, contexts=ctxs))
 
+        # rerank
         if self.reranker is not None:
             results = self.reranker.rank(question, ctxs)
             ctxs = results.candidates

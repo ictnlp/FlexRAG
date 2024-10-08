@@ -1,11 +1,12 @@
 from dataclasses import dataclass
+from typing import Optional
 
 import requests
 import numpy as np
 from numpy import ndarray
 from omegaconf import MISSING
 
-from kylin.utils import TimeMeter
+from kylin.utils import TimeMeter, Choices
 
 from .model_base import (
     EncoderBase,
@@ -20,6 +21,17 @@ class JinaEncoderConfig(EncoderBaseConfig):
     base_url: str = "https://api.jina.ai/v1/embeddings"
     api_key: str = MISSING
     dimensions: int = 1024
+    task: Optional[
+        Choices(  # type: ignore
+            [
+                "retrieval.query",
+                "retrieval.passage",
+                "separation",
+                "classification",
+                "text-matching",
+            ]
+        )
+    ] = None
 
 
 @Encoders("jina", config_class=JinaEncoderConfig)
@@ -32,7 +44,7 @@ class JinaEncoder(EncoderBase):
         self.base_url = cfg.base_url
         self._data_template = {
             "model": cfg.model,
-            "task": "text-matching",
+            "task": cfg.task,
             "dimensions": cfg.dimensions,
             "late_chunking": False,
             "embedding_type": "float",
