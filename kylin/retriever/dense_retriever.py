@@ -4,12 +4,11 @@ import os
 from dataclasses import dataclass, field
 from typing import Generator, Iterable
 
-import numpy as np
 import tables
 from omegaconf import MISSING
 
 from kylin.models import EncoderConfig, load_encoder
-from kylin.utils import Choices, SimpleProgressLogger
+from kylin.utils import SimpleProgressLogger
 
 from .fingerprint import Fingerprint
 from .index import DenseIndexConfig, load_index, DenseIndex

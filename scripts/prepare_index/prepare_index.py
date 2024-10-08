@@ -26,6 +26,7 @@ from kylin.retriever import (
 from kylin.utils import Choices, read_data
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 # fmt: off
@@ -67,6 +68,7 @@ def main(cfg: Config):
 
     # add passages
     if cfg.reinit and (len(retriever) > 0):
+        logger.warning("Reinitializing retriever and removing all passages")
         retriever.clean()
     retriever.add_passages(passages=read_data(cfg.corpus_path, cfg.data_ranges))
     retriever.close()
