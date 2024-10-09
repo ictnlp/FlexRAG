@@ -177,6 +177,11 @@ def load_hf_model(
         load_in_8bit=load_in_8bit,
         trust_remote_code=trust_remote_code,
     )
+
+    # patch: some model does not support `int` device_map
+    if isinstance(device_map, int):
+        model = model.to(torch.device(device_map))
+
     if not is_training:
         model.eval()
 
