@@ -19,9 +19,13 @@ class FaissIndexConfig(DenseIndexConfigBase):
     n_subquantizers: int = 8
     n_bits: int = 8
     n_list: int = 1000
-    n_probe: int = 32
     factory_str: Optional[str] = None
+    # Inference Arguments
+    n_probe: int = 32
     device_id: list[int] = field(default_factory=list)
+    k_factor: int = 10
+    polysemous_ht: int = 0
+    efSearch: int = 100
 
 
 @DENSE_INDEX("faiss", config_class=FaissIndexConfig)
@@ -40,9 +44,12 @@ class FaissIndex(DenseIndex):
                 "Please install faiss by running `conda install -c pytorch -c nvidia faiss-gpu`"
             )
 
-        # preapre basic args
+        # preapre inference args
         self.n_probe = cfg.n_probe
         self.device_id = cfg.device_id
+        self.k_factor = cfg.k_factor
+        self.polysemous_ht = cfg.polysemous_ht
+        self.efSearch = cfg.efSearch
 
         # prepare index
         if os.path.exists(self.index_path):
@@ -53,7 +60,6 @@ class FaissIndex(DenseIndex):
                 distance_function=cfg.distance_function,
                 embedding_size=self.embedding_size,
                 n_list=cfg.n_list,
-                n_probe=cfg.n_probe,
                 n_subquantizers=cfg.n_subquantizers,
                 n_bits=cfg.n_bits,
                 factory_str=cfg.factory_str,
@@ -74,7 +80,6 @@ class FaissIndex(DenseIndex):
         distance_function: str,
         embedding_size: int,
         n_list: int,  # the number of cells
-        n_probe: int,  # the number of cells to visit
         n_subquantizers: int,  # the number of subquantizers
         n_bits: int,  # the number of bits per subquantizer
         factory_str: Optional[str] = None,
@@ -109,7 +114,6 @@ class FaissIndex(DenseIndex):
                         n_list,
                         basic_metric,
                     )
-                    index.nprobe = n_probe
                 case "PQ":
                     index = self.faiss.IndexPQ(
                         embedding_size,
@@ -124,7 +128,6 @@ class FaissIndex(DenseIndex):
                         n_subquantizers,
                         n_bits,
                     )
-                    index.nprobe = self.n_probe
                 case _:
                     raise ValueError(f"Unknown index type: {index_type}")
 
@@ -157,6 +160,60 @@ class FaissIndex(DenseIndex):
         self.index.add(embeddings)  # debug
         return
 
+    def prepare_search_params(self, **kwargs):
+        # set search kwargs
+        k_factor = kwargs.get("k_factor", self.k_factor)
+        n_probe = kwargs.get("n_probe", self.n_probe)
+        polysemous_ht = kwargs.get("polysemous_ht", self.polysemous_ht)
+        efSearch = kwargs.get("efSearch", self.efSearch)
+
+        def get_search_params(index):
+            if isinstance(index, self.faiss.IndexRefine):
+                params = self.faiss.IndexRefineSearchParameters(
+                    k_factor=k_factor,
+                    base_index_params=get_search_params(
+                        self.faiss.downcast_index(index.base_index)
+                    ),
+                )
+            elif isinstance(index, self.faiss.IndexPreTransform):
+                params = self.faiss.SearchParametersPreTransform(
+                    index_params=get_search_params(
+                        self.faiss.downcast_index(index.index)
+                    )
+                )
+            elif isinstance(index, self.faiss.IndexIVFPQ):
+                if hasattr(index, "quantizer"):
+                    params = self.faiss.IVFPQSearchParameters(
+                        nprobe=n_probe,
+                        polysemous_ht=polysemous_ht,
+                        quantizer_params=get_search_params(
+                            self.faiss.downcast_index(index.quantizer)
+                        ),
+                    )
+                else:
+                    params = self.faiss.IVFPQSearchParameters(
+                        nprobe=n_probe, polysemous_ht=polysemous_ht
+                    )
+            elif isinstance(index, self.faiss.IndexIVF):
+                if hasattr(index, "quantizer"):
+                    params = self.faiss.SearchParametersIVF(
+                        nprobe=n_probe,
+                        quantizer_params=get_search_params(
+                            self.faiss.downcast_index(index.quantizer)
+                        ),
+                    )
+                else:
+                    params = self.faiss.SearchParametersIVF(nprobe=n_probe)
+            elif isinstance(index, self.faiss.IndexHNSW):
+                params = self.faiss.SearchParametersHNSW(efSearch=efSearch)
+            elif isinstance(index, self.faiss.IndexPQ):
+                params = self.faiss.SearchParametersPQ(polysemous_ht=polysemous_ht)
+            else:
+                params = None
+            return params
+
+        return get_search_params(self.index)
+
     def _search_batch(
         self,
         query_vectors: np.ndarray,
@@ -164,7 +221,10 @@ class FaissIndex(DenseIndex):
         **search_kwargs,
     ) -> tuple[np.ndarray, np.ndarray]:
         query_vectors = query_vectors.astype("float32")
-        scores, indices = self.index.search(query_vectors, top_docs, **search_kwargs)
+        search_params = self.prepare_search_params(**search_kwargs)
+        scores, indices = self.index.search(
+            query_vectors, top_docs, params=search_params
+        )
         return indices, scores
 
     def serialize(self) -> None:
@@ -185,8 +245,6 @@ class FaissIndex(DenseIndex):
             cpu_index = self.faiss.read_index(self.index_path, self.faiss.IO_FLAG_MMAP)
         else:
             cpu_index = self.faiss.read_index(self.index_path)
-        if hasattr(cpu_index, "nprobe"):
-            cpu_index.nprobe = self.n_probe
         index = self._set_index(cpu_index)
         assert index.d == self.embedding_size, "Index dimension mismatch"
         return index
