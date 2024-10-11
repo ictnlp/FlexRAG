@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class FaissIndexConfig(DenseIndexConfigBase):
-    index_type: Choices(["FLAT", "IVF", "PQ", "IVFPQ"]) = "FLAT"  # type: ignore
+    index_type: Choices(["FLAT", "IVF", "PQ", "IVFPQ", "auto"]) = "FLAT"  # type: ignore
     n_subquantizers: int = 8
     n_bits: int = 8
     n_list: int = 1000
@@ -46,28 +46,40 @@ class FaissIndex(DenseIndex):
 
         # preapre inference args
         self.n_probe = cfg.n_probe
-        self.device_id = cfg.device_id
+        self.device_id = (
+            cfg.device_id if hasattr(self.faiss, "GpuMultipleClonerOptions") else []
+        )
         self.k_factor = cfg.k_factor
         self.polysemous_ht = cfg.polysemous_ht
         self.efSearch = cfg.efSearch
+
+        # prepare index args
+        self.index_type = cfg.index_type
+        self.distance_function = cfg.distance_function
+        self.n_list = cfg.n_list
+        self.n_subquantizers = cfg.n_subquantizers
+        self.n_bits = cfg.n_bits
+        self.factory_str = cfg.factory_str
 
         # prepare index
         if os.path.exists(self.index_path):
             self.index = self.deserialize()
         else:
-            self.index = self._prepare_index(
-                index_type=cfg.index_type,
-                distance_function=cfg.distance_function,
-                embedding_size=self.embedding_size,
-                n_list=cfg.n_list,
-                n_subquantizers=cfg.n_subquantizers,
-                n_bits=cfg.n_bits,
-                factory_str=cfg.factory_str,
-            )
+            self.index = None
         return
 
     def build_index(self, embeddings: np.ndarray | EArray) -> None:
         self.clean()
+        self.index = self._prepare_index(
+            index_type=self.index_type,
+            distance_function=self.distance_function,
+            embedding_size=self.embedding_size,
+            embedding_length=len(embeddings),
+            n_list=self.n_list,
+            n_subquantizers=self.n_subquantizers,
+            n_bits=self.n_bits,
+            factory_str=self.factory_str,
+        )
         if isinstance(embeddings, EArray):
             embeddings = embeddings.read()
         self.train_index(embeddings=embeddings)
@@ -78,7 +90,8 @@ class FaissIndex(DenseIndex):
         self,
         index_type: str,
         distance_function: str,
-        embedding_size: int,
+        embedding_size: int,  # the dimension of the embeddings
+        embedding_length: int,  # the number of the embeddings
         n_list: int,  # the number of cells
         n_subquantizers: int,  # the number of subquantizers
         n_bits: int,  # the number of bits per subquantizer
@@ -94,6 +107,14 @@ class FaissIndex(DenseIndex):
                 basic_metric = self.faiss.METRIC_L2
             case _:
                 raise ValueError(f"Unknown distance function: {distance_function}")
+
+        if index_type == "auto":
+            n_list = 2 ** int(np.log2(np.sqrt(embedding_length)))
+            factory_str = f"IVF{n_list},PQ{embedding_size//2}x4fs"
+            logger.info(f"Auto set index to {factory_str}")
+            logger.info(
+                f"We recommend to set n_probe to {n_list//10} for better performance"
+            )
 
         if factory_str is not None:
             # using string factory to build the index
@@ -228,6 +249,7 @@ class FaissIndex(DenseIndex):
         return indices, scores
 
     def serialize(self) -> None:
+        assert self.index.is_trained, "Index should be trained first."
         logger.info(f"Serializing index to {self.index_path}")
         if len(self.device_id) >= 0:
             cpu_index = self.faiss.index_gpu_to_cpu(self.index)
@@ -250,6 +272,8 @@ class FaissIndex(DenseIndex):
         return index
 
     def clean(self):
+        if self.index is None:
+            return
         if os.path.exists(self.index_path):
             os.remove(self.index_path)
         self.index.reset()
@@ -257,6 +281,8 @@ class FaissIndex(DenseIndex):
 
     @property
     def is_trained(self) -> bool:
+        if self.index is None:
+            return False
         if isinstance(self.index, self.faiss.IndexReplicas):
             trained = True
             for i in range(self.index.count()):
@@ -268,6 +294,8 @@ class FaissIndex(DenseIndex):
 
     @property
     def is_flat(self) -> bool:
+        if self.index is None:
+            return self.index_type == "FLAT"
         if isinstance(
             self.index,
             (self.faiss.IndexFlat, self.faiss.GpuIndexFlat),
@@ -286,7 +314,9 @@ class FaissIndex(DenseIndex):
                 return True
         return False
 
-    def __len__(self):
+    def __len__(self) -> int:
+        if self.index is None:
+            return 0
         return self.index.ntotal
 
     def _set_index(self, index):

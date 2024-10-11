@@ -37,6 +37,7 @@ class DenseIndex(ABC):
 
     def add_embeddings(self, embeddings: np.ndarray, serialize: bool = True) -> None:
         """Add embeddings to the index."""
+        assert self.is_trained, "Index is not trained, please build the index first."
         p_logger = SimpleProgressLogger(
             logger, total=embeddings.shape[0], interval=self.log_interval
         )

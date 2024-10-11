@@ -45,7 +45,7 @@ class ScaNNIndex(DenseIndex):
         if os.path.exists(self.index_path):
             self.deserialize()
         else:
-            self.index = self._prepare_index()
+            self.index = None
         return
 
     def build_index(self, embeddings: np.ndarray | EArray) -> None:
@@ -53,22 +53,13 @@ class ScaNNIndex(DenseIndex):
             self.clean()
         if isinstance(embeddings, EArray):
             embeddings = embeddings.read()
-        self.index.db = embeddings
-        ids = list(np.arange(len(embeddings)))
-        ids = [str(i) for i in ids]
-        self.index = self.index.build(docids=ids)
-        self.index.set_num_threads(self.threads)
-        self.serialize()
-        return
-
-    def _prepare_index(self):
         if self.distance_function == "IP":
             distance_measure = "dot_product"
         else:
             distance_measure = "squared_l2"
         builder = (
             self.scann.scann_ops_pybind.builder(
-                None,
+                embeddings,
                 self.num_neighbors,
                 distance_measure=distance_measure,
             )
@@ -84,7 +75,12 @@ class ScaNNIndex(DenseIndex):
             .reorder(200)
         )
         builder.set_n_training_threads(self.threads)
-        return builder
+        ids = list(np.arange(len(embeddings)))
+        ids = [str(i) for i in ids]
+        self.index = builder.build(docids=ids)
+        self.index.set_num_threads(self.threads)
+        self.serialize()
+        return
 
     def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:
         embeddings = embeddings.astype("float32")
@@ -106,6 +102,7 @@ class ScaNNIndex(DenseIndex):
         return indices, scores
 
     def serialize(self) -> None:
+        assert self.is_trained, "Index should be trained first."
         logger.info(f"Serializing index to {self.index_path}")
         if not os.path.exists(self.index_path):
             os.makedirs(self.index_path)
@@ -113,7 +110,7 @@ class ScaNNIndex(DenseIndex):
         return
 
     def deserialize(self) -> None:
-        logger.info(f"Loading index from {self.index_path}")
+        logger.info(f"Loading index from {self.index_path}.")
         self.index = self.scann.scann_ops_pybind.load_searcher(self.index_path)
         assert self.index.num_columns == self.embedding_size, "Index dimension mismatch"
         return
@@ -127,10 +124,14 @@ class ScaNNIndex(DenseIndex):
         return
 
     @property
-    def is_trained(self):
+    def is_trained(self) -> bool:
+        if self.index is None:
+            return False
         return not isinstance(self.index, self.scann.ScannBuilder)
 
     def __len__(self) -> int:
+        if self.index is None:
+            return 0
         if isinstance(self.index, self.scann.ScannBuilder):
             return 0
         return self.index.size()
