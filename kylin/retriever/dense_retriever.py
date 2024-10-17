@@ -283,8 +283,9 @@ class DenseRetriever(LocalRetriever):
             # extract the embeddings of the retrieved indices
             idx_order = np.argsort(idx)
             ordered_idx = idx[idx_order]
-            emb_d = self.embeddings[ordered_idx]  # [kf, emb_size]
-            emb_d[idx_order] = emb_d  # recover the original order
+            emb_d_ = self.embeddings[ordered_idx]  # [kf, emb_size]
+            emb_d = np.empty_like(emb_d_)
+            emb_d[idx_order] = emb_d_  # recover the original order
 
             # compute the distance between the query and the retrieved embeddings
             q = np.expand_dims(q, 0).repeat(kf, axis=0)  # [kf, emb_size]

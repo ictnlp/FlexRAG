@@ -381,7 +381,9 @@ class HFEncoder(EncoderBase):
 
     def encode(self, texts: list[str]) -> np.ndarray:
         if hasattr(self.model, "encode"):  # for jina-embedding
-            return self.model.encode(texts, task=self.task)
+            return self.model.encode(
+                texts, task=self.task, max_length=self.max_encode_length
+            )
         texts = [f"{self.prompt}{i}" for i in texts]
         if (len(texts) >= len(self.devices) * 8) and (self.dp_model is not None):
             encoder = self.dp_model
