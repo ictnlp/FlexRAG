@@ -273,15 +273,15 @@ class _TimeMeterClass:
         self.timers = self._manager.dict()
         return
 
-    def __call__(self, timer_name: str):
+    def __call__(self, *timer_names: str):
         def time_it(func):
             def wrapper(*args, **kwargs):
                 start_time = perf_counter()
                 result = func(*args, **kwargs)
                 end_time = perf_counter()
-                if timer_name not in self.timers:
-                    self.timers[timer_name] = self._manager.list()
-                self.timers[timer_name].append(end_time - start_time)
+                if timer_names not in self.timers:
+                    self.timers[timer_names] = self._manager.list()
+                self.timers[timer_names].append(end_time - start_time)
                 return result
 
             return wrapper

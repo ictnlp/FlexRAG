@@ -36,7 +36,7 @@ pip install ./
 ## Usage
 
 
-## Tested Models
+## Tested HF Models
 
 ### Tested Encoders
 - jina-embeddings-v3
@@ -44,6 +44,11 @@ pip install ./
 - contriever
 - nomic-embed-text-v1.5
 - msmarco-MiniLM-L-12-v3
+
+### Tested ReRankers
+- InRanker-base
+- Jina-colbert-v2
+- bge-reranker-v2-m3
 
 ### Tested Generators
 

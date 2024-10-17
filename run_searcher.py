@@ -97,7 +97,8 @@ def main(config: Config):
             else:
                 ctxs = []
             # generate
-            r, prompt = assistant.answer(question=q, contexts=ctxs)
+            r, prompt = assistant.answer(questions=[q], contexts=[ctxs])
+            r, prompt = r[0], prompt[0]
         # save running state and raise error
         except Exception as e:
             logger.error(f"Error when processing question: {q}")

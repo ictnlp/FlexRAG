@@ -6,7 +6,7 @@ from time import perf_counter
 import numpy as np
 from tables import EArray
 
-from kylin.utils import Choices, SimpleProgressLogger, Register
+from kylin.utils import Choices, SimpleProgressLogger, Register, TimeMeter
 
 
 logger = logging.getLogger("DenseIndex")
@@ -53,6 +53,7 @@ class DenseIndex(ABC):
     def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:
         return
 
+    @TimeMeter("retrieve", "index")
     def search(
         self,
         query: np.ndarray,

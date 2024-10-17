@@ -4,14 +4,16 @@ import os
 from dataclasses import dataclass, field
 from typing import Generator, Iterable
 
-import tables
+import h5py
+import numpy as np
 from omegaconf import MISSING
+from scipy.spatial.distance import cdist
 
 from kylin.models import EncoderConfig, load_encoder
-from kylin.utils import SimpleProgressLogger
+from kylin.utils import SimpleProgressLogger, TimeMeter
 
 from .fingerprint import Fingerprint
-from .index import DenseIndexConfig, load_index, DenseIndex
+from .index import DenseIndex, DenseIndexConfig, load_index
 from .retriever_base import (
     SEMANTIC_RETRIEVERS,
     LocalRetriever,
@@ -29,6 +31,7 @@ class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
     query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     source: str = MISSING
+    refine_factor: int = 1
 
 
 @SEMANTIC_RETRIEVERS("dense", config_class=DenseRetrieverConfig)
@@ -69,6 +72,8 @@ class DenseRetriever(LocalRetriever):
         # load / build index
         index_path = os.path.join(self.database_path, f"{cfg.index_type}_{cfg.source}")
         self.index = load_index(index_path, self.embedding_size, cfg)
+        self.refine_factor = cfg.refine_factor
+        self.distance_function = self.index.distance_function
 
         # consistency check
         assert len(self.titles) == len(self.index), "Inconsistent database and index"
@@ -78,41 +83,55 @@ class DenseRetriever(LocalRetriever):
         return
 
     def load_database(self) -> tuple[
-        tables.File,
-        tables.VLArray,
-        tables.VLArray,
-        tables.VLArray,
-        tables.EArray,
+        h5py.File,
+        h5py.Dataset,
+        h5py.Dataset,
+        h5py.Dataset,
+        h5py.Dataset,
     ]:
         # open database file
         h5path = os.path.join(self.database_path, "database.h5")
         if os.path.exists(h5path):
             mode = "r" if self.inference_only else "r+"
-            h5file = tables.open_file(h5path, mode=mode)
+            h5file = h5py.File(h5path, mode=mode)
         else:
             assert not self.inference_only, "Database does not exist"
             if not os.path.exists(self.database_path):
                 os.makedirs(self.database_path)
-            h5file = tables.open_file(h5path, mode="w", title="Retriever Database")
+            h5file = h5py.File(h5path, mode="w", title="Retriever Database")
 
         # load table from database
-        node_path = f"/{self.source}"
-        if node_path in h5file:
-            group = h5file.get_node(f"/{self.source}")
-            titles = group.titles
-            sections = group.sections
-            texts = group.texts
-            embeddings = group.embeddings
+        if self.source in h5file:
+            group = h5file[self.source]
+            titles = group["titles"]
+            sections = group["sections"]
+            texts = group["texts"]
+            embeddings = group["embeddings"]
         else:
-            group = h5file.create_group("/", self.source)
-            titles = h5file.create_vlarray(group, "titles", tables.VLUnicodeAtom())
-            sections = h5file.create_vlarray(group, "sections", tables.VLUnicodeAtom())
-            texts = h5file.create_vlarray(group, "texts", tables.VLUnicodeAtom())
-            embeddings = h5file.create_earray(
-                group,
+            group = h5file.create_group(self.source)
+            titles = group.create_dataset(
+                "titles",
+                shape=(0,),
+                dtype=h5py.string_dtype(encoding="utf-8"),
+                maxshape=(None,),
+            )
+            sections = group.create_dataset(
+                "sections",
+                shape=(0,),
+                dtype=h5py.string_dtype(encoding="utf-8"),
+                maxshape=(None,),
+            )
+            texts = group.create_dataset(
+                "texts",
+                shape=(0,),
+                dtype=h5py.string_dtype(encoding="utf-8"),
+                maxshape=(None,),
+            )
+            embeddings = group.create_dataset(
                 "embeddings",
-                tables.Float16Atom(),
                 shape=(0, self.embedding_size),
+                dtype=np.float16,
+                maxshape=(None, self.embedding_size),
             )
         return h5file, titles, sections, texts, embeddings
 
@@ -144,11 +163,15 @@ class DenseRetriever(LocalRetriever):
             p_logger.update(step=self.batch_size, desc="Encoding passages")
 
             # add data to database
-            for p in batch:
-                self.titles.append(p["title"])
-                self.sections.append(p["section"])
-                self.texts.append(p["text"])
-            self.embeddings.append(embeddings)
+            cur_len = len(self.texts)
+            self.titles.resize((cur_len + len(batch),))
+            self.titles[cur_len:] = [p["title"] for p in batch]
+            self.sections.resize((cur_len + len(batch),))
+            self.sections[cur_len:] = [p["section"] for p in batch]
+            self.texts.resize((cur_len + len(batch),))
+            self.texts[cur_len:] = [p["text"] for p in batch]
+            self.embeddings.resize((cur_len + len(batch), self.embedding_size))
+            self.embeddings[cur_len:] = embeddings
             self._fingerprint.update(texts)
 
             # add embeddings to index
@@ -170,8 +193,14 @@ class DenseRetriever(LocalRetriever):
         top_k: int = 10,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
-        embeddings = self.query_encoder.encode(query)
-        indices, scores = self.index.search(embeddings, top_k, **search_kwargs)
+        emb_q = self.query_encoder.encode(query)
+        indices, scores = self.index.search(
+            emb_q, top_k * self.refine_factor, **search_kwargs
+        )
+        if self.refine_factor > 1:
+            refined_indices, refined_scores = self.refine_index(emb_q, indices)
+            indices = refined_indices[:, :top_k]
+            scores = refined_scores[:, :top_k]
         results = [
             [
                 RetrievedContext(
@@ -180,10 +209,10 @@ class DenseRetriever(LocalRetriever):
                     source=self.source,
                     chunk_id=int(chunk_id),
                     score=float(s),
-                    title=self.titles[chunk_id],
-                    section=self.sections[chunk_id],
-                    text=self.texts[chunk_id],
-                    full_text=self.texts[chunk_id],
+                    title=self.titles[chunk_id].decode(),
+                    section=self.sections[chunk_id].decode(),
+                    text=self.texts[chunk_id].decode(),
+                    full_text=self.texts[chunk_id].decode(),
                 )
                 for chunk_id, s in zip(idx, score)
             ]
@@ -192,22 +221,10 @@ class DenseRetriever(LocalRetriever):
         return results
 
     def clean(self) -> None:
-        embed_dim = self.embedding_size
-        self.db_file.remove_node(f"/{self.source}", recursive=True)
-        group = self.db_file.create_group("/", self.source)
-        self.titles = self.db_file.create_vlarray(
-            group, "titles", tables.VLUnicodeAtom()
-        )
-        self.sections = self.db_file.create_vlarray(
-            group, "sections", tables.VLUnicodeAtom()
-        )
-        self.texts = self.db_file.create_vlarray(group, "texts", tables.VLUnicodeAtom())
-        self.embeddings = self.db_file.create_earray(
-            group,
-            "embeddings",
-            tables.Float16Atom(),
-            shape=(0, embed_dim),
-        )
+        self.titles.resize((0,))
+        self.sections.resize((0,))
+        self.texts.resize((0,))
+        self.embeddings.resize((0, self.embedding_size))
         self._fingerprint.clean()
         return
 
@@ -222,7 +239,7 @@ class DenseRetriever(LocalRetriever):
         return
 
     def __len__(self):
-        return self.embeddings.nrows
+        return self.embeddings.shape[0]
 
     @property
     def embedding_size(self) -> int:
@@ -241,3 +258,54 @@ class DenseRetriever(LocalRetriever):
     @property
     def fingerprint(self) -> str:
         return self._fingerprint.hexdigest()
+
+    @TimeMeter("retrieve", "refine-index")
+    def refine_index(
+        self,
+        query: np.ndarray,
+        indices: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Refine the retrieved indices based on the distance between the query and the retrieved embeddings.
+
+        Args:
+            query (np.ndarray): The query embeddings with shape [bsz, emb_size]
+            indices (np.ndarray): The retrieved indices with shape [bsz, top_k * refine_factor]
+
+        Returns:
+            indices (np.ndarray): The refined indices with shape [bsz, top_k]
+            scores (np.ndarray): The refined scores with shape [bsz, top_k]
+        """
+        # as h5py does not fully support fancy indexing, we process the indices individually
+        kf = indices.shape[1]
+        new_indices = []
+        new_scores = []
+        for q, idx in zip(query, indices):
+            # extract the embeddings of the retrieved indices
+            idx_order = np.argsort(idx)
+            ordered_idx = idx[idx_order]
+            emb_d = self.embeddings[ordered_idx]  # [kf, emb_size]
+            emb_d[idx_order] = emb_d  # recover the original order
+
+            # compute the distance between the query and the retrieved embeddings
+            q = np.expand_dims(q, 0).repeat(kf, axis=0)  # [kf, emb_size]
+            match self.distance_function:
+                case "L2":
+                    dis = cdist(q, emb_d, "euclidean")
+                case "COSINE":
+                    dis = -cdist(q, emb_d, "cosine")
+                case "IP":
+                    dis = -np.sum(q * emb_d, axis=1)
+                case "HAMMING":
+                    dis = cdist(q, emb_d, "hamming")
+                case "MANHATTAN":
+                    dis = cdist(q, emb_d, "cityblock")
+                case _:
+                    raise ValueError("Unsupported distance function")
+
+            # sort the indices & scores based on the distance
+            new_order = np.argsort(dis)
+            new_indices.append(idx[new_order])
+            new_scores.append(dis[new_order])
+        new_indices = np.stack(new_indices, axis=0)
+        new_scores = np.stack(new_scores, axis=0)
+        return new_indices, new_scores

@@ -31,7 +31,7 @@ setup(
         "openai>=1.30.1",
         "cachetools",
         "tenacity",
-        "tables",
+        "h5py",
         "hydra-core>=1.3",
         "omegaconf>=2.3.0",
     ],

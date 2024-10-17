@@ -71,43 +71,49 @@ class Assistant:
         return
 
     def answer(
-        self, question: str, contexts: list[RetrievedContext]
-    ) -> tuple[str, ChatPrompt]:
+        self, questions: list[str], contexts: list[list[RetrievedContext]]
+    ) -> tuple[list[str], list[ChatPrompt]]:
         """Answer question with given contexts
 
         Args:
-            question (str): The question to answer.
-            contexts (list): The contexts searched by the searcher.
+            question (list[str]): A list of questions to answer.
+            contexts (list[list[RetrievedContext]]): A list of contexts searched by the searcher.
 
         Returns:
-            response (str): response to the question
-            prompt (ChatPrompt): prompt used.
+            responses (list[str]): Responses to the questions
+            prompt (list[ChatPrompt]): The used prompts.
         """
         if self.adaptive_retrieval:
-            if not self.decide_search(question):
-                contexts = []
+            use_contexts = self.decide_search(questions)
+            contexts = [
+                ctxs if use else [] for ctxs, use in zip(contexts, use_contexts)
+            ]
 
         # prepare system prompt
-        if len(contexts) > 0:
-            prompt = deepcopy(self.prompt_with_ctx)
-        else:
-            prompt = deepcopy(self.prompt_wo_ctx)
-
-        # prepare user prompt
-        usr_prompt = ""
-        for n, context in enumerate(contexts):
-            if context.text:
-                ctx = context.text
+        prompts = []
+        for question, ctxs in zip(questions, contexts):
+            if len(ctxs) > 0:
+                prompt = deepcopy(self.prompt_with_ctx)
             else:
-                ctx = context.full_text
-            usr_prompt += f"Context {n + 1}: {ctx}\n\n"
-        usr_prompt += f"Question: {question}"
+                prompt = deepcopy(self.prompt_wo_ctx)
+
+            # prepare user prompt
+            usr_prompt = ""
+            for n, context in enumerate(ctxs):
+                if context.text:
+                    ctx = context.text
+                else:
+                    ctx = context.full_text
+                usr_prompt += f"Context {n + 1}: {ctx}\n\n"
+            usr_prompt += f"Question: {question}"
+            prompt.update(ChatTurn(role="user", content=usr_prompt))
+            prompts.append(prompt)
 
         # generate response
-        prompt.update(ChatTurn(role="user", content=usr_prompt))
-        response = self.generator.chat([prompt], generation_config=self.gen_cfg)[0][0]
-        return response, prompt
+        response = self.generator.chat(prompts, generation_config=self.gen_cfg)
+        response = [i[0] for i in response]
+        return response, prompts
 
-    def decide_search(self, question: str) -> bool:
+    def decide_search(self, questions: list[str]) -> list[bool]:
         # TODO implement this
         raise NotImplementedError

@@ -1,6 +1,7 @@
 import logging
 from dataclasses import dataclass, field
 
+from kylin.retriever import RetrievedContext
 from kylin.utils import Choices
 
 from .matching_metrics import (
@@ -147,11 +148,13 @@ class RetrievalEvaluator:
     def evaluate(
         self,
         evidences: list[list[str]],
-        retrieved: list[list[str]],
+        retrieved: list[list[str | RetrievedContext]],
         log: bool = True,
     ) -> tuple[dict[str, float], dict[str, object]]:
         evaluation_results = {}
         evaluation_details = {}
+        if isinstance(retrieved[0][0], RetrievedContext):
+            retrieved = [[ctx.full_text for ctx in r] for r in retrieved]
         for metric in self.metrics:
             metric = str(metric)  # make json serializable
             r, r_detail = self.metrics[metric](evidences, retrieved)

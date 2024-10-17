@@ -44,8 +44,8 @@ def main(config: Config):
         else:
             ctxs = []
         # generate
-        r, _ = assistant.answer(question=query, contexts=ctxs)
-        print(f"Response: {r}")
+        r, _ = assistant.answer(questions=[query], contexts=[ctxs])
+        print(f"Response: {r[0]}")
 
     if searcher is not None:
         searcher.close()
