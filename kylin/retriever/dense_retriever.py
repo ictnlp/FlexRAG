@@ -98,9 +98,9 @@ class DenseRetriever(LocalRetriever):
             assert not self.inference_only, "Database does not exist"
             if not os.path.exists(self.database_path):
                 os.makedirs(self.database_path)
-            h5file = h5py.File(h5path, mode="w", title="Retriever Database")
+            h5file = h5py.File(h5path, mode="w")
 
-        # load table from database
+        # load each fields from database
         if self.source in h5file:
             group = h5file[self.source]
             titles = group["titles"]
