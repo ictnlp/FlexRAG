@@ -215,7 +215,7 @@ class HFColBertRanker(RankerBase):
         with torch.no_grad():
             embs = self.model(**inputs)
         if self.normalize:
-            embs = embs / embs.norm(dim=-1, keepdim=True)
+            embs = embs / torch.clamp(embs.norm(dim=-1, keepdim=True), 1e-6)
         return embs
 
     def _insert_token(

@@ -117,6 +117,8 @@ def load_hf_model(
     is_training: bool = False,
     colbert_base_model: str = "bert",
     colbert_dim: int = 128,
+    other_model_kwargs: dict = {},
+    other_tokenizer_kwargs: dict = {},
 ) -> tuple[PreTrainedModel, PreTrainedTokenizer]:
     # prepare dtype
     load_in_4bit = False
@@ -176,6 +178,7 @@ def load_hf_model(
         load_in_4bit=load_in_4bit,
         load_in_8bit=load_in_8bit,
         trust_remote_code=trust_remote_code,
+        **other_model_kwargs,
     )
 
     # patch: some model does not support `int` device_map
@@ -193,6 +196,7 @@ def load_hf_model(
     tokenizer = AutoTokenizer.from_pretrained(
         tokenizer_path,
         trust_remote_code=trust_remote_code,
+        **other_tokenizer_kwargs,
     )
     return model, tokenizer
 

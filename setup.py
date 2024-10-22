@@ -34,6 +34,8 @@ setup(
         "h5py",
         "hydra-core>=1.3",
         "omegaconf>=2.3.0",
+        "gradio>=5.0.0",
+        "pillow",
     ],
     extras_require={
         "all": [
