@@ -2,6 +2,7 @@ import logging
 import os
 from copy import deepcopy
 from dataclasses import dataclass
+from itertools import zip_longest
 
 from kylin.prompt import ChatTurn, ChatPrompt
 from kylin.models import (
@@ -19,12 +20,14 @@ logger = logging.getLogger("Assistant")
 class AssistantConfig(GeneratorConfig, GenerationConfig):
     adaptive_retrieval: bool = False
     response_type: Choices(["short", "long", "original"]) = "short"  # type: ignore
+    use_history: bool = False
 
 
 class Assistant:
     def __init__(self, cfg: AssistantConfig):
         # set basic args
         self.adaptive_retrieval = cfg.adaptive_retrieval
+        self.use_history = cfg.use_history
         self.gen_cfg = cfg
         if self.gen_cfg.sample_num > 1:
             logger.warning("Sample num > 1 is not supported for Assistant")
@@ -71,7 +74,10 @@ class Assistant:
         return
 
     def answer(
-        self, questions: list[str], contexts: list[list[RetrievedContext]]
+        self,
+        questions: list[str],
+        contexts: list[list[RetrievedContext]] = [],
+        histories: list[list[ChatTurn | dict]] = [],
     ) -> tuple[list[str], list[ChatPrompt]]:
         """Answer question with given contexts
 
@@ -91,11 +97,16 @@ class Assistant:
 
         # prepare system prompt
         prompts = []
-        for question, ctxs in zip(questions, contexts):
+        for question, ctxs, his in zip_longest(
+            questions, contexts, histories, fillvalue=[]
+        ):
             if len(ctxs) > 0:
                 prompt = deepcopy(self.prompt_with_ctx)
             else:
                 prompt = deepcopy(self.prompt_wo_ctx)
+
+            if self.use_history:
+                prompt.update(his)
 
             # prepare user prompt
             usr_prompt = ""

@@ -55,41 +55,78 @@ def main(config: Config):
             interactive=False,
             container=True,
         )
-        with gr.Row(visible=False) as output_row:
+        if searcher is not None:
+            with gr.Row(visible=False) as output_row:
+                chatbot = gr.Chatbot(
+                    type="messages",
+                    label="History messages",
+                    show_copy_button=True,
+                )
+                context_box = gr.Chatbot(
+                    type="messages",
+                    label="Searched information",
+                    show_copy_button=True,
+                    visible=searcher is not None,
+                )
+        else:
             chatbot = gr.Chatbot(
                 type="messages",
                 label="History messages",
                 show_copy_button=True,
-            )
-            contexts = gr.Chatbot(
-                type="messages",
-                label="Searched information",
-                show_copy_button=True,
+                visible=False,
             )
         msg = gr.Textbox(
             visible=True, info="What would you like to know?", show_label=False
         )
 
         def rag_chat(message: str, history: list[dict[str, str]]) -> dict:
-            ctxs, _ = searcher.search(message)
-            response = assistant.answer(questions=[message], contexts=[ctxs])[0][0]
+            if searcher is not None:
+                ctxs = searcher.search(message)[0]
+                response = assistant.answer(
+                    questions=[message], contexts=[ctxs], histories=[history]
+                )[0][0]
+            else:
+                ctxs = []
+                response = assistant.answer(
+                    questions=[message], histories=[history]
+                )[0][0]  # fmt: skip
             history.append(gr.ChatMessage(role="user", content=message))
             history.append(gr.ChatMessage(role="assistant", content=response))
-            ctxs = [
-                gr.ChatMessage(role="assistant", content=ctx.full_text) for ctx in ctxs
-            ]
-            return {
-                logo_pic: gr.Image(value=image, visible=False),
-                output_row: gr.Row(visible=True),
-                chatbot: history,
-                msg: "",
-                contexts: ctxs,
-            }
 
+            if searcher is not None:
+                ctxs = [
+                    gr.ChatMessage(role="assistant", content=ctx.full_text)
+                    for ctx in ctxs
+                ]
+                r = {
+                    logo_pic: gr.Image(value=image, visible=False),
+                    output_row: gr.Row(visible=True),
+                    chatbot: history,
+                    msg: "",
+                    context_box: ctxs,
+                }
+            else:
+                r = {
+                    logo_pic: gr.Image(value=image, visible=False),
+                    chatbot: gr.Chatbot(
+                        type="messages",
+                        label="History messages",
+                        show_copy_button=True,
+                        visible=True,
+                    ),
+                    chatbot: history,
+                    msg: "",
+                }
+            return r
+
+        if searcher is not None:
+            outputs = [logo_pic, output_row, chatbot, msg, context_box]
+        else:
+            outputs = [logo_pic, chatbot, chatbot, msg]
         msg.submit(
             rag_chat,
             inputs=[msg, chatbot],
-            outputs=[logo_pic, output_row, msg, chatbot, contexts],
+            outputs=outputs,
         )
 
     demo.launch()

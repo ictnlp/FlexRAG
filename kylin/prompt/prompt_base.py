@@ -111,8 +111,15 @@ class ChatPrompt:
     def pop_demonstration(self, n: int) -> list[ChatTurn]:
         return self.demonstrations.pop(n)
 
-    def update(self, chat_turn: ChatTurn | list[ChatTurn]):
-        self.history.append(chat_turn)
+    def update(
+        self, chat_turns: ChatTurn | dict[str, str] | list[ChatTurn | dict[str, str]]
+    ) -> None:
+        if not isinstance(chat_turns, list):
+            chat_turns = [chat_turns]
+        for chat_turn in chat_turns:
+            if isinstance(chat_turn, dict):
+                chat_turn = ChatTurn.from_dict(chat_turn)
+            self.history.append(chat_turn)
         return
 
     def clean(self, clean_system: bool = False):
