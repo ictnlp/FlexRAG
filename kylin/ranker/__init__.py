@@ -11,6 +11,7 @@ from .jina_ranker import JinaRanker, JinaRankerConfig
 from .mixedbread_ranker import MixedbreadRanker, MixedbreadRankerConfig
 from .ranker import RankerBase, Rankers
 from .voyage_ranker import VoyageRanker, VoyageRankerConfig
+from .gpt_ranker import RankGPTRanker, RankGPTRankerConfig
 
 from .ranker_loader import RankerConfig, load_ranker  # isort:skip
 
@@ -34,4 +35,6 @@ __all__ = [
     "VoyageRankerConfig",
     "RankerConfig",
     "load_ranker",
+    "RankGPTRanker",
+    "RankGPTRankerConfig",
 ]
