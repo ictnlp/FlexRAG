@@ -56,9 +56,49 @@ class RankGPTRanker(RankerBase):
             end_idx -= self.step_size
         return np.array(indices), None
 
+    async def _async_rank(
+        self, query: str, candidates: list[str]
+    ) -> tuple[np.ndarray, None]:
+        # perform slide window ranking
+        indices = list(range(len(candidates)))
+        start_idx = max(len(candidates) - self.window_size, 0)
+        end_idx = len(candidates)
+        while start_idx >= 0:
+            start_idx = max(start_idx, 0)
+            candidates_ = [candidates[i] for i in indices[start_idx:end_idx]]
+            indices_, _ = await self._async_rank_piece(query, candidates_)
+            indices[start_idx:end_idx] = indices_
+            start_idx = start_idx - self.step_size
+            end_idx -= self.step_size
+        return np.array(indices), None
+
     def _rank_piece(self, query: str, candidates: list[str]) -> tuple[np.ndarray, None]:
         prompt = self._get_prompt(query=query, candidates=candidates)
         response = self.generator.chat(prompts=[prompt])[0][0]
+
+        # convert string to indices
+        response = re.sub(r"\D", " ", response)
+        indices_ = [int(x) - 1 for x in response.split()]
+
+        # deduplicate indices
+        indices = []
+        for i in indices_:
+            if i not in indices:
+                indices.append(i)
+
+        # refine indices
+        ori_indices = list(range(len(candidates)))
+        new_indices = [idx for idx in indices if idx in ori_indices]
+        new_indices = new_indices + [
+            idx for idx in ori_indices if idx not in new_indices
+        ]
+        return new_indices, None
+
+    async def _async_rank_piece(
+        self, query: str, candidates: list[str]
+    ) -> tuple[np.ndarray, None]:
+        prompt = self._get_prompt(query=query, candidates=candidates)
+        response = (await self.generator.async_chat(prompts=[prompt]))[0][0]
 
         # convert string to indices
         response = re.sub(r"\D", " ", response)

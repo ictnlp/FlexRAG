@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
@@ -6,6 +7,9 @@ import numpy as np
 
 from kylin.retriever import RetrievedContext
 from kylin.utils import Register
+
+
+logger = logging.getLogger(__name__)
 
 
 Rankers = Register("Rankers")
@@ -49,6 +53,27 @@ class RankerBase(ABC):
             result.scores = [scores[idx] for idx in indices]
         return result
 
+    async def async_rank(
+        self, query: str, candidates: list[RetrievedContext | str]
+    ) -> RankingResult:
+        if isinstance(candidates[0], RetrievedContext):
+            texts = [ctx.full_text for ctx in candidates]
+        else:
+            texts = candidates
+        indices, scores = await self._async_rank(query, texts)
+        if indices is None:
+            assert scores is not None
+            indices = np.argsort(scores)[::-1]
+        if self.reserve_num > 0:
+            indices = indices[: self.reserve_num]
+
+        result = RankingResult(query=query, candidates=[])
+        for idx in indices:
+            result.candidates.append(candidates[idx])
+        if scores is not None:
+            result.scores = [scores[idx] for idx in indices]
+        return result
+
     @abstractmethod
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         """Rank the candidates based on the query.
@@ -61,3 +86,10 @@ class RankerBase(ABC):
             tuple[np.ndarray, np.ndarray]: indices and scores of the ranked candidates.
         """
         return
+
+    async def _async_rank(
+        self, query: str, candidates: list[str]
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """The asynchronous version of `_rank`."""
+        logger.warning("async_rank is not implemented, using the synchronous version.")
+        return self._rank(query, candidates)

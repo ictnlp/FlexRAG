@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from dataclasses import dataclass
@@ -111,6 +112,28 @@ class OpenAIGenerator(GeneratorBase):
             responses.append([i.message.content for i in response.choices])
         return responses
 
+    async def async_chat(
+        self,
+        prompts: list[ChatPrompt],
+        generation_config: GenerationConfig = GenerationConfig(),
+    ) -> list[list[str]]:
+        tasks = []
+        gen_cfg = self._get_options(generation_config)
+        for prompt in prompts:
+            prompt = prompt.to_list()
+            tasks.append(
+                asyncio.create_task(
+                    asyncio.to_thread(
+                        self.client.chat.completions.create,
+                        model=self.model_name,
+                        messages=prompt,
+                        **gen_cfg,
+                    )
+                )
+            )
+        responses = [[i.message.content for i in (await r).choices] for r in tasks]
+        return responses
+
     @TimeMeter("openai_generate")
     def generate(
         self,
@@ -126,6 +149,27 @@ class OpenAIGenerator(GeneratorBase):
                 **gen_cfg,
             )
             responses.append([i.message.content for i in response.choices])
+        return responses
+
+    async def async_generate(
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig = GenerationConfig(),
+    ) -> list[list[str]]:
+        tasks = []
+        gen_cfg = self._get_options(generation_config)
+        for prefix in prefixes:
+            tasks.append(
+                asyncio.create_task(
+                    asyncio.to_thread(
+                        self.client.completions.create,
+                        model=self.model_name,
+                        prompt=prefix,
+                        **gen_cfg,
+                    )
+                )
+            )
+        responses = [[i.message.content for i in (await r).choices] for r in tasks]
         return responses
 
     def _get_options(self, generation_config: GenerationConfig) -> dict:
@@ -189,6 +233,16 @@ class OpenAIEncoder(EncoderBase):
     def encode(self, texts: list[str]) -> np.ndarray:
         r = self.client.embeddings.create(
             model=self.model_name, input=texts, dimensions=self.dimension
+        )
+        embeddings = [i.embedding for i in r.data]
+        return np.array(embeddings)
+
+    async def async_encode(self, texts: list[str]) -> np.ndarray:
+        r = await asyncio.to_thread(
+            self.client.embeddings.create,
+            model=self.model_name,
+            input=texts,
+            dimensions=self.dimension,
         )
         embeddings = [i.embedding for i in r.data]
         return np.array(embeddings)

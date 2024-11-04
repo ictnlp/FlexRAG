@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from dataclasses import dataclass
 
@@ -55,9 +56,9 @@ class VLLMGenerator(GeneratorBase):
 
         # load minference
         if cfg.use_minference:
-            from minference import MInference
-
             try:
+                from minference import MInference
+
                 inf_patch = MInference("vllm", model_name)
                 self.model = inf_patch(self.model)
             except Exception as e:
@@ -79,6 +80,20 @@ class VLLMGenerator(GeneratorBase):
         responses = [[i.text for i in resp.outputs] for resp in responses]
         return responses
 
+    async def async_generate(
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig = GenerationConfig(),
+    ) -> list[list[str]]:
+        responses = await asyncio.to_thread(
+            self.model.generate,
+            prompts=prefixes,
+            sampling_params=self._get_options(generation_config),
+            use_tqdm=False,
+        )
+        responses = [[i.text for i in resp.outputs] for resp in responses]
+        return responses
+
     def chat(
         self,
         prompts: list[ChatPrompt],
@@ -86,6 +101,14 @@ class VLLMGenerator(GeneratorBase):
     ) -> list[list[str]]:
         prefixes = [self.template.render_to_text(prompt) for prompt in prompts]
         return self.generate(prefixes, generation_config)
+
+    async def async_chat(
+        self,
+        prompts: list[ChatPrompt],
+        generation_config: GenerationConfig = GenerationConfig(),
+    ) -> list[list[str]]:
+        prefixes = [self.template.render_to_text(prompt) for prompt in prompts]
+        return await self.async_generate(prefixes, generation_config)
 
     def _get_options(self, generation_config: GenerationConfig):
         from vllm import SamplingParams

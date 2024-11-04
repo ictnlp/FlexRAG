@@ -1,3 +1,4 @@
+import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
@@ -6,6 +7,9 @@ import numpy as np
 
 from kylin.prompt import ChatPrompt
 from kylin.utils import Register
+
+
+logger = logging.getLogger(__name__)
 
 
 Encoders = Register("Encoders")
@@ -55,6 +59,17 @@ class GeneratorBase(ABC):
         """
         return
 
+    async def async_chat(
+        self,
+        prompts: list[ChatPrompt],
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
+        """The async version of chat."""
+        logger.warning(
+            "Current encoder does not support asyncronous chat, thus the code will be run in syncronous mode"
+        )
+        return self.chat(prompts=prompts, generation_config=generation_config)
+
     @abstractmethod
     def generate(
         self,
@@ -72,6 +87,17 @@ class GeneratorBase(ABC):
         """
         return
 
+    async def async_generate(
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
+        """The async version of generate."""
+        logger.warning(
+            "Current generator does not support asyncronous generate, thus the code will be run in syncronous mode"
+        )
+        return self.generate(prefixes=prefixes, generation_config=generation_config)
+
 
 @dataclass
 class EncoderBaseConfig: ...
@@ -80,7 +106,22 @@ class EncoderBaseConfig: ...
 class EncoderBase(ABC):
     @abstractmethod
     def encode(self, texts: list[str]) -> np.ndarray:
+        """encode the given texts into embeddings.
+
+        Args:
+            texts (list[str]): A batch of texts.
+
+        Returns:
+            np.ndarray: A batch of embeddings.
+        """
         return
+
+    async def async_encode(self, texts: list[str]) -> np.ndarray:
+        """The async version of encode."""
+        logger.warning(
+            "Current encoder does not support asyncronous encode, thus the code will be run in syncronous mode"
+        )
+        return self.encode(texts)
 
     @property
     @abstractmethod

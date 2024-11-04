@@ -1,3 +1,4 @@
+import asyncio
 import math
 from dataclasses import dataclass
 
@@ -46,6 +47,11 @@ class HFCrossEncoderRanker(RankerBase):
         inputs = inputs.to(self.model.device)
         scores = self.model(**inputs).logits.squeeze().cpu().numpy()
         return None, scores
+
+    async def _async_rank(
+        self, query: str, candidates: list[str]
+    ) -> tuple[np.ndarray, np.ndarray]:
+        return await asyncio.to_thread(self._rank, query, candidates)
 
 
 @dataclass
@@ -107,6 +113,11 @@ class HFSeq2SeqRanker(RankerBase):
         )[:, 0].cpu().numpy()  # fmt: skip
         return None, scores
 
+    async def _async_rank(
+        self, query: str, candidates: list[str]
+    ) -> tuple[np.ndarray, np.ndarray]:
+        return await asyncio.to_thread(self._rank, query, candidates)
+
 
 @dataclass
 class HFColBertRankerConfig(RankerConfig, HFModelConfig):
@@ -142,6 +153,7 @@ class HFColBertRanker(RankerBase):
         self.normalize = cfg.normalize_embeddings
         return
 
+    @TimeMeter("hf_rank")
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         # tokenize the query & candidates
         query_inputs = self._query_encode([query])
@@ -158,6 +170,11 @@ class HFColBertRanker(RankerBase):
         scores = scores.sum(1) / query_inputs["attention_mask"].sum(-1, keepdim=True)
         scores = scores.cpu().squeeze().float().numpy()
         return None, scores
+
+    async def _async_rank(
+        self, query: str, candidates: list[str]
+    ) -> tuple[np.ndarray, np.ndarray]:
+        return await asyncio.to_thread(self._rank, query, candidates)
 
     @torch.no_grad()
     def _tokenize(self, texts: list[str], insert_token_id: int, is_query: bool = False):
@@ -210,10 +227,10 @@ class HFColBertRanker(RankerBase):
 
         return {key: value.to(self.model.device) for key, value in inputs.items()}
 
+    @torch.no_grad()
     def _encode(self, inputs: dict[str, torch.Tensor]) -> torch.Tensor:
         # encode
-        with torch.no_grad():
-            embs = self.model(**inputs)
+        embs = self.model(**inputs)
         if self.normalize:
             embs = embs / torch.clamp(embs.norm(dim=-1, keepdim=True), 1e-6)
         return embs

@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 from typing import Optional
 
@@ -41,6 +42,19 @@ class CohereRanker(RankerBase):
             documents=candidates,
             model=self.model,
             top_n=len(candidates),
+        )
+        scores = [i.relevance_score for i in result.results]
+        return None, scores
+
+    async def _async_rank(self, query: str, candidates: list[str]):
+        result = await asyncio.create_task(
+            asyncio.to_thread(
+                self.client.rerank,
+                query=query,
+                documents=candidates,
+                model=self.model,
+                top_n=len(candidates),
+            )
         )
         scores = [i.relevance_score for i in result.results]
         return None, scores

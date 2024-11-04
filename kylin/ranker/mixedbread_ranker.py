@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 from typing import Optional
 
@@ -41,6 +42,21 @@ class MixedbreadRanker(RankerBase):
             input=candidates,
             model=self.model,
             top_k=len(candidates),
+        )
+        scores = [i.score for i in result.data]
+        return None, scores
+
+    async def _async_rank(
+        self, query: str, candidates: list[str]
+    ) -> tuple[np.ndarray, np.ndarray]:
+        result = await asyncio.create_task(
+            asyncio.to_thread(
+                self.client.reranking,
+                query=query,
+                input=candidates,
+                model=self.model,
+                top_k=len(candidates),
+            )
         )
         scores = [i.score for i in result.data]
         return None, scores

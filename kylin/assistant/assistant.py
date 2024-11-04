@@ -125,6 +125,51 @@ class Assistant:
         response = [i[0] for i in response]
         return response, prompts
 
+    async def async_answer(
+        self,
+        questions: list[str],
+        contexts: list[list[RetrievedContext]] = [],
+        histories: list[list[ChatTurn | dict]] = [],
+    ) -> tuple[list[str], list[ChatPrompt]]:
+        """The asyncronous version of the answer method."""
+        if self.adaptive_retrieval:
+            use_contexts = self.decide_search(questions)
+            contexts = [
+                ctxs if use else [] for ctxs, use in zip(contexts, use_contexts)
+            ]
+
+        # prepare system prompt
+        prompts = []
+        for question, ctxs, his in zip_longest(
+            questions, contexts, histories, fillvalue=[]
+        ):
+            if len(ctxs) > 0:
+                prompt = deepcopy(self.prompt_with_ctx)
+            else:
+                prompt = deepcopy(self.prompt_wo_ctx)
+
+            if self.use_history:
+                prompt.update(his)
+
+            # prepare user prompt
+            usr_prompt = ""
+            for n, context in enumerate(ctxs):
+                if context.text:
+                    ctx = context.text
+                else:
+                    ctx = context.full_text
+                usr_prompt += f"Context {n + 1}: {ctx}\n\n"
+            usr_prompt += f"Question: {question}"
+            prompt.update(ChatTurn(role="user", content=usr_prompt))
+            prompts.append(prompt)
+
+        # generate response
+        response = await self.generator.async_chat(
+            prompts, generation_config=self.gen_cfg
+        )
+        response = [i[0] for i in response]
+        return response, prompts
+
     def decide_search(self, questions: list[str]) -> list[bool]:
         # TODO implement this
         raise NotImplementedError

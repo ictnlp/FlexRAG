@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 from dataclasses import dataclass
@@ -24,6 +25,7 @@ class AnthropicGeneratorConfig(GeneratorBaseConfig):
     base_url: Optional[str] = None
     api_key: str = os.environ.get("ANTHROPIC_API_KEY", "EMPTY")
     verbose: bool = False
+    proxy: Optional[str] = None
 
 
 @Generators("anthropic", config_class=AnthropicGeneratorConfig)
@@ -34,6 +36,7 @@ class AnthropicGenerator(GeneratorBase):
         self.client = Anthropic(
             api_key=cfg.api_key,
             base_url=cfg.base_url,
+            proxies=cfg.proxy,
         )
         self.model_name = cfg.model_name
         if not cfg.verbose:
@@ -59,7 +62,34 @@ class AnthropicGenerator(GeneratorBase):
                     messages=prompt,
                     **gen_cfg,
                 )
-                responses[-1].append(response.content)
+                responses[-1].append(response.content[0].text)
+        return responses
+
+    async def async_chat(
+        self,
+        prompts: list[ChatPrompt],
+        generation_config: GenerationConfig = GenerationConfig(),
+    ) -> list[list[str]]:
+        gen_cfg = self._get_options(generation_config, is_chat=True)
+        tasks = []
+        for prompt in prompts:
+            prompt = prompt.to_list()
+            # as anthropic does not support sample_num, we sample multiple times
+            tasks.append([])
+            for _ in range(generation_config.sample_num):
+                tasks[-1].append(
+                    asyncio.create_task(
+                        asyncio.to_thread(
+                            self.client.messages.create,
+                            model=self.model_name,
+                            messages=prompt,
+                            **gen_cfg,
+                        )
+                    )
+                )
+        responses = [
+            [(await task).content[0].text for task in task_list] for task_list in tasks
+        ]
         return responses
 
     @TimeMeter("anthropic_generate")
@@ -80,6 +110,32 @@ class AnthropicGenerator(GeneratorBase):
                     **gen_cfg,
                 )
                 responses[-1].append(response.completion)
+        return responses
+
+    async def async_generate(
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig = GenerationConfig(),
+    ) -> list[list[str]]:
+        tasks = []
+        gen_cfg = self._get_options(generation_config)
+        for prefix in prefixes:
+            # as anthropic does not support sample_num, we sample multiple times
+            tasks.append([])
+            for _ in range(generation_config.sample_num):
+                tasks[-1].append(
+                    asyncio.create_task(
+                        await asyncio.to_thread(
+                            self.client.completions.create,
+                            model=self.model_name,
+                            prompt=prefix,
+                            **gen_cfg,
+                        )
+                    )
+                )
+        responses = [
+            [(await task).completion for task in task_list] for task_list in tasks
+        ]
         return responses
 
     def _get_options(

@@ -1,5 +1,6 @@
+import asyncio
 from dataclasses import dataclass
-from typing import Optional
+from typing import Coroutine, Optional
 
 import httpx
 import numpy as np
@@ -50,6 +51,19 @@ class CohereEncoder(EncoderBase):
         )
         embeddings = r.embeddings.float
         return np.array(embeddings)
+
+    async def async_encode(self, texts: list[str]):
+        task = asyncio.create_task(
+            asyncio.to_thread(
+                self.client.embed,
+                texts=texts,
+                model=self.model,
+                input_type=self.input_type,
+                embedding_types=["float"],
+            )
+        )
+        await task
+        return super().async_encode(texts)
 
     @property
     def embedding_size(self) -> int:

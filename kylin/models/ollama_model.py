@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Optional
@@ -66,6 +67,35 @@ class OllamaGenerator(GeneratorBase):
         return responses
 
     @TimeMeter("ollama_generate")
+    async def async_chat(
+        self,
+        prompts: list[ChatPrompt],
+        generation_config: GenerationConfig = GenerationConfig(),
+    ) -> list[list[str]]:
+        tasks = []
+        options = self._get_options(generation_config)
+        for prompt in prompts:
+            # as ollama does not support sample_num, we sample multiple times
+            prompt = prompt.to_list()
+            tasks.append([])
+            for _ in range(generation_config.sample_num):
+                tasks[-1].append(
+                    asyncio.create_task(
+                        asyncio.to_thread(
+                            self.client.chat,
+                            model=self.model_name,
+                            messages=prompt,
+                            options=options,
+                        )
+                    )
+                )
+        responses = [
+            [(await task)["message"]["content"] for task in task_list]
+            for task_list in tasks
+        ]
+        return responses
+
+    @TimeMeter("ollama_generate")
     def generate(
         self,
         prefixes: list[str],
@@ -84,6 +114,35 @@ class OllamaGenerator(GeneratorBase):
                     options=options,
                 )
                 responses[-1].append(response["message"]["content"])
+        return responses
+
+    @TimeMeter("ollama_generate")
+    async def async_generate(
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig = GenerationConfig(),
+    ) -> list[list[str]]:
+        tasks = []
+        options = self._get_options(generation_config)
+        for prefix in prefixes:
+            # as ollama does not support sample_num, we sample multiple times
+            tasks.append([])
+            for _ in range(generation_config.sample_num):
+                tasks.append(
+                    asyncio.create_task(
+                        asyncio.to_thread(
+                            self.client.generate,
+                            model=self.model_name,
+                            prompt=prefix,
+                            raw=True,
+                            options=options,
+                        )
+                    )
+                )
+        responses = [
+            [(await task)["message"]["content"] for task in task_list]
+            for task_list in tasks
+        ]
         return responses
 
     def _get_options(self, generation_config: GenerationConfig) -> dict:
@@ -139,6 +198,23 @@ class OllamaEncoder(EncoderBase):
                 self.client.embeddings(model=self.model_name, prompt=text)["embedding"]
             )
         embeddings = np.array(embeddings)
+        return embeddings[:, : self.embedding_size]
+
+    async def async_encode(self, texts: list[str]) -> ndarray:
+        if self.prompt:
+            texts = [f"{self.prompt} {text}" for text in texts]
+        tasks = []
+        for text in texts:
+            tasks.append(
+                asyncio.create_task(
+                    asyncio.to_thread(
+                        self.client.embeddings,
+                        model=self.model_name,
+                        prompt=text,
+                    )
+                )
+            )
+        embeddings = np.array([(await task)["embedding"] for task in tasks])
         return embeddings[:, : self.embedding_size]
 
     @property

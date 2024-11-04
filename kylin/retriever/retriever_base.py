@@ -1,3 +1,4 @@
+import asyncio
 import logging
 import os
 import time
@@ -69,6 +70,21 @@ class Retriever(ABC):
         self._cache = PersistentLRUCache(cfg.cache_path, maxsize=cfg.cache_size)
         self.log_interval = cfg.log_interval
         return
+
+    async def async_search(
+        self,
+        query: list[str],
+        top_k: int = 10,
+        disable_cache: bool = False,
+        **search_kwargs,
+    ) -> list[list[RetrievedContext]]:
+        return await asyncio.to_thread(
+            self.search,
+            query=query,
+            top_k=top_k,
+            disable_cache=disable_cache,
+            **search_kwargs,
+        )
 
     @TimeMeter("retrieve")
     def search(

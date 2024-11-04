@@ -1,5 +1,5 @@
+import asyncio
 import logging
-import math
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -304,6 +304,17 @@ class HFGenerator(GeneratorBase):
             responses.append(samples)
         return responses
 
+    async def async_generate(
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig = GenerationConfig(),
+    ) -> list[list[str]]:
+        return await asyncio.to_thread(
+            self.generate,
+            prefixes=prefixes,
+            generation_config=generation_config,
+        )
+
     def chat(
         self,
         prompts: list[ChatPrompt],
@@ -312,6 +323,17 @@ class HFGenerator(GeneratorBase):
         assert self.template is not None, "Chat function is disabled."
         prefixes = [self.template.render_to_text(prompt) for prompt in prompts]
         return self.generate(prefixes, generation_config)
+
+    async def async_chat(
+        self,
+        prompts: list[ChatPrompt],
+        generation_config: GenerationConfig = GenerationConfig(),
+    ) -> list[list[str]]:
+        return await asyncio.to_thread(
+            self.chat,
+            prompts=prompts,
+            generation_config=generation_config,
+        )
 
     def _get_options(self, generation_config: GenerationConfig) -> HFGenerationConfig:
         return HFGenerationConfig(
@@ -394,6 +416,9 @@ class HFEncoder(EncoderBase):
         else:
             encoder = self.model
         return self._encode(texts, encoder)
+
+    async def async_encode(self, texts: list[str]) -> np.ndarray:
+        return await asyncio.to_thread(self.encode, texts)
 
     @torch.no_grad()
     def _encode(self, texts: list[str], model: torch.nn.Module | DP) -> np.ndarray:

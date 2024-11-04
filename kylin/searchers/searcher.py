@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
@@ -31,6 +32,11 @@ class BaseSearcher(ABC):
         self, question: str
     ) -> tuple[list[RetrievedContext], list[dict[str, object]]]:
         return
+
+    async def async_search(
+        self, question: str
+    ) -> tuple[list[RetrievedContext], list[dict[str, object]]]:
+        return await asyncio.to_thread(self.search, question)
 
     def close(self) -> None:
         self.retriever.close()

@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 from typing import Optional
 
@@ -58,6 +59,15 @@ class JinaEncoder(EncoderBase):
         data["input"] = texts
         response = requests.post(self.base_url, headers=self.headers, json=data)
         response.raise_for_status()
+        embeddings = [i["embedding"] for i in response.json()["data"]]
+        return np.array(embeddings)
+
+    async def async_encode(self, texts: list[str]) -> ndarray:
+        data = self._data_template.copy()
+        data["input"] = texts
+        response = await asyncio.to_thread(
+            requests.post, self.base_url, headers=self.headers, json=data
+        )
         embeddings = [i["embedding"] for i in response.json()["data"]]
         return np.array(embeddings)
 

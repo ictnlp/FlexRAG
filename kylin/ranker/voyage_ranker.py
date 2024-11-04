@@ -1,3 +1,4 @@
+import asyncio
 from dataclasses import dataclass
 
 import numpy as np
@@ -35,6 +36,21 @@ class VoyageRanker(RankerBase):
             documents=candidates,
             model=self.model,
             top_k=len(candidates),
+        )
+        scores = [i.relevance_score for i in result.results]
+        return None, scores
+
+    async def _async_rank(
+        self, query: str, candidates: list[str]
+    ) -> tuple[np.ndarray, np.ndarray]:
+        result = await asyncio.create_task(
+            asyncio.to_thread(
+                self.client.rerank,
+                query=query,
+                documents=candidates,
+                model=self.model,
+                top_k=len(candidates),
+            )
         )
         scores = [i.relevance_score for i in result.results]
         return None, scores
