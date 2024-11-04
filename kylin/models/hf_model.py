@@ -405,6 +405,7 @@ class HFEncoder(EncoderBase):
             embeddings = torch.nn.functional.normalize(embeddings, dim=1)
         return embeddings.cpu().numpy()
 
+    @TimeMeter("hf_encode")
     def encode(self, texts: list[str]) -> np.ndarray:
         if hasattr(self.model, "encode"):  # for jina-embedding
             return self.model.encode(

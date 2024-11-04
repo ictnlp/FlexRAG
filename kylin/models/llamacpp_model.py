@@ -48,6 +48,7 @@ class LlamacppGenerator(GeneratorBase):
                 responses[-1].append(response["choices"][0]["text"])
         return responses
 
+    @TimeMeter("llamacpp_generate")
     async def async_generate(
         self,
         prefixes: list[str],
@@ -86,6 +87,7 @@ class LlamacppGenerator(GeneratorBase):
                 responses[-1].append(response["choices"][0]["message"]["content"])
         return responses
 
+    @TimeMeter("llamacpp_generate")
     async def async_chat(
         self,
         prompts: list[ChatPrompt],

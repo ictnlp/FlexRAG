@@ -30,6 +30,7 @@ class DataConfig:
     data_path: str = MISSING
     data_range: Optional[list[int]] = None
     output_path: Optional[str] = None
+    verbose: bool = False
 
 
 @dataclass
@@ -50,7 +51,8 @@ def main(config: Config):
     # merge config
     default_cfg = OmegaConf.structured(Config)
     config = OmegaConf.merge(default_cfg, config)
-    logging.info(f"Configs:\n{OmegaConf.to_yaml(config)}")
+    if config.verbose:
+        logging.info(f"Configs:\n{OmegaConf.to_yaml(config)}")
 
     # load dataset
     data_cfg = config.data_config

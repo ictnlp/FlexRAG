@@ -40,6 +40,7 @@ class VoyageRanker(RankerBase):
         scores = [i.relevance_score for i in result.results]
         return None, scores
 
+    @TimeMeter("voyage_rank")
     async def _async_rank(
         self, query: str, candidates: list[str]
     ) -> tuple[np.ndarray, np.ndarray]:

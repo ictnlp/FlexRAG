@@ -46,6 +46,7 @@ class MixedbreadRanker(RankerBase):
         scores = [i.score for i in result.data]
         return None, scores
 
+    @TimeMeter("mixedbread_rank")
     async def _async_rank(
         self, query: str, candidates: list[str]
     ) -> tuple[np.ndarray, np.ndarray]:

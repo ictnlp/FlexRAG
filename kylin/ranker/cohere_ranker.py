@@ -46,6 +46,7 @@ class CohereRanker(RankerBase):
         scores = [i.relevance_score for i in result.results]
         return None, scores
 
+    @TimeMeter("cohere_rank")
     async def _async_rank(self, query: str, candidates: list[str]):
         result = await asyncio.create_task(
             asyncio.to_thread(

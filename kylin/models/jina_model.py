@@ -62,6 +62,7 @@ class JinaEncoder(EncoderBase):
         embeddings = [i["embedding"] for i in response.json()["data"]]
         return np.array(embeddings)
 
+    @TimeMeter("jina_encode")
     async def async_encode(self, texts: list[str]) -> ndarray:
         data = self._data_template.copy()
         data["input"] = texts

@@ -45,6 +45,7 @@ class JinaRanker(RankerBase):
         scores = [i["relevance_score"] for i in response.json()["results"]]
         return None, scores
 
+    @TimeMeter("jina_rank")
     async def _async_rank(
         self, query: str, candidates: list[str]
     ) -> tuple[np.ndarray, np.ndarray]:

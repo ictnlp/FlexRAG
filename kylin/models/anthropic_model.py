@@ -65,6 +65,7 @@ class AnthropicGenerator(GeneratorBase):
                 responses[-1].append(response.content[0].text)
         return responses
 
+    @TimeMeter("anthropic_generate")
     async def async_chat(
         self,
         prompts: list[ChatPrompt],
@@ -112,6 +113,7 @@ class AnthropicGenerator(GeneratorBase):
                 responses[-1].append(response.completion)
         return responses
 
+    @TimeMeter("anthropic_generate")
     async def async_generate(
         self,
         prefixes: list[str],

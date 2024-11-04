@@ -9,7 +9,7 @@ from itertools import zip_longest
 from logging import Logger
 from multiprocessing import Manager
 from time import perf_counter
-from typing import Iterable, Iterator, Optional
+from typing import Iterable, Iterator, Optional, Coroutine
 
 import numpy as np
 from omegaconf import OmegaConf
@@ -284,6 +284,17 @@ class _TimeMeterClass:
                 self.timers[timer_names].append(end_time - start_time)
                 return result
 
+            async def async_wrapper(*args, **kwargs):
+                start_time = perf_counter()
+                result = await func(*args, **kwargs)
+                end_time = perf_counter()
+                if timer_names not in self.timers:
+                    self.timers[timer_names] = self._manager.list()
+                self.timers[timer_names].append(end_time - start_time)
+                return result
+
+            if isinstance(func, Coroutine):
+                return async_wrapper
             return wrapper
 
         return time_it

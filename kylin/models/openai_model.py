@@ -112,6 +112,7 @@ class OpenAIGenerator(GeneratorBase):
             responses.append([i.message.content for i in response.choices])
         return responses
 
+    @TimeMeter("openai_generate")
     async def async_chat(
         self,
         prompts: list[ChatPrompt],
@@ -151,6 +152,7 @@ class OpenAIGenerator(GeneratorBase):
             responses.append([i.message.content for i in response.choices])
         return responses
 
+    @TimeMeter("openai_generate")
     async def async_generate(
         self,
         prefixes: list[str],
@@ -237,6 +239,7 @@ class OpenAIEncoder(EncoderBase):
         embeddings = [i.embedding for i in r.data]
         return np.array(embeddings)
 
+    @TimeMeter("openai_encode")
     async def async_encode(self, texts: list[str]) -> np.ndarray:
         r = await asyncio.to_thread(
             self.client.embeddings.create,

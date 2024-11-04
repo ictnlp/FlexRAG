@@ -200,6 +200,7 @@ class OllamaEncoder(EncoderBase):
         embeddings = np.array(embeddings)
         return embeddings[:, : self.embedding_size]
 
+    @TimeMeter("ollama_encode")
     async def async_encode(self, texts: list[str]) -> ndarray:
         if self.prompt:
             texts = [f"{self.prompt} {text}" for text in texts]

@@ -52,6 +52,7 @@ class CohereEncoder(EncoderBase):
         embeddings = r.embeddings.float
         return np.array(embeddings)
 
+    @TimeMeter("cohere_encode")
     async def async_encode(self, texts: list[str]):
         task = asyncio.create_task(
             asyncio.to_thread(
