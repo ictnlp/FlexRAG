@@ -104,6 +104,16 @@ class ResponseEvaluator:
         preds: list[str],
         log: bool = True,
     ) -> tuple[dict[str, float], dict[str, object]]:
+        """Evaluate the generated responses against the ground truth responses.
+
+        Args:
+            trues (list[list[str]]): A list contains ground truth responses for each sample.
+            preds (list[str]): A list contains generated responses.
+            log (bool, optional): Whether to log the evaluation results. Defaults to True.
+
+        Returns:
+            tuple[dict[str, float], dict[str, object]]: A tuple contains the evaluation results and details.
+        """
         evaluation_results = {}
         evaluation_details = {}
         for metric in self.metrics:
