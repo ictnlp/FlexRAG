@@ -113,6 +113,8 @@ class Truncator(Processor):
 @PROCESSORS("simplify_answer")
 class AnswerSimplifier(Processor):
     def process(self, input_text: TextUnit) -> TextUnit:
+        # lower case
+        input_text.content = input_text.content.lower()
         # remove_articles
         text = re.sub(r"\b(a|an|the)\b", " ", input_text.content)
         # unify white space
