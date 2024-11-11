@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor
 from numpy import ndarray
 from omegaconf import MISSING
 
@@ -29,6 +30,7 @@ class OllamaGeneratorConfig(GeneratorBaseConfig):
     base_url: str = MISSING
     verbose: bool = False
     num_ctx: int = 4096
+    allow_parallel: bool = True
 
 
 @Generators("ollama", config_class=OllamaGeneratorConfig)
@@ -39,6 +41,7 @@ class OllamaGenerator(GeneratorBase):
         self.client = Client(host=cfg.base_url)
         self.model_name = cfg.model_name
         self.max_length = cfg.num_ctx
+        self.allow_parallel = cfg.allow_parallel
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)
@@ -51,19 +54,34 @@ class OllamaGenerator(GeneratorBase):
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        responses: list[list[str]] = []
+        # as ollama does not support sample_num, we sample multiple times
         options = self._get_options(generation_config)
-        for prompt in prompts:
-            # as ollama does not support sample_num, we sample multiple times
-            prompt = prompt.to_list()
-            responses.append([])
-            for _ in range(generation_config.sample_num):
-                response = self.client.chat(
-                    model=self.model_name,
-                    messages=prompt,
-                    options=options,
+        if self.allow_parallel:
+            with ThreadPoolExecutor() as pool:
+                responses = pool.map(
+                    lambda prompt: [
+                        self.client.chat(
+                            model=self.model_name,
+                            messages=prompt.to_list(),
+                            options=options,
+                        )["message"]["content"]
+                        for _ in range(generation_config.sample_num)
+                    ],
+                    prompts,
                 )
-                responses[-1].append(response["message"]["content"])
+                responses = list(responses)
+        else:
+            responses: list[list[str]] = []
+            for prompt in prompts:
+                prompt = prompt.to_list()
+                responses.append([])
+                for _ in range(generation_config.sample_num):
+                    response = self.client.chat(
+                        model=self.model_name,
+                        messages=prompt,
+                        options=options,
+                    )
+                    responses[-1].append(response["message"]["content"])
         return responses
 
     @TimeMeter("ollama_generate")
@@ -101,19 +119,35 @@ class OllamaGenerator(GeneratorBase):
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        responses: list[list[str]] = []
+        # as ollama does not support sample_num, we sample multiple times
         options = self._get_options(generation_config)
-        for prefix in prefixes:
-            # as ollama does not support sample_num, we sample multiple times
-            responses.append([])
-            for _ in range(generation_config.sample_num):
-                response = self.client.generate(
-                    model=self.model_name,
-                    prompt=prefix,
-                    raw=True,
-                    options=options,
+        if self.allow_parallel:
+            with ThreadPoolExecutor() as pool:
+                responses = pool.map(
+                    lambda prefix: [
+                        self.client.generate(
+                            model=self.model_name,
+                            prompt=prefix,
+                            raw=True,
+                            options=options,
+                        )["message"]["content"]
+                        for _ in range(generation_config.sample_num)
+                    ],
+                    prefixes,
                 )
-                responses[-1].append(response["message"]["content"])
+                responses = list(responses)
+        else:
+            responses: list[list[str]] = []
+            for prefix in prefixes:
+                responses.append([])
+                for _ in range(generation_config.sample_num):
+                    response = self.client.generate(
+                        model=self.model_name,
+                        prompt=prefix,
+                        raw=True,
+                        options=options,
+                    )
+                    responses[-1].append(response["message"]["content"])
         return responses
 
     @TimeMeter("ollama_generate")
@@ -170,6 +204,7 @@ class OllamaEncoderConfig(EncoderBaseConfig):
     prompt: Optional[str] = None
     verbose: bool = False
     embedding_size: int = 768
+    allow_parallel: bool = True
 
 
 @Encoders("ollama", config_class=OllamaEncoderConfig)
@@ -182,6 +217,7 @@ class OllamaEncoder(EncoderBase):
         self.model_name = cfg.model_name
         self.prompt = cfg.prompt
         self._embedding_size = cfg.embedding_size
+        self.allow_parallel = cfg.allow_parallel
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)
@@ -192,11 +228,23 @@ class OllamaEncoder(EncoderBase):
     def encode(self, texts: list[str]) -> ndarray:
         if self.prompt:
             texts = [f"{self.prompt} {text}" for text in texts]
-        embeddings = []
-        for text in texts:
-            embeddings.append(
-                self.client.embeddings(model=self.model_name, prompt=text)["embedding"]
-            )
+        if self.allow_parallel:
+            with ThreadPoolExecutor() as pool:
+                embeddings = pool.map(
+                    lambda text: self.client.embeddings(
+                        model=self.model_name, prompt=text
+                    )["embedding"],
+                    texts,
+                )
+                embeddings = list(embeddings)
+        else:
+            embeddings = []
+            for text in texts:
+                embeddings.append(
+                    self.client.embeddings(model=self.model_name, prompt=text)[
+                        "embedding"
+                    ]
+                )
         embeddings = np.array(embeddings)
         return embeddings[:, : self.embedding_size]
 

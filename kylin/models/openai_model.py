@@ -6,6 +6,7 @@ from typing import Optional
 
 import httpx
 import numpy as np
+from concurrent.futures import ThreadPoolExecutor
 from omegaconf import MISSING
 
 from kylin.prompt import ChatPrompt
@@ -33,6 +34,7 @@ class OpenAIGeneratorConfig(GeneratorBaseConfig):
     api_version: str = "2024-07-01-preview"
     verbose: bool = False
     proxy: Optional[str] = None
+    allow_parallel: bool = True
 
 
 @dataclass
@@ -74,6 +76,7 @@ class OpenAIGenerator(GeneratorBase):
             )
 
         # set logger
+        self.allow_parallel = cfg.allow_parallel
         self.model_name = cfg.model_name
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
@@ -89,27 +92,31 @@ class OpenAIGenerator(GeneratorBase):
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        from openai import BadRequestError
-
-        responses = []
         gen_cfg = self._get_options(generation_config)
-        for prompt in prompts:
-            prompt = prompt.to_list()
-            try:
+        if self.allow_parallel:
+            with ThreadPoolExecutor() as pool:
+                responses = pool.map(
+                    lambda prompt: [
+                        r.message.content
+                        for r in self.client.chat.completions.create(
+                            model=self.model_name,
+                            messages=prompt.to_list(),
+                            **gen_cfg,
+                        ).choices
+                    ],
+                    prompts,
+                )
+                responses = list(responses)
+        else:
+            responses = []
+            for prompt in prompts:
+                prompt = prompt.to_list()
                 response = self.client.chat.completions.create(
                     model=self.model_name,
                     messages=prompt,
                     **gen_cfg,
                 )
-            except BadRequestError as e:
-                match e.code:
-                    case 400:
-                        logger.error(f"{e.message}")
-                        logger.error(f"Prompt: {prompt}")
-                        raise e
-                    case _:
-                        raise e
-            responses.append([i.message.content for i in response.choices])
+                responses.append([i.message.content for i in response.choices])
         return responses
 
     @TimeMeter("openai_generate")
@@ -141,15 +148,30 @@ class OpenAIGenerator(GeneratorBase):
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        responses = []
         gen_cfg = self._get_options(generation_config)
-        for prefix in prefixes:
-            response = self.client.completions.create(
-                model=self.model_name,
-                prompt=prefix,
-                **gen_cfg,
-            )
-            responses.append([i.message.content for i in response.choices])
+        if self.allow_parallel:
+            with ThreadPoolExecutor() as pool:
+                responses = pool.map(
+                    lambda prefix: [
+                        r.message.content
+                        for r in self.client.completions.create(
+                            model=self.model_name,
+                            prompt=prefix,
+                            **gen_cfg,
+                        ).choices
+                    ],
+                    prefixes,
+                )
+                responses = list(responses)
+        else:
+            responses = []
+            for prefix in prefixes:
+                response = self.client.completions.create(
+                    model=self.model_name,
+                    prompt=prefix,
+                    **gen_cfg,
+                )
+                responses.append([i.message.content for i in response.choices])
         return responses
 
     @TimeMeter("openai_generate")

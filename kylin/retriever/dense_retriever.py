@@ -46,6 +46,7 @@ class DenseRetriever(LocalRetriever):
         self.database_path = cfg.database_path
         self.source = cfg.source
         self.encode_fields = cfg.encode_fields
+        self.cfg = cfg
 
         # load encoder
         if cfg.inference_only:
@@ -314,3 +315,10 @@ class DenseRetriever(LocalRetriever):
         new_indices = np.stack(new_indices, axis=0)
         new_scores = np.stack(new_scores, axis=0)
         return new_indices, new_scores
+
+    def rebuild_index(self):
+        cfg = self.cfg
+        index_path = os.path.join(self.database_path, f"{cfg.index_type}_{cfg.source}")
+        self.index = load_index(index_path, self.embedding_size, cfg)
+        self.index.build_index(self.embeddings)
+        return

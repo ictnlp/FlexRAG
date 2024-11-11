@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
+from concurrent.futures import ThreadPoolExecutor
 from omegaconf import MISSING
 
 from kylin.prompt import ChatPrompt
@@ -26,6 +27,7 @@ class AnthropicGeneratorConfig(GeneratorBaseConfig):
     api_key: str = os.environ.get("ANTHROPIC_API_KEY", "EMPTY")
     verbose: bool = False
     proxy: Optional[str] = None
+    allow_parallel: bool = True
 
 
 @Generators("anthropic", config_class=AnthropicGeneratorConfig)
@@ -39,6 +41,7 @@ class AnthropicGenerator(GeneratorBase):
             proxies=cfg.proxy,
         )
         self.model_name = cfg.model_name
+        self.allow_parallel = cfg.allow_parallel
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)
@@ -50,19 +53,36 @@ class AnthropicGenerator(GeneratorBase):
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        responses = []
+        # as anthropic does not support sample_num, we sample multiple times
         gen_cfg = self._get_options(generation_config, is_chat=True)
-        for prompt in prompts:
-            prompt = prompt.to_list()
-            # as anthropic does not support sample_num, we sample multiple times
-            responses.append([])
-            for _ in range(generation_config.sample_num):
-                response = self.client.messages.create(
-                    model=self.model_name,
-                    messages=prompt,
-                    **gen_cfg,
+        if self.allow_parallel:
+            with ThreadPoolExecutor() as pool:
+                responses = pool.map(
+                    lambda prompt: [
+                        self.client.messages.create(
+                            model=self.model_name,
+                            messages=prompt.to_list(),
+                            **gen_cfg,
+                        )
+                        .content[0]
+                        .text
+                        for _ in range(generation_config.sample_num)
+                    ],
+                    prompts,
                 )
-                responses[-1].append(response.content[0].text)
+                responses = list(responses)
+        else:
+            responses: list[list[str]] = []
+            for prompt in prompts:
+                prompt = prompt.to_list()
+                responses.append([])
+                for _ in range(generation_config.sample_num):
+                    response = self.client.messages.create(
+                        model=self.model_name,
+                        messages=prompt,
+                        **gen_cfg,
+                    )
+                    responses[-1].append(response.content[0].text)
         return responses
 
     @TimeMeter("anthropic_generate")
@@ -99,18 +119,33 @@ class AnthropicGenerator(GeneratorBase):
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        responses = []
         gen_cfg = self._get_options(generation_config)
-        for prefix in prefixes:
-            # as anthropic does not support sample_num, we sample multiple times
-            responses.append([])
-            for _ in range(generation_config.sample_num):
-                response = self.client.completions.create(
-                    model=self.model_name,
-                    prompt=prefix,
-                    **gen_cfg,
+        if self.allow_parallel:
+            with ThreadPoolExecutor() as pool:
+                responses = pool.map(
+                    lambda prefix: [
+                        self.client.completions.create(
+                            model=self.model_name,
+                            prompt=prefix,
+                            **gen_cfg,
+                        ).completion
+                        for _ in range(generation_config.sample_num)
+                    ],
+                    prefixes,
                 )
-                responses[-1].append(response.completion)
+                responses = list(responses)
+        else:
+            responses: list[list[str]] = []
+            for prefix in prefixes:
+                # as anthropic does not support sample_num, we sample multiple times
+                responses.append([])
+                for _ in range(generation_config.sample_num):
+                    response = self.client.completions.create(
+                        model=self.model_name,
+                        prompt=prefix,
+                        **gen_cfg,
+                    )
+                    responses[-1].append(response.completion)
         return responses
 
     @TimeMeter("anthropic_generate")

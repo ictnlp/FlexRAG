@@ -63,8 +63,8 @@ class CohereEncoder(EncoderBase):
                 embedding_types=["float"],
             )
         )
-        await task
-        return super().async_encode(texts)
+        embeddings = (await task).embeddings.float
+        return np.array(embeddings)
 
     @property
     def embedding_size(self) -> int:
