@@ -406,12 +406,13 @@ class HFEncoder(EncoderBase):
         return embeddings.cpu().numpy()
 
     @TimeMeter("hf_encode")
-    def encode(self, texts: list[str]) -> np.ndarray:
+    def encode(self, texts: list[str | list[str]]) -> np.ndarray:
         if hasattr(self.model, "encode"):  # for jina-embedding
             return self.model.encode(
                 texts, task=self.task, max_length=self.max_encode_length
             )
-        texts = [f"{self.prompt}{i}" for i in texts]
+        if self.prompt:
+            texts = [f"{self.prompt}{i}" for i in texts]
         if (len(texts) >= len(self.devices) * 8) and (self.dp_model is not None):
             encoder = self.dp_model
         else:
@@ -422,7 +423,9 @@ class HFEncoder(EncoderBase):
         return await asyncio.to_thread(self.encode, texts)
 
     @torch.no_grad()
-    def _encode(self, texts: list[str], model: torch.nn.Module | DP) -> np.ndarray:
+    def _encode(
+        self, texts: list[str | list[str]], model: torch.nn.Module | DP
+    ) -> np.ndarray:
         input_dict = self.tokenizer.batch_encode_plus(
             texts,
             return_tensors="pt",

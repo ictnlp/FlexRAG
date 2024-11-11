@@ -5,6 +5,7 @@ from contextlib import contextmanager
 from csv import reader
 from enum import Enum
 from functools import partial
+from glob import glob
 from itertools import zip_longest
 from logging import Logger
 from multiprocessing import Manager
@@ -216,15 +217,29 @@ def read_data(
     file_paths: list[str] | str,
     data_ranges: Optional[list[list[int, int]] | list[int, int]] = None,
 ) -> Iterator:
+    # for single file path
     if isinstance(file_paths, str):
         file_paths = [file_paths]
         if data_ranges is not None:
             assert isinstance(data_ranges[0], int), "Invalid data ranges"
             assert isinstance(data_ranges[1], int), "Invalid data ranges"
             data_ranges = [data_ranges]
+
+    # process unix style path
+    file_paths = [glob(p) for p in file_paths]
+    for p in file_paths:
+        if len(p) != 1:
+            assert (
+                data_ranges is None
+            ), "Data ranges do not support unix style path pattern"
+    file_paths = [p for file_path in file_paths for p in file_path]
+
     if data_ranges is None:
         data_ranges = []
+    else:
+        assert len(data_ranges) == len(file_paths), "Invalid data ranges"
 
+    # read data
     for file_path, data_range in zip_longest(
         file_paths, data_ranges, fillvalue=[0, -1]
     ):

@@ -1,19 +1,16 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from kylin.text_process import PipelineConfig, Pipeline
 from kylin.utils import TimeMeter
 
 
 @dataclass
-class MetricsConfig:
-    answer_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
+class MetricsConfig: ...
 
 
 class MetricsBase(ABC):
     def __init__(self, cfg: MetricsConfig) -> None:
         self.args = cfg
-        self.preprocess_pipeline = Pipeline(cfg.answer_preprocess_pipeline)
         return
 
     @TimeMeter("metric")
@@ -23,8 +20,6 @@ class MetricsBase(ABC):
         assert len(y_trues) == len(
             y_preds
         ), "The length of y_true and y_pred should be the same"
-        y_preds = [self.preprocess_pipeline(y) for y in y_preds]
-        y_trues = [[self.preprocess_pipeline(y_) for y_ in y] for y in y_trues]
         return self.compute(y_trues, y_preds)
 
     @abstractmethod

@@ -4,7 +4,7 @@ import shutil
 from dataclasses import dataclass
 
 import numpy as np
-from tables import EArray
+from h5py import Dataset
 
 from kylin.utils import Choices, SimpleProgressLogger
 
@@ -59,7 +59,7 @@ class AnnoyIndex(DenseIndex):
             self.index.on_disk_build(self.index_path)
         return
 
-    def build_index(self, embeddings: np.ndarray | EArray) -> None:
+    def build_index(self, embeddings: np.ndarray | Dataset) -> None:
         assert not self.is_trained, "Index is already trained"
         p_logger = SimpleProgressLogger(
             logger, total=len(embeddings), interval=self.log_interval

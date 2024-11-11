@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from time import perf_counter
 
 import numpy as np
-from tables import EArray
+from h5py import Dataset
 
 from kylin.utils import Choices, SimpleProgressLogger, Register, TimeMeter
 
@@ -32,10 +32,12 @@ class DenseIndex(ABC):
         return
 
     @abstractmethod
-    def build_index(self, embeddings: np.ndarray | EArray) -> None:
+    def build_index(self, embeddings: np.ndarray | Dataset) -> None:
         return
 
-    def add_embeddings(self, embeddings: np.ndarray, serialize: bool = True) -> None:
+    def add_embeddings(
+        self, embeddings: np.ndarray | Dataset, serialize: bool = True
+    ) -> None:
         """Add embeddings to the index."""
         assert self.is_trained, "Index is not trained, please build the index first."
         p_logger = SimpleProgressLogger(

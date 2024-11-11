@@ -4,7 +4,7 @@ import shutil
 from dataclasses import dataclass
 
 import numpy as np
-from tables import EArray
+from h5py import Dataset
 
 from .index_base import DenseIndex, DenseIndexConfigBase, DENSE_INDEX
 
@@ -48,11 +48,11 @@ class ScaNNIndex(DenseIndex):
             self.index = None
         return
 
-    def build_index(self, embeddings: np.ndarray | EArray) -> None:
+    def build_index(self, embeddings: np.ndarray | Dataset) -> None:
         if self.is_trained:
             self.clean()
-        if isinstance(embeddings, EArray):
-            embeddings = embeddings.read()
+        if isinstance(embeddings, Dataset):
+            embeddings = embeddings[:]
         if self.distance_function == "IP":
             distance_measure = "dot_product"
         else:

@@ -32,6 +32,7 @@ class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
     passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     source: str = MISSING
     refine_factor: int = 1
+    encode_fields: list[str] = field(default_factory=lambda: ["text"])
 
 
 @SEMANTIC_RETRIEVERS("dense", config_class=DenseRetrieverConfig)
@@ -44,6 +45,7 @@ class DenseRetriever(LocalRetriever):
         # set args
         self.database_path = cfg.database_path
         self.source = cfg.source
+        self.encode_fields = cfg.encode_fields
 
         # load encoder
         if cfg.inference_only:
@@ -158,7 +160,9 @@ class DenseRetriever(LocalRetriever):
             logger, total=total_length, interval=self.log_interval
         )
         for batch in get_batch():
-            texts = [i["text"] for i in batch]
+            # encode passages
+            texts = [[i[key] for key in self.encode_fields] for i in batch]
+            raw_texts = [i["text"] for i in batch]
             embeddings = self.passage_encoder.encode(texts)
             p_logger.update(step=self.batch_size, desc="Encoding passages")
 
@@ -172,7 +176,7 @@ class DenseRetriever(LocalRetriever):
             self.texts[cur_len:] = [p["text"] for p in batch]
             self.embeddings.resize((cur_len + len(batch), self.embedding_size))
             self.embeddings[cur_len:] = embeddings
-            self._fingerprint.update(texts)
+            self._fingerprint.update(raw_texts)
 
             # add embeddings to index
             if self.index.is_trained:

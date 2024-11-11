@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
-from tables import EArray
+from h5py import Dataset
 
 from kylin.utils import Choices
 
@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class FaissIndexConfig(DenseIndexConfigBase):
-    index_type: Choices(["FLAT", "IVF", "PQ", "IVFPQ", "auto"]) = "FLAT"  # type: ignore
+    index_type: Choices(["FLAT", "IVF", "PQ", "IVFPQ", "auto"]) = "auto"  # type: ignore
     n_subquantizers: int = 8
     n_bits: int = 8
     n_list: int = 1000
@@ -68,7 +68,7 @@ class FaissIndex(DenseIndex):
             self.index = None
         return
 
-    def build_index(self, embeddings: np.ndarray | EArray) -> None:
+    def build_index(self, embeddings: np.ndarray | Dataset) -> None:
         self.clean()
         self.index = self._prepare_index(
             index_type=self.index_type,
@@ -80,8 +80,6 @@ class FaissIndex(DenseIndex):
             n_bits=self.n_bits,
             factory_str=self.factory_str,
         )
-        if isinstance(embeddings, EArray):
-            embeddings = embeddings.read()
         self.train_index(embeddings=embeddings)
         self.add_embeddings(embeddings=embeddings)
         return
@@ -113,7 +111,7 @@ class FaissIndex(DenseIndex):
             factory_str = f"IVF{n_list},PQ{embedding_size//2}x4fs"
             logger.info(f"Auto set index to {factory_str}")
             logger.info(
-                f"We recommend to set n_probe to {n_list//10} for better performance"
+                f"We recommend to set n_probe to {n_list//10} for better inference performance"
             )
 
         if factory_str is not None:
@@ -156,15 +154,15 @@ class FaissIndex(DenseIndex):
         index = self._set_index(index)
         return index
 
-    def train_index(self, embeddings: np.ndarray) -> None:
+    def train_index(self, embeddings: np.ndarray | Dataset) -> None:
         if self.is_flat:
             logger.info("Index is flat, no need to train")
             return
         logger.info("Training index")
-        embeddings = embeddings.astype("float32")
         if (self.index_train_num >= embeddings.shape[0]) or (
             self.index_train_num == -1
         ):
+            embeddings = embeddings[:].astype("float32")
             self.index.train(embeddings)
         else:
             selected_indices = np.random.choice(
@@ -172,7 +170,9 @@ class FaissIndex(DenseIndex):
                 self.index_train_num,
                 replace=False,
             )
-            self.index.train(embeddings[selected_indices])
+            selected_indices = np.sort(selected_indices)
+            selected_embeddings = embeddings[selected_indices].astype("float32")
+            self.index.train(selected_embeddings)
         return
 
     def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:

@@ -181,7 +181,13 @@ class LocalRetriever(Retriever):
         self.add_title_to_passage = cfg.add_title_to_passage
         return
 
-    def add_passages(self, passages: Iterable[dict[str, str] | str]):
+    def add_passages(
+        self,
+        passages: Iterable[dict[str, str] | str],
+        full_text_field: str = "text",
+        title_field: str = "title",
+        section_field: str = "section",
+    ):
         """
         Add passages to the retriever database
         """
@@ -190,8 +196,10 @@ class LocalRetriever(Retriever):
             for p in passages:
                 if isinstance(p, str):
                     p = {"text": p}
-                p["title"] = p.get("title", "")
-                p["section"] = p.get("section", "")
+                else:
+                    p["text"] = p[full_text_field]
+                p["title"] = p.get(title_field, "")
+                p["section"] = p.get(section_field, "")
                 if self.add_title_to_passage:
                     p["text"] = f"{p['title']} {p['text']}"
                 text = self.passage_preprocess_pipeline(p["text"])

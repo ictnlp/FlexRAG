@@ -2,6 +2,7 @@ import logging
 from dataclasses import dataclass, field
 
 from kylin.retriever import RetrievedContext
+from kylin.text_process import PipelineConfig, Pipeline
 from kylin.utils import Choices
 
 from .matching_metrics import (
@@ -64,6 +65,7 @@ class ResponseEvaluatorConfig:
     chrf_config: chrFConfig = field(default_factory=chrFConfig)
     rouge_config: RougeConfig = field(default_factory=RougeConfig)
     round: int = 2
+    answer_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
 
 
 class ResponseEvaluator:
@@ -96,6 +98,7 @@ class ResponseEvaluator:
                 case _:
                     raise ValueError(f"Invalid metric type: {metric}")
         self.round = cfg.round
+        self.preprocess_pipeline = Pipeline(cfg.answer_preprocess_pipeline)
         return
 
     def evaluate(
@@ -116,6 +119,8 @@ class ResponseEvaluator:
         """
         evaluation_results = {}
         evaluation_details = {}
+        y_preds = [self.preprocess_pipeline(y) for y in y_preds]
+        y_trues = [[self.preprocess_pipeline(y_) for y_ in y] for y in y_trues]
         for metric in self.metrics:
             metric = str(metric)  # make json serializable
             r, r_detail = self.metrics[metric](trues, preds)
@@ -139,6 +144,7 @@ class RetrievalEvaluatorConfig:
     success_config: SuccessRateConfig = field(default_factory=SuccessRateConfig)
     precision_config: RetrievalPrecisionConfig = field(default_factory=RetrievalPrecisionConfig)  # fmt: skip
     round: int = 2
+    text_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
 
 
 class RetrievalEvaluator:
@@ -153,6 +159,7 @@ class RetrievalEvaluator:
                 case _:
                     raise ValueError(f"Invalid metric type: {metric}")
         self.round = cfg.round
+        self.preprocess_pipeline = Pipeline(cfg.text_preprocess_pipeline)
         return
 
     def evaluate(
@@ -163,6 +170,8 @@ class RetrievalEvaluator:
     ) -> tuple[dict[str, float], dict[str, object]]:
         evaluation_results = {}
         evaluation_details = {}
+        evidences = [[self.preprocess_pipeline(y_) for y_ in y] for y in evidences]
+        retrieved = [[self.preprocess_pipeline(y_) for y_ in y] for y in retrieved]
         if isinstance(retrieved[0][0], RetrievedContext):
             retrieved = [[ctx.full_text for ctx in r] for r in retrieved]
         for metric in self.metrics:

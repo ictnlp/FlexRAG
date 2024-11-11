@@ -40,6 +40,9 @@ class Config:
     typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)
     corpus_path: list[str] = MISSING
     data_ranges: Optional[list[list[int]]] = field(default=None)
+    full_text_field: str = "text"
+    title_field: str = "title"
+    section_field: str = "section"
     reinit: bool = False
 # fmt: on
 
@@ -70,7 +73,12 @@ def main(cfg: Config):
     if cfg.reinit and (len(retriever) > 0):
         logger.warning("Reinitializing retriever and removing all passages")
         retriever.clean()
-    retriever.add_passages(passages=read_data(cfg.corpus_path, cfg.data_ranges))
+    retriever.add_passages(
+        passages=read_data(cfg.corpus_path, cfg.data_ranges),
+        full_text_field=cfg.full_text_field,
+        title_field=cfg.title_field,
+        section_field=cfg.section_field,
+    )
     retriever.close()
     return
 
