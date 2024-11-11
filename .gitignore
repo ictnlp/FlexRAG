@@ -150,3 +150,6 @@ experimental_configs/
 
 # hydra logs
 outputs/
+
+# pytest configs
+test/configs/
