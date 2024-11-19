@@ -18,7 +18,7 @@ searcher_fields += [
 SearcherConfig = make_dataclass("SearcherConfig", searcher_fields)
 
 
-def load_searcher(cfg: SearcherConfig) -> BaseSearcher:  # type: ignore
+def load_searcher(cfg: SearcherConfig) -> BaseSearcher | None:  # type: ignore
     if cfg.searcher_type is None:
         return None
     if cfg.searcher_type in Searchers:

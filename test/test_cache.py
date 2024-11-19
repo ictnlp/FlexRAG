@@ -1,60 +1,103 @@
 import os
-import shutil
 import sys
-from collections import OrderedDict
+import tempfile
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from kylin.retriever.cache import SQLLRUCache
+from kylin.cache import (
+    PersistentCacheConfig,
+    PersistentCache,
+    LMDBBackendConfig,
+    ShelveBackendConfig,
+)
 
 
-def test_cache():
-    # test init
-    if os.path.exists("/tmp/cache_test/cache.db"):
-        os.remove("/tmp/cache_test/cache.db")
-    cache = SQLLRUCache("/tmp/cache_test/cache.db", maxsize=3)
-    assert cache.maxsize == 3
+class TestCache:
+    def test_lmdb_backend(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            lmdb_cfg = PersistentCacheConfig(
+                backend="lmdb",
+                lmdb_config=LMDBBackendConfig(
+                    db_path=os.path.join(tmpdir, "test.lmdb"),
+                    serializer="pickle",
+                ),
+                maxsize=3,
+                evict_order="LRU",
+                reset_arguments=False,
+            )
+            cache = PersistentCache(lmdb_cfg)
 
-    # test setitem
-    cache["a"] = "a"
-    cache["b"] = "b"
-    cache["c"] = "c"
-    assert list(cache.keys()) == ["a", "b", "c"]
-    assert list(cache.values()) == ["a", "b", "c"]
-    cache["a"] = "x"
-    assert len(cache) == 3
-    assert list(cache.keys()) == ["b", "c", "a"]
-    assert list(cache.values()) == ["b", "c", "x"]
-    cache["d"] = "d"
-    assert list(cache.keys()) == ["c", "a", "d"]
-    assert list(cache.values()) == ["c", "x", "d"]
+            # test __setitem__ & __len__ & keys & values & __getitem__
+            cache["a"] = "a"
+            cache["b"] = "b"
+            cache["c"] = "c"
+            assert cache["a"] == "a"
+            cache["d"] = "d"
+            assert len(cache) == 3
+            assert set(cache.keys()) == {"d", "a", "c"}
+            assert set(cache.values()) == {"d", "a", "c"}
 
-    # test popitem
-    x = cache.popitem()
-    assert x == ("c", "c")
-    assert list(cache.keys()) == ["a", "d"]
-    assert list(cache.values()) == ["x", "d"]
+            # test __delitem__
+            del cache["c"]
+            assert len(cache) == 2
 
-    # test pop
-    y = cache.pop("a")
-    assert y == "x"
-    assert list(cache.keys()) == ["d"]
-    assert list(cache.values()) == ["d"]
+            # test __contains__
+            assert "a" in cache
+            assert "b" not in cache
 
-    # test to_dict
-    assert cache.to_dict() == OrderedDict({"d": "d"})
-    assert len(cache) == 1
+            # test __iter__
+            assert set(cache) == {"d", "a"}
 
-    # test loading from disk
-    del cache
-    cache = SQLLRUCache("/tmp/cache_test/cache.db", maxsize=3)
-    assert cache.to_dict() == OrderedDict({"d": "d"})
-    assert len(cache) == 1
+            # test loading
+            del cache
+            cache = PersistentCache(lmdb_cfg)
+            assert len(cache) == 2
 
-    # test clean
-    cache.clean()
-    assert len(cache) == 0
+            # test clear
+            cache.clear()
+            assert len(cache) == 0
+        return
 
-    # cleanup
-    shutil.rmtree("/tmp/cache_test")
-    return
+    def test_shelve_backend(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            cfg = PersistentCacheConfig(
+                backend="shelve",
+                shelve_config=ShelveBackendConfig(
+                    db_path=os.path.join(tmpdir, "test.shelve"),
+                ),
+                maxsize=3,
+                evict_order="LRU",
+                reset_arguments=False,
+            )
+            cache = PersistentCache(cfg)
+
+            # test __setitem__ & __len__ & keys & values & __getitem__
+            cache["a"] = "a"
+            cache["b"] = "b"
+            cache["c"] = "c"
+            assert cache["a"] == "a"
+            cache["d"] = "d"
+            assert len(cache) == 3
+            assert set(cache.keys()) == {"d", "a", "c"}
+            assert set(cache.values()) == {"d", "a", "c"}
+
+            # test __delitem__
+            del cache["c"]
+            assert len(cache) == 2
+
+            # test __contains__
+            assert "a" in cache
+            assert "b" not in cache
+
+            # test __iter__
+            assert set(cache) == {"d", "a"}
+
+            # test loading
+            del cache
+            cache = PersistentCache(cfg)
+            assert len(cache) == 2
+
+            # test clear
+            cache.clear()
+            assert len(cache) == 0
+        return

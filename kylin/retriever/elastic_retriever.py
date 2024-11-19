@@ -1,16 +1,12 @@
-import json
 import logging
-import time
 from dataclasses import dataclass
 from typing import Iterable, Optional
 
+from omegaconf import MISSING
 from elasticsearch import Elasticsearch
-from elasticsearch.helpers import streaming_bulk
-from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
 from kylin.utils import SimpleProgressLogger
 
-from .fingerprint import Fingerprint
 from .keyword import Keywords
 from .retriever_base import (
     SPARSE_RETRIEVERS,
@@ -22,24 +18,16 @@ from .retriever_base import (
 logger = logging.getLogger("ElasticRetriever")
 
 
-def _save_error_state(retry_state: RetryCallState) -> Exception:
-    args = {
-        "args": retry_state.args,
-        "kwargs": retry_state.kwargs,
-    }
-    with open("elastic_retriever_error_state.json", "w") as f:
-        json.dump(args, f)
-    raise retry_state.outcome.exception()
-
-
 @dataclass
 class ElasticRetrieverConfig(LocalRetrieverConfig):
     host: str = "http://localhost:9200"
     api_key: Optional[str] = None
-    index_name: str = "documents"
+    index_name: str = MISSING
+    custom_properties: Optional[dict] = None
     verbose: bool = False
     retry_times: int = 3
     retry_delay: float = 0.5
+    id_field: str = "id"
 
 
 @SPARSE_RETRIEVERS("elastic", config_class=ElasticRetrieverConfig)
@@ -55,41 +43,18 @@ class ElasticRetriever(LocalRetriever):
         self.verbose = cfg.verbose
         self.retry_times = cfg.retry_times
         self.retry_delay = cfg.retry_delay
-        self._prep_client()
+        self.custom_properties = cfg.custom_properties
+        self.id_field = cfg.id_field
 
-        # prepare fingerprint
-        self._fingerprint = Fingerprint(
-            features={
-                "host": cfg.host,
-                "api_key": cfg.api_key,
-                "index_name": cfg.index_name,
-            }
-        )
-        return
-
-    def _prep_client(self):
-        # set client
+        # prepare client
         self.client = Elasticsearch(
             self.host,
             api_key=self.api_key,
+            max_retries=cfg.retry_times,
+            retry_on_timeout=True,
         )
-        if not self.client.indices.exists(index=self.index_name):
-            index_body = {
-                "settings": {"number_of_shards": 1, "number_of_replicas": 1},
-                "mappings": {
-                    "properties": {
-                        "title": {"type": "text", "analyzer": "english"},
-                        "section": {"type": "text", "analyzer": "english"},
-                        "text": {"type": "text", "analyzer": "english"},
-                    }
-                },
-            }
-            self.client.indices.create(
-                index=self.index_name,
-                body=index_body,
-            )
 
-        # set logging
+        # set logger
         transport_logger = logging.getLogger("elastic_transport.transport")
         es_logger = logging.getLogger("elasticsearch")
         if self.verbose:
@@ -100,50 +65,83 @@ class ElasticRetriever(LocalRetriever):
             es_logger.setLevel(logging.WARNING)
         return
 
-    def _add_passages(self, passages: Iterable[dict[str, str]]):
+    def add_passages(self, passages: Iterable[dict[str, str]]):
         def generate_actions():
-            for passage in passages:
-                es_doc = {
-                    "_op_type": "index",
-                    "refresh": "wait_for",
-                    "title": passage["title"],
-                    "section": passage["section"],
-                    "text": passage["text"],
+            index_exists = self.client.indices.exists(index=self.index_name)
+            actions = []
+            for n, passage in enumerate(passages):
+                # build index if not exists
+                if not index_exists:
+                    if self.custom_properties is None:
+                        properties = {
+                            key: {"type": "text", "analyzer": "english"}
+                            for key in passage.keys()
+                        }
+                    else:
+                        properties = self.custom_properties
+                    index_body = {
+                        "settings": {"number_of_shards": 1, "number_of_replicas": 1},
+                        "mappings": {
+                            "properties": properties,
+                        },
+                    }
+                    self.client.indices.create(
+                        index=self.index_name,
+                        body=index_body,
+                    )
+                    index_exists = True
+
+                # prepare action
+                if (self.id_field is not None) and (self.id_field in passage):
+                    docid = passage[self.id_field]
+                else:
+                    docid = str(len(self) + n)
+                action = {
+                    "index": {
+                        "_index": self.index_name,
+                        "_id": docid,
+                    }
                 }
-                self._fingerprint.update(passage["text"])
-                yield es_doc
+                actions.append(action)
+                actions.append(passage)
+                if len(actions) == self.batch_size * 2:
+                    yield actions
+                    actions = []
+            if actions:
+                yield actions
+            return
 
         p_logger = SimpleProgressLogger(logger, interval=self.log_interval)
-        for n, (ok, result) in enumerate(
-            streaming_bulk(
-                client=self.client,
-                actions=generate_actions(),
+        for actions in generate_actions():
+            r = self.client.bulk(
+                operations=actions,
                 index=self.index_name,
-                chunk_size=self.batch_size,
             )
-        ):
-            if not ok:
-                raise RuntimeError(f"Failed to index passage {n}: {result}")
-            p_logger.update(1)
+            if r.body["errors"]:
+                err_passage_ids = [
+                    item["index"]["_id"]
+                    for item in r.body["items"]
+                    if item["index"]["status"] != 201
+                ]
+                raise RuntimeError(f"Failed to index passages: {err_passage_ids}")
+            p_logger.update(len(actions) // 2, "Indexing")
         return
 
-    def _full_text_search(
+    def search_batch(
         self,
-        query: list[str],
+        query: list[str | Keywords],
         top_k: int = 10,
+        search_method: str = "full_text",
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
-        # prepare retry
-        retry_times = search_kwargs.pop("retry_times", self.retry_times)
-        retry_delay = search_kwargs.pop("retry_delay", self.retry_delay)
-        if retry_times > 1:
-            search_func = retry(
-                stop=stop_after_attempt(retry_times),
-                wait=wait_fixed(retry_delay),
-                retry_error_callback=_save_error_state,
-            )(self.client.msearch)
-        else:
-            search_func = self.client.msearch
+        # check search method
+        match search_method:
+            case "full_text":
+                query_type = "multi_match"
+            case "lucene":
+                query_type = "query_string"
+            case _:
+                raise ValueError(f"Invalid search method: {search_method}")
 
         # prepare search body
         body = []
@@ -152,9 +150,9 @@ class ElasticRetriever(LocalRetriever):
             body.append(
                 {
                     "query": {
-                        "multi_match": {
+                        query_type: {
                             "query": q,
-                            "fields": ["title", "section", "text"],
+                            "fields": self.fields,
                         },
                     },
                     "size": top_k,
@@ -162,90 +160,12 @@ class ElasticRetriever(LocalRetriever):
             )
 
         # search and post-process
-        responses = search_func(body=body, **search_kwargs)["responses"]
+        responses = self.client.msearch(body=body, **search_kwargs)["responses"]
         return self._form_results(query, responses)
-
-    def _keyword_search(
-        self,
-        query: list[Keywords],
-        top_k: int = 10,
-        **search_kwargs,
-    ) -> list[list[RetrievedContext]]:
-        # prepare retry
-        retry_times = search_kwargs.pop("retry_times", self.retry_times)
-        retry_delay = search_kwargs.pop("retry_delay", self.retry_delay)
-        if retry_times > 1:
-            search_func = retry(
-                stop=stop_after_attempt(retry_times),
-                wait=wait_fixed(retry_delay),
-                retry_error_callback=_save_error_state,
-            )(self.client.msearch)
-        else:
-            search_func = self.client.msearch
-
-        # prepare search body
-        body = []
-        for kws in query:
-            # convert keywords to lucene query
-            lucene_string = []
-            for keyword in kws:
-                kw_str = ""
-                if keyword.must:
-                    kw_str += "+"
-                if keyword.must_not:
-                    kw_str += "-"
-                if keyword.weight != 1:
-                    kw_str += f'"{keyword.keyword}"^{keyword.weight}'
-                else:
-                    kw_str += f'"{keyword.keyword}"'
-                lucene_string.append(kw_str)
-            lucene_string = " ".join(lucene_string)
-            # append to body
-            body.append({"index": self.index_name})
-            body.append(
-                {
-                    "query": {
-                        "query_string": {
-                            "query": lucene_string,
-                            "fields": ["title", "section", "text"],
-                        },
-                    },
-                    "size": top_k,
-                }
-            )
-
-        # search and post-process
-        responses = search_func(body=body, **search_kwargs)["responses"]
-        return self._form_results(query, responses)
-
-    def search_batch(
-        self,
-        query: list[str | Keywords],
-        top_k: int = 10,
-        **search_kwargs,
-    ) -> list[list[RetrievedContext]]:
-        search_method = search_kwargs.get("search_method", "full_text")
-        match search_method:
-            case "full_text":
-                results = self._full_text_search(
-                    query=query,
-                    top_k=top_k,
-                    **search_kwargs,
-                )
-            case "keyword":
-                results = self._keyword_search(
-                    query=query,
-                    top_k=top_k,
-                    **search_kwargs,
-                )
-            case _:
-                raise ValueError(f"Invalid search method: {search_method}")
-        return results
 
     def clean(self) -> None:
-        self.client.indices.delete(index=self.index_name)
-        time.sleep(5)
-        self._prep_client()
+        if self.index_name in self.indices:
+            self.client.indices.delete(index=self.index_name)
         return
 
     def close(self) -> None:
@@ -258,10 +178,6 @@ class ElasticRetriever(LocalRetriever):
     @property
     def indices(self) -> list[str]:
         return [i["index"] for i in self.client.cat.indices(format="json")]
-
-    @property
-    def fingerprint(self) -> str:
-        return self._fingerprint.hexdigest()
 
     def _form_results(
         self, query: list[str | Keywords], responses: list[dict] | None
@@ -276,13 +192,9 @@ class ElasticRetriever(LocalRetriever):
                         RetrievedContext(
                             retriever=self.name,
                             query=q if isinstance(q, str) else str(q),
-                            chunk_id="",
+                            data={},
                             source=self.index_name,
                             score=0.0,
-                            title="",
-                            section="",
-                            text="",
-                            full_text="",
                         )
                     ]
                 )
@@ -293,15 +205,18 @@ class ElasticRetriever(LocalRetriever):
                     RetrievedContext(
                         retriever=self.name,
                         query=q if isinstance(q, str) else str(q),
-                        chunk_id=i["_id"],
+                        data=i["_source"],
                         source=self.index_name,
                         score=i["_score"],
-                        title=i["_source"]["title"],
-                        section=i["_source"]["section"],
-                        text=i["_source"]["text"],
-                        full_text=i["_source"]["text"],
                     )
                     for i in r
                 ]
             )
         return results
+
+    @property
+    def fields(self) -> list[str]:
+        if self.index_name in self.indices:
+            mapping = self.client.indices.get_mapping(index=self.index_name)
+            return list(mapping[self.index_name]["mappings"]["properties"].keys())
+        return []

@@ -18,11 +18,10 @@ from kylin.retriever import (
     DenseRetrieverConfig,
     ElasticRetriever,
     ElasticRetrieverConfig,
-    MilvusRetriever,
-    MilvusRetrieverConfig,
     TypesenseRetriever,
     TypesenseRetrieverConfig,
 )
+from kylin.text_process import Pipeline, PipelineConfig
 from kylin.utils import Choices, read_data
 
 logging.basicConfig(level=logging.INFO)
@@ -32,18 +31,20 @@ logger = logging.getLogger(__name__)
 # fmt: off
 @dataclass
 class Config:
-    retriever_type: Choices(["dense", "elastic", "milvus", "typesense", "bm25s"]) = "dense"  # type: ignore
+    # retriever configs
+    retriever_type: Choices(["dense", "elastic", "milvus", "typesense", "bm25s", "lancedb"]) = "dense"  # type: ignore
     bm25s_config: BM25SRetrieverConfig = field(default_factory=BM25SRetrieverConfig)
     dense_config: DenseRetrieverConfig = field(default_factory=DenseRetrieverConfig)
     elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)
-    milvus_config: MilvusRetrieverConfig = field(default_factory=MilvusRetrieverConfig)
     typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)
+    reinit: bool = False
+    # corpus configs
     corpus_path: list[str] = MISSING
     data_ranges: Optional[list[list[int]]] = field(default=None)
-    full_text_field: str = "text"
-    title_field: str = "title"
-    section_field: str = "section"
-    reinit: bool = False
+    saving_fields: list[str] = field(default_factory=list)
+    # corpus process configs
+    text_process_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
+    text_process_fields: list[str] = field(default_factory=list)
 # fmt: on
 
 
@@ -64,21 +65,36 @@ def main(cfg: Config):
             retriever = DenseRetriever(cfg.dense_config)
         case "elastic":
             retriever = ElasticRetriever(cfg.elastic_config)
-        case "milvus":
-            retriever = MilvusRetriever(cfg.milvus_config)
         case "typesense":
             retriever = TypesenseRetriever(cfg.typesense_config)
+        case _:
+            raise ValueError(f"Unsupported retriever type: {cfg.retriever_type}")
 
     # add passages
     if cfg.reinit and (len(retriever) > 0):
         logger.warning("Reinitializing retriever and removing all passages")
         retriever.clean()
-    retriever.add_passages(
-        passages=read_data(cfg.corpus_path, cfg.data_ranges),
-        full_text_field=cfg.full_text_field,
-        title_field=cfg.title_field,
-        section_field=cfg.section_field,
-    )
+
+    # prepare data iterator
+    text_processor = Pipeline(cfg.text_process_pipeline)
+
+    def prepare_data():
+        for item in read_data(cfg.corpus_path, cfg.data_ranges):
+            # prepare format
+            if isinstance(item, str):
+                item = {"text": item}
+                cfg.saving_fields = ["text"]
+            # remove unused fields
+            item = {key: item[key] for key in cfg.saving_fields}
+            # preprocess text fields
+            for key in cfg.text_process_fields:
+                text = text_processor(item[key])
+                if text is None:
+                    text = ""
+                item[key] = text
+            yield item
+
+    retriever.add_passages(passages=prepare_data())
     retriever.close()
     return
 

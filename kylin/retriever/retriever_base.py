@@ -4,14 +4,14 @@ import os
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Iterable, Optional
+from typing import Any, Iterable, Optional
 
 import numpy as np
 
 from kylin.text_process import Pipeline, PipelineConfig
 from kylin.utils import SimpleProgressLogger, TimeMeter, Register
 
-from .cache import PersistentLRUCache, hashkey
+from kylin.cache import PersistentCache, PersistentCacheConfig, LMDBBackendConfig
 
 
 logger = logging.getLogger(__name__)
@@ -21,21 +21,71 @@ SEMANTIC_RETRIEVERS = Register("semantic_retriever")
 SPARSE_RETRIEVERS = Register("sparse_retriever")
 WEB_RETRIEVERS = Register("web_retriever")
 
+RETRIEVAL_CACHE = PersistentCache(
+    PersistentCacheConfig(
+        backend="lmdb",
+        maxsize=10000000,
+        evict_order="LRU",
+        lmdb_config=LMDBBackendConfig(
+            db_path=os.environ.get(
+                "RETRIEVAL_CACHE_PATH",
+                os.path.join(
+                    os.path.expanduser("~"), ".cache", "librarian", "cache.lmdb"
+                ),
+            )
+        ),
+    )
+)
+
+
+def batched_cache(func):
+    def hashkey(*args, **kwargs):
+        """Return a cache key for the specified hashable arguments."""
+        return tuple(args), tuple(sorted(kwargs.items()))
+
+    def wrapper(
+        self,
+        query: list[str],
+        top_k: int = 10,
+        disable_cache: bool = False,
+        **search_kwargs,
+    ):
+        # check query
+        if isinstance(query, str):
+            query = [query]
+
+        # direct search
+        if disable_cache:
+            return func(self, query, top_k, **search_kwargs)
+
+        # search from cache
+        keys = [
+            hashkey(cfg=self.cfg, query=q, top_k=top_k, **search_kwargs) for q in query
+        ]
+        results = [RETRIEVAL_CACHE.get(k, None)[0] for k in keys]
+
+        # search from database
+        new_query = [q for q, r in zip(query, results) if r is None]
+        new_indices = [n for n, r in enumerate(results) if r is None]
+        if new_query:
+            new_results = func(self, new_query, top_k, **search_kwargs)
+            for n, r in zip(new_indices, new_results):
+                results[n] = r
+                RETRIEVAL_CACHE[keys[n]] = r, keys[n]
+        assert all(r is not None for r in results)
+        return results
+
+    return wrapper
+
 
 @dataclass
 class RetrieverConfig:
-    cache_path: str = os.path.join(
-        os.path.expanduser("~"), ".cache", "librarian", "cache"
-    )
-    cache_size: int = 10000000
     log_interval: int = 100
 
 
 @dataclass
 class LocalRetrieverConfig(RetrieverConfig):
     batch_size: int = 32
-    add_title_to_passage: bool = False
-    passage_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
     query_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
 
 
@@ -43,31 +93,22 @@ class LocalRetrieverConfig(RetrieverConfig):
 class RetrievedContext:
     retriever: str
     query: str
-    text: str
-    full_text: str
+    data: dict
     source: Optional[str] = None
-    chunk_id: Optional[str] = None
     score: float = 0.0
-    title: Optional[str] = None
-    section: Optional[str] = None
 
     def to_dict(self):
         return {
             "retriever": self.retriever,
             "query": self.query,
-            "text": self.text,
-            "full_text": self.full_text,
             "source": self.source,
-            "chunk_id": self.chunk_id,
             "score": self.score,
-            "title": self.title,
-            "section": self.section,
         }
 
 
 class Retriever(ABC):
     def __init__(self, cfg: RetrieverConfig):
-        self._cache = PersistentLRUCache(cfg.cache_path, maxsize=cfg.cache_size)
+        self.cfg = cfg
         self.log_interval = cfg.log_interval
         return
 
@@ -75,23 +116,20 @@ class Retriever(ABC):
         self,
         query: list[str],
         top_k: int = 10,
-        disable_cache: bool = False,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         return await asyncio.to_thread(
             self.search,
             query=query,
             top_k=top_k,
-            disable_cache=disable_cache,
             **search_kwargs,
         )
 
-    @TimeMeter("retrieve")
+    @abstractmethod
     def search(
         self,
         query: list[str],
         top_k: int = 10,
-        disable_cache: bool = False,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         """Search queries.
@@ -103,39 +141,6 @@ class Retriever(ABC):
         Returns:
             list[list[RetrievedContext]]: A batch of list that contains k RetrievedContext.
         """
-        # check query
-        if isinstance(query, str):
-            query = [query]
-
-        # direct search
-        if disable_cache:
-            return self._search(query, top_k, **search_kwargs)
-
-        # search from cache
-        cache_keys = [
-            hashkey(fingerprint=self.fingerprint, query=q, top_k=top_k, **search_kwargs)
-            for q in query
-        ]
-        results = [self._cache.get(k, None) for k in cache_keys]
-
-        # search from database
-        new_query = [q for q, r in zip(query, results) if r is None]
-        new_indices = [n for n, r in enumerate(results) if r is None]
-        if new_query:
-            new_results = self._search(new_query, top_k, **search_kwargs)
-            for n, r in zip(new_indices, new_results):
-                results[n] = r
-                self._cache[cache_keys[n]] = r
-        assert all(r is not None for r in results)
-        return results
-
-    @abstractmethod
-    def _search(
-        self,
-        query: list[str],
-        top_k: int = 10,
-        **search_kwargs,
-    ) -> list[list[RetrievedContext]]:
         return
 
     def test_speed(
@@ -165,53 +170,20 @@ class Retriever(ABC):
     def close(self):
         return
 
-    @property
-    @abstractmethod
-    def fingerprint(self):
-        return
-
 
 class LocalRetriever(Retriever):
     def __init__(self, cfg: LocalRetrieverConfig) -> None:
         super().__init__(cfg)
         # set args for process documents
         self.batch_size = cfg.batch_size
-        self.passage_preprocess_pipeline = Pipeline(cfg.passage_preprocess_pipeline)
         self.query_preprocess_pipeline = Pipeline(cfg.query_preprocess_pipeline)
-        self.add_title_to_passage = cfg.add_title_to_passage
         return
 
-    def add_passages(
-        self,
-        passages: Iterable[dict[str, str] | str],
-        full_text_field: str = "text",
-        title_field: str = "title",
-        section_field: str = "section",
-    ):
+    @abstractmethod
+    def add_passages(self, passages: Iterable[dict[str, Any]]):
         """
         Add passages to the retriever database
         """
-
-        def get_passage():
-            for p in passages:
-                if isinstance(p, str):
-                    p = {"text": p}
-                else:
-                    p["text"] = p[full_text_field]
-                p["title"] = p.get(title_field, "")
-                p["section"] = p.get(section_field, "")
-                if self.add_title_to_passage:
-                    p["text"] = f"{p['title']} {p['text']}"
-                text = self.passage_preprocess_pipeline(p["text"])
-                if text is None:
-                    continue
-                p["text"] = text
-                yield p
-
-        return self._add_passages(get_passage())
-
-    @abstractmethod
-    def _add_passages(self, passages: Iterable[dict[str, str]]):
         return
 
     @abstractmethod
@@ -232,7 +204,8 @@ class LocalRetriever(Retriever):
         """
         return
 
-    def _search(
+    @batched_cache
+    def search(
         self,
         query: list[str] | str,
         top_k: int = 10,
@@ -267,4 +240,9 @@ class LocalRetriever(Retriever):
     def _clean_cache(self):
         if self._cache is not None:
             self._cache.clean()
+        return
+
+    @property
+    @abstractmethod
+    def fields(self) -> list[str]:
         return

@@ -44,7 +44,6 @@ setup(
             "ollama>=0.2.1",
             "faiss>=1.8.0",
             "scann>=1.3.2",
-            "pymilvus>=2.4.3",
             "duckduckgo_search>=6.1.6",
             "PySocks>=1.7.1",
             "anthropic",

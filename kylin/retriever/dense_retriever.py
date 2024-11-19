@@ -1,18 +1,18 @@
-import atexit
 import logging
 import os
+import shutil
 from dataclasses import dataclass, field
 from typing import Generator, Iterable
 
-import h5py
+import lance
 import numpy as np
+import pandas as pd
 from omegaconf import MISSING
 from scipy.spatial.distance import cdist
 
 from kylin.models import EncoderConfig, load_encoder
 from kylin.utils import SimpleProgressLogger, TimeMeter
 
-from .fingerprint import Fingerprint
 from .index import DenseIndex, DenseIndexConfig, load_index
 from .retriever_base import (
     SEMANTIC_RETRIEVERS,
@@ -26,13 +26,12 @@ logger = logging.getLogger("DenseRetriever")
 
 @dataclass
 class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
-    inference_only: bool = True
     database_path: str = MISSING
     query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     source: str = MISSING
     refine_factor: int = 1
-    encode_fields: list[str] = field(default_factory=lambda: ["text"])
+    encode_fields: list[str] = MISSING
 
 
 @SEMANTIC_RETRIEVERS("dense", config_class=DenseRetrieverConfig)
@@ -46,99 +45,29 @@ class DenseRetriever(LocalRetriever):
         self.database_path = cfg.database_path
         self.source = cfg.source
         self.encode_fields = cfg.encode_fields
-        self.cfg = cfg
 
         # load encoder
-        if cfg.inference_only:
-            self.query_encoder = load_encoder(cfg.query_encoder_config)
-            self.passage_encoder = None
-        else:
-            self.query_encoder = None
-            self.passage_encoder = load_encoder(cfg.passage_encoder_config)
+        self.query_encoder = load_encoder(cfg.query_encoder_config)
+        self.passage_encoder = load_encoder(cfg.passage_encoder_config)
 
         # load database
-        self.inference_only = cfg.inference_only
-        self.db_file, self.titles, self.sections, self.texts, self.embeddings = (
-            self.load_database()
-        )
-        atexit.register(self._close)
+        self.db_path = os.path.join(self.database_path, f"{self.source}.lance")
+        if os.path.exists(self.db_path):
+            self.database = lance.dataset(self.db_path)
+        else:
+            self.database = None
 
-        # load fingerprint
-        self._fingerprint = Fingerprint(
-            features={
-                "database_path": cfg.database_path,
-                "source": cfg.source,
-                "index_type": cfg.index_type,
-            }
-        )
-
-        # load / build index
-        index_path = os.path.join(self.database_path, f"{cfg.index_type}_{cfg.source}")
+        # load index
+        index_path = os.path.join(self.database_path, f"{cfg.source}.{cfg.index_type}")
         self.index = load_index(index_path, self.embedding_size, cfg)
         self.refine_factor = cfg.refine_factor
         self.distance_function = self.index.distance_function
 
         # consistency check
-        assert len(self.titles) == len(self.index), "Inconsistent database and index"
-        assert len(self.sections) == len(self.index), "Inconsistent database and index"
-        assert len(self.texts) == len(self.index), "Inconsistent database and index"
-        assert len(self.embeddings) == len(self.index), "Inconsistent database and index"  # fmt: skip
+        self._check_consistency()
         return
 
-    def load_database(self) -> tuple[
-        h5py.File,
-        h5py.Dataset,
-        h5py.Dataset,
-        h5py.Dataset,
-        h5py.Dataset,
-    ]:
-        # open database file
-        h5path = os.path.join(self.database_path, "database.h5")
-        if os.path.exists(h5path):
-            mode = "r" if self.inference_only else "r+"
-            h5file = h5py.File(h5path, mode=mode)
-        else:
-            assert not self.inference_only, "Database does not exist"
-            if not os.path.exists(self.database_path):
-                os.makedirs(self.database_path)
-            h5file = h5py.File(h5path, mode="w")
-
-        # load each fields from database
-        if self.source in h5file:
-            group = h5file[self.source]
-            titles = group["titles"]
-            sections = group["sections"]
-            texts = group["texts"]
-            embeddings = group["embeddings"]
-        else:
-            group = h5file.create_group(self.source)
-            titles = group.create_dataset(
-                "titles",
-                shape=(0,),
-                dtype=h5py.string_dtype(encoding="utf-8"),
-                maxshape=(None,),
-            )
-            sections = group.create_dataset(
-                "sections",
-                shape=(0,),
-                dtype=h5py.string_dtype(encoding="utf-8"),
-                maxshape=(None,),
-            )
-            texts = group.create_dataset(
-                "texts",
-                shape=(0,),
-                dtype=h5py.string_dtype(encoding="utf-8"),
-                maxshape=(None,),
-            )
-            embeddings = group.create_dataset(
-                "embeddings",
-                shape=(0, self.embedding_size),
-                dtype=np.float16,
-                maxshape=(None, self.embedding_size),
-            )
-        return h5file, titles, sections, texts, embeddings
-
-    def _add_passages(self, passages: Iterable[dict[str, str]]):
+    def add_passages(self, passages: Iterable[dict[str, str]]):
         """
         Add passages to the retriever database
         """
@@ -155,38 +84,38 @@ class DenseRetriever(LocalRetriever):
             return
 
         # generate embeddings
-        assert self.passage_encoder is not None, "Passage encoder is not provided"
-        total_length = len(passages) if isinstance(passages, list) else None
-        p_logger = SimpleProgressLogger(
-            logger, total=total_length, interval=self.log_interval
-        )
+        assert self.passage_encoder is not None, "Passage encoder is not provided."
+        p_logger = SimpleProgressLogger(logger, interval=self.log_interval)
         for batch in get_batch():
             # encode passages
-            texts = [[i[key] for key in self.encode_fields] for i in batch]
-            raw_texts = [i["text"] for i in batch]
-            embeddings = self.passage_encoder.encode(texts)
+            if len(self.encode_fields) > 1:
+                data_to_encode = [[i[key] for key in self.encode_fields] for i in batch]
+            else:
+                data_to_encode = [i[self.encode_fields[0]] for i in batch]
+            embeddings = self.passage_encoder.encode(data_to_encode)
             p_logger.update(step=self.batch_size, desc="Encoding passages")
 
             # add data to database
-            cur_len = len(self.texts)
-            self.titles.resize((cur_len + len(batch),))
-            self.titles[cur_len:] = [p["title"] for p in batch]
-            self.sections.resize((cur_len + len(batch),))
-            self.sections[cur_len:] = [p["section"] for p in batch]
-            self.texts.resize((cur_len + len(batch),))
-            self.texts[cur_len:] = [p["text"] for p in batch]
-            self.embeddings.resize((cur_len + len(batch), self.embedding_size))
-            self.embeddings[cur_len:] = embeddings
-            self._fingerprint.update(raw_texts)
+            for n, emb in enumerate(embeddings):
+                batch[n]["vector"] = emb
+            data_to_add = pd.DataFrame(batch)
+            if self.database is None:
+                lance.write_dataset(data_to_add, uri=self.db_path, mode="create")
+                self.database = lance.dataset(self.db_path)
+            else:
+                self.database = lance.write_dataset(
+                    data_to_add,
+                    uri=self.db_path,
+                    mode="append",
+                    schema=self.database.schema,
+                )
 
             # add embeddings to index
             if self.index.is_trained:
                 self.index.add_embeddings(embeddings, serialize=False)
 
         if not self.index.is_trained:  # train index from scratch
-            logger.info("Training index")
-            logger.warning("Training index may consume a lot of memory")
-            self.index.build_index(self.embeddings)
+            self.build_index()
         else:
             self.index.serialize()
         logger.info("Finished adding passages")
@@ -206,45 +135,38 @@ class DenseRetriever(LocalRetriever):
             refined_indices, refined_scores = self.refine_index(emb_q, indices)
             indices = refined_indices[:, :top_k]
             scores = refined_scores[:, :top_k]
-        results = [
-            [
-                RetrievedContext(
-                    retriever=self.name,
-                    query=q,
-                    source=self.source,
-                    chunk_id=int(chunk_id),
-                    score=float(s),
-                    title=self.titles[chunk_id].decode(),
-                    section=self.sections[chunk_id].decode(),
-                    text=self.texts[chunk_id].decode(),
-                    full_text=self.texts[chunk_id].decode(),
-                )
-                for chunk_id, s in zip(idx, score)
-            ]
-            for q, idx, score in zip(query, indices, scores)
-        ]
+        retrieved = self.database.take(
+            indices.flatten(), columns=self.fields
+        ).to_pandas()
+        results = []
+        for i, (q, score) in enumerate(zip(query, scores)):
+            results.append(
+                [
+                    RetrievedContext(
+                        retriever=self.name,
+                        query=q,
+                        source=self.source,
+                        score=float(s),
+                        data=retrieved.iloc[i * top_k + j].to_dict(),
+                    )
+                    for j, s in enumerate(score)
+                ]
+            )
         return results
 
     def clean(self) -> None:
-        self.titles.resize((0,))
-        self.sections.resize((0,))
-        self.texts.resize((0,))
-        self.embeddings.resize((0, self.embedding_size))
-        self._fingerprint.clean()
+        self.index.clean()
+        shutil.rmtree(self.database_path)
+        self.database = None
         return
 
     def close(self):
-        atexit.unregister(self._close)
-        self._close()
         return
 
-    def _close(self):
-        logger.info("Closing DenseRetriever")
-        self.db_file.close()
-        return
-
-    def __len__(self):
-        return self.embeddings.shape[0]
+    def __len__(self) -> int:
+        if self.database is None:
+            return 0
+        return self.database.count_rows()
 
     @property
     def embedding_size(self) -> int:
@@ -254,15 +176,17 @@ class DenseRetriever(LocalRetriever):
             return self.passage_encoder.embedding_size
         if hasattr(self, "index"):
             return self.index.embedding_size
-        if hasattr(self, "embeddings"):
-            return self.embeddings.ndim
+        if self.database is not None:
+            return self.database.head(num_rows=1).to_pandas()["vector"][0].shape[0]
         raise ValueError(
             "No encoder or database is provided, embedding size can not be determined."
         )
 
     @property
-    def fingerprint(self) -> str:
-        return self._fingerprint.hexdigest()
+    def fields(self) -> list[str]:
+        fields = self.database.head(num_rows=1).to_pandas().columns.to_list()
+        fields.remove("vector")
+        return fields
 
     @TimeMeter("retrieve", "refine-index")
     def refine_index(
@@ -277,48 +201,62 @@ class DenseRetriever(LocalRetriever):
             indices (np.ndarray): The retrieved indices with shape [bsz, top_k * refine_factor]
 
         Returns:
-            indices (np.ndarray): The refined indices with shape [bsz, top_k]
-            scores (np.ndarray): The refined scores with shape [bsz, top_k]
+            indices (np.ndarray): The refined indices with shape [bsz, top_k * refine_factor]
+            scores (np.ndarray): The refined scores with shape [bsz, top_k * refine_factor]
         """
         # as h5py does not fully support fancy indexing, we process the indices individually
-        kf = indices.shape[1]
-        new_indices = []
-        new_scores = []
-        for q, idx in zip(query, indices):
-            # extract the embeddings of the retrieved indices
-            idx_order = np.argsort(idx)
-            ordered_idx = idx[idx_order]
-            emb_d_ = self.embeddings[ordered_idx]  # [kf, emb_size]
-            emb_d = np.empty_like(emb_d_)
-            emb_d[idx_order] = emb_d_  # recover the original order
+        bsz, kf = indices.shape
+        flat_indices = indices.flatten()
+        embs = np.stack(
+            self.database.take(flat_indices, columns=["vector"]).to_pandas()["vector"]
+        )  # [bsz * kf, emb_size]
+        query = np.expand_dims(query, 1).repeat(kf, axis=1).reshape(bsz * kf, -1)
 
-            # compute the distance between the query and the retrieved embeddings
-            q = np.expand_dims(q, 0).repeat(kf, axis=0)  # [kf, emb_size]
-            match self.distance_function:
-                case "L2":
-                    dis = cdist(q, emb_d, "euclidean")
-                case "COSINE":
-                    dis = -cdist(q, emb_d, "cosine")
-                case "IP":
-                    dis = -np.sum(q * emb_d, axis=1)
-                case "HAMMING":
-                    dis = cdist(q, emb_d, "hamming")
-                case "MANHATTAN":
-                    dis = cdist(q, emb_d, "cityblock")
-                case _:
-                    raise ValueError("Unsupported distance function")
-
-            # sort the indices & scores based on the distance
-            new_order = np.argsort(dis)
-            new_indices.append(idx[new_order])
-            new_scores.append(dis[new_order])
-        new_indices = np.stack(new_indices, axis=0)
-        new_scores = np.stack(new_scores, axis=0)
+        # compute the distance between the query and the retrieved embeddings
+        match self.distance_function:
+            case "L2":
+                dis = cdist(query, embs, "euclidean")
+            case "COSINE":
+                dis = -cdist(query, embs, "cosine")
+            case "IP":
+                dis = -np.sum(query * embs, axis=1)
+            case "HAMMING":
+                dis = cdist(query, embs, "hamming")
+            case "MANHATTAN":
+                dis = cdist(query, embs, "cityblock")
+            case _:
+                raise ValueError("Unsupported distance function")
+        dis = dis.reshape(bsz, kf)
+        new_order = np.argsort(dis, axis=1)
+        new_indices = np.take_along_axis(indices, new_order, axis=1)
+        new_scores = np.take_along_axis(dis, new_order, axis=1)
         return new_indices, new_scores
 
-    def rebuild_index(self):
-        cfg = self.cfg
-        index_path = os.path.join(self.database_path, f"{cfg.index_type}_{cfg.source}")
-        self.index = load_index(index_path, self.embedding_size, cfg)
-        self.index.build_index(self.embeddings)
+    def build_index(self) -> None:
+        index_path = os.path.join(
+            self.database_path, f"{self.source}.{self.cfg.index_type}"
+        )
+        self.index = load_index(index_path, self.embedding_size, self.cfg)
+
+        logger.info("Copying embeddings to memory map")
+        embeddings = np.memmap(
+            os.path.join(self.database_path, f"_embeddings.npy"),
+            dtype=np.float32,
+            mode="w+",
+            shape=(self.database.count_rows(), self.embedding_size),
+        )
+        idx = 0
+        for emb_batch in self.database.to_batches(columns=["vector"]):
+            emb_batch = np.stack(emb_batch.to_pandas()["vector"])
+            embeddings[idx : idx + emb_batch.shape[0]] = emb_batch
+            idx += emb_batch.shape[0]
+            del emb_batch
+        logger.info("Training index")
+        logger.warning("Training index may consume a lot of memory")
+        self.index.build_index(embeddings)
+        os.remove(os.path.join(self.database_path, f"_embeddings.npy"))
+        return
+
+    def _check_consistency(self) -> None:
+        assert len(self.index) == len(self), "Inconsistent index and database"
         return

@@ -1,9 +1,10 @@
 import re
 import string
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from .processor import PROCESSORS, Processor, TextUnit
+from .utils import UnifiedTokenizer, UTokenizerConfig
 
 
 @dataclass
@@ -73,23 +74,31 @@ class Unifier(Processor):
 
 @dataclass
 class TruncatorConfig:
-    max_tokens: Optional[int] = None
+    max_chars: Optional[int] = None
     max_bytes: Optional[int] = None
+    max_tokens: Optional[int] = None
+    tokenizer_config: UTokenizerConfig = field(default_factory=UTokenizerConfig)
 
 
 @PROCESSORS("truncate", config_class=TruncatorConfig)
 class Truncator(Processor):
     def __init__(self, cfg: TruncatorConfig) -> None:
-        self.max_tokens = cfg.max_tokens
+        self.max_chars = cfg.max_chars
         self.max_bytes = cfg.max_bytes
+        self.max_tokens = cfg.max_tokens
+        if self.max_tokens is not None:
+            self.tokenizer = UnifiedTokenizer(tokenizer_type=cfg.tokenizer_config)
         assert (
-            self.max_tokens is not None or self.max_bytes is not None
+            self.max_chars is not None or self.max_bytes is not None
         ), "At least one of max_tokens and max_bytes should be set"
         return
 
     def process(self, input_text: TextUnit) -> TextUnit:
         if self.max_tokens is not None:
-            input_text.content = input_text.content[: self.max_tokens]
+            tokens = self.tokenizer.tokenize(input_text.content)
+            input_text.content = self.tokenizer.detokenize(tokens[: self.max_tokens])
+        if self.max_chars is not None:
+            input_text.content = input_text.content[: self.max_chars]
         if self.max_bytes is not None:
             input_bytes = input_text.content.encode("utf-8")
             if len(input_bytes) > self.max_bytes:

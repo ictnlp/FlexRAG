@@ -5,14 +5,20 @@ import time
 from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Optional
-from uuid import NAMESPACE_OID, uuid5
 
 import requests
+from omegaconf import MISSING
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
-from kylin.utils import SimpleProgressLogger
+from kylin.utils import Choices, SimpleProgressLogger
 
-from .retriever_base import WEB_RETRIEVERS, RetrievedContext, Retriever, RetrieverConfig
+from ..retriever_base import (
+    WEB_RETRIEVERS,
+    RetrievedContext,
+    Retriever,
+    RetrieverConfig,
+)
+from .web_reader import WebReaderConfig, WebRetrievedContext, load_web_reader
 
 logger = logging.getLogger(__name__)
 
@@ -28,40 +34,24 @@ def _save_error_state(retry_state: RetryCallState) -> Exception:
 
 
 @dataclass
-class WebRetrieverConfig(RetrieverConfig):
+class WebRetrieverConfig(RetrieverConfig, WebReaderConfig):
     timeout: float = 3.0
     retry_times: int = 3
     retry_delay: float = 0.5
 
 
-@dataclass
-class BingRetrieverConfig(WebRetrieverConfig):
-    subscription_key: str = os.environ.get("BING_SEARCH_KEY", "EMPTY")
-    endpoint: str = "https://api.bing.microsoft.com"
-
-
-@dataclass
-class DuckDuckGoRetrieverConfig(WebRetrieverConfig):
-    proxy: Optional[str] = None
-
-
-@dataclass
-class GoogleRetrieverConfig(WebRetrieverConfig):
-    subscription_key: str = os.environ.get("GOOGLE_SEARCH_KEY", "EMPTY")
-    search_engine_id: str = os.environ.get("GOOGLE_SEARCH_ENGINE_ID", "EMPTY")
-    endpoint: str = "https://customsearch.googleapis.com/customsearch/v1"
-    proxy: Optional[str] = None
-
-
-class WebRetriever(Retriever):
+class WebRetrieverBase(Retriever):
     def __init__(self, cfg: WebRetrieverConfig):
         super().__init__(cfg)
+        # set retry parameters
         self.timeout = cfg.timeout
         self.retry_times = cfg.retry_times
         self.retry_delay = cfg.retry_delay
+        # load web reader
+        self.reader = load_web_reader(cfg)
         return
 
-    def _search(
+    def search(
         self,
         query: list[str] | str,
         top_k: int = 10,
@@ -89,7 +79,7 @@ class WebRetriever(Retriever):
         for q in query:
             time.sleep(delay)
             p_logger.update(1, "Searching")
-            results.append(search_func(q, top_k, **search_kwargs))
+            results.append(self.reader.read(search_func(q, top_k, **search_kwargs)))
         return results
 
     @abstractmethod
@@ -98,7 +88,7 @@ class WebRetriever(Retriever):
         query: list[str],
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[RetrievedContext]:
+    ) -> list[WebRetrievedContext]:
         """Search queries using local retriever.
 
         Args:
@@ -106,13 +96,19 @@ class WebRetriever(Retriever):
             top_k (int, optional): N documents to return. Defaults to 10.
 
         Returns:
-            list[RetrievedContext]: k RetrievedContext
+            list[WebRetrievedContext]: k WebRetrievedContext.
         """
         return
 
 
+@dataclass
+class BingRetrieverConfig(WebRetrieverConfig):
+    subscription_key: str = os.environ.get("BING_SEARCH_KEY", "EMPTY")
+    endpoint: str = "https://api.bing.microsoft.com"
+
+
 @WEB_RETRIEVERS("bing", config_class=BingRetrieverConfig)
-class BingRetriever(WebRetriever):
+class BingRetriever(WebRetrieverBase):
     name = "bing"
 
     def __init__(self, cfg: BingRetrieverConfig):
@@ -126,7 +122,7 @@ class BingRetriever(WebRetriever):
         query: str,
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[RetrievedContext]:
+    ) -> list[WebRetrievedContext]:
         params = {"q": query, "mkt": "en-US", "count": top_k}
         params.update(search_kwargs)
         response = requests.get(
@@ -140,29 +136,24 @@ class BingRetriever(WebRetriever):
         if "webPages" not in result:
             return []
         result = [
-            RetrievedContext(
-                retriever=self.name,
+            WebRetrievedContext(
+                engine=self.name,
                 query=query,
-                source=i["url"],
-                text=i["snippet"],
-                full_text=i["snippet"],
-                title=i["name"],
-                chunk_id=i["id"],
+                url=i["url"],
+                snippet=i["snippet"],
             )
             for i in result["webPages"]["value"]
         ]
         return result
 
-    @property
-    def fingerprint(self) -> str:
-        time_str = time.strftime("%Y-%m", time.gmtime())
-        namespace_uuid = uuid5(NAMESPACE_OID, self.name)
-        feature_str = self.name + self.endpoint + json.dumps(self.headers)
-        return uuid5(namespace_uuid, time_str + feature_str).hex
+
+@dataclass
+class DuckDuckGoRetrieverConfig(WebRetrieverConfig):
+    proxy: Optional[str] = None
 
 
 @WEB_RETRIEVERS("ddg", config_class=DuckDuckGoRetrieverConfig)
-class DuckDuckGoRetriever(WebRetriever):
+class DuckDuckGoRetriever(WebRetrieverBase):
     name = "ddg"
 
     def __init__(self, cfg: DuckDuckGoRetrieverConfig):
@@ -178,30 +169,31 @@ class DuckDuckGoRetriever(WebRetriever):
         query: str,
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[RetrievedContext]:
+    ) -> list[WebRetrievedContext]:
         result = self.ddgs.text(query, max_results=top_k, **search_kwargs)
         result = [
-            RetrievedContext(
-                retriever=self.name,
+            WebRetrievedContext(
+                engine=self.name,
                 query=query,
-                source=i["href"],
-                text=i["body"],
-                full_text=i["body"],
+                url=i["href"],
                 title=i["title"],
+                snippet=i["body"],
             )
             for i in result
         ]
         return result
 
-    @property
-    def fingerprint(self) -> str:
-        time_str = time.strftime("%Y-%m", time.gmtime())
-        namespace_uuid = uuid5(NAMESPACE_OID, self.name)
-        return uuid5(namespace_uuid, time_str).hex
+
+@dataclass
+class GoogleRetrieverConfig(WebRetrieverConfig):
+    subscription_key: str = os.environ.get("GOOGLE_SEARCH_KEY", "EMPTY")
+    search_engine_id: str = os.environ.get("GOOGLE_SEARCH_ENGINE_ID", "EMPTY")
+    endpoint: str = "https://customsearch.googleapis.com/customsearch/v1"
+    proxy: Optional[str] = None
 
 
 @WEB_RETRIEVERS("google", config_class=GoogleRetrieverConfig)
-class GoogleRetriever(WebRetriever):
+class GoogleRetriever(WebRetrieverBase):
     name = "google"
 
     def __init__(self, cfg: GoogleRetrieverConfig):
@@ -220,7 +212,7 @@ class GoogleRetriever(WebRetriever):
         query: str,
         top_k: int = 10,
         **search_kwargs,
-    ) -> list[RetrievedContext]:
+    ) -> list[WebRetrievedContext]:
         params = {
             "key": self.subscription_key,
             "cx": self.engine_id,
@@ -236,21 +228,76 @@ class GoogleRetriever(WebRetriever):
         response.raise_for_status()
         result = response.json()
         result = [
-            RetrievedContext(
-                retriever=self.name,
+            WebRetrievedContext(
+                engine=self.name,
                 query=query,
-                source=i["link"],
-                text=i["snippet"],
-                full_text=i["snippet"],
                 title=i["title"],
+                url=i["link"],
+                snippet=i["snippet"],
             )
             for i in result["items"]
         ]
         return result
 
-    @property
-    def fingerprint(self) -> str:
-        time_str = time.strftime("%Y-%m", time.gmtime())
-        namespace_uuid = uuid5(NAMESPACE_OID, self.name)
-        feature_str = self.engine_id + self.endpoint
-        return uuid5(namespace_uuid, time_str + feature_str).hex
+
+@dataclass
+class SerpApiRetrieverConfig(WebRetrieverConfig):
+    api_key: str = os.environ.get("SERP_API_KEY", MISSING)
+    engine: Choices(  # type: ignore
+        [
+            "google",
+            "bing",
+            "baidu",
+            "yandex",
+            "yahoo",
+            "google_scholar",
+            "duckduckgo",
+        ]
+    ) = "google"
+    country: str = "us"
+    language: str = "en"
+
+
+class SerpApiRetriever(WebRetrieverBase):
+    def __init__(self, cfg: SerpApiRetrieverConfig):
+        super().__init__(cfg)
+        try:
+            import serpapi
+
+            self.client = serpapi.Client(api_key=cfg.api_key)
+        except ImportError:
+            raise ImportError("Please install serpapi with `pip install serpapi`.")
+
+        self.api_key = cfg.api_key
+        self.engine = cfg.engine
+        self.gl = cfg.country
+        self.hl = cfg.language
+        return
+
+    def search_item(
+        self,
+        query: str,
+        top_k: int = 10,
+        **search_kwargs,
+    ) -> list[WebRetrievedContext]:
+        search_params = {
+            "q": query,
+            "engine": self.engine,
+            "api_key": self.api_key,
+            "gl": self.gl,
+            "hl": self.hl,
+            "num": top_k,
+        }
+        search_params.update(search_kwargs)
+        data = self.client.search(search_params)
+        contexts = [
+            WebRetrievedContext(
+                engine=self.engine,
+                query=query,
+                url=r["link"],
+                title=r.get("title", None),
+                snippet=r.get("snippet", None),
+            )
+            for r in data["organic_results"]
+        ]
+        return contexts

@@ -9,6 +9,21 @@
 - [ ] using httpx client optimize the API based methods(add proxy & retry support)
 - [ ] Add Lance DB as a retriever
 - [ ] Optimize the cache system
+- [ ] Reproduce new methods
+  - [ ] Refine
+    - [ ] Recomp
+    - [ ] LongLLMLingua
+  - [ ] Rerank
+    - [ ] TILDE
+    - [ ] rankLLama
+  - [ ] Dense Retriever Enhancing
+    - [ ] HyDE
+  - [ ] Repacking
+  - [ ] Encoder
+    - [ ] BGE Layerwise
+  - [ ] Searcher
+    - [ ] SelfRAG
+    - [ ] AutoRAG
 
 
 
