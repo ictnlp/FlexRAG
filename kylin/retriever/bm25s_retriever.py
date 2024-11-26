@@ -6,16 +6,16 @@ from typing import Iterable, Optional
 import bm25s
 from omegaconf import MISSING
 
-from kylin.utils import Choices
+from kylin.utils import Choices, LOGGER_MANAGER
 
 from .retriever_base import (
-    SPARSE_RETRIEVERS,
+    RETRIEVERS,
     LocalRetriever,
     LocalRetrieverConfig,
     RetrievedContext,
 )
 
-logger = logging.getLogger("BM25SRetriever")
+logger = LOGGER_MANAGER.get_logger("kylin.retrievers.bm25s")
 
 
 @dataclass
@@ -31,7 +31,7 @@ class BM25SRetrieverConfig(LocalRetrieverConfig):
     indexed_field: str = "text"
 
 
-@SPARSE_RETRIEVERS("bm25s", config_class=BM25SRetrieverConfig)
+@RETRIEVERS("bm25s", config_class=BM25SRetrieverConfig)
 class BM25SRetriever(LocalRetriever):
     name = "BM25SSearch"
 
@@ -126,9 +126,6 @@ class BM25SRetriever(LocalRetriever):
     def clean(self) -> None:
         del self._retriever.scores
         del self._retriever.vocab_dict
-        return
-
-    def close(self) -> None:
         return
 
     def __len__(self) -> int:

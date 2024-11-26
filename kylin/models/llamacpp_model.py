@@ -4,9 +4,9 @@ from dataclasses import dataclass
 from omegaconf import MISSING
 
 from kylin.prompt import ChatPrompt
-from kylin.utils import TimeMeter
+from kylin.utils import TIME_METER
 
-from .model_base import Generators, GenerationConfig, GeneratorBase, GeneratorBaseConfig
+from .model_base import GENERATORS, GenerationConfig, GeneratorBase, GeneratorBaseConfig
 
 
 @dataclass
@@ -16,7 +16,7 @@ class LlamacppGeneratorConfig(GeneratorBaseConfig):
     verbose: bool = False
 
 
-@Generators("llamacpp", config_class=LlamacppGeneratorConfig)
+@GENERATORS("llamacpp", config_class=LlamacppGeneratorConfig)
 class LlamacppGenerator(GeneratorBase):
     def __init__(self, cfg: LlamacppGeneratorConfig) -> None:
         from llama_cpp import Llama
@@ -29,7 +29,7 @@ class LlamacppGenerator(GeneratorBase):
         )
         return
 
-    @TimeMeter("llamacpp_generate")
+    @TIME_METER("llamacpp_generate")
     def generate(
         self,
         prefixes: list[str],
@@ -48,7 +48,7 @@ class LlamacppGenerator(GeneratorBase):
                 responses[-1].append(response["choices"][0]["text"])
         return responses
 
-    @TimeMeter("llamacpp_generate")
+    @TIME_METER("llamacpp_generate")
     async def async_generate(
         self,
         prefixes: list[str],
@@ -68,7 +68,7 @@ class LlamacppGenerator(GeneratorBase):
                 responses[-1].append(r["choices"][0]["text"])
         return responses
 
-    @TimeMeter("llamacpp_generate")
+    @TIME_METER("llamacpp_generate")
     def chat(
         self,
         prompts: list[ChatPrompt],
@@ -87,7 +87,7 @@ class LlamacppGenerator(GeneratorBase):
                 responses[-1].append(response["choices"][0]["message"]["content"])
         return responses
 
-    @TimeMeter("llamacpp_generate")
+    @TIME_METER("llamacpp_generate")
     async def async_chat(
         self,
         prompts: list[ChatPrompt],

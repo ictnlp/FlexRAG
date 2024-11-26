@@ -1,48 +1,13 @@
-from .searchers import (
-    KeywordSearcher,
-    KeywordSearcherConfig,
-    WebSearcher,
-    WebSearcherConfig,
-    DenseSearcher,
-    DenseSearcherConfig,
-    HybridSearcher,
-    HybridSearcherConfig,
-    HighLevalSearcher,
-    HighLevelSearcherConfig,
-)
-from .retriever import (
-    ElasticRetriever,
-    ElasticRetrieverConfig,
-    DenseRetriever,
-    DenseRetrieverConfig,
-    BingRetriever,
-    BingRetrieverConfig,
-    DuckDuckGoRetriever,
-    DuckDuckGoRetrieverConfig,
-    GoogleRetriever,
-    GoogleRetrieverConfig,
-)
+from .retriever import RETRIEVERS
+from .assistant import ASSISTANTS
+from .ranker import RANKERS
+from .models import GENERATORS, ENCODERS
 
 
 __all__ = [
-    "KeywordSearcher",
-    "KeywordSearcherConfig",
-    "WebSearcher",
-    "WebSearcherConfig",
-    "DenseSearcher",
-    "DenseSearcherConfig",
-    "HybridSearcher",
-    "HybridSearcherConfig",
-    "HighLevalSearcher",
-    "HighLevelSearcherConfig",
-    "ElasticRetriever",
-    "ElasticRetrieverConfig",
-    "DenseRetriever",
-    "DenseRetrieverConfig",
-    "BingRetriever",
-    "BingRetrieverConfig",
-    "DuckDuckGoRetriever",
-    "DuckDuckGoRetrieverConfig",
-    "GoogleRetriever",
-    "GoogleRetrieverConfig",
+    "RETRIEVERS",
+    "ASSISTANTS",
+    "RANKERS",
+    "GENERATORS",
+    "ENCODERS",
 ]

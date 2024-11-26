@@ -10,17 +10,17 @@ import requests
 from omegaconf import MISSING
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
-from kylin.utils import Choices, SimpleProgressLogger
+from kylin.utils import Choices, SimpleProgressLogger, LOGGER_MANAGER
 
 from ..retriever_base import (
-    WEB_RETRIEVERS,
+    RETRIEVERS,
     RetrievedContext,
-    Retriever,
-    RetrieverConfig,
+    RetrieverBase,
+    RetrieverConfigBase,
 )
-from .web_reader import WebReaderConfig, WebRetrievedContext, load_web_reader
+from .web_reader import WebRetrievedContext, WEB_READERS
 
-logger = logging.getLogger(__name__)
+logger = LOGGER_MANAGER.get_logger("kylin.retrievers.web_retriever")
 
 
 def _save_error_state(retry_state: RetryCallState) -> Exception:
@@ -33,14 +33,17 @@ def _save_error_state(retry_state: RetryCallState) -> Exception:
     raise retry_state.outcome.exception()
 
 
+WebReaderConfig = WEB_READERS.make_config(default="snippet")
+
+
 @dataclass
-class WebRetrieverConfig(RetrieverConfig, WebReaderConfig):
+class WebRetrieverConfig(RetrieverConfigBase, WebReaderConfig):
     timeout: float = 3.0
     retry_times: int = 3
     retry_delay: float = 0.5
 
 
-class WebRetrieverBase(Retriever):
+class WebRetrieverBase(RetrieverBase):
     def __init__(self, cfg: WebRetrieverConfig):
         super().__init__(cfg)
         # set retry parameters
@@ -48,7 +51,7 @@ class WebRetrieverBase(Retriever):
         self.retry_times = cfg.retry_times
         self.retry_delay = cfg.retry_delay
         # load web reader
-        self.reader = load_web_reader(cfg)
+        self.reader = WEB_READERS.load(cfg)
         return
 
     def search(
@@ -73,7 +76,7 @@ class WebRetrieverBase(Retriever):
         else:
             search_func = self.search_item
 
-        # search
+        # search & parse
         results = []
         p_logger = SimpleProgressLogger(logger, len(query), self.log_interval)
         for q in query:
@@ -100,6 +103,10 @@ class WebRetrieverBase(Retriever):
         """
         return
 
+    @property
+    def fields(self):
+        return self.reader.fields
+
 
 @dataclass
 class BingRetrieverConfig(WebRetrieverConfig):
@@ -107,7 +114,7 @@ class BingRetrieverConfig(WebRetrieverConfig):
     endpoint: str = "https://api.bing.microsoft.com"
 
 
-@WEB_RETRIEVERS("bing", config_class=BingRetrieverConfig)
+@RETRIEVERS("bing", config_class=BingRetrieverConfig)
 class BingRetriever(WebRetrieverBase):
     name = "bing"
 
@@ -152,7 +159,7 @@ class DuckDuckGoRetrieverConfig(WebRetrieverConfig):
     proxy: Optional[str] = None
 
 
-@WEB_RETRIEVERS("ddg", config_class=DuckDuckGoRetrieverConfig)
+@RETRIEVERS("ddg", config_class=DuckDuckGoRetrieverConfig)
 class DuckDuckGoRetriever(WebRetrieverBase):
     name = "ddg"
 
@@ -192,7 +199,7 @@ class GoogleRetrieverConfig(WebRetrieverConfig):
     proxy: Optional[str] = None
 
 
-@WEB_RETRIEVERS("google", config_class=GoogleRetrieverConfig)
+@RETRIEVERS("google", config_class=GoogleRetrieverConfig)
 class GoogleRetriever(WebRetrieverBase):
     name = "google"
 
@@ -258,6 +265,7 @@ class SerpApiRetrieverConfig(WebRetrieverConfig):
     language: str = "en"
 
 
+@RETRIEVERS("serpapi", config_class=SerpApiRetrieverConfig)
 class SerpApiRetriever(WebRetrieverBase):
     def __init__(self, cfg: SerpApiRetrieverConfig):
         super().__init__(cfg)

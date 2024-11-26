@@ -1,6 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, make_dataclass, field
+from dataclasses import dataclass
 from typing import Any, Optional
 
 from concurrent.futures import ThreadPoolExecutor
@@ -8,10 +8,7 @@ from functools import partial
 from httpx import Client
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-from kylin.utils import Register, Choices
-
-
-WEB_DOWNLOADERS = Register("web_downloader")
+from kylin.utils import Register
 
 
 @dataclass
@@ -19,7 +16,7 @@ class BaseWebDownloaderConfig:
     allow_parallel: bool = True
 
 
-class WebDownloader(ABC):
+class WebDownloaderBase(ABC):
     def __init__(self, cfg: BaseWebDownloaderConfig) -> None:
         self.allow_parallel = cfg.allow_parallel
         return
@@ -45,6 +42,9 @@ class WebDownloader(ABC):
     @abstractmethod
     def download_page(self, url: str) -> Any:
         return
+
+
+WEB_DOWNLOADERS = Register[WebDownloaderBase]("web_downloader")
 
 
 @dataclass
@@ -85,29 +85,3 @@ class SimpleWebDownloader:
             return response.text
 
         return download_page(url)
-
-
-web_downloader_fields = [
-    (
-        "web_downloader_type",
-        Choices(WEB_DOWNLOADERS.names),
-        field(default=WEB_DOWNLOADERS.names[0]),
-    )
-]
-web_downloader_fields += [
-    (
-        f"{WEB_DOWNLOADERS[name]['short_names'][0]}_config",
-        WEB_DOWNLOADERS[name]["config_class"],
-        field(default_factory=WEB_DOWNLOADERS[name]["config_class"]),
-    )
-    for name in WEB_DOWNLOADERS.mainnames
-]
-WebDownloaderConfig = make_dataclass("WebDownloaderConfig", web_downloader_fields)
-
-
-def load_web_downloader(config: WebDownloaderConfig) -> WebDownloader:  # type: ignore
-    config_name = (
-        f"{WEB_DOWNLOADERS[config.web_downloader_type]['short_names'][0]}_config"
-    )
-    sub_config = getattr(config, config_name)
-    return WEB_DOWNLOADERS[config.web_downloader_type]["item"](sub_config)

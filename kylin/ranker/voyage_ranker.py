@@ -4,9 +4,9 @@ from dataclasses import dataclass
 import numpy as np
 from omegaconf import MISSING
 
-from kylin.utils import TimeMeter
+from kylin.utils import TIME_METER
 
-from .ranker import RankerBase, RankerConfig, Rankers
+from .ranker import RankerBase, RankerConfig, RANKERS
 
 
 @dataclass
@@ -17,7 +17,7 @@ class VoyageRankerConfig(RankerConfig):
     max_retries: int = 3
 
 
-@Rankers("voyage", config_class=VoyageRankerConfig)
+@RANKERS("voyage", config_class=VoyageRankerConfig)
 class VoyageRanker(RankerBase):
     def __init__(self, cfg: VoyageRankerConfig) -> None:
         super().__init__(cfg)
@@ -29,7 +29,7 @@ class VoyageRanker(RankerBase):
         self.model = cfg.model
         return
 
-    @TimeMeter("voyage_rank")
+    @TIME_METER("voyage_rank")
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         result = self.client.rerank(
             query=query,
@@ -40,7 +40,7 @@ class VoyageRanker(RankerBase):
         scores = [i.relevance_score for i in result.results]
         return None, scores
 
-    @TimeMeter("voyage_rank")
+    @TIME_METER("voyage_rank")
     async def _async_rank(
         self, query: str, candidates: list[str]
     ) -> tuple[np.ndarray, np.ndarray]:

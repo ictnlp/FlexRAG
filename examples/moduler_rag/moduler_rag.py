@@ -2,8 +2,8 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-from kylin.ranker import RankerConfig, load_ranker, Rankers
-from kylin.retriever import RetrieverConfig, load_retriever, RetrievedContext
+from kylin.ranker import RankerConfig, load_ranker, RANKERS
+from kylin.retriever import RetrieverConfigBase, load_retriever, RetrievedContext
 from kylin.utils import Choices
 
 from .searcher import BaseSearcher, BaseSearcherConfig, Searchers, SearchHistory
@@ -13,8 +13,8 @@ logger = logging.getLogger("NaiveSearcher")
 
 
 @dataclass
-class NaiveSearcherConfig(BaseSearcherConfig, RetrieverConfig, RankerConfig):
-    ranker_type: Optional[Choices(Rankers.names)] = None  # type: ignore
+class NaiveSearcherConfig(BaseSearcherConfig, RetrieverConfigBase, RankerConfig):
+    ranker_type: Optional[Choices(RANKERS.names)] = None  # type: ignore
 
 
 @Searchers("naive", config_class=NaiveSearcherConfig)
@@ -74,3 +74,7 @@ class NaiveSearcher(BaseSearcher):
     def close(self) -> None:
         self.retriever.close()
         return
+
+
+if __name__ == "__main__":
+    ...

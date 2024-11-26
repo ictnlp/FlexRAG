@@ -5,17 +5,16 @@ from typing import Iterable, Optional
 from omegaconf import MISSING
 from elasticsearch import Elasticsearch
 
-from kylin.utils import SimpleProgressLogger
+from kylin.utils import SimpleProgressLogger, LOGGER_MANAGER
 
-from .keyword import Keywords
 from .retriever_base import (
-    SPARSE_RETRIEVERS,
+    RETRIEVERS,
     LocalRetriever,
     LocalRetrieverConfig,
     RetrievedContext,
 )
 
-logger = logging.getLogger("ElasticRetriever")
+logger = LOGGER_MANAGER.get_logger("kylin.retrievers.elastic")
 
 
 @dataclass
@@ -30,7 +29,7 @@ class ElasticRetrieverConfig(LocalRetrieverConfig):
     id_field: str = "id"
 
 
-@SPARSE_RETRIEVERS("elastic", config_class=ElasticRetrieverConfig)
+@RETRIEVERS("elastic", config_class=ElasticRetrieverConfig)
 class ElasticRetriever(LocalRetriever):
     name = "ElasticSearch"
 
@@ -129,7 +128,7 @@ class ElasticRetriever(LocalRetriever):
 
     def search_batch(
         self,
-        query: list[str | Keywords],
+        query: list[str],
         top_k: int = 10,
         search_method: str = "full_text",
         **search_kwargs,
@@ -168,10 +167,6 @@ class ElasticRetriever(LocalRetriever):
             self.client.indices.delete(index=self.index_name)
         return
 
-    def close(self) -> None:
-        self.client.close()
-        return
-
     def __len__(self) -> int:
         return self.client.count(index=self.index_name)["count"]
 
@@ -180,7 +175,7 @@ class ElasticRetriever(LocalRetriever):
         return [i["index"] for i in self.client.cat.indices(format="json")]
 
     def _form_results(
-        self, query: list[str | Keywords], responses: list[dict] | None
+        self, query: list[str], responses: list[dict] | None
     ) -> list[list[RetrievedContext]]:
         results = []
         if responses is None:
@@ -191,7 +186,7 @@ class ElasticRetriever(LocalRetriever):
                     [
                         RetrievedContext(
                             retriever=self.name,
-                            query=q if isinstance(q, str) else str(q),
+                            query=q,
                             data={},
                             source=self.index_name,
                             score=0.0,
@@ -204,7 +199,7 @@ class ElasticRetriever(LocalRetriever):
                 [
                     RetrievedContext(
                         retriever=self.name,
-                        query=q if isinstance(q, str) else str(q),
+                        query=q,
                         data=i["_source"],
                         source=self.index_name,
                         score=i["_score"],

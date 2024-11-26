@@ -4,13 +4,12 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
-from h5py import Dataset
 
-from kylin.utils import Choices
+from kylin.utils import Choices, LOGGER_MANAGER
 
-from .index_base import DenseIndex, DenseIndexConfigBase, DENSE_INDEX
+from .index_base import DenseIndexBase, DenseIndexConfigBase, DENSE_INDEX
 
-logger = logging.getLogger(__name__)
+logger = LOGGER_MANAGER.get_logger("kylin.retriever.index.faiss")
 
 
 @dataclass
@@ -29,11 +28,9 @@ class FaissIndexConfig(DenseIndexConfigBase):
 
 
 @DENSE_INDEX("faiss", config_class=FaissIndexConfig)
-class FaissIndex(DenseIndex):
-    def __init__(
-        self, index_path: str, embedding_size: int, cfg: FaissIndexConfig
-    ) -> None:
-        super().__init__(index_path, embedding_size, cfg)
+class FaissIndex(DenseIndexBase):
+    def __init__(self, cfg: FaissIndexConfig, index_path: str) -> None:
+        super().__init__(cfg, index_path)
         # check faiss
         try:
             import faiss
@@ -68,13 +65,13 @@ class FaissIndex(DenseIndex):
             self.index = None
         return
 
-    def build_index(self, embeddings: np.ndarray | Dataset) -> None:
+    def build_index(self, embeddings: np.ndarray) -> None:
         self.clean()
         self.index = self._prepare_index(
             index_type=self.index_type,
             distance_function=self.distance_function,
-            embedding_size=self.embedding_size,
-            embedding_length=len(embeddings),
+            embedding_size=embeddings.shape[1],
+            embedding_length=embeddings.shape[0],
             n_list=self.n_list,
             n_subquantizers=self.n_subquantizers,
             n_bits=self.n_bits,
@@ -111,7 +108,7 @@ class FaissIndex(DenseIndex):
             factory_str = f"IVF{n_list},PQ{embedding_size//2}x4fs"
             logger.info(f"Auto set index to {factory_str}")
             logger.info(
-                f"We recommend to set n_probe to {n_list//10} for better inference performance"
+                f"We recommend to set n_probe to {n_list//8} for better inference performance"
             )
 
         if factory_str is not None:
@@ -154,7 +151,7 @@ class FaissIndex(DenseIndex):
         index = self._set_index(index)
         return index
 
-    def train_index(self, embeddings: np.ndarray | Dataset) -> None:
+    def train_index(self, embeddings: np.ndarray) -> None:
         if self.is_flat:
             logger.info("Index is flat, no need to train")
             return
@@ -162,7 +159,8 @@ class FaissIndex(DenseIndex):
         if (self.index_train_num >= embeddings.shape[0]) or (
             self.index_train_num == -1
         ):
-            embeddings = embeddings[:].astype("float32")
+            if embeddings.dtype != np.float32:
+                embeddings = embeddings.astype("float32")
             self.index.train(embeddings)
         else:
             selected_indices = np.random.choice(
@@ -268,7 +266,6 @@ class FaissIndex(DenseIndex):
         else:
             cpu_index = self.faiss.read_index(self.index_path)
         index = self._set_index(cpu_index)
-        assert index.d == self.embedding_size, "Index dimension mismatch"
         return index
 
     def clean(self):
@@ -278,6 +275,12 @@ class FaissIndex(DenseIndex):
             os.remove(self.index_path)
         self.index.reset()
         return
+
+    @property
+    def embedding_size(self) -> int:
+        if self.index is None:
+            raise ValueError("Index is not initialized.")
+        return self.index.d
 
     @property
     def is_trained(self) -> bool:

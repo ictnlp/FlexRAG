@@ -16,6 +16,8 @@ from .model_base import (
     GenerationConfig,
     GeneratorBase,
     GeneratorBaseConfig,
+    GENERATORS,
+    ENCODERS,
 )
 from .ollama_model import (
     OllamaGenerator,
@@ -31,12 +33,6 @@ from .openai_model import (
 )
 from .vllm_model import VLLMGenerator, VLLMGeneratorConfig
 
-from .model_loader import (  # isort:skip
-    EncoderConfig,
-    GeneratorConfig,
-    load_encoder,
-    load_generator,
-)
 
 __all__ = [
     "GeneratorBase",
@@ -65,8 +61,6 @@ __all__ = [
     "JinaEncoderConfig",
     "CohereEncoder",
     "CohereEncoderConfig",
-    "EncoderConfig",
-    "GeneratorConfig",
-    "load_encoder",
-    "load_generator",
+    "GENERATORS",
+    "ENCODERS",
 ]

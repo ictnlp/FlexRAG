@@ -4,17 +4,16 @@ from typing import Generator, Iterable
 
 from omegaconf import MISSING
 
-from kylin.utils import Choices, SimpleProgressLogger
+from kylin.utils import Choices, SimpleProgressLogger, LOGGER_MANAGER
 
-from .keyword import Keywords
 from .retriever_base import (
-    SPARSE_RETRIEVERS,
+    RETRIEVERS,
     LocalRetriever,
     LocalRetrieverConfig,
     RetrievedContext,
 )
 
-logger = logging.getLogger("TypesenseRetriever")
+logger = LOGGER_MANAGER.get_logger("kylin.retrievers.typesense")
 
 
 @dataclass
@@ -27,7 +26,7 @@ class TypesenseRetrieverConfig(LocalRetrieverConfig):
     timeout: float = 200.0
 
 
-@SPARSE_RETRIEVERS("typesense", config_class=TypesenseRetrieverConfig)
+@RETRIEVERS("typesense", config_class=TypesenseRetrieverConfig)
 class TypesenseRetriever(LocalRetriever):
     name = "Typesense"
 
@@ -83,7 +82,7 @@ class TypesenseRetriever(LocalRetriever):
 
     def search_batch(
         self,
-        query: list[str | Keywords],
+        query: list[str],
         top_k: int = 10,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
@@ -119,9 +118,6 @@ class TypesenseRetriever(LocalRetriever):
     def clean(self) -> None:
         if self.source in self._sources:
             self.client.collections[self.source].delete()
-        return
-
-    def close(self) -> None:
         return
 
     def __len__(self) -> int:

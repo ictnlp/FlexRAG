@@ -6,14 +6,14 @@ from typing import Optional
 
 from transformers import PreTrainedTokenizer
 
-from kylin.utils import Choices
+from kylin.utils import Choices, LOGGER_MANAGER
 
 from .prompt_base import ChatPrompt
 
 TRUNCATION_STRATEGIES = ["left", "right", "history", "demo", "auto"]
 
 
-logger = logging.getLogger(__name__)
+logger = LOGGER_MANAGER.get_logger("kylin.prompt")
 
 
 class Template(ABC):

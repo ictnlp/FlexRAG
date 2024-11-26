@@ -2,7 +2,7 @@ import logging
 import os
 import shutil
 from dataclasses import dataclass, field
-from typing import Generator, Iterable
+from typing import Generator, Iterable, Optional
 
 import lance
 import numpy as np
@@ -10,18 +10,22 @@ import pandas as pd
 from omegaconf import MISSING
 from scipy.spatial.distance import cdist
 
-from kylin.models import EncoderConfig, load_encoder
-from kylin.utils import SimpleProgressLogger, TimeMeter
+from kylin.models import ENCODERS, EncoderBase
+from kylin.utils import SimpleProgressLogger, TIME_METER, LOGGER_MANAGER
 
-from .index import DenseIndex, DenseIndexConfig, load_index
+from .index import DenseIndexBase, DENSE_INDEX
 from .retriever_base import (
-    SEMANTIC_RETRIEVERS,
+    RETRIEVERS,
     LocalRetriever,
     LocalRetrieverConfig,
     RetrievedContext,
 )
 
-logger = logging.getLogger("DenseRetriever")
+logger = LOGGER_MANAGER.get_logger("kylin.retreviers.dense")
+
+
+DenseIndexConfig = DENSE_INDEX.make_config()
+EncoderConfig = ENCODERS.make_config(default=None)
 
 
 @dataclass
@@ -31,15 +35,17 @@ class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
     passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     source: str = MISSING
     refine_factor: int = 1
-    encode_fields: list[str] = MISSING
+    encode_fields: Optional[list[str]] = None
 
 
-@SEMANTIC_RETRIEVERS("dense", config_class=DenseRetrieverConfig)
+@RETRIEVERS("dense", config_class=DenseRetrieverConfig)
 class DenseRetriever(LocalRetriever):
     name = "Dense Retrieval"
-    index: DenseIndex
+    index: DenseIndexBase
+    query_encoder: EncoderBase
+    passage_encoder: EncoderBase
 
-    def __init__(self, cfg: DenseRetrieverConfig) -> None:
+    def __init__(self, cfg: DenseRetrieverConfig, no_check: bool = False) -> None:
         super().__init__(cfg)
         # set args
         self.database_path = cfg.database_path
@@ -47,8 +53,8 @@ class DenseRetriever(LocalRetriever):
         self.encode_fields = cfg.encode_fields
 
         # load encoder
-        self.query_encoder = load_encoder(cfg.query_encoder_config)
-        self.passage_encoder = load_encoder(cfg.passage_encoder_config)
+        self.query_encoder = ENCODERS.load(cfg.query_encoder_config)
+        self.passage_encoder = ENCODERS.load(cfg.passage_encoder_config)
 
         # load database
         self.db_path = os.path.join(self.database_path, f"{self.source}.lance")
@@ -59,12 +65,13 @@ class DenseRetriever(LocalRetriever):
 
         # load index
         index_path = os.path.join(self.database_path, f"{cfg.source}.{cfg.index_type}")
-        self.index = load_index(index_path, self.embedding_size, cfg)
+        self.index = DENSE_INDEX.load(cfg, index_path=index_path)
         self.refine_factor = cfg.refine_factor
         self.distance_function = self.index.distance_function
 
         # consistency check
-        self._check_consistency()
+        if not no_check:
+            self._check_consistency()
         return
 
     def add_passages(self, passages: Iterable[dict[str, str]]):
@@ -89,7 +96,9 @@ class DenseRetriever(LocalRetriever):
         for batch in get_batch():
             # encode passages
             if len(self.encode_fields) > 1:
-                data_to_encode = [[i[key] for key in self.encode_fields] for i in batch]
+                data_to_encode = [
+                    " ".join([i[key] for key in self.encode_fields]) for i in batch
+                ]
             else:
                 data_to_encode = [i[self.encode_fields[0]] for i in batch]
             embeddings = self.passage_encoder.encode(data_to_encode)
@@ -160,9 +169,6 @@ class DenseRetriever(LocalRetriever):
         self.database = None
         return
 
-    def close(self):
-        return
-
     def __len__(self) -> int:
         if self.database is None:
             return 0
@@ -174,10 +180,10 @@ class DenseRetriever(LocalRetriever):
             return self.query_encoder.embedding_size
         if self.passage_encoder is not None:
             return self.passage_encoder.embedding_size
-        if hasattr(self, "index"):
-            return self.index.embedding_size
         if self.database is not None:
             return self.database.head(num_rows=1).to_pandas()["vector"][0].shape[0]
+        if hasattr(self, "index"):
+            return self.index.embedding_size
         raise ValueError(
             "No encoder or database is provided, embedding size can not be determined."
         )
@@ -188,7 +194,7 @@ class DenseRetriever(LocalRetriever):
         fields.remove("vector")
         return fields
 
-    @TimeMeter("retrieve", "refine-index")
+    @TIME_METER("retrieve", "refine-index")
     def refine_index(
         self,
         query: np.ndarray,
@@ -233,11 +239,6 @@ class DenseRetriever(LocalRetriever):
         return new_indices, new_scores
 
     def build_index(self) -> None:
-        index_path = os.path.join(
-            self.database_path, f"{self.source}.{self.cfg.index_type}"
-        )
-        self.index = load_index(index_path, self.embedding_size, self.cfg)
-
         logger.info("Copying embeddings to memory map")
         embeddings = np.memmap(
             os.path.join(self.database_path, f"_embeddings.npy"),
@@ -251,12 +252,16 @@ class DenseRetriever(LocalRetriever):
             embeddings[idx : idx + emb_batch.shape[0]] = emb_batch
             idx += emb_batch.shape[0]
             del emb_batch
-        logger.info("Training index")
-        logger.warning("Training index may consume a lot of memory")
+        logger.info("Training index.")
+        logger.warning("Training index may consume a lot of memory.")
         self.index.build_index(embeddings)
         os.remove(os.path.join(self.database_path, f"_embeddings.npy"))
         return
 
     def _check_consistency(self) -> None:
-        assert len(self.index) == len(self), "Inconsistent index and database"
+        assert len(self.index) == len(self), "Inconsistent index and database."
+        if self.index.is_trained:
+            assert (
+                self.index.embedding_size == self.embedding_size
+            ), "Inconsistent embedding size."
         return

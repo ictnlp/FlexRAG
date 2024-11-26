@@ -7,12 +7,12 @@ import numpy as np
 from numpy import ndarray
 from omegaconf import MISSING
 
-from kylin.utils import TimeMeter, Choices
+from kylin.utils import TIME_METER, Choices
 
 from .model_base import (
     EncoderBase,
     EncoderBaseConfig,
-    Encoders,
+    ENCODERS,
 )
 
 
@@ -35,7 +35,7 @@ class JinaEncoderConfig(EncoderBaseConfig):
     ] = None
 
 
-@Encoders("jina", config_class=JinaEncoderConfig)
+@ENCODERS("jina", config_class=JinaEncoderConfig)
 class JinaEncoder(EncoderBase):
     def __init__(self, cfg: JinaEncoderConfig):
         self.headers = {
@@ -53,7 +53,7 @@ class JinaEncoder(EncoderBase):
         }
         return
 
-    @TimeMeter("jina_encode")
+    @TIME_METER("jina_encode")
     def encode(self, texts: list[str]) -> ndarray:
         data = self._data_template.copy()
         data["input"] = texts
@@ -62,7 +62,7 @@ class JinaEncoder(EncoderBase):
         embeddings = [i["embedding"] for i in response.json()["data"]]
         return np.array(embeddings)
 
-    @TimeMeter("jina_encode")
+    @TIME_METER("jina_encode")
     async def async_encode(self, texts: list[str]) -> ndarray:
         data = self._data_template.copy()
         data["input"] = texts

@@ -4,11 +4,11 @@ from dataclasses import dataclass
 from hashlib import blake2b
 from typing import Any, MutableMapping, Optional, Literal
 
-from kylin.utils import Choices
+from kylin.utils import Choices, LOGGER_MANAGER
 
 from .backends import PersistentBackendConfig, load_backend
 
-logger = logging.getLogger(__name__)
+logger = LOGGER_MANAGER.get_logger("kylin.cache")
 
 
 def tupled_hashkey(*args, **kwargs):

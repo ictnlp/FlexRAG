@@ -9,19 +9,19 @@ from numpy import ndarray
 from omegaconf import MISSING
 
 from kylin.prompt import ChatPrompt
-from kylin.utils import TimeMeter
+from kylin.utils import TIME_METER, LOGGER_MANAGER
 
 from .model_base import (
     GenerationConfig,
     GeneratorBase,
     GeneratorBaseConfig,
-    Generators,
+    GENERATORS,
     EncoderBase,
     EncoderBaseConfig,
-    Encoders,
+    ENCODERS,
 )
 
-logger = logging.getLogger("OllamaGenerator")
+logger = LOGGER_MANAGER.get_logger("kylin.models.ollama")
 
 
 @dataclass
@@ -33,7 +33,7 @@ class OllamaGeneratorConfig(GeneratorBaseConfig):
     allow_parallel: bool = True
 
 
-@Generators("ollama", config_class=OllamaGeneratorConfig)
+@GENERATORS("ollama", config_class=OllamaGeneratorConfig)
 class OllamaGenerator(GeneratorBase):
     def __init__(self, cfg: OllamaGeneratorConfig) -> None:
         from ollama import Client
@@ -48,7 +48,7 @@ class OllamaGenerator(GeneratorBase):
         self._check()
         return
 
-    @TimeMeter("ollama_generate")
+    @TIME_METER("ollama_generate")
     def chat(
         self,
         prompts: list[ChatPrompt],
@@ -84,7 +84,7 @@ class OllamaGenerator(GeneratorBase):
                     responses[-1].append(response["message"]["content"])
         return responses
 
-    @TimeMeter("ollama_generate")
+    @TIME_METER("ollama_generate")
     async def async_chat(
         self,
         prompts: list[ChatPrompt],
@@ -113,7 +113,7 @@ class OllamaGenerator(GeneratorBase):
         ]
         return responses
 
-    @TimeMeter("ollama_generate")
+    @TIME_METER("ollama_generate")
     def generate(
         self,
         prefixes: list[str],
@@ -150,7 +150,7 @@ class OllamaGenerator(GeneratorBase):
                     responses[-1].append(response["message"]["content"])
         return responses
 
-    @TimeMeter("ollama_generate")
+    @TIME_METER("ollama_generate")
     async def async_generate(
         self,
         prefixes: list[str],
@@ -207,7 +207,7 @@ class OllamaEncoderConfig(EncoderBaseConfig):
     allow_parallel: bool = True
 
 
-@Encoders("ollama", config_class=OllamaEncoderConfig)
+@ENCODERS("ollama", config_class=OllamaEncoderConfig)
 class OllamaEncoder(EncoderBase):
     def __init__(self, cfg: OllamaEncoderConfig) -> None:
         super().__init__()
@@ -224,7 +224,7 @@ class OllamaEncoder(EncoderBase):
         self._check()
         return
 
-    @TimeMeter("ollama_encode")
+    @TIME_METER("ollama_encode")
     def encode(self, texts: list[str]) -> ndarray:
         if self.prompt:
             texts = [f"{self.prompt} {text}" for text in texts]
@@ -248,7 +248,7 @@ class OllamaEncoder(EncoderBase):
         embeddings = np.array(embeddings)
         return embeddings[:, : self.embedding_size]
 
-    @TimeMeter("ollama_encode")
+    @TIME_METER("ollama_encode")
     async def async_encode(self, texts: list[str]) -> ndarray:
         if self.prompt:
             texts = [f"{self.prompt} {text}" for text in texts]

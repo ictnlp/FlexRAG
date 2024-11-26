@@ -2,35 +2,26 @@ import logging
 import os
 import re
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-from kylin.prompt import ChatTurn, ChatPrompt
-from kylin.retriever import (
-    ElasticRetriever,
-    ElasticRetrieverConfig,
-    RetrievedContext,
-    TypesenseRetriever,
-    TypesenseRetrieverConfig,
-)
+from kylin.prompt import ChatPrompt, ChatTurn
+from kylin.retriever import ElasticRetriever, ElasticRetrieverConfig, RetrievedContext
 from kylin.utils import Choices
-from kylin.retriever.keyword import Keywords, Keyword
+from kylin.assistant import SearchHistory, ASSISTANTS
 
-from .searcher import AgentSearcher, AgentSearcherConfig, Searchers, SearchHistory
-
+from .searcher import AgentSearcher, AgentSearcherConfig
+from .keyword import Keyword, Keywords
 
 logger = logging.getLogger("KeywordSearcher")
 
 
 @dataclass
-class KeywordSearcherConfig(AgentSearcherConfig):
-    retriever_type: Choices(["elastic", "typesense"]) = "elastic"  # type: ignore
-    elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)  # fmt: skip
-    typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)  # fmt: skip
+class KeywordSearcherConfig(AgentSearcherConfig, ElasticRetrieverConfig):
     rewrite_query: Choices(["always", "never", "adaptive"]) = "never"  # type: ignore
     feedback_depth: int = 1
 
 
-@Searchers("keyword", config_class=KeywordSearcherConfig)
+@ASSISTANTS("levelrag_keyword", config_class=KeywordSearcherConfig)
 class KeywordSearcher(AgentSearcher):
     is_hybrid = False
 
@@ -39,30 +30,22 @@ class KeywordSearcher(AgentSearcher):
         # setup Keyword Searcher
         self.rewrite = cfg.rewrite_query
         self.feedback_depth = cfg.feedback_depth
-        self.retriever_top_k = cfg.retriever_top_k
-        self.disable_cache = cfg.disable_cache
 
         # load Retriever
-        match cfg.retriever_type:
-            case "elastic":
-                self.retriever = ElasticRetriever(cfg.elastic_config)
-            case "typesense":
-                self.retriever = TypesenseRetriever(cfg.typesense_config)
-            case _:
-                raise ValueError(f"Retriever {cfg.retriever_type} not supported")
+        self.retriever = ElasticRetriever(cfg)
 
-        # load prompts
+        # load rewrite prompts
         self.rewrite_prompt = ChatPrompt.from_json(
             os.path.join(
                 os.path.dirname(__file__),
-                "searcher_prompts",
+                "prompts",
                 "keyword_rewrite_prompt.json",
             )
         )
         self.verify_prompt = ChatPrompt.from_json(
             os.path.join(
                 os.path.dirname(__file__),
-                "searcher_prompts",
+                "prompts",
                 "verify_prompt.json",
             )
         )
@@ -70,21 +53,21 @@ class KeywordSearcher(AgentSearcher):
             "extend": ChatPrompt.from_json(
                 os.path.join(
                     os.path.dirname(__file__),
-                    "searcher_prompts",
+                    "prompts",
                     "keyword_refine_extend_prompt.json",
                 )
             ),
             "filter": ChatPrompt.from_json(
                 os.path.join(
                     os.path.dirname(__file__),
-                    "searcher_prompts",
+                    "prompts",
                     "keyword_refine_filter_prompt.json",
                 )
             ),
             "emphasize": ChatPrompt.from_json(
                 os.path.join(
                     os.path.dirname(__file__),
-                    "searcher_prompts",
+                    "prompts",
                     "keyword_refine_emphasize_prompt.json",
                 )
             ),
@@ -103,8 +86,6 @@ class KeywordSearcher(AgentSearcher):
             case "never":
                 ctxs = self.retriever.search(
                     query=[question],
-                    top_k=self.retriever_top_k,
-                    disable_cache=self.disable_cache,
                     search_method="full_text",
                 )[0]
                 history.append(SearchHistory(query=question, contexts=ctxs))
@@ -112,8 +93,6 @@ class KeywordSearcher(AgentSearcher):
             case "adaptive":
                 ctxs = self.retriever.search(
                     query=[question],
-                    top_k=self.retriever_top_k,
-                    disable_cache=self.disable_cache,
                     search_method="full_text",
                 )[0]
                 verification = self.verify_contexts(ctxs, question)
@@ -130,8 +109,6 @@ class KeywordSearcher(AgentSearcher):
             query_to_search, depth = search_stack.pop(0)
             ctxs = self.retriever.search(
                 query=[query_to_search],
-                top_k=self.retriever_top_k,
-                disable_cache=self.disable_cache,
                 search_method="keyword",
             )[0]
             history.append(SearchHistory(query=str(query_to_search), contexts=ctxs))
@@ -165,13 +142,19 @@ class KeywordSearcher(AgentSearcher):
     ) -> list[Keywords]:
         refined_queries = []
         prompts = []
+        # prepare prompts
         for prompt_type in self.refine_prompts:
-            # prepare prompt
             prompt = deepcopy(self.refine_prompts[prompt_type])
+            # prepare contexts string
             ctx_str = ""
-            for n, ctx in enumerate(contexts):
-                ctx_str += f"Context {n}: {ctx.text}\n\n"
+            for n, context in enumerate(contexts):
+                if len(self.used_fields) == 1:
+                    ctx = context.data[self.used_fields[0]]
+                else:
+                    ctx = ""
+                ctx_str += f"Context {n + 1}: {ctx}\n\n"
             q_str = "Current keywords:\n"
+            # prepare keywords string
             must_contains = []
             must_not_contains = []
             for kw in current_query:
@@ -188,6 +171,7 @@ class KeywordSearcher(AgentSearcher):
             for kw in must_not_contains:
                 q_str += f"{kw}\n"
             q_str += "\n"
+            # assemble the prompt
             prompt.history[-1].content = (
                 f"{ctx_str}"
                 f"{prompt.history[-1].content}\n\n"
@@ -195,8 +179,11 @@ class KeywordSearcher(AgentSearcher):
                 f"The information you are looking for: {base_query}"
             )
             prompts.append(prompt)
-        responses = self.agent.chat(prompts, generation_config=self.gen_cfg)
 
+        # get responses
+        responses = self.agent.chat(prompts, generation_config=self.cfg)
+
+        # process responses
         for prompt_type, response in zip(self.refine_prompts, responses):
             # prepare re patterns
             response = response[0]
@@ -229,7 +216,7 @@ class KeywordSearcher(AgentSearcher):
         # Rewrite the query to be more informative
         prompt = deepcopy(self.rewrite_prompt)
         prompt.update(ChatTurn(role="user", content=query))
-        response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
+        response = self.agent.chat([prompt], generation_config=self.cfg)[0][0]
         # Parse the response into keywords
         keywords = response.split("\n")
         keywords = [Keyword(keyword=kw) for kw in keywords if kw]
@@ -242,13 +229,15 @@ class KeywordSearcher(AgentSearcher):
     ) -> bool:
         prompt = deepcopy(self.verify_prompt)
         user_prompt = ""
-        for n, ctx in enumerate(contexts):
-            user_prompt += f"Context {n}: {ctx.text}\n\n"
+        for n, context in enumerate(contexts):
+            if len(self.used_fields) == 1:
+                ctx = context.data[self.used_fields[0]]
+            else:
+                ctx = ""
+                for field_name in self.used_fields:
+                    ctx += f"{field_name}: {context.data[field_name]}\n"
+            user_prompt += f"Context {n + 1}: {ctx}\n\n"
         user_prompt += f"Topic: {question}"
         prompt.update(ChatTurn(role="user", content=user_prompt))
-        response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
+        response = self.agent.chat([prompt], generation_config=self.cfg)[0][0]
         return "yes" in response.lower()
-
-    def close(self) -> None:
-        self.retriever.close()
-        return

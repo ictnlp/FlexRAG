@@ -1,18 +1,11 @@
-import logging
-import pathlib
-import sys
-
 import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
-
-
 from kylin.retriever import DenseRetriever, DenseRetrieverConfig
+from kylin.utils import LOGGER_MANAGER
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = LOGGER_MANAGER.get_logger("kylin.rebuild_index")
 
 
 cs = ConfigStore.instance()
@@ -25,9 +18,10 @@ def main(cfg: DenseRetrieverConfig):
     cfg = OmegaConf.merge(default_cfg, cfg)
 
     # rebuild index
-    retriever = DenseRetriever(cfg)
-    retriever.rebuild_index()
-    retriever.close()
+    retriever = DenseRetriever(
+        cfg, no_check=True
+    )  # do not check the index-retriever consistency
+    retriever.build_index()
     return
 
 

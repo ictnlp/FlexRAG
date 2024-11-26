@@ -1,9 +1,8 @@
 from .annoy_index import AnnoyIndex, AnnoyIndexConfig
 from .faiss_index import FaissIndex, FaissIndexConfig
-from .index_base import DenseIndex, DenseIndexConfigBase
+from .index_base import DenseIndexBase, DenseIndexConfigBase, DENSE_INDEX
 from .scann_index import ScaNNIndex, ScaNNIndexConfig
 
-from .index_loader import DENSE_INDEX, DenseIndexConfig, load_index  # isort: skip
 
 __all__ = [
     "AnnoyIndex",
@@ -12,9 +11,7 @@ __all__ = [
     "FaissIndexConfig",
     "ScaNNIndex",
     "ScaNNIndexConfig",
-    "DenseIndex",
+    "DenseIndexBase",
     "DenseIndexConfigBase",
     "DENSE_INDEX",
-    "DenseIndexConfig",
-    "load_index",
 ]

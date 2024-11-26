@@ -1,9 +1,10 @@
 import logging
 from dataclasses import dataclass, field
+from typing import Any
 
 from kylin.retriever import RetrievedContext
 from kylin.text_process import PipelineConfig, Pipeline
-from kylin.utils import Choices
+from kylin.utils import Choices, Optional, LOGGER_MANAGER
 
 from .matching_metrics import (
     F1,
@@ -35,7 +36,7 @@ from .retrieval_metrics import (
 )
 
 
-logger = logging.getLogger(__name__)
+logger = LOGGER_MANAGER.get_logger("kylin.metrics")
 
 
 @dataclass
@@ -119,8 +120,8 @@ class ResponseEvaluator:
         """
         evaluation_results = {}
         evaluation_details = {}
-        y_preds = [self.preprocess_pipeline(y) for y in y_preds]
-        y_trues = [[self.preprocess_pipeline(y_) for y_ in y] for y in y_trues]
+        preds = [self.preprocess_pipeline(p) for p in preds]
+        trues = [[self.preprocess_pipeline(t_) for t_ in t] for t in trues]
         for metric in self.metrics:
             metric = str(metric)  # make json serializable
             r, r_detail = self.metrics[metric](trues, preds)
@@ -145,6 +146,7 @@ class RetrievalEvaluatorConfig:
     precision_config: RetrievalPrecisionConfig = field(default_factory=RetrievalPrecisionConfig)  # fmt: skip
     round: int = 2
     text_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
+    evaluate_field: Optional[str] = None
 
 
 class RetrievalEvaluator:
@@ -160,23 +162,36 @@ class RetrievalEvaluator:
                     raise ValueError(f"Invalid metric type: {metric}")
         self.round = cfg.round
         self.preprocess_pipeline = Pipeline(cfg.text_preprocess_pipeline)
+        self.eval_field = cfg.evaluate_field
         return
 
     def evaluate(
         self,
-        evidences: list[list[str]],
-        retrieved: list[list[str | RetrievedContext]],
+        evidences: list[list[Any | RetrievedContext]],
+        retrieved: list[list[Any | RetrievedContext]],
         log: bool = True,
     ) -> tuple[dict[str, float], dict[str, object]]:
         evaluation_results = {}
         evaluation_details = {}
-        evidences = [[self.preprocess_pipeline(y_) for y_ in y] for y in evidences]
-        retrieved = [[self.preprocess_pipeline(y_) for y_ in y] for y in retrieved]
-        if isinstance(retrieved[0][0], RetrievedContext):
-            retrieved = [[ctx.full_text for ctx in r] for r in retrieved]
+
+        if (self.eval_field is not None) and isinstance(
+            evidences[0][0], RetrievedContext
+        ):
+            evidences_ = [[ctx.data[self.eval_field] for ctx in e] for e in evidences]
+        else:
+            evidences_ = evidences
+        if (self.eval_field is not None) and isinstance(
+            retrieved[0][0], RetrievedContext
+        ):
+            retrieved_ = [[ctx.data[self.eval_field] for ctx in r] for r in retrieved]
+        else:
+            retrieved_ = retrieved
+
+        evidences_ = [[self.preprocess_pipeline(y_) for y_ in y] for y in evidences_]
+        retrieved_ = [[self.preprocess_pipeline(y_) for y_ in y] for y in retrieved_]
         for metric in self.metrics:
             metric = str(metric)  # make json serializable
-            r, r_detail = self.metrics[metric](evidences, retrieved)
+            r, r_detail = self.metrics[metric](evidences_, retrieved_)
             if log:
                 logger.info(f"{metric}: {r*100:.{self.round}f}%")
             evaluation_results[metric] = r

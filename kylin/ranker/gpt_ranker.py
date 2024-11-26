@@ -5,11 +5,14 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from kylin.models import GeneratorConfig, load_generator
+from kylin.models import GENERATORS
 from kylin.prompt import ChatPrompt, ChatTurn
-from kylin.utils import TimeMeter
+from kylin.utils import TIME_METER
 
-from .ranker import RankerBase, RankerConfig, Rankers
+from .ranker import RankerBase, RankerConfig, RANKERS
+
+
+GeneratorConfig = GENERATORS.make_config()
 
 
 @dataclass
@@ -19,7 +22,7 @@ class RankGPTRankerConfig(RankerConfig, GeneratorConfig):
     max_chunk_size: int = 300
 
 
-@Rankers("rank_gpt", config_class=RankGPTRankerConfig)
+@RANKERS("rank_gpt", config_class=RankGPTRankerConfig)
 class RankGPTRanker(RankerBase):
     """RankGPTRanker
     Code was adapted from the original implementation from https://github.com/sunnweiwei/RankGPT
@@ -27,7 +30,7 @@ class RankGPTRanker(RankerBase):
 
     def __init__(self, cfg: RankGPTRankerConfig):
         super().__init__(cfg)
-        self.generator = load_generator(cfg)
+        self.generator = GENERATORS.load(cfg)
 
         # load prompt
         prompt_path = os.path.join(
@@ -41,7 +44,7 @@ class RankGPTRanker(RankerBase):
         self.max_chunk_size = cfg.max_chunk_size
         return
 
-    @TimeMeter("rankgpt_rank")
+    @TIME_METER("rankgpt_rank")
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, None]:
         # perform slide window ranking
         indices = list(range(len(candidates)))
@@ -56,7 +59,7 @@ class RankGPTRanker(RankerBase):
             end_idx -= self.step_size
         return np.array(indices), None
 
-    @TimeMeter("rankgpt_rank")
+    @TIME_METER("rankgpt_rank")
     async def _async_rank(
         self, query: str, candidates: list[str]
     ) -> tuple[np.ndarray, None]:

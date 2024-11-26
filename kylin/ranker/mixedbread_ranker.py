@@ -6,9 +6,9 @@ import httpx
 import numpy as np
 from omegaconf import MISSING
 
-from kylin.utils import TimeMeter
+from kylin.utils import TIME_METER
 
-from .ranker import RankerBase, RankerConfig, Rankers
+from .ranker import RankerBase, RankerConfig, RANKERS
 
 
 @dataclass
@@ -19,7 +19,7 @@ class MixedbreadRankerConfig(RankerConfig):
     proxy: Optional[str] = None
 
 
-@Rankers("mixedbread", config_class=MixedbreadRankerConfig)
+@RANKERS("mixedbread", config_class=MixedbreadRankerConfig)
 class MixedbreadRanker(RankerBase):
     def __init__(self, cfg: MixedbreadRankerConfig) -> None:
         super().__init__(cfg)
@@ -35,7 +35,7 @@ class MixedbreadRanker(RankerBase):
         self.model = cfg.model
         return
 
-    @TimeMeter("mixedbread_rank")
+    @TIME_METER("mixedbread_rank")
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         result = self.client.reranking(
             query=query,
@@ -46,7 +46,7 @@ class MixedbreadRanker(RankerBase):
         scores = [i.score for i in result.data]
         return None, scores
 
-    @TimeMeter("mixedbread_rank")
+    @TIME_METER("mixedbread_rank")
     async def _async_rank(
         self, query: str, candidates: list[str]
     ) -> tuple[np.ndarray, np.ndarray]:

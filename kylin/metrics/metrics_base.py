@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 
-from kylin.utils import TimeMeter
+from kylin.utils import TIME_METER
 
 
 @dataclass
@@ -10,10 +10,10 @@ class MetricsConfig: ...
 
 class MetricsBase(ABC):
     def __init__(self, cfg: MetricsConfig) -> None:
-        self.args = cfg
+        self.cfg = cfg
         return
 
-    @TimeMeter("metric")
+    @TIME_METER("metric")
     def __call__(
         self, y_trues: list[list[str]], y_preds: list[str]
     ) -> dict[str, float]:

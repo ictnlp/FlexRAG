@@ -1,8 +1,10 @@
 import logging
 from transformers import PretrainedConfig
 
+from kylin.utils import LOGGER_MANAGER
 
-logger = logging.getLogger(__name__)
+
+logger = LOGGER_MANAGER.get_logger("kylin.models.utils")
 
 
 def guess_model_name(model_cfg: PretrainedConfig) -> str | None:

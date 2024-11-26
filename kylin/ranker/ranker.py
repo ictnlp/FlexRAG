@@ -6,13 +6,10 @@ from typing import Optional
 import numpy as np
 
 from kylin.retriever import RetrievedContext
-from kylin.utils import Register
+from kylin.utils import Register, LOGGER_MANAGER
 
 
-logger = logging.getLogger(__name__)
-
-
-Rankers = Register("Rankers")
+logger = LOGGER_MANAGER.get_logger("kylin.rankers")
 
 
 @dataclass
@@ -93,3 +90,6 @@ class RankerBase(ABC):
         """The asynchronous version of `_rank`."""
         logger.warning("async_rank is not implemented, using the synchronous version.")
         return self._rank(query, candidates)
+
+
+RANKERS = Register[RankerBase]("ranker")

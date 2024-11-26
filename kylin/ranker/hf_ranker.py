@@ -6,9 +6,9 @@ import torch
 import numpy as np
 
 from kylin.models.hf_model import HFModelConfig, load_hf_model, HFGenerationConfig
-from kylin.utils import TimeMeter
+from kylin.utils import TIME_METER
 
-from .ranker import RankerBase, RankerConfig, Rankers
+from .ranker import RankerBase, RankerConfig, RANKERS
 
 
 @dataclass
@@ -16,7 +16,7 @@ class HFCrossEncoderRankerConfig(RankerConfig, HFModelConfig):
     max_encode_length: int = 512
 
 
-@Rankers("hf_cross_encoder", config_class=HFCrossEncoderRankerConfig)
+@RANKERS("hf_cross_encoder", config_class=HFCrossEncoderRankerConfig)
 class HFCrossEncoderRanker(RankerBase):
     def __init__(self, cfg: HFCrossEncoderRankerConfig):
         # load model
@@ -32,7 +32,7 @@ class HFCrossEncoderRanker(RankerBase):
         self.max_encode_length = cfg.max_encode_length
         return
 
-    @TimeMeter("hf_rank")
+    @TIME_METER("hf_rank")
     @torch.no_grad()
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         # score the candidates
@@ -62,7 +62,7 @@ class HFSeq2SeqRankerConfig(RankerConfig, HFModelConfig):
     negative_token: str = "▁false"
 
 
-@Rankers("hf_seq2seq", config_class=HFSeq2SeqRankerConfig)
+@RANKERS("hf_seq2seq", config_class=HFSeq2SeqRankerConfig)
 class HFSeq2SeqRanker(RankerBase):
     def __init__(self, cfg: HFSeq2SeqRankerConfig):
         # load model
@@ -84,7 +84,7 @@ class HFSeq2SeqRanker(RankerBase):
         )
         return
 
-    @TimeMeter("hf_rank")
+    @TIME_METER("hf_rank")
     @torch.no_grad()
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         # prepare prompts
@@ -129,7 +129,7 @@ class HFColBertRankerConfig(RankerConfig, HFModelConfig):
     normalize_embeddings: bool = True
 
 
-@Rankers("hf_colbert", config_class=HFColBertRankerConfig)
+@RANKERS("hf_colbert", config_class=HFColBertRankerConfig)
 class HFColBertRanker(RankerBase):
     """Code adapted from https://github.com/hotchpotch/JQaRA/blob/main/evaluator/reranker/colbert_reranker.py"""
 
@@ -153,7 +153,7 @@ class HFColBertRanker(RankerBase):
         self.normalize = cfg.normalize_embeddings
         return
 
-    @TimeMeter("hf_rank")
+    @TIME_METER("hf_rank")
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         # tokenize the query & candidates
         query_inputs = self._query_encode([query])

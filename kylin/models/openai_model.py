@@ -10,19 +10,19 @@ from concurrent.futures import ThreadPoolExecutor
 from omegaconf import MISSING
 
 from kylin.prompt import ChatPrompt
-from kylin.utils import TimeMeter
+from kylin.utils import TIME_METER, LOGGER_MANAGER
 
 from .model_base import (
     EncoderBase,
     EncoderBaseConfig,
-    Encoders,
+    ENCODERS,
     GenerationConfig,
     GeneratorBase,
     GeneratorBaseConfig,
-    Generators,
+    GENERATORS,
 )
 
-logger = logging.getLogger("OpenaiModel")
+logger = LOGGER_MANAGER.get_logger("kylin.models.openai")
 
 
 @dataclass
@@ -49,7 +49,7 @@ class OpenAIEncoderConfig(EncoderBaseConfig):
     proxy: Optional[str] = None
 
 
-@Generators("openai", config_class=OpenAIGeneratorConfig)
+@GENERATORS("openai", config_class=OpenAIGeneratorConfig)
 class OpenAIGenerator(GeneratorBase):
     def __init__(self, cfg: OpenAIGeneratorConfig) -> None:
         from openai import OpenAI, AzureOpenAI
@@ -86,7 +86,7 @@ class OpenAIGenerator(GeneratorBase):
         self._check()
         return
 
-    @TimeMeter("openai_generate")
+    @TIME_METER("openai_generate")
     def chat(
         self,
         prompts: list[ChatPrompt],
@@ -119,7 +119,7 @@ class OpenAIGenerator(GeneratorBase):
                 responses.append([i.message.content for i in response.choices])
         return responses
 
-    @TimeMeter("openai_generate")
+    @TIME_METER("openai_generate")
     async def async_chat(
         self,
         prompts: list[ChatPrompt],
@@ -142,7 +142,7 @@ class OpenAIGenerator(GeneratorBase):
         responses = [[i.message.content for i in (await r).choices] for r in tasks]
         return responses
 
-    @TimeMeter("openai_generate")
+    @TIME_METER("openai_generate")
     def generate(
         self,
         prefixes: list[str],
@@ -174,7 +174,7 @@ class OpenAIGenerator(GeneratorBase):
                 responses.append([i.message.content for i in response.choices])
         return responses
 
-    @TimeMeter("openai_generate")
+    @TIME_METER("openai_generate")
     async def async_generate(
         self,
         prefixes: list[str],
@@ -216,7 +216,7 @@ class OpenAIGenerator(GeneratorBase):
         assert self.model_name in model_lists, f"Model {self.model_name} not found"
 
 
-@Encoders("openai", config_class=OpenAIEncoderConfig)
+@ENCODERS("openai", config_class=OpenAIEncoderConfig)
 class OpenAIEncoder(EncoderBase):
     def __init__(self, cfg: OpenAIEncoderConfig) -> None:
         from openai import OpenAI, AzureOpenAI
@@ -253,7 +253,7 @@ class OpenAIEncoder(EncoderBase):
         self._check()
         return
 
-    @TimeMeter("openai_encode")
+    @TIME_METER("openai_encode")
     def encode(self, texts: list[str]) -> np.ndarray:
         r = self.client.embeddings.create(
             model=self.model_name, input=texts, dimensions=self.dimension
@@ -261,7 +261,7 @@ class OpenAIEncoder(EncoderBase):
         embeddings = [i.embedding for i in r.data]
         return np.array(embeddings)
 
-    @TimeMeter("openai_encode")
+    @TIME_METER("openai_encode")
     async def async_encode(self, texts: list[str]) -> np.ndarray:
         r = await asyncio.to_thread(
             self.client.embeddings.create,

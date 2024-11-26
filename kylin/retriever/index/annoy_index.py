@@ -4,13 +4,12 @@ import shutil
 from dataclasses import dataclass
 
 import numpy as np
-from h5py import Dataset
 
-from kylin.utils import Choices, SimpleProgressLogger
+from kylin.utils import Choices, SimpleProgressLogger, LOGGER_MANAGER
 
-from .index_base import DENSE_INDEX, DenseIndex, DenseIndexConfigBase
+from .index_base import DENSE_INDEX, DenseIndexBase, DenseIndexConfigBase
 
-logger = logging.getLogger(__name__)
+logger = LOGGER_MANAGER.get_logger("kylin.retrievers.index.annoy")
 
 
 @dataclass
@@ -22,26 +21,14 @@ class AnnoyIndexConfig(DenseIndexConfigBase):
 
 
 @DENSE_INDEX("annoy", config_class=AnnoyIndexConfig)
-class AnnoyIndex(DenseIndex):
-    def __init__(
-        self, index_path: str, embedding_size: int, cfg: AnnoyIndexConfig
-    ) -> None:
-        super().__init__(index_path, embedding_size, cfg)
+class AnnoyIndex(DenseIndexBase):
+    def __init__(self, cfg: AnnoyIndexConfig, index_path: str) -> None:
+        super().__init__(cfg, index_path)
         # check annoy
         try:
             from annoy import AnnoyIndex as AnnIndex
 
-            match cfg.distance_function:
-                case "IP":
-                    self.index = AnnIndex(self.embedding_size, "dot")
-                case "L2":
-                    self.index = AnnIndex(self.embedding_size, "euclidean")
-                case "COSINE":
-                    self.index = AnnIndex(self.embedding_size, "angular")
-                case "HAMMING":
-                    self.index = AnnIndex(self.embedding_size, "hamming")
-                case "MANHATTAN":
-                    self.index = AnnIndex(self.embedding_size, "manhattan")
+            self.ann = AnnIndex
         except:
             raise ImportError("Please install annoy by running `pip install annoy`")
 
@@ -59,14 +46,28 @@ class AnnoyIndex(DenseIndex):
             self.index.on_disk_build(self.index_path)
         return
 
-    def build_index(self, embeddings: np.ndarray | Dataset) -> None:
-        assert not self.is_trained, "Index is already trained"
+    def build_index(self, embeddings: np.ndarray) -> None:
+        self.clean()
+        # prepare index
+        match self.distance_function:
+            case "IP":
+                self.index = self.ann(embeddings.shape[1], "dot")
+            case "L2":
+                self.index = self.ann(embeddings.shape[1], "euclidean")
+            case "COSINE":
+                self.index = self.ann(embeddings.shape[1], "angular")
+            case "HAMMING":
+                self.index = self.ann(embeddings.shape[1], "hamming")
+            case "MANHATTAN":
+                self.index = self.ann(embeddings.shape[1], "manhattan")
+        # add embeddings
         p_logger = SimpleProgressLogger(
             logger, total=len(embeddings), interval=self.log_interval
         )
         for idx, embed in enumerate(embeddings):
             self.index.add_item(idx, embed)
             p_logger.update(step=1, desc="Adding embeddings")
+        # build index
         logger.info("Building index")
         self.index.build(self.n_trees, self.n_jobs)
         return
@@ -109,7 +110,6 @@ class AnnoyIndex(DenseIndex):
     def deserialize(self) -> None:
         logger.info(f"Loading index from {self.index_path}")
         self.index.load(self.index_path)
-        assert self.index.f == self.embedding_size, "Index dimension mismatch"
         return
 
     def clean(self):
@@ -117,6 +117,12 @@ class AnnoyIndex(DenseIndex):
         if os.path.exists(self.index_path):
             shutil.rmtree(self.index_path)
         return
+
+    @property
+    def embedding_size(self) -> int:
+        if self.index is None:
+            raise ValueError("Index is not initialized.")
+        return self.index.f
 
     @property
     def is_trained(self):

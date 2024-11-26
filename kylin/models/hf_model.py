@@ -25,20 +25,20 @@ from transformers import PreTrainedModel, PreTrainedTokenizer
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
 from kylin.prompt import ChatPrompt, load_template
-from kylin.utils import Choices, TimeMeter
+from kylin.utils import Choices, TIME_METER, LOGGER_MANAGER
 
 from .model_base import (
     EncoderBase,
     EncoderBaseConfig,
-    Encoders,
+    ENCODERS,
     GenerationConfig,
     GeneratorBase,
     GeneratorBaseConfig,
-    Generators,
+    GENERATORS,
 )
 from .utils import guess_model_name
 
-logger = logging.getLogger(__name__)
+logger = LOGGER_MANAGER.get_logger("kylin.models.hf_model")
 
 
 def get_colbert_model(
@@ -229,7 +229,7 @@ class HFGeneratorConfig(GeneratorBaseConfig, HFModelConfig):
     use_minference: bool = False
 
 
-@Generators("hf", config_class=HFGeneratorConfig)
+@GENERATORS("hf", config_class=HFGeneratorConfig)
 class HFGenerator(GeneratorBase):
     model: PreTrainedModel
 
@@ -264,7 +264,7 @@ class HFGenerator(GeneratorBase):
                 logger.warning(f"Unable to load minference: {e}")
         return
 
-    @TimeMeter("hf_generate")
+    @TIME_METER("hf_generate")
     @torch.no_grad()
     def generate(
         self,
@@ -361,7 +361,7 @@ class HFEncoderConfig(EncoderBaseConfig, HFModelConfig):
     task: str = ""  # used in jina-embedding
 
 
-@Encoders("hf", config_class=HFEncoderConfig)
+@ENCODERS("hf", config_class=HFEncoderConfig)
 class HFEncoder(EncoderBase):
     def __init__(self, cfg: HFEncoderConfig):
         self.devices = cfg.device_id
@@ -405,7 +405,7 @@ class HFEncoder(EncoderBase):
             embeddings = torch.nn.functional.normalize(embeddings, dim=1)
         return embeddings.cpu().numpy()
 
-    @TimeMeter("hf_encode")
+    @TIME_METER("hf_encode")
     def encode(self, texts: list[str | list[str]]) -> np.ndarray:
         if hasattr(self.model, "encode"):  # for jina-embedding
             return self.model.encode(

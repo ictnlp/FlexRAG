@@ -9,17 +9,12 @@ from typing import Any, Iterable, Optional
 import numpy as np
 
 from kylin.text_process import Pipeline, PipelineConfig
-from kylin.utils import SimpleProgressLogger, TimeMeter, Register
+from kylin.utils import SimpleProgressLogger, Register, LOGGER_MANAGER
 
 from kylin.cache import PersistentCache, PersistentCacheConfig, LMDBBackendConfig
 
 
-logger = logging.getLogger(__name__)
-
-
-SEMANTIC_RETRIEVERS = Register("semantic_retriever")
-SPARSE_RETRIEVERS = Register("sparse_retriever")
-WEB_RETRIEVERS = Register("web_retriever")
+logger = LOGGER_MANAGER.get_logger("kylin.retrievers")
 
 RETRIEVAL_CACHE = PersistentCache(
     PersistentCacheConfig(
@@ -47,7 +42,6 @@ def batched_cache(func):
         self,
         query: list[str],
         top_k: int = 10,
-        disable_cache: bool = False,
         **search_kwargs,
     ):
         # check query
@@ -55,6 +49,9 @@ def batched_cache(func):
             query = [query]
 
         # direct search
+        disable_cache = search_kwargs.pop(
+            "disable_cache", os.environ.get("DISABLE_CACHE", False)
+        )
         if disable_cache:
             return func(self, query, top_k, **search_kwargs)
 
@@ -79,12 +76,13 @@ def batched_cache(func):
 
 
 @dataclass
-class RetrieverConfig:
+class RetrieverConfigBase:
     log_interval: int = 100
+    top_k: int = 10
 
 
 @dataclass
-class LocalRetrieverConfig(RetrieverConfig):
+class LocalRetrieverConfig(RetrieverConfigBase):
     batch_size: int = 32
     query_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
 
@@ -106,8 +104,8 @@ class RetrievedContext:
         }
 
 
-class Retriever(ABC):
-    def __init__(self, cfg: RetrieverConfig):
+class RetrieverBase(ABC):
+    def __init__(self, cfg: RetrieverConfigBase):
         self.cfg = cfg
         self.log_interval = cfg.log_interval
         return
@@ -143,6 +141,11 @@ class Retriever(ABC):
         """
         return
 
+    @property
+    @abstractmethod
+    def fields(self) -> list[str]:
+        return
+
     def test_speed(
         self,
         sample_num: int = 10000,
@@ -167,11 +170,8 @@ class Retriever(ABC):
         )
         return end_time - start_time
 
-    def close(self):
-        return
 
-
-class LocalRetriever(Retriever):
+class LocalRetriever(RetrieverBase):
     def __init__(self, cfg: LocalRetrieverConfig) -> None:
         super().__init__(cfg)
         # set args for process documents
@@ -226,10 +226,6 @@ class LocalRetriever(Retriever):
         return final_results
 
     @abstractmethod
-    def close(self):
-        return
-
-    @abstractmethod
     def clean(self) -> None:
         return
 
@@ -237,12 +233,5 @@ class LocalRetriever(Retriever):
     def __len__(self):
         return
 
-    def _clean_cache(self):
-        if self._cache is not None:
-            self._cache.clean()
-        return
 
-    @property
-    @abstractmethod
-    def fields(self) -> list[str]:
-        return
+RETRIEVERS = Register[RetrieverBase]("retriever")

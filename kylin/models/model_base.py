@@ -6,14 +6,10 @@ from typing import Optional
 import numpy as np
 
 from kylin.prompt import ChatPrompt
-from kylin.utils import Register
+from kylin.utils import Register, LOGGER_MANAGER
 
 
-logger = logging.getLogger(__name__)
-
-
-Encoders = Register("Encoders")
-Generators = Register("Generators")
+logger = LOGGER_MANAGER.get_logger("kylin.models")
 
 
 @dataclass
@@ -127,3 +123,7 @@ class EncoderBase(ABC):
     @abstractmethod
     def embedding_size(self) -> int:
         return
+
+
+GENERATORS = Register[GeneratorBase]("generator")
+ENCODERS = Register[EncoderBase]("encoder")

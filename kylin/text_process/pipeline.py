@@ -1,36 +1,13 @@
-from dataclasses import field, make_dataclass
-from typing import Optional
-
-from kylin.utils import Choices
-
 from .processor import PROCESSORS, Processor, TextUnit
 
-pipeline_fields = [
-    ("processors", list[Choices(PROCESSORS.names)], field(default_factory=list))
-]
-pipeline_fields += [
-    (
-        f"{PROCESSORS[name]['short_names'][0]}_config",
-        PROCESSORS[name]["config_class"],
-        field(default_factory=PROCESSORS[name]["config_class"]),
-    )
-    for name in PROCESSORS.mainnames
-    if PROCESSORS[name]["config_class"] is not None
-]
-PipelineConfig = make_dataclass("PipelineConfig", pipeline_fields)
+
+PipelineConfig = PROCESSORS.make_config(allow_multiple=True)
 
 
 class Pipeline:
     def __init__(self, cfg: PipelineConfig) -> None:  # type: ignore
         # load processors
-        self.processors: list[Processor] = []
-        for name in cfg.processors:
-            short_name = PROCESSORS[name]["short_names"][0]
-            processor_cfg = getattr(cfg, f"{short_name}_config", None)
-            if processor_cfg is not None:
-                self.processors.append(PROCESSORS[name]["item"](processor_cfg))
-            else:
-                self.processors.append(PROCESSORS[name]["item"]())
+        self.processors: list[Processor] = PROCESSORS.load(cfg)
         return
 
     def __call__(self, text: str, return_detail: bool = False) -> str | TextUnit | None:
@@ -58,3 +35,6 @@ class Pipeline:
             if isinstance(p, PROCESSORS[processor]["item"]):
                 return p
         raise KeyError(f"Processor {processor} not found in the pipeline")
+
+    def __repr__(self) -> str:
+        return f"Pipeline({[p.name for p in self.processors]})"

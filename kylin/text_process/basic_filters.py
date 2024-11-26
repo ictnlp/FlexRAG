@@ -29,7 +29,7 @@ class LengthFilterConfig:
     tokenizer_config: UTokenizerConfig = field(default_factory=UTokenizerConfig)
 
 
-@PROCESSORS("length_filter")
+@PROCESSORS("length_filter", config_class=LengthFilterConfig)
 class LengthFilter(Processor):
     def __init__(self, cfg: LengthFilterConfig) -> None:
         super().__init__()
@@ -41,6 +41,8 @@ class LengthFilter(Processor):
         self.min_bytes = cfg.min_bytes
         if self.max_tokens is not None or self.min_tokens is not None:
             self.tokenizer = UnifiedTokenizer(cfg.tokenizer_config)
+        else:
+            self.tokenizer = None
         return
 
     def process(self, input_text: TextUnit) -> TextUnit:

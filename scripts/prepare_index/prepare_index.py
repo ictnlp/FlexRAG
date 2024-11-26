@@ -1,15 +1,9 @@
-import logging
-import pathlib
-import sys
 from dataclasses import dataclass, field
 from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING, OmegaConf
-
-sys.path.append(str(pathlib.Path(__file__).resolve().parents[2]))
-
 
 from kylin.retriever import (
     BM25SRetriever,
@@ -22,10 +16,9 @@ from kylin.retriever import (
     TypesenseRetrieverConfig,
 )
 from kylin.text_process import Pipeline, PipelineConfig
-from kylin.utils import Choices, read_data
+from kylin.utils import Choices, read_data, LOGGER_MANAGER
 
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+logger = LOGGER_MANAGER.get_logger("kylin.prepare_index")
 
 
 # fmt: off
@@ -85,7 +78,7 @@ def main(cfg: Config):
                 item = {"text": item}
                 cfg.saving_fields = ["text"]
             # remove unused fields
-            item = {key: item[key] for key in cfg.saving_fields}
+            item = {key: item.get(key, "") for key in cfg.saving_fields}
             # preprocess text fields
             for key in cfg.text_process_fields:
                 text = text_processor(item[key])
@@ -95,7 +88,6 @@ def main(cfg: Config):
             yield item
 
     retriever.add_passages(passages=prepare_data())
-    retriever.close()
     return
 
 

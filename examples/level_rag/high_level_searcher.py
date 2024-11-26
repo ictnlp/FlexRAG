@@ -5,8 +5,8 @@ from dataclasses import dataclass
 
 from kylin.prompt import ChatTurn, ChatPrompt
 from kylin.retriever import RetrievedContext
+from kylin.assistant import SearchHistory, ASSISTANTS
 
-from .searcher import Searchers, SearchHistory
 from .hybrid_searcher import HybridSearcher, HybridSearcherConfig
 
 
@@ -18,7 +18,7 @@ class HighLevelSearcherConfig(HybridSearcherConfig):
     summarize_for_answer: bool = False
 
 
-@Searchers("highlevel", config_class=HighLevelSearcherConfig)
+@ASSISTANTS("levelrag_highlevel", config_class=HighLevelSearcherConfig)
 class HighLevalSearcher(HybridSearcher):
     is_hybrid = True
 
@@ -36,21 +36,21 @@ class HighLevalSearcher(HybridSearcher):
         self.decompose_prompt_w_ctx = ChatPrompt.from_json(
             os.path.join(
                 os.path.dirname(__file__),
-                "searcher_prompts",
+                "prompts",
                 "decompose_with_context_prompt.json",
             )
         )
         self.decompose_prompt_wo_ctx = ChatPrompt.from_json(
             os.path.join(
                 os.path.dirname(__file__),
-                "searcher_prompts",
+                "prompts",
                 "decompose_without_context_prompt.json",
             )
         )
         self.summarize_prompt = ChatPrompt.from_json(
             os.path.join(
                 os.path.dirname(__file__),
-                "searcher_prompts",
+                "prompts",
                 "summarize_by_answer_prompt.json",
             )
         )
@@ -73,7 +73,7 @@ class HighLevalSearcher(HybridSearcher):
             prompt.update(ChatTurn(role="user", content=f"Question: {question}"))
 
         # get response
-        response = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
+        response = self.agent.chat([prompt], generation_config=self.cfg)[0][0]
         if "No additional information is required" in response:
             return []
         split_pattern = r"\[\d+\] ([^\[]+)"
@@ -106,11 +106,17 @@ class HighLevalSearcher(HybridSearcher):
             prompt = deepcopy(self.summarize_prompt)
             q = item.query
             usr_prompt = ""
-            for n, ctx in enumerate(item.contexts):
-                usr_prompt += f"Context {n + 1}: {ctx.text}\n\n"
+            for n, context in enumerate(item.contexts):
+                if len(self.used_fields) == 1:
+                    ctx = context.data[self.used_fields[0]]
+                else:
+                    ctx = ""
+                    for field_name in self.used_fields:
+                        ctx += f"{field_name}: {context.data[field_name]}\n"
+                usr_prompt += f"Context {n + 1}: {ctx}\n\n"
             usr_prompt += f"Question: {q}"
             prompt.update(ChatTurn(role="user", content=usr_prompt))
-            ans = self.agent.chat([prompt], generation_config=self.gen_cfg)[0][0]
+            ans = self.agent.chat([prompt], generation_config=self.cfg)[0][0]
             summed_text.append(ans)
         return summed_text
 

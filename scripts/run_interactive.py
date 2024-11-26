@@ -8,7 +8,7 @@ import PIL
 from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 
-from kylin.assistant import Assistant, AssistantConfig
+from kylin.assistant import AssistantBase, BasicAssistantConfig
 from kylin.searchers import SearcherConfig, load_searcher
 
 logging.basicConfig(level=logging.WARNING)
@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 
 @dataclass
 class Config(SearcherConfig):
-    assistant_config: AssistantConfig = field(default_factory=AssistantConfig)
+    assistant_config: BasicAssistantConfig = field(default_factory=BasicAssistantConfig)
 
 
 cs = ConfigStore.instance()
@@ -130,7 +130,6 @@ def main(config: Config):
         )
 
     demo.launch()
-    searcher.close()
     return
 
 

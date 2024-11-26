@@ -4,13 +4,17 @@ from dataclasses import dataclass
 from time import perf_counter
 
 import numpy as np
-from h5py import Dataset
 
-from kylin.utils import Choices, SimpleProgressLogger, Register, TimeMeter
+from kylin.utils import (
+    Choices,
+    SimpleProgressLogger,
+    Register,
+    TIME_METER,
+    LOGGER_MANAGER,
+)
 
 
-logger = logging.getLogger("DenseIndex")
-DENSE_INDEX = Register("dense_index")
+logger = LOGGER_MANAGER.get_logger("kylin.retrievers.index")
 
 
 @dataclass
@@ -21,9 +25,8 @@ class DenseIndexConfigBase:
     batch_size: int = 512
 
 
-class DenseIndex(ABC):
-    def __init__(self, index_path: str, embedding_size: int, cfg: DenseIndexConfigBase):
-        self.embedding_size = embedding_size
+class DenseIndexBase(ABC):
+    def __init__(self, cfg: DenseIndexConfigBase, index_path: str):
         self.distance_function = cfg.distance_function
         self.index_train_num = cfg.index_train_num
         self.index_path = index_path
@@ -32,12 +35,10 @@ class DenseIndex(ABC):
         return
 
     @abstractmethod
-    def build_index(self, embeddings: np.ndarray | Dataset) -> None:
+    def build_index(self, embeddings: np.ndarray) -> None:
         return
 
-    def add_embeddings(
-        self, embeddings: np.ndarray | Dataset, serialize: bool = True
-    ) -> None:
+    def add_embeddings(self, embeddings: np.ndarray, serialize: bool = True) -> None:
         """Add embeddings to the index."""
         assert self.is_trained, "Index is not trained, please build the index first."
         p_logger = SimpleProgressLogger(
@@ -55,7 +56,7 @@ class DenseIndex(ABC):
     def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:
         return
 
-    @TimeMeter("retrieve", "index")
+    @TIME_METER("retrieve", "index")
     def search(
         self,
         query: np.ndarray,
@@ -115,6 +116,12 @@ class DenseIndex(ABC):
         """Return True if the index is trained."""
         return
 
+    @property
+    @abstractmethod
+    def embedding_size(self) -> int:
+        """Return the embedding size of the index."""
+        return
+
     @abstractmethod
     def __len__(self) -> int:
         """Return the number of embeddings in the index."""
@@ -139,3 +146,6 @@ class DenseIndex(ABC):
         logger.info(f"Top k accuracy:\n{acc_info_str}")
         logger.info(f"Search time: {time_cost:.4f} s")
         return top_k_acc
+
+
+DENSE_INDEX = Register[DenseIndexBase]("index")

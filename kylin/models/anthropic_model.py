@@ -8,16 +8,16 @@ from concurrent.futures import ThreadPoolExecutor
 from omegaconf import MISSING
 
 from kylin.prompt import ChatPrompt
-from kylin.utils import TimeMeter
+from kylin.utils import TIME_METER, LOGGER_MANAGER
 
 from .model_base import (
     GenerationConfig,
     GeneratorBase,
     GeneratorBaseConfig,
-    Generators,
+    GENERATORS,
 )
 
-logger = logging.getLogger("AnthropicModel")
+logger = LOGGER_MANAGER.get_logger("kylin.models.anthropic")
 
 
 @dataclass
@@ -30,7 +30,7 @@ class AnthropicGeneratorConfig(GeneratorBaseConfig):
     allow_parallel: bool = True
 
 
-@Generators("anthropic", config_class=AnthropicGeneratorConfig)
+@GENERATORS("anthropic", config_class=AnthropicGeneratorConfig)
 class AnthropicGenerator(GeneratorBase):
     def __init__(self, cfg: AnthropicGeneratorConfig) -> None:
         from anthropic import Anthropic
@@ -47,7 +47,7 @@ class AnthropicGenerator(GeneratorBase):
             logger.setLevel(logging.WARNING)
         return
 
-    @TimeMeter("anthropic_generate")
+    @TIME_METER("anthropic_generate")
     def chat(
         self,
         prompts: list[ChatPrompt],
@@ -85,7 +85,7 @@ class AnthropicGenerator(GeneratorBase):
                     responses[-1].append(response.content[0].text)
         return responses
 
-    @TimeMeter("anthropic_generate")
+    @TIME_METER("anthropic_generate")
     async def async_chat(
         self,
         prompts: list[ChatPrompt],
@@ -113,7 +113,7 @@ class AnthropicGenerator(GeneratorBase):
         ]
         return responses
 
-    @TimeMeter("anthropic_generate")
+    @TIME_METER("anthropic_generate")
     def generate(
         self,
         prefixes: list[str],
@@ -148,7 +148,7 @@ class AnthropicGenerator(GeneratorBase):
                     responses[-1].append(response.completion)
         return responses
 
-    @TimeMeter("anthropic_generate")
+    @TIME_METER("anthropic_generate")
     async def async_generate(
         self,
         prefixes: list[str],

@@ -1,24 +1,27 @@
+import importlib
 import json
+import logging
 import os
 import subprocess
+import sys
+import threading
 from contextlib import contextmanager
 from csv import reader
+from dataclasses import field, make_dataclass
 from enum import Enum
 from functools import partial
 from glob import glob
 from itertools import zip_longest
-from logging import Logger
 from multiprocessing import Manager
 from time import perf_counter
-from typing import Iterable, Iterator, Optional, Coroutine
+from typing import Coroutine, Generic, Iterable, Iterator, Optional, TypeVar
 
 import numpy as np
-from omegaconf import OmegaConf
-from omegaconf.dictconfig import DictConfig
+from omegaconf import MISSING, DictConfig, ListConfig, OmegaConf
 
 
 class SimpleProgressLogger:
-    def __init__(self, logger: Logger, total: int = None, interval: int = 100):
+    def __init__(self, logger: logging.Logger, total: int = None, interval: int = 100):
         self.total = total
         self.interval = interval
         self.logger = logger
@@ -64,7 +67,10 @@ class SimpleProgressLogger:
         return
 
 
-class Register:
+RegisterBaseClass = TypeVar("RegisterBaseClass")
+
+
+class Register(Generic[RegisterBaseClass]):
     def __init__(self, register_name: str = None):
         self.name = register_name
         self._items = {}
@@ -125,6 +131,66 @@ class Register:
         if key not in self._items:
             key = self._shortcuts[key]
         return self._items[key]["item"]
+
+    def make_config(
+        self,
+        allow_multiple: bool = False,
+        default=MISSING,
+        config_name: str = None,
+    ):
+        choice_name = f"{self.name}_type"
+        config_name = f"{self.name}_config" if config_name is None else config_name
+        if allow_multiple:
+            config_fields = [
+                (
+                    choice_name,
+                    list[Choices(self.names)],
+                    field(default_factory=list),
+                )
+            ]
+        else:
+            config_fields = [
+                (
+                    choice_name,
+                    Optional[Choices(self.names)],
+                    field(default=default),
+                )
+            ]
+        config_fields += [
+            (
+                f"{self[name]['short_names'][0]}_config",
+                self[name]["config_class"],
+                field(default_factory=self._items[name]["config_class"]),
+            )
+            for name in self.mainnames
+            if self[name]["config_class"] is not None
+        ]
+        return make_dataclass(config_name, config_fields)
+
+    def load(self, config: DictConfig, **kwargs) -> RegisterBaseClass:
+        choice = getattr(config, f"{self.name}_type", None)
+        if choice is None:
+            return None
+        if isinstance(choice, (list, ListConfig)):
+            loaded = []
+            for name in choice:
+                if name in self:
+                    cfg_name = f"{self[name]['short_names'][0]}_config"
+                    sub_cfg = getattr(config, cfg_name, None)
+                    if sub_cfg is None:
+                        loaded.append(self[name]["item"](**kwargs))
+                    else:
+                        loaded.append(self[name]["item"](sub_cfg, **kwargs))
+        elif choice in self:
+            cfg_name = f"{self[choice]['short_names'][0]}_config"
+            sub_cfg = getattr(config, cfg_name, None)
+            if sub_cfg is None:
+                loaded = self[choice]["item"](**kwargs)
+            else:
+                loaded = self[choice]["item"](sub_cfg, **kwargs)
+        else:
+            raise ValueError(f"Invalid {self.name} type: {choice}")
+        return loaded
 
     def __len__(self) -> int:
         return len(self._items)
@@ -282,7 +348,7 @@ def read_data(
             raise ValueError(f"Unsupported file format: {file_path}")
 
 
-class _TimeMeterClass:
+class TimeMeter:
     def __init__(self):
         self._manager = Manager()
         self.timers = self._manager.dict()
@@ -334,7 +400,61 @@ class _TimeMeterClass:
         return {k: v for k, v in self.timers.items()}
 
 
-TimeMeter = _TimeMeterClass()
+TIME_METER = TimeMeter()
+
+
+class LoggerManager:
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls):
+        if not cls._instance:
+            with cls._lock:  # ensure thread safety
+                if not cls._instance:
+                    cls._instance = super(LoggerManager, cls).__new__(cls)
+                    cls._instance._configure()  # initialize the LoggerManager
+        return cls._instance
+
+    def _configure(self):
+        self.loggers: dict[str, logging.Logger] = {}
+        logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+        return
+
+    def get_logger(self, name: str) -> logging.Logger:
+        if name not in self.loggers:
+            self.loggers[name] = logging.getLogger(name)
+        return self.loggers[name]
+
+    def add_handler(self, handler: logging.Handler, name: str = None):
+        if name is None:
+            for logger in self.loggers.values():
+                logger.addHandler(handler)
+        else:
+            logger = self.get_logger(name)
+            logger.addHandler(handler)
+        return
+
+    def remove_handler(self, handler: logging.Handler, name: str = None):
+        if name is None:
+            for logger in self.loggers.values():
+                logger.removeHandler(handler)
+        else:
+            logger = self.get_logger(name)
+            logger.removeHandler(handler)
+        return
+
+    def set_level(self, level: int, name: str = None):
+        if name is None:
+            for logger in self.loggers.values():
+                logger.setLevel(level)
+        else:
+            logger = self.get_logger(name)
+            logger.setLevel(level)
+        return
+
+
+LOGGER_MANAGER = LoggerManager()
+
 
 try:
     COMMIT_ID = (
@@ -346,3 +466,11 @@ try:
     )
 except:
     COMMIT_ID = "Unknown"
+
+
+def load_user_module(module_path: str):
+    module_path = os.path.abspath(module_path)
+    module_parent, module_name = os.path.split(module_path)
+    if module_name not in sys.modules:
+        sys.path.insert(0, module_parent)
+        importlib.import_module(module_name)

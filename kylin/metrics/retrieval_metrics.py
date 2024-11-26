@@ -1,7 +1,10 @@
 from abc import abstractmethod
 from dataclasses import dataclass
+from typing import Any, Optional
 
 from sacrebleu import sentence_bleu
+
+from kylin.retriever import RetrievedContext
 from kylin.utils import Choices
 
 from .metrics_base import MetricsBase, MetricsConfig
@@ -14,38 +17,61 @@ except:
     has_librel = False
 
 
-RetrievalMetricsConfig = MetricsConfig
+class RetrievalMetricsConfig(MetricsConfig):
+    evaluate_field: Optional[str] = None
 
 
 class RetrievalMetric(MetricsBase):
+    cfg: RetrievalMetricsConfig
+
     def __call__(
-        self, evidences: list[list[str]], retrieved: list[list[str]]
+        self,
+        evidences: list[list[Any | RetrievedContext]],
+        retrieved: list[list[Any | RetrievedContext]],
     ) -> dict[str, float]:
         """
         Compute the metric value and additional metric-specific information.
 
         Args:
-            evidences (list[list[str]]): The evidence documents.
-            retrieved (list[list[str]]): The retrieved documents.
+            evidences (list[list[RetrievedContext]]): The evidence documents.
+            retrieved (list[list[RetrievedContext]]): The retrieved documents.
 
         Returns:
             tuple[float, object]: A tuple containing the metric value and additional metric-specific information.
         """
         assert len(evidences) == len(
             retrieved
-        ), "The length of y_true and y_pred should be the same"
-        return self.compute(evidences, retrieved)
+        ), "The length of evidences and retrieved contexts should be the same"
+        if isinstance(evidences[0][0], RetrievedContext):
+            assert (
+                self.cfg.evaluate_field is not None
+            ), "The evaluate_field should be provided when the input is RetrievedContext."
+            evidences_ = [
+                [i.data[self.cfg.evaluate_field] for i in j] for j in evidences
+            ]
+        else:
+            evidences_ = evidences
+        if isinstance(retrieved[0][0], RetrievedContext):
+            assert (
+                self.cfg.evaluate_field is not None
+            ), "The evaluate_field should be provided when the input is RetrievedContext."
+            retrieved_ = [
+                [i.data[self.cfg.evaluate_field] for i in j] for j in retrieved
+            ]
+        else:
+            retrieved_ = retrieved
+        return self.compute(evidences_, retrieved_)
 
     @abstractmethod
     def compute(
-        self, evidences: list[list[str]], retrieved: list[list[str]]
+        self, evidences: list[list[Any]], retrieved: list[list[Any]]
     ) -> tuple[float, object]:
         """
         Compute the metric value and additional metric-specific information.
 
         Args:
-            evidences (list[list[str]]): The evidence documents.
-            retrieved (list[list[str]]): The retrieved documents.
+            evidences (list[list[Any]]): The evidence documents.
+            retrieved (list[list[Any]]): The retrieved documents.
 
         Returns:
             tuple[float, object]: A tuple containing the metric value and additional metric-specific information.

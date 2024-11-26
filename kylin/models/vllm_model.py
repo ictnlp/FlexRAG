@@ -6,12 +6,12 @@ from omegaconf import MISSING
 from transformers import AutoConfig, PretrainedConfig
 
 from kylin.prompt import load_template, ChatPrompt
-from kylin.utils import Choices, TimeMeter
+from kylin.utils import Choices, TIME_METER, LOGGER_MANAGER
 
-from .model_base import Generators, GenerationConfig, GeneratorBase, GeneratorBaseConfig
+from .model_base import GENERATORS, GenerationConfig, GeneratorBase, GeneratorBaseConfig
 from .utils import guess_model_name
 
-logger = logging.getLogger(__name__)
+logger = LOGGER_MANAGER.get_logger("kylin.models.vllm")
 
 
 @dataclass
@@ -25,7 +25,7 @@ class VLLMGeneratorConfig(GeneratorBaseConfig):
     trust_remote_code: bool = False
 
 
-@Generators("vllm", config_class=VLLMGeneratorConfig)
+@GENERATORS("vllm", config_class=VLLMGeneratorConfig)
 class VLLMGenerator(GeneratorBase):
     def __init__(self, cfg: VLLMGeneratorConfig) -> None:
         from vllm import LLM
@@ -66,7 +66,7 @@ class VLLMGenerator(GeneratorBase):
                 logger.warning("Fallback to normal mode.")
         return
 
-    @TimeMeter("vllm_generate")
+    @TIME_METER("vllm_generate")
     def generate(
         self,
         prefixes: list[str],

@@ -4,11 +4,12 @@ import shutil
 from dataclasses import dataclass
 
 import numpy as np
-from h5py import Dataset
 
-from .index_base import DenseIndex, DenseIndexConfigBase, DENSE_INDEX
+from kylin.utils import LOGGER_MANAGER
 
-logger = logging.getLogger(__name__)
+from .index_base import DenseIndexBase, DenseIndexConfigBase, DENSE_INDEX
+
+logger = LOGGER_MANAGER.get_logger("kylin.retrievers.index.scann")
 
 
 @dataclass
@@ -21,11 +22,9 @@ class ScaNNIndexConfig(DenseIndexConfigBase):
 
 
 @DENSE_INDEX("scann", config_class=ScaNNIndexConfig)
-class ScaNNIndex(DenseIndex):
-    def __init__(
-        self, index_path: str, embedding_size: int, cfg: ScaNNIndexConfig
-    ) -> None:
-        super().__init__(index_path, embedding_size, cfg)
+class ScaNNIndex(DenseIndexBase):
+    def __init__(self, cfg: ScaNNIndexConfig, index_path: str) -> None:
+        super().__init__(cfg, index_path)
         # check scann
         try:
             import scann
@@ -48,11 +47,9 @@ class ScaNNIndex(DenseIndex):
             self.index = None
         return
 
-    def build_index(self, embeddings: np.ndarray | Dataset) -> None:
+    def build_index(self, embeddings: np.ndarray) -> None:
         if self.is_trained:
             self.clean()
-        if isinstance(embeddings, Dataset):
-            embeddings = embeddings[:]
         if self.distance_function == "IP":
             distance_measure = "dot_product"
         else:
@@ -112,7 +109,6 @@ class ScaNNIndex(DenseIndex):
     def deserialize(self) -> None:
         logger.info(f"Loading index from {self.index_path}.")
         self.index = self.scann.scann_ops_pybind.load_searcher(self.index_path)
-        assert self.index.num_columns == self.embedding_size, "Index dimension mismatch"
         return
 
     def clean(self):
@@ -122,6 +118,10 @@ class ScaNNIndex(DenseIndex):
             shutil.rmtree(self.index_path)
         self.index = self._prepare_index()
         return
+
+    @property
+    def embedding_size(self) -> int:
+        return self.index.num_columns()
 
     @property
     def is_trained(self) -> bool:

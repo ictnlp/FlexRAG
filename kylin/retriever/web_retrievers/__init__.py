@@ -1,8 +1,7 @@
 from .web_downloader import (
     SimpleWebDownloader,
     SimpleWebDownloaderConfig,
-    WebDownloaderConfig,
-    load_web_downloader,
+    WEB_DOWNLOADERS,
 )
 from .web_reader import (
     JinaReader,
@@ -10,9 +9,8 @@ from .web_reader import (
     JinaReaderLM,
     JinaReaderLMConfig,
     SnippetWebReader,
-    WebReaderConfig,
     WebRetrievedContext,
-    load_web_reader,
+    WEB_READERS,
 )
 from .web_retriever import (
     BingRetriever,
@@ -29,16 +27,12 @@ from .web_retriever import (
 __all__ = [
     "SimpleWebDownloader",
     "SimpleWebDownloaderConfig",
-    "WebDownloaderConfig",
-    "load_web_downloader",
     "JinaReader",
     "JinaReaderConfig",
     "JinaReaderLM",
     "JinaReaderLMConfig",
     "SnippetWebReader",
-    "WebReaderConfig",
     "WebRetrievedContext",
-    "load_web_reader",
     "BingRetriever",
     "BingRetrieverConfig",
     "DuckDuckGoRetriever",
@@ -47,4 +41,6 @@ __all__ = [
     "GoogleRetrieverConfig",
     "SerpApiRetriever",
     "SerpApiRetrieverConfig",
+    "WEB_DOWNLOADERS",
+    "WEB_READERS",
 ]

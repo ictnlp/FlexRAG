@@ -1,16 +1,16 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field, make_dataclass
+from dataclasses import dataclass
 from typing import Optional
 
 import requests
 from omegaconf import MISSING
 
-from kylin.models import GenerationConfig, GeneratorConfig, load_generator
+from kylin.models import GenerationConfig, GENERATORS
 from kylin.prompt import ChatPrompt, ChatTurn
-from kylin.utils import Choices, Register
+from kylin.utils import Register
 
 from ..retriever_base import RetrievedContext
-from .web_downloader import WebDownloaderConfig, load_web_downloader
+from .web_downloader import WEB_DOWNLOADERS
 
 
 @dataclass
@@ -30,8 +30,17 @@ class WebReader(ABC):
     ) -> list[RetrievedContext]:
         return
 
+    @property
+    @abstractmethod
+    def fields(self):
+        return
 
-WEB_READERS = Register("web_reader")
+
+WEB_READERS = Register[WebReader]("web_reader")
+
+
+GeneratorConfig = GENERATORS.make_config()
+WebDownloaderConfig = WEB_DOWNLOADERS.make_config()
 
 
 @dataclass
@@ -41,8 +50,8 @@ class JinaReaderLMConfig(GeneratorConfig, WebDownloaderConfig, GenerationConfig)
 @WEB_READERS("jina_readerlm", config_class=JinaReaderLMConfig)
 class JinaReaderLM(WebReader):
     def __init__(self, cfg: JinaReaderLMConfig):
-        self.reader = load_generator(cfg)
-        self.downloader = load_web_downloader(cfg)
+        self.reader = GENERATORS.load(cfg)
+        self.downloader = WEB_DOWNLOADERS.load(cfg)
         self.cfg = cfg
         return
 
@@ -71,6 +80,10 @@ class JinaReaderLM(WebReader):
                 )
             )
         return contexts
+
+    @property
+    def fields(self):
+        return ["raw_content", "processed_content"]
 
 
 @dataclass
@@ -104,6 +117,10 @@ class JinaReader(WebReader):
                 )
         return contexts
 
+    @property
+    def fields(self):
+        return ["processed_content"]
+
 
 @WEB_READERS("snippet")
 class SnippetWebReader(WebReader):
@@ -121,29 +138,6 @@ class SnippetWebReader(WebReader):
             if rc.snippet is not None
         ]
 
-
-web_reader_fields = [
-    (
-        "web_reader_type",
-        Choices(WEB_READERS.names),
-        "snippet",
-    )
-]
-web_reader_fields += [
-    (
-        f"{WEB_READERS[name]['short_names'][0]}_config",
-        WEB_READERS[name]["config_class"],
-        field(default_factory=WEB_READERS[name]["config_class"]),
-    )
-    for name in WEB_READERS.mainnames
-    if WEB_READERS[name]["config_class"] is not None
-]
-WebReaderConfig = make_dataclass("WebReaderConfig", web_reader_fields)
-
-
-def load_web_reader(config: WebReaderConfig) -> WebReader:  # type: ignore
-    config_name = f"{WEB_READERS[config.web_reader_type]['short_names'][0]}_config"
-    sub_config = getattr(config, config_name, None)
-    if sub_config is not None:
-        return WEB_READERS[config.web_reader_type]["item"](sub_config)
-    return WEB_READERS[config.web_reader_type]["item"]()
+    @property
+    def fields(self):
+        return ["snippet"]

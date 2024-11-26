@@ -5,9 +5,9 @@ import numpy as np
 import requests
 from omegaconf import MISSING
 
-from kylin.utils import TimeMeter
+from kylin.utils import TIME_METER
 
-from .ranker import RankerBase, RankerConfig, Rankers
+from .ranker import RankerBase, RankerConfig, RANKERS
 
 
 @dataclass
@@ -17,7 +17,7 @@ class JinaRankerConfig(RankerConfig):
     api_key: str = MISSING
 
 
-@Rankers("jina", config_class=JinaRankerConfig)
+@RANKERS("jina", config_class=JinaRankerConfig)
 class JinaRanker(RankerBase):
     def __init__(self, cfg: JinaRankerConfig) -> None:
         super().__init__(cfg)
@@ -34,7 +34,7 @@ class JinaRanker(RankerBase):
         }
         return
 
-    @TimeMeter("jina_rank")
+    @TIME_METER("jina_rank")
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         data = self._data_template.copy()
         data["query"] = query
@@ -45,7 +45,7 @@ class JinaRanker(RankerBase):
         scores = [i["relevance_score"] for i in response.json()["results"]]
         return None, scores
 
-    @TimeMeter("jina_rank")
+    @TIME_METER("jina_rank")
     async def _async_rank(
         self, query: str, candidates: list[str]
     ) -> tuple[np.ndarray, np.ndarray]:

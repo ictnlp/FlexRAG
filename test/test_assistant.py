@@ -4,12 +4,12 @@ from dataclasses import dataclass, field
 import pytest
 from omegaconf import OmegaConf
 
-from kylin.assistant import Assistant, AssistantConfig
+from kylin.assistant import Assistant, BasicAssistantConfig
 
 
 @dataclass
 class AssistantTestConfig:
-    assistant_config: AssistantConfig = field(default_factory=AssistantConfig)
+    assistant_config: BasicAssistantConfig = field(default_factory=BasicAssistantConfig)
 
 
 class TestAssistant:

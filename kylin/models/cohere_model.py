@@ -7,12 +7,12 @@ import numpy as np
 from numpy import ndarray
 from omegaconf import MISSING
 
-from kylin.utils import TimeMeter
+from kylin.utils import TIME_METER
 
 from .model_base import (
     EncoderBase,
     EncoderBaseConfig,
-    Encoders,
+    ENCODERS,
 )
 
 
@@ -25,7 +25,7 @@ class CohereEncoderConfig(EncoderBaseConfig):
     proxy: Optional[str] = None
 
 
-@Encoders("cohere", config_class=CohereEncoderConfig)
+@ENCODERS("cohere", config_class=CohereEncoderConfig)
 class CohereEncoder(EncoderBase):
     def __init__(self, cfg: CohereEncoderConfig):
         from cohere import Client
@@ -41,7 +41,7 @@ class CohereEncoder(EncoderBase):
         self.input_type = cfg.input_type
         return
 
-    @TimeMeter("cohere_encode")
+    @TIME_METER("cohere_encode")
     def encode(self, texts: list[str]) -> ndarray:
         r = self.client.embed(
             texts=texts,
@@ -52,7 +52,7 @@ class CohereEncoder(EncoderBase):
         embeddings = r.embeddings.float
         return np.array(embeddings)
 
-    @TimeMeter("cohere_encode")
+    @TIME_METER("cohere_encode")
     async def async_encode(self, texts: list[str]):
         task = asyncio.create_task(
             asyncio.to_thread(

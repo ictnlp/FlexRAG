@@ -25,4 +25,4 @@ class Processor(ABC):
         return self.__class__.__name__
 
 
-PROCESSORS = Register("Processor")
+PROCESSORS = Register[Processor]("processor")

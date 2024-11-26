@@ -6,9 +6,9 @@ import httpx
 import numpy as np
 from omegaconf import MISSING
 
-from kylin.utils import TimeMeter
+from kylin.utils import TIME_METER
 
-from .ranker import RankerBase, RankerConfig, Rankers
+from .ranker import RankerBase, RankerConfig, RANKERS
 
 
 @dataclass
@@ -19,7 +19,7 @@ class CohereRankerConfig(RankerConfig):
     proxy: Optional[str] = None
 
 
-@Rankers("cohere", config_class=CohereRankerConfig)
+@RANKERS("cohere", config_class=CohereRankerConfig)
 class CohereRanker(RankerBase):
     def __init__(self, cfg: CohereRankerConfig) -> None:
         super().__init__(cfg)
@@ -35,7 +35,7 @@ class CohereRanker(RankerBase):
         self.model = cfg.model
         return
 
-    @TimeMeter("cohere_rank")
+    @TIME_METER("cohere_rank")
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         result = self.client.rerank(
             query=query,
@@ -46,7 +46,7 @@ class CohereRanker(RankerBase):
         scores = [i.relevance_score for i in result.results]
         return None, scores
 
-    @TimeMeter("cohere_rank")
+    @TIME_METER("cohere_rank")
     async def _async_rank(self, query: str, candidates: list[str]):
         result = await asyncio.create_task(
             asyncio.to_thread(
