@@ -431,7 +431,7 @@ class HFEncoder(EncoderBase):
             max_length=self.max_encode_length,
             padding=True,
             truncation=True,
-        )
+        )  # TODO: This step is slow
         if not isinstance(model, DP):
             input_dict = input_dict.to(model.device)
         mask = input_dict["attention_mask"]

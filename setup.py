@@ -36,7 +36,6 @@ setup(
         "bm25s",
         "hydra-core>=1.3",
         "omegaconf>=2.3.0",
-        "gradio>=5.0.0",
         "pillow",
     ],
     extras_require={
@@ -50,6 +49,7 @@ setup(
             "PySocks>=1.7.1",
             "anthropic",
             "minference>=0.1.5",
+            "gradio>=5.0.0",
         ]
     },
     classifiers=[
