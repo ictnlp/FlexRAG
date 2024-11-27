@@ -1,4 +1,3 @@
-import logging
 import os
 import re
 from copy import deepcopy
@@ -6,13 +5,13 @@ from dataclasses import dataclass
 
 from kylin.prompt import ChatPrompt, ChatTurn
 from kylin.retriever import ElasticRetriever, ElasticRetrieverConfig, RetrievedContext
-from kylin.utils import Choices
+from kylin.utils import Choices, LoggerManager
 from kylin.assistant import SearchHistory, ASSISTANTS
 
 from .searcher import AgentSearcher, AgentSearcherConfig
 from .keyword import Keyword, Keywords
 
-logger = logging.getLogger("KeywordSearcher")
+logger = LoggerManager.get_logger("KeywordSearcher")
 
 
 @dataclass

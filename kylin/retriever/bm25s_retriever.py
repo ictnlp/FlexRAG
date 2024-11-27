@@ -1,4 +1,3 @@
-import logging
 import os
 from dataclasses import dataclass
 from typing import Iterable, Optional
@@ -28,7 +27,7 @@ class BM25SRetrieverConfig(LocalRetrieverConfig):
     b: float = 0.75
     delta: float = 0.5
     lang: str = "english"
-    indexed_field: str = "text"
+    indexed_fields: list[str] = MISSING
 
 
 @RETRIEVERS("bm25s", config_class=BM25SRetrieverConfig)
@@ -64,7 +63,7 @@ class BM25SRetriever(LocalRetriever):
                 delta=cfg.delta,
             )
         self._lang = cfg.lang
-        self._indexed_field = cfg.indexed_field
+        self._indexed_fields = cfg.indexed_fields
         return
 
     def add_passages(self, passages: Iterable[dict[str, str]]):
@@ -72,7 +71,10 @@ class BM25SRetriever(LocalRetriever):
             "bm25s Retriever does not support add passages. This function will build the index from scratch."
         )
         passages = list(passages)
-        indexed = [i[self._indexed_field] for i in passages]
+        if len(self._indexed_fields) == 1:
+            indexed = [p[self._indexed_fields[0]] for p in passages]
+        else:
+            indexed = [" ".join([p[f] for f in self._indexed_fields]) for p in passages]
         indexed_tokens = bm25s.tokenize(
             indexed, stopwords=self._lang, stemmer=self._stemmer
         )

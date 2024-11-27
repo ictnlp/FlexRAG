@@ -1,4 +1,3 @@
-import logging
 import os
 import shutil
 from dataclasses import dataclass, field
@@ -35,7 +34,7 @@ class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
     passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     source: str = MISSING
     refine_factor: int = 1
-    encode_fields: Optional[list[str]] = None
+    encode_fields: list[str] = MISSING
 
 
 @RETRIEVERS("dense", config_class=DenseRetrieverConfig)
@@ -97,7 +96,8 @@ class DenseRetriever(LocalRetriever):
             # encode passages
             if len(self.encode_fields) > 1:
                 data_to_encode = [
-                    " ".join([i[key] for key in self.encode_fields]) for i in batch
+                    " ".join([f"{key}:{i[key]}" for key in self.encode_fields])
+                    for i in batch
                 ]
             else:
                 data_to_encode = [i[self.encode_fields[0]] for i in batch]

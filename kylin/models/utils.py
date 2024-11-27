@@ -1,4 +1,3 @@
-import logging
 from transformers import PretrainedConfig
 
 from kylin.utils import LOGGER_MANAGER

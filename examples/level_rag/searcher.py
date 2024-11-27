@@ -1,4 +1,3 @@
-import logging
 from abc import abstractmethod
 from copy import deepcopy
 from dataclasses import dataclass
@@ -9,9 +8,9 @@ from kylin.assistant import PREDEFINED_PROMPTS, AssistantBase, SearchHistory
 from kylin.models import GENERATORS, GenerationConfig
 from kylin.prompt import ChatPrompt, ChatTurn
 from kylin.retriever import RetrievedContext
-from kylin.utils import Choices, Register
+from kylin.utils import Choices, Register, LoggerManager
 
-logger = logging.getLogger(__name__)
+logger = LoggerManager.get_logger(__name__)
 
 
 Searchers = Register("searchers")

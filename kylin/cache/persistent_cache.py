@@ -1,4 +1,3 @@
-import logging
 from collections import Counter, OrderedDict
 from dataclasses import dataclass
 from hashlib import blake2b

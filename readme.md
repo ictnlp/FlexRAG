@@ -66,6 +66,7 @@ pip install ./
 - jinaai/Jina-colbert-v2
 - jinaai/jina-reranker-v2-base-multilingual
 - BAAI/bge-reranker-v2-m3
+- intfloat/e5-base-v2
 
 ### Tested Generators
 
