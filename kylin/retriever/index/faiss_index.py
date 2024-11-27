@@ -37,7 +37,9 @@ class FaissIndex(DenseIndexBase):
             self.faiss = faiss
         except:
             raise ImportError(
-                "Please install faiss by running `conda install -c pytorch -c nvidia faiss-gpu`"
+                "Please install faiss by running "
+                "`conda install -c pytorch faiss-cpu=1.9.0` "
+                "or `conda install -c pytorch -c nvidia faiss-gpu`"
             )
 
         # preapre inference args
@@ -322,7 +324,9 @@ class FaissIndex(DenseIndexBase):
         return self.index.ntotal
 
     def _set_index(self, index):
-        if len(self.device_id) > 0:
+        if (len(self.device_id) > 0) and (
+            hasattr(self.faiss, "GpuMultipleClonerOptions")
+        ):
             logger.info("Accelerating index with GPU.")
             option = self.faiss.GpuMultipleClonerOptions()
             option.useFloat16 = True
@@ -334,5 +338,10 @@ class FaissIndex(DenseIndexBase):
                 co=option,
                 gpus=self.device_id,
                 ngpu=len(self.device_id),
+            )
+        elif len(self.device_id) > 0:
+            logger.warning(
+                "The installed faiss does not support GPU acceleration. "
+                "Please install faiss-gpu."
             )
         return index
