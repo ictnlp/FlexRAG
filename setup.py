@@ -20,7 +20,7 @@ setup(
     packages=find_packages(),
     install_requires=[
         "pandas",
-        "numpy",
+        "numpy<2.0.0",  # numpy 2.0.0 is not supported by torch
         "transformers>=4.44.0",
         "tqdm",
         "elasticsearch>=8.14.0",
@@ -37,6 +37,8 @@ setup(
         "hydra-core>=1.3",
         "omegaconf>=2.3.0",
         "pillow",
+        "accelerate>=0.26.0",
+        "faiss-cpu",
     ],
     extras_require={
         "all": [
