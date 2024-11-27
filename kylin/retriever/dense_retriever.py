@@ -210,7 +210,6 @@ class DenseRetriever(LocalRetriever):
             indices (np.ndarray): The refined indices with shape [bsz, top_k * refine_factor]
             scores (np.ndarray): The refined scores with shape [bsz, top_k * refine_factor]
         """
-        # as h5py does not fully support fancy indexing, we process the indices individually
         bsz, kf = indices.shape
         flat_indices = indices.flatten()
         embs = np.stack(
