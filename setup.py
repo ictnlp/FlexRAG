@@ -32,6 +32,7 @@ setup(
         "cachetools",
         "tenacity",
         "lancedb",
+        "lmdb",
         "bm25s",
         "hydra-core>=1.3",
         "omegaconf>=2.3.0",
