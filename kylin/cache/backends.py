@@ -66,6 +66,8 @@ class LMDBBackendConfig:
 class LMDBBackend(MutableMapping):
     def __init__(self, cfg: LMDBBackendConfig) -> None:
         self.db_path = cfg.db_path
+        if not os.path.exists(os.path.dirname(cfg.db_path)):
+            os.makedirs(os.path.dirname(cfg.db_path), exist_ok=True)
         self.database = lmdb.open(cfg.db_path)
         match cfg.serializer:
             case "pickle":
