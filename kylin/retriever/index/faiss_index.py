@@ -250,7 +250,7 @@ class FaissIndex(DenseIndexBase):
     def serialize(self) -> None:
         assert self.index.is_trained, "Index should be trained first."
         logger.info(f"Serializing index to {self.index_path}")
-        if len(self.device_id) >= 0:
+        if self.support_gpu:
             cpu_index = self.faiss.index_gpu_to_cpu(self.index)
         else:
             cpu_index = self.index
@@ -260,7 +260,7 @@ class FaissIndex(DenseIndexBase):
     def deserialize(self):
         logger.info(f"Loading index from {self.index_path}.")
         if (os.path.getsize(self.index_path) / (1024**3) > 10) and (
-            len(self.device_id) == 0
+            not self.support_gpu
         ):
             logger.info("Index file is too large. Loading on CPU with memory map.")
             cpu_index = self.faiss.read_index(self.index_path, self.faiss.IO_FLAG_MMAP)
@@ -298,25 +298,33 @@ class FaissIndex(DenseIndexBase):
 
     @property
     def is_flat(self) -> bool:
+        def _is_flat(index) -> bool:
+            if isinstance(self.index, self.faiss.IndexFlat):
+                return True
+            if self.support_gpu:
+                if isinstance(self.index, self.faiss.GpuIndexFlat):
+                    return True
+            return False
+
         if self.index is None:
             return self.index_type == "FLAT"
-        if isinstance(
-            self.index,
-            (self.faiss.IndexFlat, self.faiss.GpuIndexFlat),
-        ):
+        if _is_flat(self.index):
             return True
         if isinstance(self.index, self.faiss.IndexReplicas):
             all_flat = True
             for i in range(self.index.count()):
                 sub_index = self.faiss.downcast_index(self.index.at(i))
-                if not isinstance(
-                    sub_index,
-                    (self.faiss.IndexFlat, self.faiss.GpuIndexFlat),
-                ):
+                if not _is_flat(sub_index):
                     all_flat = False
             if all_flat:
                 return True
         return False
+
+    @property
+    def support_gpu(self) -> bool:
+        return hasattr(self.faiss, "GpuMultipleClonerOptions") and (
+            len(self.device_id) > 0
+        )
 
     def __len__(self) -> int:
         if self.index is None:
@@ -324,9 +332,7 @@ class FaissIndex(DenseIndexBase):
         return self.index.ntotal
 
     def _set_index(self, index):
-        if (len(self.device_id) > 0) and (
-            hasattr(self.faiss, "GpuMultipleClonerOptions")
-        ):
+        if self.support_gpu:
             logger.info("Accelerating index with GPU.")
             option = self.faiss.GpuMultipleClonerOptions()
             option.useFloat16 = True
