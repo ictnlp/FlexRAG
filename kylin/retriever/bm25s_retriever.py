@@ -27,7 +27,7 @@ class BM25SRetrieverConfig(LocalRetrieverConfig):
     b: float = 0.75
     delta: float = 0.5
     lang: str = "english"
-    indexed_fields: list[str] = MISSING
+    indexed_fields: Optional[list[str]] = None
 
 
 @RETRIEVERS("bm25s", config_class=BM25SRetrieverConfig)

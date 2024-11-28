@@ -34,7 +34,7 @@ class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
     passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     source: str = MISSING
     refine_factor: int = 1
-    encode_fields: list[str] = MISSING
+    encode_fields: Optional[list[str]] = None
 
 
 @RETRIEVERS("dense", config_class=DenseRetrieverConfig)
