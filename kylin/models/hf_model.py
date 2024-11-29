@@ -373,7 +373,7 @@ class HFEncoder(EncoderBase):
             trust_remote_code=cfg.trust_remote_code,
         )
         if len(self.devices) > 1:
-            if hasattr(self.model, "encode"):
+            if self.is_jina:
                 logger.warning("Data parallel does not support self implemented model.")
                 self.dp_model = None
             else:
@@ -406,9 +406,14 @@ class HFEncoder(EncoderBase):
 
     @TIME_METER("hf_encode")
     def encode(self, texts: list[str | list[str]]) -> np.ndarray:
-        if hasattr(self.model, "encode"):  # for jina-embedding
+        if self.is_jina:  # for jina-embedding
             return self.model.encode(
-                texts, task=self.task, max_length=self.max_encode_length
+                texts,
+                task=self.task,
+                max_length=self.max_encode_length,
+                batch_size=len(texts),
+                show_progress_bar=False,
+                convert_to_numpy=True,
             )
         if self.prompt:
             texts = [f"{self.prompt}{i}" for i in texts]
@@ -442,3 +447,9 @@ class HFEncoder(EncoderBase):
     @property
     def embedding_size(self) -> int:
         return self.model.config.hidden_size
+
+    @property
+    def is_jina(self) -> bool:
+        return self.model.__class__.__name__ == "XLMRobertaLoRA" and hasattr(
+            self.model, "encode"
+        )
