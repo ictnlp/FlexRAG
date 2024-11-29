@@ -1,3 +1,4 @@
+import atexit
 import json
 import os
 import pickle
@@ -69,6 +70,7 @@ class LMDBBackend(MutableMapping):
         if not os.path.exists(os.path.dirname(cfg.db_path)):
             os.makedirs(os.path.dirname(cfg.db_path), exist_ok=True)
         self.database = lmdb.open(cfg.db_path)
+        atexit.register(self.database.close)
         match cfg.serializer:
             case "pickle":
                 self.serializer = PickleSerializer()

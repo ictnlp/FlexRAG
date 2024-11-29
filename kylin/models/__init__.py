@@ -32,6 +32,10 @@ from .openai_model import (
     OpenAIGeneratorConfig,
 )
 from .vllm_model import VLLMGenerator, VLLMGeneratorConfig
+from .sentence_transformers_model import (
+    SentenceTransformerEncoder,
+    SentenceTransformerEncoderConfig,
+)
 
 
 __all__ = [
@@ -61,6 +65,8 @@ __all__ = [
     "JinaEncoderConfig",
     "CohereEncoder",
     "CohereEncoderConfig",
+    "SentenceTransformerEncoder",
+    "SentenceTransformerEncoderConfig",
     "GENERATORS",
     "ENCODERS",
 ]

@@ -1,4 +1,5 @@
 import os
+import math
 import shutil
 from dataclasses import dataclass
 
@@ -14,9 +15,10 @@ logger = LOGGER_MANAGER.get_logger("kylin.retrievers.index.annoy")
 @dataclass
 class AnnoyIndexConfig(DenseIndexConfigBase):
     distance_function: Choices(["IP", "L2", "COSINE", "HAMMING", "MANHATTAN"]) = "IP"  # type: ignore
-    n_trees: int = 100
-    n_jobs: int = -1
-    search_k: int = 1000
+    n_trees: int = -1  # -1 means auto
+    n_jobs: int = -1  # -1 means auto
+    search_k: int = -1  # -1 means auto
+    on_disk_build: bool = False
 
 
 @DENSE_INDEX("annoy", config_class=AnnoyIndexConfig)
@@ -32,17 +34,15 @@ class AnnoyIndex(DenseIndexBase):
             raise ImportError("Please install annoy by running `pip install annoy`")
 
         # set annoy params
-        self.n_jobs = cfg.n_jobs
-        self.n_trees = cfg.n_trees
-        self.search_k = cfg.search_k
+        self.cfg = cfg
 
         # prepare index
         if os.path.exists(self.index_path):
             self.deserialize()
         else:
+            self.index = None
             if not os.path.exists(os.path.dirname(self.index_path)):
                 os.makedirs(os.path.dirname(self.index_path))
-            self.index.on_disk_build(self.index_path)
         return
 
     def build_index(self, embeddings: np.ndarray) -> None:
@@ -59,6 +59,8 @@ class AnnoyIndex(DenseIndexBase):
                 self.index = self.ann(embeddings.shape[1], "hamming")
             case "MANHATTAN":
                 self.index = self.ann(embeddings.shape[1], "manhattan")
+        if self.cfg.on_disk_build:
+            self.index.on_disk_build(True)
         # add embeddings
         p_logger = SimpleProgressLogger(
             logger, total=len(embeddings), interval=self.log_interval
@@ -68,7 +70,15 @@ class AnnoyIndex(DenseIndexBase):
             p_logger.update(step=1, desc="Adding embeddings")
         # build index
         logger.info("Building index")
-        self.index.build(self.n_trees, self.n_jobs)
+        if self.n_trees == -1:
+            n_trees = (
+                max(1, math.floor(math.log(30000000) // 10))
+                * math.floor(math.sqrt(768))
+                * 10
+            )
+        else:
+            n_trees = self.n_trees
+        self.index.build(n_trees, self.cfg.n_jobs)
         return
 
     def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:
@@ -85,7 +95,9 @@ class AnnoyIndex(DenseIndexBase):
         query = query.astype("float32")
         indices = []
         scores = []
-        search_k = search_kwargs.get("search_k", self.search_k)
+        search_k = search_kwargs.get("search_k", self.cfg.search_k)
+        if search_k == -1:
+            search_k = max(top_k, 100) * self.n_trees
         for q in query:
             idx, dis = self.index.get_nns_by_vector(
                 q,
@@ -126,6 +138,12 @@ class AnnoyIndex(DenseIndexBase):
     @property
     def is_trained(self):
         return self.index.get_n_items() > 0
+
+    @property
+    def n_trees(self) -> int:
+        if self.index is not None:
+            return self.index.get_n_trees()
+        return self.cfg.n_trees
 
     def __len__(self) -> int:
         return self.index.get_n_items()

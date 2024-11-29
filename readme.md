@@ -22,7 +22,9 @@
   - [ ] Searcher
     - [ ] SelfRAG
     - [ ] AutoRAG
-
+- [ ] performance optimization
+  - [ ] add custom static DP for faster encoding / reranking
+  - [ ] 
 
 
 
