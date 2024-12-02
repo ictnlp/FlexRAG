@@ -133,9 +133,9 @@ class DenseRetriever(LocalRetriever):
     def search_batch(
         self,
         query: list[str],
-        top_k: int = 10,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
+        top_k = search_kwargs.get("top_k", self.top_k)
         emb_q = self.query_encoder.encode(query)
         indices, scores = self.index.search(
             emb_q, top_k * self.refine_factor, **search_kwargs

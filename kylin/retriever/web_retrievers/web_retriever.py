@@ -56,7 +56,6 @@ class WebRetrieverBase(RetrieverBase):
     def search(
         self,
         query: list[str] | str,
-        top_k: int = 10,
         delay: float = 0.1,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
@@ -78,6 +77,7 @@ class WebRetrieverBase(RetrieverBase):
         # search & parse
         results = []
         p_logger = SimpleProgressLogger(logger, len(query), self.log_interval)
+        top_k = search_kwargs.get("top_k", self.top_k)
         for q in query:
             time.sleep(delay)
             p_logger.update(1, "Searching")
@@ -88,14 +88,14 @@ class WebRetrieverBase(RetrieverBase):
     def search_item(
         self,
         query: str,
-        top_k: int = 10,
+        top_k: int,
         **search_kwargs,
     ) -> list[WebRetrievedContext]:
         """Search queries using local retriever.
 
         Args:
             query (str): Query to search.
-            top_k (int, optional): N documents to return. Defaults to 10.
+            top_k (int, optional): N documents to return.
 
         Returns:
             list[WebRetrievedContext]: k WebRetrievedContext.

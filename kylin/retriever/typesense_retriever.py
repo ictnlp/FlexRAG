@@ -82,7 +82,6 @@ class TypesenseRetriever(LocalRetriever):
     def search_batch(
         self,
         query: list[str],
-        top_k: int = 10,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         search_params = [
@@ -90,7 +89,7 @@ class TypesenseRetriever(LocalRetriever):
                 "collection": self.source,
                 "q": q,
                 "query_by": ",".join(self.fields),
-                "per_page": top_k,
+                "per_page": search_kwargs.get("top_k", self.top_k),
                 **search_kwargs,
             }
             for q in query

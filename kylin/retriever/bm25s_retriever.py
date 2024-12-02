@@ -86,14 +86,13 @@ class BM25SRetriever(LocalRetriever):
     def search_batch(
         self,
         query: list[str],
-        top_k: int = 10,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         # retrieve
         query_tokens = bm25s.tokenize(query, stemmer=self._stemmer, show_progress=False)
         contexts, scores = self._retriever.retrieve(
             query_tokens,
-            k=top_k,
+            k=search_kwargs.get("top_k", self.top_k),
             show_progress=False,
             **search_kwargs,
         )
@@ -113,17 +112,6 @@ class BM25SRetriever(LocalRetriever):
                 ]
             )
         return results
-
-    def _full_text_search(
-        self,
-        query: list[str],
-        top_k: int = 10,
-        **search_kwargs,
-    ) -> list[list[RetrievedContext]]:
-        query_tokens = bm25s.tokenize(query, stemmer=self._stemmer, show_progress=False)
-        return self._retriever.retrieve(
-            query_tokens, k=top_k, show_progress=False, **search_kwargs
-        )
 
     def clean(self) -> None:
         del self._retriever.scores

@@ -129,7 +129,6 @@ class ElasticRetriever(LocalRetriever):
     def search_batch(
         self,
         query: list[str],
-        top_k: int = 10,
         search_method: str = "full_text",
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
@@ -154,7 +153,7 @@ class ElasticRetriever(LocalRetriever):
                             "fields": self.fields,
                         },
                     },
-                    "size": top_k,
+                    "size": search_kwargs.get("top_k", self.top_k),
                 }
             )
 

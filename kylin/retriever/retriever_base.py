@@ -40,7 +40,6 @@ def batched_cache(func):
     def wrapper(
         self,
         query: list[str],
-        top_k: int = 10,
         **search_kwargs,
     ):
         # check query
@@ -52,19 +51,17 @@ def batched_cache(func):
             "disable_cache", os.environ.get("DISABLE_CACHE", False)
         )
         if disable_cache:
-            return func(self, query, top_k, **search_kwargs)
+            return func(self, query, **search_kwargs)
 
         # search from cache
-        keys = [
-            hashkey(cfg=self.cfg, query=q, top_k=top_k, **search_kwargs) for q in query
-        ]
+        keys = [hashkey(cfg=self.cfg, query=q, **search_kwargs) for q in query]
         results = [RETRIEVAL_CACHE.get(k, None)[0] for k in keys]
 
         # search from database
         new_query = [q for q, r in zip(query, results) if r is None]
         new_indices = [n for n, r in enumerate(results) if r is None]
         if new_query:
-            new_results = func(self, new_query, top_k, **search_kwargs)
+            new_results = func(self, new_query, **search_kwargs)
             for n, r in zip(new_indices, new_results):
                 results[n] = r
                 RETRIEVAL_CACHE[keys[n]] = r, keys[n]
@@ -107,18 +104,17 @@ class RetrieverBase(ABC):
     def __init__(self, cfg: RetrieverConfigBase):
         self.cfg = cfg
         self.log_interval = cfg.log_interval
+        self.top_k = cfg.top_k
         return
 
     async def async_search(
         self,
         query: list[str],
-        top_k: int = 10,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         return await asyncio.to_thread(
             self.search,
             query=query,
-            top_k=top_k,
             **search_kwargs,
         )
 
@@ -126,14 +122,12 @@ class RetrieverBase(ABC):
     def search(
         self,
         query: list[str],
-        top_k: int = 10,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         """Search queries.
 
         Args:
             query (list[str]): Queries to search.
-            top_k (int, optional): N documents to return. Defaults to 10.
 
         Returns:
             list[list[RetrievedContext]]: A batch of list that contains k RetrievedContext.
@@ -149,7 +143,6 @@ class RetrieverBase(ABC):
         self,
         sample_num: int = 10000,
         test_times: int = 10,
-        top_k: int = 1,
         **search_kwargs,
     ) -> float:
         from nltk.corpus import brown
@@ -159,7 +152,7 @@ class RetrieverBase(ABC):
         for _ in range(test_times):
             query = [sents[i % len(sents)] for i in range(sample_num)]
             start_time = time.perf_counter()
-            _ = self.search(query, top_k, disable_cache=True, **search_kwargs)
+            _ = self.search(query, self.top_k, disable_cache=True, **search_kwargs)
             end_time = time.perf_counter()
             total_times.append(end_time - start_time)
         avg_time = sum(total_times) / test_times
@@ -189,14 +182,12 @@ class LocalRetriever(RetrieverBase):
     def search_batch(
         self,
         query: list[str],
-        top_k: int = 10,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         """Search queries using local retriever.
 
         Args:
             query (list[str]): Queries to search.
-            top_k (int, optional): N documents to return. Defaults to 10.
 
         Returns:
             list[list[RetrievedContext]]: A batch of list that contains k RetrievedContext.
@@ -207,7 +198,6 @@ class LocalRetriever(RetrieverBase):
     def search(
         self,
         query: list[str] | str,
-        top_k: int = 10,
         no_preprocess: bool = False,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
@@ -220,7 +210,7 @@ class LocalRetriever(RetrieverBase):
         for idx in range(0, len(query), self.batch_size):
             p_logger.update(1, "Retrieving")
             batch = query[idx : idx + self.batch_size]
-            results_ = self.search_batch(batch, top_k, **search_kwargs)
+            results_ = self.search_batch(batch, **search_kwargs)
             final_results.extend(results_)
         return final_results
 
