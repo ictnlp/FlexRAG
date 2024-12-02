@@ -120,8 +120,10 @@ class TypesenseRetriever(LocalRetriever):
 
     def __len__(self) -> int:
         info = self.client.collections.retrieve()
-        info = [i for i in info if i["name"] == self.source][0]
-        return info["num_documents"]
+        info = [i for i in info if i["name"] == self.source]
+        if len(info) > 0:
+            return info[0]["num_documents"]
+        return 0
 
     @property
     def _sources(self) -> list[str]:
