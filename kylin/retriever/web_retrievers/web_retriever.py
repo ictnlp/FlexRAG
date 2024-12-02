@@ -87,14 +87,14 @@ class WebRetrieverBase(RetrieverBase):
     @abstractmethod
     def search_item(
         self,
-        query: list[str],
+        query: str,
         top_k: int = 10,
         **search_kwargs,
     ) -> list[WebRetrievedContext]:
         """Search queries using local retriever.
 
         Args:
-            query (list[str]): Queries to search.
+            query (str): Query to search.
             top_k (int, optional): N documents to return. Defaults to 10.
 
         Returns:

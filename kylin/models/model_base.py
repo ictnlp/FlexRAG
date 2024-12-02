@@ -24,6 +24,7 @@ class GenerationConfig:
     top_p: float = 0.9
     top_k: int = 50
     eos_token_id: Optional[int] = None
+    stop_str: Optional[str] = None
 
     def __post_init__(self):
         # check values

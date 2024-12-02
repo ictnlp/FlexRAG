@@ -22,6 +22,7 @@ from .web_retriever import (
     SerpApiRetriever,
     SerpApiRetrieverConfig,
 )
+from .wikipedia_retriever import WikipediaRetriever, WikipediaRetrieverConfig
 
 
 __all__ = [
@@ -43,4 +44,6 @@ __all__ = [
     "SerpApiRetrieverConfig",
     "WEB_DOWNLOADERS",
     "WEB_READERS",
+    "WikipediaRetriever",
+    "WikipediaRetrieverConfig",
 ]

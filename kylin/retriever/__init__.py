@@ -19,6 +19,8 @@ from .web_retrievers import (
     GoogleRetrieverConfig,
     SerpApiRetriever,
     SerpApiRetrieverConfig,
+    WikipediaRetriever,
+    WikipediaRetrieverConfig,
 )
 
 
@@ -45,4 +47,6 @@ __all__ = [
     "RETRIEVERS",
     "SerpApiRetriever",
     "SerpApiRetrieverConfig",
+    "WikipediaRetriever",
+    "WikipediaRetrieverConfig",
 ]

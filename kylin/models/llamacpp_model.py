@@ -116,4 +116,5 @@ class LlamacppGenerator(GeneratorBase):
             "max_tokens": generation_config.max_new_tokens,
             "top_k": generation_config.top_k,
             "top_p": generation_config.top_p,
+            "stop": generation_config.stop_str,
         }, generation_config.sample_num

@@ -153,7 +153,7 @@ class OpenAIGenerator(GeneratorBase):
             with ThreadPoolExecutor() as pool:
                 responses = pool.map(
                     lambda prefix: [
-                        r.message.content
+                        r.text
                         for r in self.client.completions.create(
                             model=self.model_name,
                             prompt=prefix,
@@ -171,7 +171,7 @@ class OpenAIGenerator(GeneratorBase):
                     prompt=prefix,
                     **gen_cfg,
                 )
-                responses.append([i.message.content for i in response.choices])
+                responses.append([i.text for i in response.choices])
         return responses
 
     @TIME_METER("openai_generate")
@@ -209,6 +209,7 @@ class OpenAIGenerator(GeneratorBase):
             "top_p": generation_config.top_p,
             "n": generation_config.sample_num,
             "extra_body": extra_body,
+            "stop": generation_config.stop_str,
         }
 
     def _check(self):

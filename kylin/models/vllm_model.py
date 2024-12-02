@@ -123,4 +123,5 @@ class VLLMGenerator(GeneratorBase):
             top_k=generation_config.top_k,
             top_p=generation_config.top_p,
             stop_token_ids=stop_token_ids,
+            stop=generation_config.stop_str,
         )
