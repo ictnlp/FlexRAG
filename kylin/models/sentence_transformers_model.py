@@ -1,3 +1,4 @@
+import math
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -16,6 +17,7 @@ class SentenceTransformerEncoderConfig(EncoderBaseConfig):
     prompt_name: Optional[str] = None
     prompt: Optional[str] = None
     prompt_dict: Optional[dict] = None
+    normalize: bool = False
 
 
 @ENCODERS("sentence_transformer", config_class=SentenceTransformerEncoderConfig)
@@ -24,6 +26,7 @@ class SentenceTransformerEncoder(EncoderBase):
         super().__init__()
         from sentence_transformers import SentenceTransformer
 
+        self.devices = config.device_id
         self.model = SentenceTransformer(
             model_name_or_path=config.model_path,
             device=f"cuda:{config.device_id[0]}" if config.device_id else "cpu",
@@ -31,11 +34,18 @@ class SentenceTransformerEncoder(EncoderBase):
             backend="torch",
             prompts=config.prompt_dict,
         )
+        if len(config.device_id) > 1:
+            self.pool = self.model.start_multi_process_pool(
+                target_devices=[f"cuda:{i}" for i in config.device_id]
+            )
+        else:
+            self.pool = None
 
         # set args
         self.prompt_name = config.prompt_name
         self.task = config.task
         self.prompt = config.prompt
+        self.normalize = config.normalize
         return
 
     def encode(self, texts: list[str], **kwargs) -> np.ndarray:
@@ -44,6 +54,7 @@ class SentenceTransformerEncoder(EncoderBase):
             "batch_size": len(texts),
             "show_progress_bar": False,
             "convert_to_numpy": True,
+            "normalize_embeddings": self.normalize,
         }
         if kwargs.get("task", self.task) is not None:
             args["task"] = self.task
@@ -51,7 +62,12 @@ class SentenceTransformerEncoder(EncoderBase):
             args["prompt_name"] = self.prompt_name
         if kwargs.get("prompt", self.prompt) is not None:
             args["prompt"] = self.prompt
-        embeddings = self.model.encode(**args)
+        if (len(texts) >= len(self.devices) * 8) and (self.pool is not None):
+            args["pool"] = self.pool
+            args["batch_size"] = math.ceil(args["batch_size"] / len(self.devices))
+            embeddings = self.model.encode_multi_process(**args)
+        else:
+            embeddings = self.model.encode(**args)
         return embeddings
 
     @property
