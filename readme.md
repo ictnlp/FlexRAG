@@ -5,26 +5,12 @@
 ## TODO
 - [ ] optimize keyword searcher
 - [ ] try to merge TextUnit/RetrievedContext/Passage
-- [ ] Add new test cases & benchmark
-- [ ] using httpx client optimize the API based methods(add proxy & retry support)
 - [ ] Reproduce new methods
-  - [ ] Refine
-    - [ ] Recomp
-    - [ ] LongLLMLingua
-  - [ ] Rerank
-    - [ ] TILDE
-    - [ ] rankLLama
-  - [ ] Dense Retriever Enhancing
-    - [ ] HyDE
-  - [ ] Repacking
-  - [ ] Encoder
-    - [ ] BGE Layerwise
   - [ ] Searcher
     - [ ] SelfRAG
     - [ ] AutoRAG
 - [ ] performance optimization
   - [ ] add custom static DP for faster encoding / reranking
-  - [ ] 
 
 
 

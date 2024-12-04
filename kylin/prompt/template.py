@@ -15,7 +15,7 @@ TRUNCATION_STRATEGIES = ["left", "right", "history", "demo", "auto"]
 logger = LOGGER_MANAGER.get_logger("kylin.prompt")
 
 
-class Template(ABC):
+class ChatTemplate(ABC):
     @abstractmethod
     def render_to_text(
         self,
@@ -37,7 +37,7 @@ class Template(ABC):
         return
 
 
-class HFTemplate(Template):
+class HFTemplate(ChatTemplate):
     def __init__(
         self,
         tokenizer: PreTrainedTokenizer,
@@ -65,6 +65,7 @@ class HFTemplate(Template):
         prefix = self.tokenizer.apply_chat_template(
             prompt_,
             tokenize=False,
+            chat_template=self.chat_template,
             add_generation_prompt=add_generation_prompt,
         )
         return prefix
@@ -172,7 +173,7 @@ Phi3Template = HFTemplate
 def load_template(
     tokenizer: PreTrainedTokenizer,
     model_name: Optional[str] = None,
-) -> Template:
+) -> ChatTemplate:
     """Load template for different models."""
     if model_name is None:
         logger.warning("model_name is not provided, using default template.")

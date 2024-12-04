@@ -67,7 +67,9 @@ class TypesenseRetriever(LocalRetriever):
         if self.source not in self._sources:
             schema = {
                 "name": self.source,
-                "fields": [{"name": ".*", "type": "auto"}],
+                "fields": [
+                    {"name": ".*", "type": "auto", "index": True, "infix": True}
+                ],
             }
             self.client.collections.create(schema)
 
@@ -94,10 +96,15 @@ class TypesenseRetriever(LocalRetriever):
             }
             for q in query
         ]
-        responses = self.client.multi_search.perform(
-            search_queries={"searches": search_params},
-            common_params={},
-        )
+        try:
+            responses = self.client.multi_search.perform(
+                search_queries={"searches": search_params},
+                common_params={},
+            )
+        except self.typesense.exceptions.TypesenseClientError as e:
+            logger.error(f"Typesense error: {e}")
+            logger.error(f"Current query: {query}")
+            return [[] for _ in query]
         retrieved = [
             [
                 RetrievedContext(

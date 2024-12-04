@@ -97,6 +97,7 @@ class RetrievedContext:
             "query": self.query,
             "source": self.source,
             "score": self.score,
+            "data": self.data,
         }
 
 

@@ -168,6 +168,8 @@ def load_hf_model(
             model_class = get_colbert_model(colbert_base_model, colbert_dim, model_path)
         case "masked_lm":
             model_class = AutoModelForMaskedLM
+        case "auto":
+            model_class = AutoModel
         case _:
             model_class = AutoModel
     model = model_class.from_pretrained(
@@ -226,6 +228,7 @@ class HFModelConfig:
 class HFGeneratorConfig(GeneratorBaseConfig, HFModelConfig):
     pipeline_parallel: bool = False
     use_minference: bool = False
+    model_type: Choices(["causal_lm", "seq2seq"]) = "causal_lm"  # type: ignore
 
 
 @GENERATORS("hf", config_class=HFGeneratorConfig)
@@ -237,12 +240,13 @@ class HFGenerator(GeneratorBase):
         self.model, self.tokenizer = load_hf_model(
             model_path=cfg.model_path,
             tokenizer_path=cfg.tokenizer_path,
-            model_type="causal_lm",
+            model_type=cfg.model_type,
             device_id=cfg.device_id,
             load_dtype=cfg.load_dtype,
             trust_remote_code=cfg.trust_remote_code,
             pipeline_parallel=cfg.pipeline_parallel,
         )
+        self.model_type = cfg.model_type
         self._patch_model()
 
         # prepare prompt function
@@ -291,16 +295,26 @@ class HFGenerator(GeneratorBase):
         )
 
         # truncate the input tokens
-        outputs = outputs.view(bsz, sample_num, -1)
-        input_lengths = inputs["attention_mask"].sum(dim=1)
-        responses = []
-        for i in range(bsz):
-            samples = [sample[input_lengths[i] :] for sample in outputs[i]]
-            samples = [
-                self.tokenizer.decode(sample, skip_special_tokens=True)
-                for sample in samples
+        if self.model_type == "causal_lm":
+            outputs = outputs.view(bsz, sample_num, -1)
+            input_lengths = inputs["attention_mask"].sum(dim=1)
+            responses = []
+            for i in range(bsz):
+                samples = [sample[input_lengths[i] :] for sample in outputs[i]]
+                samples = [
+                    self.tokenizer.decode(sample, skip_special_tokens=True)
+                    for sample in samples
+                ]
+                responses.append(samples)
+        elif self.model_type == "seq2seq":
+            outputs = outputs.view(bsz, sample_num, -1)
+            responses = [
+                [
+                    self.tokenizer.decode(sample, skip_special_tokens=True)
+                    for sample in samples
+                ]
+                for samples in outputs
             ]
-            responses.append(samples)
         return responses
 
     async def async_generate(
