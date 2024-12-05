@@ -115,8 +115,8 @@ class AnnoyIndex(DenseIndexBase):
 
     def serialize(self) -> None:
         logger.info(f"Serializing index to {self.index_path}")
-        if not os.path.exists(self.index_path):
-            os.makedirs(self.index_path)
+        if not os.path.exists(os.path.dirname(self.index_path)):
+            os.makedirs(os.path.dirname(self.index_path))
         self.index.save(self.index_path)
         return
 
