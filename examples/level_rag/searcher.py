@@ -4,11 +4,11 @@ from dataclasses import dataclass
 
 from omegaconf import MISSING
 
-from kylin.assistant import PREDEFINED_PROMPTS, AssistantBase, SearchHistory
-from kylin.models import GENERATORS, GenerationConfig
-from kylin.prompt import ChatPrompt, ChatTurn
-from kylin.retriever import RetrievedContext
-from kylin.utils import Choices, Register, LoggerManager
+from librarian.assistant import PREDEFINED_PROMPTS, AssistantBase, SearchHistory
+from librarian.models import GENERATORS, GenerationConfig
+from librarian.prompt import ChatPrompt, ChatTurn
+from librarian.retriever import RetrievedContext
+from librarian.utils import Choices, Register, LoggerManager
 
 logger = LoggerManager.get_logger(__name__)
 

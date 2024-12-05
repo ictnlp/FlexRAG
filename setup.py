@@ -3,8 +3,8 @@ import pybind11
 
 ext_modules = [
     Extension(
-        "kylin.metrics.lib_rel",
-        ["kylin/metrics/lib_rel.cpp"],
+        "librarian.metrics.lib_rel",
+        ["src/librarian/metrics/lib_rel.cpp"],
         include_dirs=[pybind11.get_include()],
         language="c++",
     ),
@@ -17,7 +17,8 @@ setup(
     author="Zhuocheng Zhang",
     author_email="zhuocheng_zhang@163.com",
     description="A package for information retrieval",
-    packages=find_packages(),
+    packages=find_packages(where="src"),
+    package_dir={"": "src"},
     install_requires=[
         "pandas",
         "numpy<2.0.0",  # numpy 2.0.0 is not supported by torch
@@ -37,7 +38,7 @@ setup(
         "omegaconf>=2.3.0",
         "pillow",
         "accelerate>=0.26.0",
-        "faiss-cpu",
+        "faiss",
     ],
     extras_require={
         "all": [

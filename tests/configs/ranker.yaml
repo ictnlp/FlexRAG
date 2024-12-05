@@ -1,0 +1,20 @@
+cohere_config:
+  api_key: El6uhAqIWifEoRE0YJG6m8SF1qMpB3IuoAJXyLZO
+  proxy: socks5://127.0.0.1:1080
+jina_config:
+  api_key: "jina_9c53f483a93542228e62c02fbc599daeItZmWTUU2zuukZ-O3S3UoVtURxX5"
+mixedbread_config:
+  api_key: emb_3a09c6c4d2a16436d237aeb426b743785be5679a9511d13e
+voyage_config:
+  api_key: pa-bFt4Z2QEN6i3LRJx5Ba4v4X5AFY8qWoLpGg5Sf7WtfM
+rankgpt_config:
+  generator_type: openai
+  openai_config:
+    model_name: Qwen2-7B-Instruct
+    base_url: http://10.28.0.148:8000/v1
+hf_cross_config:
+  model_path: /data/zhangzhuocheng/Lab/Python/LLM/models/RAG/Reranker/bge-reranker-v2-m3
+hf_seq2seq_config:
+  model_path: /data/zhangzhuocheng/Lab/Python/LLM/models/RAG/Reranker/InRanker-base
+hf_colbert_config:
+  model_path: /data/zhangzhuocheng/Lab/Python/LLM/models/RAG/Reranker/colbertv2.0

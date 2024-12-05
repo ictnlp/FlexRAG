@@ -1,0 +1,31 @@
+corpus_path: /data/zhangzhuocheng/Lab/Python/LLM/datasets/RAG/toycorp/toycorp.jsonl
+dense_config:
+  index_type: faiss
+  source: toycorp
+  query_encoder_config:
+    encoder_type: hf
+    hf_config:
+      model_path: /data/zhangzhuocheng/Lab/Python/LLM/models/RAG/Encoder/contriever-msmarco
+      device_id: [4, 5]
+  passage_encoder_config:
+    encoder_type: hf
+    hf_config:
+      model_path: /data/zhangzhuocheng/Lab/Python/LLM/models/RAG/Encoder/contriever-msmarco
+      device_id: [4, 5]
+  refine_factor: 3
+  encode_fields: ["text"]
+  batch_size: 256
+bm25s_config:
+  lang: english
+  method: lucene
+  idf_method: lucene
+  indexed_field: text
+elastic_config:
+  host: http://10.28.0.148:9200/
+  batch_size: 128
+  id_field: id
+typesense_config:
+  host: 10.28.0.148
+  api_key: 19983410a
+  source: toycorp
+  batch_size: 128

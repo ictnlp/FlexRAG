@@ -1,0 +1,17 @@
+openai_config:
+  model_name: text-embedding-3-small
+  base_url: https://api.openai-proxy.org/v1
+  api_key: sk-u78ZEcthNLdCARGB7IRYfLPXbj591dEQog73BEarr2VSy5fV
+ollama_config:
+  model_name: "nomic-embed-text:latest"
+  base_url: http://10.28.0.148:11434/
+  allow_parallel: True
+hf_config:
+  model_path: /data/zhangzhuocheng/Lab/Python/LLM/models/RAG/Encoder/contriever-msmarco
+jina_config:
+  api_key: jina_9c53f483a93542228e62c02fbc599daeItZmWTUU2zuukZ-O3S3UoVtURxX5
+  model: jina-embeddings-v3
+cohere_config:
+  api_key: El6uhAqIWifEoRE0YJG6m8SF1qMpB3IuoAJXyLZO
+  model: embed-multilingual-v3.0
+  proxy: socks5://127.0.0.1:1080
