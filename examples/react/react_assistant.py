@@ -5,14 +5,14 @@ from copy import deepcopy
 from dataclasses import dataclass
 from typing import Optional
 
-from kylin.assistant import ASSISTANTS, AssistantBase, SearchHistory
-from kylin.retriever import (
+from librarian.assistant import ASSISTANTS, AssistantBase, SearchHistory
+from librarian.retriever import (
     RetrievedContext,
     WikipediaRetriever,
     WikipediaRetrieverConfig,
 )
-from kylin.prompt import ChatPrompt
-from kylin.models import GENERATORS, GenerationConfig
+from librarian.prompt import ChatPrompt
+from librarian.models import GENERATORS, GenerationConfig
 
 
 logger = logging.getLogger("ReAct")

@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 
-from kylin.assistant import ASSISTANTS, SearchHistory
-from kylin.retriever import RetrievedContext
-from kylin.utils import Choices
+from librarian.assistant import ASSISTANTS, SearchHistory
+from librarian.retriever import RetrievedContext
+from librarian.utils import Choices
 
 from .dense_searcher import DenseSearcher, DenseSearcherConfig
 from .keyword_searcher import KeywordSearcher, KeywordSearcherConfig

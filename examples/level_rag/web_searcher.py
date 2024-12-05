@@ -2,18 +2,18 @@ import os
 from copy import deepcopy
 from dataclasses import dataclass
 
-from kylin.assistant import ASSISTANTS, SearchHistory
-from kylin.prompt import ChatPrompt, ChatTurn
-from kylin.retriever import (
+from librarian.assistant import ASSISTANTS, SearchHistory
+from librarian.prompt import ChatPrompt, ChatTurn
+from librarian.retriever import (
     DuckDuckGoRetriever,
     DuckDuckGoRetrieverConfig,
     RetrievedContext,
 )
-from kylin.utils import LOGGER_MANAGER
+from librarian.utils import LOGGER_MANAGER
 
 from .searcher import AgentSearcher, AgentSearcherConfig
 
-logger = LOGGER_MANAGER.get_logger("kylin.examples.level_rag")
+logger = LOGGER_MANAGER.get_logger("librarian.examples.level_rag")
 
 
 @dataclass

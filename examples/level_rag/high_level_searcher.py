@@ -3,9 +3,9 @@ import re
 from copy import deepcopy
 from dataclasses import dataclass
 
-from kylin.prompt import ChatTurn, ChatPrompt
-from kylin.retriever import RetrievedContext
-from kylin.assistant import SearchHistory, ASSISTANTS
+from librarian.prompt import ChatTurn, ChatPrompt
+from librarian.retriever import RetrievedContext
+from librarian.assistant import SearchHistory, ASSISTANTS
 
 from .hybrid_searcher import HybridSearcher, HybridSearcherConfig
 

@@ -1,19 +1,6 @@
 # Librarian: An agent powered search engine.
 
 
-
-## TODO
-- [ ] optimize keyword searcher
-- [ ] try to merge TextUnit/RetrievedContext/Passage
-- [ ] Reproduce new methods
-  - [ ] Searcher
-    - [ ] SelfRAG
-    - [ ] AutoRAG
-- [ ] performance optimization
-  - [ ] add custom static DP for faster encoding / reranking
-
-
-
 ## Overview
 
 
@@ -29,7 +16,7 @@ pip install librarian
 ```bash
 pip install pybind11
 
-git clone https://tencent.zhangzhuocheng.top:3000/zhangzhuocheng/kylin
+git clone https://tencent.zhangzhuocheng.top:3000/zhangzhuocheng/librarian
 cd librarian
 pip install ./
 ```
