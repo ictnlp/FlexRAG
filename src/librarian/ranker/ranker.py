@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
+from omegaconf import MISSING
 
 from librarian.retriever import RetrievedContext
 from librarian.utils import Register, LOGGER_MANAGER
@@ -14,6 +15,7 @@ logger = LOGGER_MANAGER.get_logger("librarian.rankers")
 @dataclass
 class RankerConfig:
     reserve_num: int = -1
+    ranking_field: str = MISSING
 
 
 @dataclass
@@ -26,13 +28,14 @@ class RankingResult:
 class RankerBase(ABC):
     def __init__(self, cfg: RankerConfig) -> None:
         self.reserve_num = cfg.reserve_num
+        self.ranking_field = cfg.ranking_field
         return
 
     def rank(
         self, query: str, candidates: list[RetrievedContext | str]
     ) -> RankingResult:
         if isinstance(candidates[0], RetrievedContext):
-            texts = [ctx.full_text for ctx in candidates]
+            texts = [ctx.data[self.ranking_field] for ctx in candidates]
         else:
             texts = candidates
         indices, scores = self._rank(query, texts)
@@ -53,7 +56,7 @@ class RankerBase(ABC):
         self, query: str, candidates: list[RetrievedContext | str]
     ) -> RankingResult:
         if isinstance(candidates[0], RetrievedContext):
-            texts = [ctx.full_text for ctx in candidates]
+            texts = [ctx.data[self.ranking_field] for ctx in candidates]
         else:
             texts = candidates
         indices, scores = await self._async_rank(query, texts)
