@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 
 from omegaconf import MISSING, OmegaConf
 
+from kylin.data import IterableDataset
 from kylin.retriever import (
     BM25SRetriever,
     BM25SRetrieverConfig,
@@ -16,7 +17,6 @@ from kylin.retriever import (
     TypesenseRetriever,
     TypesenseRetrieverConfig,
 )
-from kylin.utils import read_data
 
 
 @dataclass
@@ -65,7 +65,7 @@ class TestRetrievers:
             retriever = DenseRetriever(self.cfg.dense_config)
 
             # build index
-            corpus = read_data(self.cfg.corpus_path)
+            corpus = IterableDataset(self.cfg.corpus_path)
             retriever.add_passages(corpus)
 
             # search
@@ -82,7 +82,7 @@ class TestRetrievers:
             retriever = BM25SRetriever(self.cfg.bm25s_config)
 
             # build index
-            corpus = read_data(self.cfg.corpus_path)
+            corpus = IterableDataset(self.cfg.corpus_path)
             retriever.add_passages(corpus)
 
             # search
@@ -97,7 +97,7 @@ class TestRetrievers:
         retriever: ElasticRetriever = setup_elastic
 
         # build index
-        corpus = read_data(self.cfg.corpus_path)
+        corpus = IterableDataset(self.cfg.corpus_path)
         retriever.add_passages(corpus)
 
         # search
@@ -112,7 +112,7 @@ class TestRetrievers:
         retriever: TypesenseRetriever = setup_typesense
 
         # build index
-        corpus = read_data(self.cfg.corpus_path)
+        corpus = IterableDataset(self.cfg.corpus_path)
         retriever.add_passages(corpus)
 
         # search

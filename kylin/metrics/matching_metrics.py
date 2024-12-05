@@ -1,53 +1,51 @@
 from abc import abstractmethod
 from collections import Counter
 
-from .metrics_base import MetricsBase, MetricsConfig
+from kylin.utils import TIME_METER
+
+from .metrics_base import MetricsBase, METRICS
 
 
 class MatchingMetrics(MetricsBase):
     @abstractmethod
-    def compute_item(self, y_trues: list[str], y_pred: str) -> float:
+    def compute_item(self, golds: list[str], response: str) -> float:
         return
 
+    @TIME_METER("metrics.matching_score")
     def compute(
-        self, y_trues: list[list[str]], y_preds: list[str]
+        self, responses: list[str], golden_responses: list[list[str]], **kwargs
     ) -> tuple[float, dict[str, list[float]]]:
         matching_list = []
-        for y_t, y_p in zip(y_trues, y_preds):
-            matching_list.append(self.compute_item(y_t, y_p))
+        for golds, response in zip(golden_responses, responses):
+            matching_list.append(self.compute_item(golds, response))
         matching_score = sum(matching_list) / len(matching_list)
         return matching_score, {"item_score": matching_list}
 
 
-ExactMatchConfig = MetricsConfig
-AccuracyConfig = MetricsConfig
-F1Config = MetricsConfig
-RecallConfig = MetricsConfig
-PrecisionConfig = MetricsConfig
-
-
+@METRICS("generation_em")
 class ExactMatch(MatchingMetrics):
-    def compute_item(self, y_trues: list[str], y_pred: str) -> float:
-        return float(y_pred in y_trues)
+    def compute_item(self, golds: list[str], response: str) -> float:
+        return float(response in golds)
 
 
+@METRICS("generation_accuracy")
 class Accuracy(MatchingMetrics):
-    def compute_item(self, y_trues: list[str], y_pred: str) -> float:
-        return float(any(y_t in y_pred for y_t in y_trues))
+    def compute_item(self, golds: list[str], response: str) -> float:
+        return float(any(gold in response for gold in golds))
 
 
-def f1_recall_precision(y_trues: list[str], y_pred: str) -> tuple[float, float, float]:
-    true_counters = [Counter(y_t.split()) for y_t in y_trues]
-    pred_counter = Counter(y_pred.split())
+def f1_recall_precision(golds: list[str], response: str) -> tuple[float, float, float]:
+    true_counters = [Counter(gold.split()) for gold in golds]
+    pred_counter = Counter(response.split())
     precision = 0.0
     recall = 0.0
     f1 = 0.0
-    for y_t in true_counters:
-        common = sum((y_t & pred_counter).values())
+    for gold in true_counters:
+        common = sum((gold & pred_counter).values())
         if common == 0:
             continue
         p = 1.0 * common / sum(pred_counter.values())
-        r = 1.0 * common / sum(y_t.values())
+        r = 1.0 * common / sum(gold.values())
         f1_ = (2 * p * r) / (p + r)
         precision = max(p, precision)
         recall = max(r, recall)
@@ -55,16 +53,19 @@ def f1_recall_precision(y_trues: list[str], y_pred: str) -> tuple[float, float, 
     return f1, recall, precision
 
 
+@METRICS("generation_f1")
 class F1(MatchingMetrics):
-    def compute_item(self, y_trues: list[str], y_pred: str) -> float:
-        return f1_recall_precision(y_trues, y_pred)[0]
+    def compute_item(self, golds: list[str], response: str) -> float:
+        return f1_recall_precision(golds, response)[0]
 
 
+@METRICS("generation_recall")
 class Recall(MatchingMetrics):
-    def compute_item(self, y_trues: list[str], y_pred: str) -> float:
-        return f1_recall_precision(y_trues, y_pred)[1]
+    def compute_item(self, golds: list[str], response: str) -> float:
+        return f1_recall_precision(golds, response)[1]
 
 
+@METRICS("generation_precision")
 class Precision(MatchingMetrics):
-    def compute_item(self, y_trues: list[str], y_pred: str) -> float:
-        return f1_recall_precision(y_trues, y_pred)[2]
+    def compute_item(self, golds: list[str], response: str) -> float:
+        return f1_recall_precision(golds, response)[2]

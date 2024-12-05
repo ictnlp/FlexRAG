@@ -1,29 +1,32 @@
 from dataclasses import dataclass
 
-import sacrebleu
 import rouge
+import sacrebleu
 
-from kylin.utils import Choices
-from .metrics_base import MetricsBase, MetricsConfig
+from kylin.utils import Choices, TIME_METER
+
+from .metrics_base import MetricsBase, METRICS
 
 
 @dataclass
-class BLEUConfig(MetricsConfig):
-    bleu_tokenizer: Choices(sacrebleu.BLEU.TOKENIZERS) = sacrebleu.BLEU.TOKENIZER_DEFAULT  # type: ignore
+class BLEUConfig:
+    tokenizer: Choices(sacrebleu.BLEU.TOKENIZERS) = sacrebleu.BLEU.TOKENIZER_DEFAULT  # type: ignore
 
 
+@METRICS("generation_bleu", config_class=BLEUConfig)
 class BLEU(MetricsBase):
     def __init__(self, cfg: BLEUConfig):
         super().__init__(cfg)
-        self.tokenizer = cfg.bleu_tokenizer
+        self.tokenizer = cfg.tokenizer
         return
 
+    @TIME_METER("metrics.generation_bleu")
     def compute(
-        self, y_trues: list[list[str]], y_preds: list[str]
+        self, responses: list[str], golden_responses: list[list[str]], **kwargs
     ) -> tuple[float, dict[str, float]]:
         bleu = sacrebleu.corpus_bleu(
-            hypotheses=y_preds,
-            references=y_trues,
+            hypotheses=responses,
+            references=golden_responses,
             tokenize=self.tokenizer,
         )
         return bleu.score, vars(bleu)
@@ -36,6 +39,7 @@ class chrFConfig:
     chrf_word_order: int = sacrebleu.CHRF.WORD_ORDER
 
 
+@METRICS("generation_chrf", config_class=chrFConfig)
 class chrF(MetricsBase):
     def __init__(self, cfg: chrFConfig) -> None:
         super().__init__(cfg)
@@ -44,29 +48,28 @@ class chrF(MetricsBase):
         self.word_order = cfg.chrf_word_order
         return
 
+    @TIME_METER("metrics.generation_chrf")
     def compute(
-        self, y_trues: list[list[str]], y_preds: list[str]
+        self, responses: list[str], golden_responses: list[list[str]], **kwargs
     ) -> tuple[float, dict[str, float]]:
         chrf = sacrebleu.corpus_chrf(
-            hypotheses=y_preds,
-            references=y_trues,
+            hypotheses=responses,
+            references=golden_responses,
             beta=self.beta,
         )
         return chrf.score, vars(chrf)
 
 
-RougeConfig = MetricsConfig
-
-
 class Rouge(MetricsBase):
     scorer: rouge.Rouge
 
+    @TIME_METER("metrics.generation_rouge")
     def compute(
-        self, y_trues: list[list[str]], y_preds: list[str]
+        self, responses: list[str], golden_responses: list[list[str]], **kwargs
     ) -> tuple[float, dict[str, float]]:
         score_dict = {"r": [], "p": [], "f": []}
-        for y_t, y_p in zip(y_trues, y_preds):
-            rouge_score = self.compute_item(y_t, y_p)
+        for golds, response in zip(golden_responses, responses):
+            rouge_score = self.compute_item(golds, response)
             for key in score_dict.keys():
                 score_dict[key].append(rouge_score[key])
         for key in score_dict.keys():
@@ -74,32 +77,32 @@ class Rouge(MetricsBase):
         return score_dict["f"], score_dict
 
     def compute_item(
-        self, y_trues: list[str], y_pred: str
+        self, golds: list[str], response: str
     ) -> tuple[float, dict[str, float]]:
         score_dict = {"r": 0.0, "p": 0.0, "f": 0.0}
-        for y_true in y_trues:
-            rouge_score = self.scorer.get_scores(y_pred, y_true)
+        for gold in golds:
+            rouge_score = self.scorer.get_scores(response, gold)
             for key in score_dict.keys():
                 score_dict[key] = max(score_dict[key], rouge_score[0][key])
         return score_dict["f"], score_dict
 
 
-class Rouge1(MetricsBase):
-    def __init__(self, cfg: RougeConfig) -> None:
-        super().__init__(cfg)
+@METRICS("generation_rouge-1")
+class Rouge1(Rouge):
+    def __init__(self) -> None:
         self.scorer = rouge.Rouge(metrics=["rouge-1"])
         return
 
 
-class Rouge2(MetricsBase):
-    def __init__(self, cfg: RougeConfig) -> None:
-        super().__init__(cfg)
+@METRICS("generation_rouge-2")
+class Rouge2(Rouge):
+    def __init__(self) -> None:
         self.scorer = rouge.Rouge(metrics=["rouge-2"])
         return
 
 
-class RougeL(MetricsBase):
-    def __init__(self, cfg: RougeConfig) -> None:
-        super().__init__(cfg)
+@METRICS("generation_rouge-l")
+class RougeL(Rouge):
+    def __init__(self) -> None:
         self.scorer = rouge.Rouge(metrics=["rouge-l"])
         return

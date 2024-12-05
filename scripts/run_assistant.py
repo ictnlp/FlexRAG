@@ -10,17 +10,12 @@ from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING, OmegaConf
 
 from kylin.assistant import ASSISTANTS
-from kylin.metrics import (
-    ResponseEvaluator,
-    ResponseEvaluatorConfig,
-    RetrievalEvaluator,
-    RetrievalEvaluatorConfig,
-)
+from kylin.data import RAGTestIterableDataset
+from kylin.metrics import RAGEvaluatorConfig, RAGEvaluator
 from kylin.retriever import RetrievedContext
 from kylin.utils import (
     LOGGER_MANAGER,
     SimpleProgressLogger,
-    read_data,
     load_user_module,
 )
 
@@ -43,8 +38,7 @@ AssistantConfig = ASSISTANTS.make_config()
 
 @dataclass
 class Config(AssistantConfig, DataConfig):
-    retrieval_eval_config: RetrievalEvaluatorConfig = field(default_factory=RetrievalEvaluatorConfig)  # fmt: skip
-    response_eval_config: ResponseEvaluatorConfig = field(default_factory=ResponseEvaluatorConfig)  # fmt: skip
+    eval_config: RAGEvaluatorConfig = field(default_factory=RAGEvaluatorConfig)  # fmt: skip
     log_interval: int = 10
 
 
@@ -59,7 +53,7 @@ def main(config: Config):
     config = OmegaConf.merge(default_cfg, config)
 
     # load dataset
-    testdata = read_data(config.data_path, config.data_range)
+    testset = RAGTestIterableDataset(config.data_path, config.data_range)
 
     # load assistant
     assistant = ASSISTANTS.load(config)
@@ -69,14 +63,12 @@ def main(config: Config):
         if not os.path.exists(config.output_path):
             os.makedirs(config.output_path)
         details_path = os.path.join(config.output_path, "details.jsonl")
-        retrieval_score_path = os.path.join(config.output_path, "retrieval_score.json")
-        response_score_path = os.path.join(config.output_path, "response_score.json")
+        eval_score_path = os.path.join(config.output_path, "eval_score.json")
         config_path = os.path.join(config.output_path, "config.yaml")
         log_path = os.path.join(config.output_path, "log.txt")
     else:
         details_path = "/dev/null"
-        retrieval_score_path = "/dev/null"
-        response_score_path = "/dev/null"
+        eval_score_path = "/dev/null"
         config_path = "/dev/null"
         log_path = "/dev/null"
 
@@ -91,20 +83,24 @@ def main(config: Config):
     # search and generate
     p_logger = SimpleProgressLogger(logger, interval=config.log_interval)
     questions = []
-    goldens = []
+    golden_answers = []
+    golden_contexts = []
     responses = []
     contexts: list[list[RetrievedContext]] = []
     with open(details_path, "w") as f:
-        for item in testdata:
-            questions.append(item["question"])
-            goldens.append(item["golden_answers"])
-            response, ctxs, metadata = assistant.answer(question=item["question"])
+        for item in testset:
+            questions.append(item.question)
+            golden_answers.append(item.golden_answers)
+            golden_contexts.append(item.golden_contexts)
+            response, ctxs, metadata = assistant.answer(question=item.question)
             responses.append(response)
             contexts.append(ctxs)
             json.dump(
                 {
-                    "question": item["question"],
-                    "golden": item["golden_answers"],
+                    "question": item.question,
+                    "golden": item.golden_answers,
+                    "golden_contexts": item.golden_contexts,
+                    "metadata": item.meta_data,
                     "response": response,
                     "contexts": ctxs,
                     "metadata": metadata,
@@ -115,31 +111,21 @@ def main(config: Config):
             f.write("\n")
             p_logger.update(desc="Searching")
 
-    # evaluate retrieval
-    if contexts[0] is not None:
-        evaluator = RetrievalEvaluator(config.retrieval_eval_config)
-        ret_score, ret_score_detail = evaluator.evaluate(goldens, contexts)
-        with open(retrieval_score_path, "w") as f:
-            json.dump(
-                {
-                    "retrieval_scores": ret_score,
-                    "retrieval_scores_details": ret_score_detail,
-                },
-                f,
-                indent=4,
-                ensure_ascii=False,
-            )
-    else:
-        ret_score, ret_score_detail = None, None
-
-    # evaluate response
-    evaluator = ResponseEvaluator(config.response_eval_config)
-    resp_score, resp_score_detail = evaluator.evaluate(goldens, responses)
-    with open(response_score_path, "w") as f:
+    # evaluate
+    evaluator = RAGEvaluator(config.eval_config)
+    resp_score, resp_score_detail = evaluator.evaluate(
+        questions=questions,
+        responses=responses,
+        golden_responses=golden_answers,
+        retrieved_contexts=contexts,
+        golden_contexts=golden_contexts,
+        log=True,
+    )
+    with open(eval_score_path, "w") as f:
         json.dump(
             {
-                "response_scores": resp_score,
-                "response_scores_details": resp_score_detail,
+                "eval_scores": resp_score,
+                "eval_details": resp_score_detail,
             },
             f,
             indent=4,

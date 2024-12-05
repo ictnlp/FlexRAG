@@ -5,6 +5,7 @@ import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING, OmegaConf
 
+from kylin.data import IterableDataset
 from kylin.retriever import (
     BM25SRetriever,
     BM25SRetrieverConfig,
@@ -16,7 +17,7 @@ from kylin.retriever import (
     TypesenseRetrieverConfig,
 )
 from kylin.text_process import Pipeline, PipelineConfig
-from kylin.utils import Choices, read_data, LOGGER_MANAGER
+from kylin.utils import Choices, LOGGER_MANAGER
 
 logger = LOGGER_MANAGER.get_logger("kylin.prepare_index")
 
@@ -72,11 +73,7 @@ def main(cfg: Config):
     text_processor = Pipeline(cfg.text_process_pipeline)
 
     def prepare_data():
-        for item in read_data(cfg.corpus_path, cfg.data_ranges):
-            # prepare format
-            if isinstance(item, str):
-                item = {"text": item}
-                cfg.saving_fields = ["text"]
+        for item in IterableDataset(cfg.corpus_path, cfg.data_ranges):
             # remove unused fields
             item = {key: item.get(key, "") for key in cfg.saving_fields}
             # preprocess text fields

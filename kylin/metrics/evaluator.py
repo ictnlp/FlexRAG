@@ -1,196 +1,86 @@
 from dataclasses import dataclass, field
-from typing import Any
 
 from kylin.retriever import RetrievedContext
-from kylin.text_process import PipelineConfig, Pipeline
-from kylin.utils import Choices, Optional, LOGGER_MANAGER
+from kylin.text_process import Pipeline, PipelineConfig
+from kylin.utils import LOGGER_MANAGER
 
-from .matching_metrics import (
-    F1,
-    F1Config,
-    Accuracy,
-    AccuracyConfig,
-    ExactMatch,
-    ExactMatchConfig,
-    Precision,
-    PrecisionConfig,
-    Recall,
-    RecallConfig,
-)
-from .generation_metrics import (
-    BLEU,
-    BLEUConfig,
-    chrF,
-    chrFConfig,
-    Rouge1,
-    Rouge2,
-    RougeL,
-    RougeConfig,
-)
-from .retrieval_metrics import (
-    SuccessRate,
-    SuccessRateConfig,
-    RetrievalPrecision,
-    RetrievalPrecisionConfig,
-)
-
+from .metrics_base import METRICS
 
 logger = LOGGER_MANAGER.get_logger("kylin.metrics")
+MetricConfig = METRICS.make_config(allow_multiple=True)
 
 
 @dataclass
-class ResponseEvaluatorConfig:
-    response_metrics: list[
-        Choices(  # type: ignore
-            [
-                "f1",
-                "recall",
-                "em",
-                "precision",
-                "accuracy",
-                "bleu",
-                "chrf",
-                "rouge-1",
-                "rouge-2",
-                "rouge-l",
-            ]
-        )
-    ] = field(default_factory=list)
-    f1_config: F1Config = field(default_factory=F1Config)
-    recall_config: RecallConfig = field(default_factory=RecallConfig)
-    em_config: ExactMatchConfig = field(default_factory=ExactMatchConfig)
-    precision_config: PrecisionConfig = field(default_factory=PrecisionConfig)
-    accuracy_config: AccuracyConfig = field(default_factory=AccuracyConfig)
-    bleu_config: BLEUConfig = field(default_factory=BLEUConfig)
-    chrf_config: chrFConfig = field(default_factory=chrFConfig)
-    rouge_config: RougeConfig = field(default_factory=RougeConfig)
+class RAGEvaluatorConfig(MetricConfig):
     round: int = 2
-    answer_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
+    response_preprocess: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
 
 
-class ResponseEvaluator:
-    def __init__(self, cfg: ResponseEvaluatorConfig) -> None:
-        self.metrics = {}
-        for metric in cfg.response_metrics:
-            match metric:
-                # shortform metrics
-                case "f1":
-                    self.metrics[metric] = F1(cfg.f1_config)
-                case "recall":
-                    self.metrics[metric] = Recall(cfg.recall_config)
-                case "em":
-                    self.metrics[metric] = ExactMatch(cfg.em_config)
-                case "precision":
-                    self.metrics[metric] = Precision(cfg.precision_config)
-                case "accuracy":
-                    self.metrics[metric] = Accuracy(cfg.accuracy_config)
-                # longform metrics
-                case "bleu":
-                    self.metrics[metric] = BLEU(cfg.bleu_config)
-                case "chrf":
-                    self.metrics[metric] = chrF(cfg.chrf_config)
-                case "rouge-1":
-                    self.metrics[metric] = Rouge1(cfg.rouge_config)
-                case "rouge-2":
-                    self.metrics[metric] = Rouge2(cfg.rouge_config)
-                case "rouge-l":
-                    self.metrics[metric] = RougeL(cfg.rouge_config)
-                case _:
-                    raise ValueError(f"Invalid metric type: {metric}")
+class RAGEvaluator:
+    def __init__(self, cfg: RAGEvaluatorConfig) -> None:
+        self.metrics = {
+            name: metric for name, metric in zip(cfg.metrics_type, METRICS.load(cfg))
+        }
+        self.response_pipeline = Pipeline(cfg.response_preprocess)
         self.round = cfg.round
-        self.preprocess_pipeline = Pipeline(cfg.answer_preprocess_pipeline)
         return
 
     def evaluate(
         self,
-        trues: list[list[str]],
-        preds: list[str],
+        questions: list[str] = None,
+        responses: list[str] = None,
+        golden_responses: list[list[str]] = None,
+        retrieved_contexts: list[list[str | RetrievedContext]] = None,
+        golden_contexts: list[list[str]] = None,
         log: bool = True,
-    ) -> tuple[dict[str, float], dict[str, object]]:
+    ):
         """Evaluate the generated responses against the ground truth responses.
 
         Args:
-            trues (list[list[str]]): A list contains ground truth responses for each sample.
-            preds (list[str]): A list contains generated responses.
+            questions (list[str]): A list contains the questions.
+            responses (list[str]): A list contains the generated responses.
+            golden_responses (list[list[str]]): A list contains the golden responses for each question.
+            retrieved_contexts (list[list[str | RetrievedContext]]): A list contains the retrieved contexts.
+            golden_contexts (list[list[str | | RetrievedContext]]): A list contains the golden contexts.
             log (bool, optional): Whether to log the evaluation results. Defaults to True.
 
         Returns:
-            tuple[dict[str, float], dict[str, object]]: A tuple contains the evaluation results and details.
+            eval_result (dict[str, float]): A dict contains the evaluation results.
+            eval_details (dict[str, Any]): A dict contains the evaluation details.
         """
-        evaluation_results = {}
-        evaluation_details = {}
-        preds = [self.preprocess_pipeline(p) for p in preds]
-        trues = [[self.preprocess_pipeline(t_) for t_ in t] for t in trues]
-        for metric in self.metrics:
-            metric = str(metric)  # make json serializable
-            r, r_detail = self.metrics[metric](trues, preds)
-            if log:
-                logger.info(f"{metric}: {r*100:.{self.round}f}%")
-            evaluation_results[metric] = r
-            evaluation_details[metric] = r_detail
-        return evaluation_results, evaluation_details
-
-
-@dataclass
-class RetrievalEvaluatorConfig:
-    retrieval_metrics: list[
-        Choices(  # type: ignore
-            [
-                "success_rate",
-                "precision",
+        # check the input arguments
+        not_none_args = [
+            arg
+            for arg in [
+                questions,
+                responses,
+                golden_responses,
+                retrieved_contexts,
+                golden_contexts,
             ]
-        )
-    ] = field(default_factory=list)
-    success_config: SuccessRateConfig = field(default_factory=SuccessRateConfig)
-    precision_config: RetrievalPrecisionConfig = field(default_factory=RetrievalPrecisionConfig)  # fmt: skip
-    round: int = 2
-    text_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
-    evaluate_field: Optional[str] = None
+            if arg is not None
+        ]
+        assert len(not_none_args) > 1, "At least one argument must be provided."
+        assert all(
+            len(i) == len(not_none_args[0]) for i in not_none_args
+        ), "All arguments must have the same length."
 
-
-class RetrievalEvaluator:
-    def __init__(self, cfg: RetrievalEvaluatorConfig) -> None:
-        self.metrics = {}
-        for metric in cfg.retrieval_metrics:
-            match metric:
-                case "success_rate":
-                    self.metrics[metric] = SuccessRate(cfg.success_config)
-                case "precision":
-                    self.metrics[metric] = RetrievalPrecision(cfg.precision_config)
-                case _:
-                    raise ValueError(f"Invalid metric type: {metric}")
-        self.round = cfg.round
-        self.preprocess_pipeline = Pipeline(cfg.text_preprocess_pipeline)
-        self.eval_field = cfg.evaluate_field
-        return
-
-    def evaluate(
-        self,
-        evidences: list[list[Any | RetrievedContext]],
-        retrieved: list[list[Any | RetrievedContext]],
-        log: bool = True,
-    ) -> tuple[dict[str, float], dict[str, object]]:
+        # evaluate
         evaluation_results = {}
         evaluation_details = {}
-
-        if (self.eval_field is not None) and isinstance(
-            evidences[0][0], RetrievedContext
-        ):
-            evidences_ = [[ctx.data[self.eval_field] for ctx in e] for e in evidences]
-        else:
-            evidences_ = evidences
-        if (self.eval_field is not None) and isinstance(
-            retrieved[0][0], RetrievedContext
-        ):
-            retrieved_ = [[ctx.data[self.eval_field] for ctx in r] for r in retrieved]
-        else:
-            retrieved_ = retrieved
-
-        evidences_ = [[self.preprocess_pipeline(y_) for y_ in y] for y in evidences_]
-        retrieved_ = [[self.preprocess_pipeline(y_) for y_ in y] for y in retrieved_]
+        responses = [self.response_pipeline(res) for res in responses]
+        golden_responses = [
+            [self.response_pipeline(g) for g in golds] for golds in golden_responses
+        ]
         for metric in self.metrics:
             metric = str(metric)  # make json serializable
-            r, r_detail = self.metrics[metric](evidences_, retrieved_)
+            r, r_detail = self.metrics[metric](
+                questions=questions,
+                responses=responses,
+                golden_responses=golden_responses,
+                retrieved_contexts=retrieved_contexts,
+                golden_contexts=golden_contexts,
+            )
             if log:
                 logger.info(f"{metric}: {r*100:.{self.round}f}%")
             evaluation_results[metric] = r

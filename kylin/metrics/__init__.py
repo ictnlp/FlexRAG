@@ -1,15 +1,8 @@
-from .evaluator import (
-    RetrievalEvaluator,
-    RetrievalEvaluatorConfig,
-    ResponseEvaluator,
-    ResponseEvaluatorConfig,
-)
 from .generation_metrics import (
     BLEU,
     BLEUConfig,
     Rouge1,
     Rouge2,
-    RougeConfig,
     RougeL,
     chrF,
     chrFConfig,
@@ -17,52 +10,33 @@ from .generation_metrics import (
 from .matching_metrics import (
     F1,
     Accuracy,
-    AccuracyConfig,
     ExactMatch,
-    ExactMatchConfig,
-    F1Config,
     MatchingMetrics,
     Precision,
-    PrecisionConfig,
     Recall,
-    RecallConfig,
 )
-from .retrieval_metrics import (
-    SuccessRate,
-    SuccessRateConfig,
-    RetrievalPrecision,
-    RetrievalPrecisionConfig,
-)
-from .metrics_base import MetricsBase, MetricsConfig
+from .metrics_base import MetricsBase
+from .retrieval_metrics import SuccessRate, SuccessRateConfig
+
+from .evaluator import RAGEvaluator, RAGEvaluatorConfig  # isort: skip
 
 __all__ = [
     "MetricsBase",
-    "MetricsConfig",
     "MatchingMetrics",
     "Accuracy",
-    "AccuracyConfig",
     "ExactMatch",
-    "ExactMatchConfig",
     "F1",
-    "F1Config",
     "Recall",
-    "RecallConfig",
     "Precision",
-    "PrecisionConfig",
     "BLEU",
     "BLEUConfig",
     "Rouge1",
     "Rouge2",
     "RougeL",
-    "RougeConfig",
     "chrF",
     "chrFConfig",
-    "ResponseEvaluator",
-    "ResponseEvaluatorConfig",
-    "RetrievalEvaluator",
-    "RetrievalEvaluatorConfig",
     "SuccessRate",
     "SuccessRateConfig",
-    "RetrievalPrecision",
-    "RetrievalPrecisionConfig",
+    "RAGEvaluator",
+    "RAGEvaluatorConfig",
 ]

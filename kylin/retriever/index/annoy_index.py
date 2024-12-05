@@ -79,6 +79,8 @@ class AnnoyIndex(DenseIndexBase):
         else:
             n_trees = self.n_trees
         self.index.build(n_trees, self.cfg.n_jobs)
+        if not self.cfg.on_disk_build:
+            self.serialize()
         return
 
     def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:
@@ -124,7 +126,8 @@ class AnnoyIndex(DenseIndexBase):
         return
 
     def clean(self):
-        self.index.unload()
+        if self.index is not None:
+            self.index.unload()
         if os.path.exists(self.index_path):
             shutil.rmtree(self.index_path)
         return

@@ -1,39 +1,50 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 
-from kylin.utils import TIME_METER
-
-
-@dataclass
-class MetricsConfig: ...
+from kylin.utils import Register
+from kylin.retriever import RetrievedContext
 
 
 class MetricsBase(ABC):
-    def __init__(self, cfg: MetricsConfig) -> None:
-        self.cfg = cfg
-        return
-
-    @TIME_METER("metric")
     def __call__(
-        self, y_trues: list[list[str]], y_preds: list[str]
+        self,
+        questions: list[str] = None,
+        responses: list[str] = None,
+        golden_responses: list[list[str]] = None,
+        retrieved_contexts: list[list[str | RetrievedContext]] = None,
+        golden_contexts: list[list[str]] = None,
     ) -> dict[str, float]:
-        assert len(y_trues) == len(
-            y_preds
-        ), "The length of y_true and y_pred should be the same"
-        return self.compute(y_trues, y_preds)
+        return self.compute(
+            questions=questions,
+            responses=responses,
+            golden_responses=golden_responses,
+            retrieved_contexts=retrieved_contexts,
+            golden_contexts=golden_contexts,
+        )
 
     @abstractmethod
     def compute(
-        self, y_trues: list[list[str]], y_preds: list[str]
+        self,
+        questions: list[str] = None,
+        responses: list[str] = None,
+        golden_responses: list[list[str]] = None,
+        retrieved_contexts: list[list[str | RetrievedContext]] = None,
+        golden_contexts: list[list[str]] = None,
     ) -> tuple[float, object]:
         """
-        Compute the metric value and additional metric-specific information.
+        Compute the metric value.
 
         Args:
-            y_trues (list[list[str]]): The true labels for each sample.
-            y_preds (list[str]): The predicted labels for each sample.
+            questions (list[str], optional): A list of questions. Defaults to None.
+            responses (list[str], optional): A list of responses. Defaults to None.
+            golden_responses (list[list[str]], optional): A list of golden responses. Defaults to None.
+            retrieved_contexts (list[list[str | RetrievedContext]], optional): A list of retrieved contexts. Defaults to None.
+            golden_contexts (list[list[str]], optional): A list of golden contexts. Defaults to None.
 
         Returns:
-            tuple[float, object]: A tuple containing the metric value and additional metric-specific information.
+            score (float): The metric value.
+            metadata (object): The metadata of the metric.
         """
         return
+
+
+METRICS = Register[MetricsBase]("metrics")
