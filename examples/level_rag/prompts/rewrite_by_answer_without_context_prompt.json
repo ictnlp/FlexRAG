@@ -1,8 +1,0 @@
-{
-    "system": {
-        "role": "system",
-        "content": "Please write a passage to answer the question."
-    },
-    "history": [],
-    "demonstrations": []
-}

@@ -1,8 +1,0 @@
-{
-    "system": {
-        "role": "system",
-        "content": "Answer the following question in a single sentence using the provided contexts if relevant; if not, answer directly without additional words."
-    },
-    "history": [],
-    "demonstrations": []
-}
