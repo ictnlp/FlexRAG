@@ -1,8 +1,0 @@
-{
-    "system": {
-        "role": "system",
-        "content": "Please answer the following question using the provided contexts if relevant. If the provided contexts are not relevant, base your answer on your own knowledge."
-    },
-    "history": [],
-    "demonstrations": []
-}

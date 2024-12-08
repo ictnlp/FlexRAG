@@ -1,8 +1,0 @@
-{
-    "system": {
-        "role": "system",
-        "content": "Your task is to verify whether any of the following contexts contains enough information to answer the following question. Please only reply 'yes' or 'no' and do not output any other words."
-    },
-    "history": [],
-    "demonstrations": []
-}
