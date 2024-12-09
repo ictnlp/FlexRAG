@@ -1,4 +1,7 @@
-![# Librarian](assets/logo.jpg)
+<p align="center">
+<img src="assets/librarian.png" width=55%>
+</p>
+
 ![Language](https://img.shields.io/badge/language-python-brightgreen)
 ![github license](https://img.shields.io/github/license/ZhuochengZhang98/librarian)
 [![DOI](https://zenodo.org/badge/900151663.svg)](https://doi.org/10.5281/zenodo.14306983)
