@@ -1,0 +1,10 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+authors:
+  - family-names: "Zhang"
+    given-names: "Zhuocheng"
+    orcid: "https://orcid.org/0009-0004-4131-7968"
+title: "Librarian"
+doi: 10.5281/zenodo.14306984
+date-released: 2024-12-8
+url: "https://github.com/ZhuochengZhang98/librarian"

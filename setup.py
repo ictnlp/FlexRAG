@@ -1,5 +1,8 @@
-from setuptools import setup, find_packages, Extension
+import os
+import re
+
 import pybind11
+from setuptools import Extension, find_packages, setup
 
 ext_modules = [
     Extension(
@@ -11,54 +14,74 @@ ext_modules = [
 ]
 
 
+def get_requirements() -> list[str]:
+    with open("requirements.txt", encoding="utf-8") as f:
+        file_content = f.read()
+        lines = [
+            line.strip()
+            for line in file_content.strip().split("\n")
+            if not line.startswith("#")
+        ]
+    # as faiss may be installed using conda, we need to remove it from the requirements
+    try:
+        import faiss
+    except ImportError:
+        pass
+    else:
+        lines = [line for line in lines if not line.startswith("faiss")]
+    return lines
+
+
+def get_version() -> str:
+    with open(os.path.join("src", "librarian", "utils.py"), encoding="utf-8") as f:
+        file_content = f.read()
+        pattern = r"{}\W*=\W*\"([^\"]+)\"".format("VERSION")
+        (version,) = re.findall(pattern, file_content)
+        return version
+
+
 setup(
-    name="Librarian",
-    version="0.0.1",
+    name="librarian-rag",
+    version=get_version(),
     author="Zhuocheng Zhang",
-    author_email="zhuocheng_zhang@163.com",
-    description="A package for information retrieval",
+    author_email="zhuocheng_zhang@outlook.com",
+    description="A RAG Framework for Information Retrieval and Generation.",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
-    install_requires=[
-        "pandas",
-        "numpy<2.0.0",  # numpy 2.0.0 is not supported by torch
-        "transformers>=4.44.0",
-        "tqdm",
-        "elasticsearch>=8.14.0",
-        "torch>=2.3.0",
-        "sacrebleu>=2.4.2",
-        "rouge",
-        "unidecode",
-        "openai>=1.30.1",
-        "tenacity",
-        "lancedb",
-        "lmdb",
-        "bm25s",
-        "hydra-core>=1.3",
-        "omegaconf>=2.3.0",
-        "pillow",
-        "accelerate>=0.26.0",
-        "faiss",
-    ],
+    install_requires=get_requirements(),
     extras_require={
+        "gui": ["gradio>=5.8.0"],
+        "scann": ["scann>=1.3.2"],
+        "llamacpp": ["llama_cpp_python>=0.2.84"],
+        "vllm": ["vllm>=0.5.0"],
+        "ollama": ["ollama>=0.2.1"],
+        "duckduckgo": ["duckduckgo_search>=6.1.6"],
+        "anthropic": ["anthropic"],
+        "minference": ["minference>=0.1.5"],
         "all": [
+            "gradio>=5.8.0",
             "llama_cpp_python>=0.2.84",
             "vllm>=0.5.0",
             "ollama>=0.2.1",
-            "scann>=1.3.2",
             "duckduckgo_search>=6.1.6",
-            "PySocks>=1.7.1",
             "anthropic",
             "minference>=0.1.5",
-            "gradio>=5.0.0",
-        ]
+            "PySocks>=1.7.1",
+        ],
+        "dev": [
+            "black",
+            "pytest",
+        ],
     },
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3",
         "Operating System :: OS Independent",
+        "Programming Language :: Python :: 3",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
+        "Topic :: Scientific/Engineering :: Artificial Intelligence",
     ],
     ext_modules=ext_modules,
 )

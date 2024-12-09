@@ -72,8 +72,8 @@ class AnnoyIndex(DenseIndexBase):
         logger.info("Building index")
         if self.n_trees == -1:
             n_trees = (
-                max(1, math.floor(math.log(30000000) // 10))
-                * math.floor(math.sqrt(768))
+                max(1, math.floor(math.log(embeddings.shape[0]) // 10))
+                * math.floor(math.sqrt(embeddings.shape[1]))
                 * 10
             )
         else:
@@ -118,10 +118,31 @@ class AnnoyIndex(DenseIndexBase):
         if not os.path.exists(os.path.dirname(self.index_path)):
             os.makedirs(os.path.dirname(self.index_path))
         self.index.save(self.index_path)
+        with open(f"{self.index_path}.meta", "w") as f:
+            f.write(f"distance_function: {self.distance_function}\n")
+            f.write(f"embedding_size: {self.embedding_size}\n")
         return
 
     def deserialize(self) -> None:
         logger.info(f"Loading index from {self.index_path}")
+        with open(f"{self.index_path}.meta", "r") as f:
+            self.distance_function = f.readline()[len("distance_function: ") :].strip()
+            embedding_size = int(f.readline()[len("embedding_size: ") :].strip())
+        match self.distance_function:
+            case "IP":
+                self.index = self.ann(embedding_size, "dot")
+            case "L2":
+                self.index = self.ann(embedding_size, "euclidean")
+            case "COSINE":
+                self.index = self.ann(embedding_size, "angular")
+            case "HAMMING":
+                self.index = self.ann(embedding_size, "hamming")
+            case "MANHATTAN":
+                self.index = self.ann(embedding_size, "manhattan")
+            case _:
+                raise ValueError(
+                    f"Unsupported distance function: {self.distance_function}"
+                )
         self.index.load(self.index_path)
         return
 
@@ -130,6 +151,7 @@ class AnnoyIndex(DenseIndexBase):
             self.index.unload()
         if os.path.exists(self.index_path):
             shutil.rmtree(self.index_path)
+            shutil.rmtree(f"{self.index_path}.meta")
         return
 
     @property
@@ -140,11 +162,19 @@ class AnnoyIndex(DenseIndexBase):
 
     @property
     def is_trained(self):
-        return self.index.get_n_items() > 0
+        if not hasattr(self, "index"):
+            return False
+        if self.index is None:
+            return False
+        if self.index.get_n_items() <= 0:
+            return False
+        if self.index.get_n_trees() == 0:
+            return False
+        return True
 
     @property
     def n_trees(self) -> int:
-        if self.index is not None:
+        if self.is_trained:
             return self.index.get_n_trees()
         return self.cfg.n_trees
 

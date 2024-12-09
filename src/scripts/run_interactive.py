@@ -1,27 +1,63 @@
-import logging
 import os
-from dataclasses import dataclass, field
+import sys
+from dataclasses import dataclass
 
+import PIL.Image
 import gradio as gr
 import hydra
 import PIL
 from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 
-from librarian.assistant import AssistantBase, BasicAssistantConfig
-from librarian.searchers import SearcherConfig, load_searcher
+from librarian.assistant import ASSISTANTS
+from librarian.utils import load_user_module, LOGGER_MANAGER
 
-logging.basicConfig(level=logging.WARNING)
-logger = logging.getLogger(__name__)
+
+# load user modules before loading config
+for arg in sys.argv:
+    if arg.startswith("user_module="):
+        load_user_module(arg.split("=")[1])
+        sys.argv.remove(arg)
+
+
+AssistantConfig = ASSISTANTS.make_config()
 
 
 @dataclass
-class Config(SearcherConfig):
-    assistant_config: BasicAssistantConfig = field(default_factory=BasicAssistantConfig)
+class Config(AssistantConfig): ...
 
 
 cs = ConfigStore.instance()
 cs.store(name="default", node=Config)
+logger = LOGGER_MANAGER.get_logger("run_interactive")
+
+
+# prepare resources
+custom_css = """
+#logo {
+    background-color: transparent;    
+}
+"""
+logo_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "assets",
+    "librarian.png",
+)
+wide_logo_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "assets",
+    "librarian-wide.png",
+)
+robot_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "assets",
+    "robot.png",
+)
+user_path = os.path.join(
+    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
+    "assets",
+    "user.png",
+)
 
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
@@ -29,104 +65,99 @@ def main(config: Config):
     # merge config
     default_cfg = OmegaConf.structured(Config)
     config = OmegaConf.merge(default_cfg, config)
-    logging.info(f"Configs:\n{OmegaConf.to_yaml(config)}")
-
-    # load searcher
-    searcher = load_searcher(config)
 
     # load assistant
-    assistant = Assistant(config.assistant_config)
+    assistant = ASSISTANTS.load(config)
 
     # launch the gradio app
-    logo_path = os.path.join(os.path.dirname(__file__), "assets", "TestLogo.webp")
-    image = PIL.Image.open(logo_path)
+    logo = PIL.Image.open(logo_path)
+    wide_logo = PIL.Image.open(wide_logo_path)
     theme = gr.themes.Soft()
     with gr.Blocks(
         theme=theme,
-        title="Librarian: An AI based search engine framework.",
+        title="📖Librarian: A RAG Framework for Information Retrieval and Generation.",
+        fill_height=True,
+        css=custom_css,
     ) as demo:
         logo_pic = gr.Image(
-            value=image,
+            value=logo,
+            image_mode="RGBA",
             type="pil",
             width="50%",
             show_label=False,
             show_download_button=False,
             show_share_button=False,
+            show_fullscreen_button=False,
             interactive=False,
             container=True,
+            elem_id="logo",
         )
-        if searcher is not None:
-            with gr.Row(visible=False) as output_row:
-                chatbot = gr.Chatbot(
-                    type="messages",
-                    label="History messages",
-                    show_copy_button=True,
-                )
-                context_box = gr.Chatbot(
-                    type="messages",
-                    label="Searched information",
-                    show_copy_button=True,
-                    visible=searcher is not None,
-                )
-        else:
+        with gr.Row(visible=False, max_height="100%") as output_row:
             chatbot = gr.Chatbot(
                 type="messages",
                 label="History messages",
                 show_copy_button=True,
-                visible=False,
+                height="100%",
+                max_height="100%",
+                avatar_images=[robot_path, user_path],
+            )
+            context_box = gr.Chatbot(
+                type="messages",
+                label="Searched contexts",
+                show_copy_button=True,
+                visible=assistant is not None,
+                height="100%",
+                max_height="100%",
             )
         msg = gr.Textbox(
-            visible=True, info="What would you like to know?", show_label=False
+            visible=True,
+            info="What would you like to know?",
+            show_label=False,
+            submit_btn=True,
+            stop_btn=False,
         )
+        clear_btn = gr.ClearButton([msg, chatbot, context_box], visible=False)
 
         def rag_chat(message: str, history: list[dict[str, str]]) -> dict:
-            if searcher is not None:
-                ctxs = searcher.search(message)[0]
-                response = assistant.answer(
-                    questions=[message], contexts=[ctxs], histories=[history]
-                )[0][0]
-            else:
-                ctxs = []
-                response = assistant.answer(
-                    questions=[message], histories=[history]
-                )[0][0]  # fmt: skip
+            response, contexts, _ = assistant.answer(question=message)
             history.append(gr.ChatMessage(role="user", content=message))
             history.append(gr.ChatMessage(role="assistant", content=response))
 
-            if searcher is not None:
-                ctxs = [
-                    gr.ChatMessage(role="assistant", content=ctx.full_text)
-                    for ctx in ctxs
-                ]
-                r = {
-                    logo_pic: gr.Image(value=image, visible=False),
-                    output_row: gr.Row(visible=True),
-                    chatbot: history,
-                    msg: "",
-                    context_box: ctxs,
-                }
-            else:
-                r = {
-                    logo_pic: gr.Image(value=image, visible=False),
-                    chatbot: gr.Chatbot(
-                        type="messages",
-                        label="History messages",
-                        show_copy_button=True,
-                        visible=True,
-                    ),
-                    chatbot: history,
-                    msg: "",
-                }
+            ctxs = [
+                gr.ChatMessage(
+                    role="assistant",
+                    content=ctx.data["text"],
+                    metadata={"title": f"Retrieved by: {ctx.retriever}"},
+                )
+                for ctx in contexts
+            ]
+            r = {
+                # logo_pic: gr.Image(
+                #     value=wide_logo,
+                #     image_mode="RGBA",
+                #     type="pil",
+                #     show_download_button=False,
+                #     show_share_button=False,
+                #     show_fullscreen_button=False,
+                #     interactive=False,
+                #     elem_id="logo",
+                # ),
+                logo_pic: wide_logo,
+                output_row: gr.Row(
+                    visible=True,
+                    height=1024,
+                ),
+                chatbot: history,
+                msg: "",
+                context_box: ctxs,
+                clear_btn: gr.ClearButton([msg, chatbot, context_box], visible=True),
+            }
             return r
 
-        if searcher is not None:
-            outputs = [logo_pic, output_row, chatbot, msg, context_box]
-        else:
-            outputs = [logo_pic, chatbot, chatbot, msg]
         msg.submit(
             rag_chat,
             inputs=[msg, chatbot],
-            outputs=outputs,
+            outputs=[logo_pic, output_row, chatbot, msg, context_box, clear_btn],
         )
 
     demo.launch()

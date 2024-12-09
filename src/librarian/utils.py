@@ -6,15 +6,12 @@ import subprocess
 import sys
 import threading
 from contextlib import contextmanager
-from csv import reader
 from dataclasses import field, make_dataclass
 from enum import Enum
 from functools import partial
-from glob import glob
-from itertools import zip_longest
 from multiprocessing import Manager
 from time import perf_counter
-from typing import Coroutine, Generic, Iterable, Iterator, Optional, TypeVar
+from typing import Coroutine, Generic, Iterable, Optional, TypeVar
 
 import numpy as np
 from omegaconf import MISSING, DictConfig, ListConfig, OmegaConf
@@ -250,6 +247,9 @@ class StrEnum(Enum):
     def __repr__(self):
         return self.value
 
+    def __pickle__(self):
+        return self.value
+
 
 def Choices(choices: Iterable[str]):
     return StrEnum("Choices", {c: c for c in choices})
@@ -407,3 +407,6 @@ def load_user_module(module_path: str):
     if module_name not in sys.modules:
         sys.path.insert(0, module_parent)
         importlib.import_module(module_name)
+
+
+VERSION = "0.1.0"
