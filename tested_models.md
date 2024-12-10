@@ -9,6 +9,8 @@
 - nomic-ai/nomic-embed-text-v1.5
 - sentence-transformers/msmarco-MiniLM-L-12-v3
 - intfloat/e5-base-v2
+- openai/clip-vit-base-patch32
+- jinaai/jina-clip-v2
 
 ## Tested ReRankers
 - unicamp-dl/InRanker-base

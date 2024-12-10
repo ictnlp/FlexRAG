@@ -8,6 +8,8 @@ from .hf_model import (
     HFEncoderConfig,
     HFGenerator,
     HFGeneratorConfig,
+    HFClipEncoder,
+    HFClipEncoderConfig,
 )
 from .jina_model import JinaEncoder, JinaEncoderConfig
 from .llamacpp_model import LlamacppGenerator, LlamacppGeneratorConfig
@@ -49,6 +51,8 @@ __all__ = [
     "HFGeneratorConfig",
     "HFEncoder",
     "HFEncoderConfig",
+    "HFClipEncoder",
+    "HFClipEncoderConfig",
     "OllamaGenerator",
     "OllamaGeneratorConfig",
     "OllamaEncoder",

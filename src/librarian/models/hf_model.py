@@ -4,36 +4,43 @@ from typing import Optional
 
 import numpy as np
 import torch
+import torch.nn.functional as F
 from omegaconf import MISSING
 from torch.nn.parallel import DataParallel as DP
 from transformers import (
     AutoConfig,
+    AutoImageProcessor,
     AutoModel,
     AutoModelForCausalLM,
     AutoModelForMaskedLM,
     AutoModelForSeq2SeqLM,
     AutoModelForSequenceClassification,
     AutoTokenizer,
-    BertPreTrainedModel,
     BertModel,
+    BertPreTrainedModel,
+    CLIPModel,
+)
+from transformers import GenerationConfig as HFGenerationConfig
+from transformers import (
+    PreTrainedModel,
+    PreTrainedTokenizer,
     XLMRobertaModel,
     XLMRobertaPreTrainedModel,
 )
-from transformers import GenerationConfig as HFGenerationConfig
-from transformers import PreTrainedModel, PreTrainedTokenizer
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
+from PIL.ImageFile import ImageFile
 
 from librarian.prompt import ChatPrompt, load_template
-from librarian.utils import Choices, TIME_METER, LOGGER_MANAGER
+from librarian.utils import LOGGER_MANAGER, TIME_METER, Choices
 
 from .model_base import (
+    ENCODERS,
+    GENERATORS,
     EncoderBase,
     EncoderBaseConfig,
-    ENCODERS,
     GenerationConfig,
     GeneratorBase,
     GeneratorBaseConfig,
-    GENERATORS,
 )
 from .utils import guess_model_name
 
@@ -170,6 +177,8 @@ def load_hf_model(
             model_class = AutoModelForMaskedLM
         case "auto":
             model_class = AutoModel
+        case "clip":
+            model_class = AutoModel
         case _:
             model_class = AutoModel
     model = model_class.from_pretrained(
@@ -194,11 +203,25 @@ def load_hf_model(
         tokenizer_path = tokenizer_path
     else:
         tokenizer_path = model_path
-    tokenizer = AutoTokenizer.from_pretrained(
-        tokenizer_path,
-        trust_remote_code=trust_remote_code,
-        **other_tokenizer_kwargs,
-    )
+    if model_type == "clip":
+        tokenizer = (
+            AutoTokenizer.from_pretrained(
+                tokenizer_path,
+                trust_remote_code=trust_remote_code,
+                **other_tokenizer_kwargs,
+            ),
+            AutoImageProcessor.from_pretrained(
+                tokenizer_path,
+                trust_remote_code=trust_remote_code,
+                **other_tokenizer_kwargs,
+            ),
+        )
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(
+            tokenizer_path,
+            trust_remote_code=trust_remote_code,
+            **other_tokenizer_kwargs,
+        )
     return model, tokenizer
 
 
@@ -417,7 +440,7 @@ class HFEncoder(EncoderBase):
             raise ValueError(f"Unsupported encode method: {self.encode_method}")
         if self.normalize:
             embeddings = torch.nn.functional.normalize(embeddings, dim=1)
-        return embeddings.cpu().numpy()
+        return embeddings.float().cpu().numpy()
 
     @TIME_METER("hf_encode")
     def encode(self, texts: list[str | list[str]]) -> np.ndarray:
@@ -468,3 +491,73 @@ class HFEncoder(EncoderBase):
         return self.model.__class__.__name__ == "XLMRobertaLoRA" and hasattr(
             self.model, "encode"
         )
+
+
+@dataclass
+class HFClipEncoderConfig(EncoderBaseConfig, HFModelConfig):
+    max_encode_length: int = 512
+    normalize: bool = False
+    convert_to_rgb: bool = False
+
+
+@ENCODERS("hf_clip", config_class=HFClipEncoderConfig)
+class HFClipEncoder(EncoderBase):
+    model: CLIPModel
+    tokenizer: PreTrainedTokenizer
+
+    def __init__(self, cfg: HFClipEncoderConfig):
+        self.devices = cfg.device_id
+        # load model
+        self.model, (self.tokenizer, self.processor) = load_hf_model(
+            model_type="clip",
+            model_path=cfg.model_path,
+            tokenizer_path=cfg.tokenizer_path,
+            load_dtype=cfg.load_dtype,
+            device_id=cfg.device_id,
+            trust_remote_code=cfg.trust_remote_code,
+        )
+
+        # setup arguments
+        self.max_encode_length = cfg.max_encode_length
+        self.normalize = cfg.normalize
+        self.convert_to_rgb = cfg.convert_to_rgb
+        return
+
+    def encode(self, data: list[str | ImageFile]) -> np.ndarray:
+        if isinstance(data[0], str):
+            assert all(isinstance(d, str) for d in data)
+            return self.encode_text(data)
+        assert all(isinstance(d, ImageFile) for d in data)
+        return self.encode_image(data)
+
+    @TIME_METER("hf_clip_encode")
+    @torch.no_grad()
+    def encode_image(self, images: list[ImageFile]) -> np.ndarray:
+        if self.convert_to_rgb:
+            images = [img.convert("RGB") for img in images]
+        input_dict = self.processor(images=images, return_tensors="pt")
+        input_dict = input_dict.to(self.model.device)
+        embeddings = self.model.get_image_features(**input_dict)
+        if self.normalize:
+            embeddings = F.normalize(embeddings, dim=1)
+        return embeddings.float().cpu().numpy()
+
+    @TIME_METER("hf_clip_encode")
+    @torch.no_grad()
+    def encode_text(self, texts: list[str]) -> np.ndarray:
+        input_dict = self.tokenizer.batch_encode_plus(
+            texts,
+            return_tensors="pt",
+            max_length=self.max_encode_length,
+            padding=True,
+            truncation=True,
+        )
+        input_dict = input_dict.to(self.model.device)
+        embeddings = self.model.get_text_features(**input_dict)
+        if self.normalize:
+            embeddings = F.normalize(embeddings, dim=1)
+        return embeddings.float().cpu().numpy()
+
+    @property
+    def embedding_size(self) -> int:
+        return self.model.config.hidden_size
