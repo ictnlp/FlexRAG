@@ -1,6 +1,8 @@
 from .web_downloader import (
     SimpleWebDownloader,
     SimpleWebDownloaderConfig,
+    PuppeteerWebDownloader,
+    PuppeteerWebDownloaderConfig,
     WEB_DOWNLOADERS,
 )
 from .web_reader import (
@@ -9,6 +11,8 @@ from .web_reader import (
     JinaReaderLM,
     JinaReaderLMConfig,
     SnippetWebReader,
+    ScreenshotWebReader,
+    ScreenshotWebReaderConfig,
     WebRetrievedContext,
     WEB_READERS,
 )
@@ -42,6 +46,10 @@ __all__ = [
     "GoogleRetrieverConfig",
     "SerpApiRetriever",
     "SerpApiRetrieverConfig",
+    "PuppeteerWebDownloader",
+    "PuppeteerWebDownloaderConfig",
+    "ScreenshotWebReader",
+    "ScreenshotWebReaderConfig",
     "WEB_DOWNLOADERS",
     "WEB_READERS",
     "WikipediaRetriever",

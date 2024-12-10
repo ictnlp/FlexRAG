@@ -10,7 +10,11 @@ from librarian.prompt import ChatPrompt, ChatTurn
 from librarian.utils import Register
 
 from ..retriever_base import RetrievedContext
-from .web_downloader import WEB_DOWNLOADERS
+from .web_downloader import (
+    WEB_DOWNLOADERS,
+    PuppeteerWebDownloaderConfig,
+    PuppeteerWebDownloader,
+)
 
 
 @dataclass
@@ -28,11 +32,21 @@ class WebReader(ABC):
     def read(
         self, retrieved_contexts: list[WebRetrievedContext]
     ) -> list[RetrievedContext]:
+        """
+        Parse the retrieved contexts into LLM readable format.
+
+        Args:
+            retrieved_contexts (list[WebRetrievedContext]): Contexts retrieved by the WebRetriever.
+
+        Returns:
+            list[RetrievedContext]: Contexts that can be fed into the LLM.
+        """
         return
 
     @property
     @abstractmethod
-    def fields(self):
+    def fields(self) -> list[str]:
+        """The fields that the reader will return."""
         return
 
 
@@ -141,3 +155,35 @@ class SnippetWebReader(WebReader):
     @property
     def fields(self):
         return ["snippet"]
+
+
+@dataclass
+class ScreenshotWebReaderConfig(PuppeteerWebDownloaderConfig): ...
+
+
+@WEB_READERS("screenshot", config_class=ScreenshotWebReaderConfig)
+class ScreenshotWebReader(WebReader):
+    def __init__(self, cfg: ScreenshotWebReaderConfig):
+        super().__init__()
+        assert cfg.return_format == "screenshot"
+        self.downloader = PuppeteerWebDownloader(cfg)
+        return
+
+    def read(
+        self, retrieved_contexts: list[WebRetrievedContext]
+    ) -> list[RetrievedContext]:
+        urls = [rc.url for rc in retrieved_contexts]
+        screenshots = self.downloader.download(urls)
+        return [
+            RetrievedContext(
+                retriever=rc.engine,
+                query=rc.query,
+                data={"screenshot": screenshot},
+                source=rc.url,
+            )
+            for rc, screenshot in zip(retrieved_contexts, screenshots)
+        ]
+
+    @property
+    def fields(self):
+        return ["screenshot"]

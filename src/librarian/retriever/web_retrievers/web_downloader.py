@@ -1,14 +1,17 @@
 import asyncio
+import io
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
+from functools import partial
 from typing import Any, Optional
 
-from concurrent.futures import ThreadPoolExecutor
-from functools import partial
 from httpx import Client
+from PIL import Image
+from PIL.ImageFile import ImageFile
 from tenacity import retry, stop_after_attempt, wait_fixed
 
-from librarian.utils import Register
+from librarian.utils import Choices, Register
 
 
 @dataclass
@@ -17,6 +20,8 @@ class BaseWebDownloaderConfig:
 
 
 class WebDownloaderBase(ABC):
+    """The helper class for downloading web pages."""
+
     def __init__(self, cfg: BaseWebDownloaderConfig) -> None:
         self.allow_parallel = cfg.allow_parallel
         return
@@ -58,7 +63,9 @@ class SimpleWebDownloaderConfig:
 
 
 @WEB_DOWNLOADERS("simple", config_class=SimpleWebDownloaderConfig)
-class SimpleWebDownloader:
+class SimpleWebDownloader(WebDownloaderBase):
+    """Download the html content using httpx."""
+
     def __init__(self, cfg: SimpleWebDownloaderConfig) -> None:
         # setting httpx client
         self.client = Client(
@@ -73,7 +80,7 @@ class SimpleWebDownloader:
         self.retry_delay = cfg.retry_delay
         return
 
-    def download(self, url: str) -> str:
+    def download_page(self, url: str) -> str:
         @retry(
             stop=stop_after_attempt(self.max_retries),
             wait=wait_fixed(self.retry_delay),
@@ -85,3 +92,67 @@ class SimpleWebDownloader:
             return response.text
 
         return download_page(url)
+
+
+@dataclass
+class PuppeteerWebDownloaderConfig(BaseWebDownloaderConfig):
+    return_format: Choices(["screenshot", "html"]) = "html"  # type: ignore
+    headless: bool = True
+    device: Optional[str] = None
+    page_width: int = 1280
+    page_height: int = 1024
+
+
+@WEB_DOWNLOADERS("puppeteer", config_class=PuppeteerWebDownloaderConfig)
+class PuppeteerWebDownloader(WebDownloaderBase):
+    """Download the web content using puppeteer."""
+
+    def __init__(self, cfg: PuppeteerWebDownloaderConfig) -> None:
+        super().__init__(cfg)
+        # prepare the browser
+        from pyppeteer import launch
+
+        try:
+            self.event_loop = asyncio.get_running_loop()
+            self.browser = asyncio.create_task(launch(headless=cfg.headless))
+        except RuntimeError:
+            self.event_loop = asyncio.get_event_loop()
+            self.browser = self.event_loop.run_until_complete(
+                launch(headless=cfg.headless)
+            )
+
+        # setting the arguments
+        self.return_format = cfg.return_format
+        self.device = cfg.device
+        self.page_width = cfg.page_width
+        self.page_height = cfg.page_height
+        return
+
+    def download_page(self, url: str) -> ImageFile | str:
+        return self.event_loop.run_until_complete(self.async_download_page(url))
+
+    async def async_download_page(self, url: str) -> ImageFile | str:
+        if isinstance(self.browser, asyncio.Task):
+            self.browser = await self.browser
+        page = await self.browser.newPage()
+        if self.device is not None:
+            await page.emulate(self.device)
+        if self.page_width is not None and self.page_height is not None:
+            await page.setViewport(
+                {"width": self.page_width, "height": self.page_height}
+            )
+        await page.goto(url)
+        if self.return_format == "html":
+            content = await page.content()
+        elif self.return_format == "screenshot":
+            content = await page.screenshot(
+                type="png", fullPage=True, encoding="binary"
+            )
+            content = Image.open(io.BytesIO(content))
+        else:
+            raise ValueError(f"Unsupported return format: {self.return_format}")
+        await page.close()
+        return content
+
+    async def async_download(self, urls: str | list[str]) -> list[str | ImageFile]:
+        return await asyncio.gather(*[self.async_download_page(url) for url in urls])
