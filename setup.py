@@ -1,8 +1,12 @@
 import os
 import re
+import logging
 
 import pybind11
 from setuptools import Extension, find_packages, setup
+
+logging.basicConfig(level=logging.INFO)
+
 
 ext_modules = [
     Extension(
@@ -25,6 +29,8 @@ def get_requirements() -> list[str]:
     # as faiss may be installed using conda, we need to remove it from the requirements
     try:
         import faiss
+
+        logging.info(f"Detected installed faiss: faiss {faiss.__version__}")
     except ImportError:
         pass
     else:
