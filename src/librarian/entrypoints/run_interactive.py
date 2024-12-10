@@ -1,6 +1,6 @@
-import os
 import sys
 from dataclasses import dataclass
+from pathlib import Path
 
 import PIL.Image
 import gradio as gr
@@ -38,26 +38,10 @@ custom_css = """
     background-color: transparent;    
 }
 """
-logo_path = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "assets",
-    "librarian.png",
-)
-wide_logo_path = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "assets",
-    "librarian-wide.png",
-)
-robot_path = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "assets",
-    "robot.png",
-)
-user_path = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),
-    "assets",
-    "user.png",
-)
+logo_path = Path(__file__).parents[3] / "assets" / "librarian.png"
+wide_logo_path = Path(__file__).parents[3] / "assets" / "librarian-wide.png"
+robot_path = Path(__file__).parents[3] / "assets" / "robot.png"
+user_path = Path(__file__).parents[3] / "assets" / "user.png"
 
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
@@ -83,7 +67,7 @@ def main(config: Config):
             value=logo,
             image_mode="RGBA",
             type="pil",
-            width="50%",
+            width="40%",
             show_label=False,
             show_download_button=False,
             show_share_button=False,
@@ -132,20 +116,10 @@ def main(config: Config):
                 for ctx in contexts
             ]
             r = {
-                # logo_pic: gr.Image(
-                #     value=wide_logo,
-                #     image_mode="RGBA",
-                #     type="pil",
-                #     show_download_button=False,
-                #     show_share_button=False,
-                #     show_fullscreen_button=False,
-                #     interactive=False,
-                #     elem_id="logo",
-                # ),
                 logo_pic: wide_logo,
                 output_row: gr.Row(
                     visible=True,
-                    height=1024,
+                    height=720,
                 ),
                 chatbot: history,
                 msg: "",

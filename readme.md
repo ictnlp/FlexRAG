@@ -10,6 +10,10 @@
 
 Librarian is an open-source framework designed for Retrieval-Augmented Generation (RAG), combining state-of-the-art information retrieval techniques with large language models (LLMs) for enhanced, context-aware responses.
 
+<p align="center">
+<img src="assets/librarian-gui.gif" width=55%>
+</p>
+
 # :book: Table of Contents
 - [:book: Table of Contents](#book-table-of-contents)
 - [:sparkles: Key Features](#sparkles-key-features)
