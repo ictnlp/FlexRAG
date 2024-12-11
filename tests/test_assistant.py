@@ -19,11 +19,11 @@ class TestAssistant:
             os.path.join(os.path.dirname(__file__), "configs", "assistant.yaml")
         ),
     )
-    query = ["Who is Bruce Wayne?"] * 2
+    query = "Who is Bruce Wayne?"
     # contexts = ["Bruce Wayne is Batman.", "Batman is a superhero."]
 
     @pytest.mark.asyncio
     async def test_answer(self):
         assistant = BasicAssistant(self.cfg.assistant_config)
-        r1, _ = assistant.answer(self.query)
+        r1, _, _ = assistant.answer(self.query)
         return
