@@ -28,14 +28,16 @@ class CohereEncoderConfig(EncoderBaseConfig):
 @ENCODERS("cohere", config_class=CohereEncoderConfig)
 class CohereEncoder(EncoderBase):
     def __init__(self, cfg: CohereEncoderConfig):
-        from cohere import Client
+        from cohere import ClientV2
 
         if cfg.proxy is not None:
             httpx_client = httpx.Client(proxies=cfg.proxy)
         else:
             httpx_client = None
-        self.client = Client(
-            api_key=cfg.api_key, base_url=cfg.base_url, httpx_client=httpx_client
+        self.client = ClientV2(
+            api_key=cfg.api_key,
+            base_url=cfg.base_url,
+            httpx_client=httpx_client,
         )
         self.model = cfg.model
         self.input_type = cfg.input_type

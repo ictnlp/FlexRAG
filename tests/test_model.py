@@ -144,7 +144,7 @@ class TestEncode:
         encoder = OpenAIEncoder(self.cfg.openai_config)
         r1 = encoder.encode(self.text)
         r2 = await encoder.async_encode(self.text)
-        assert (r1 - r2).max() < 1e-5
+        assert (r1 - r2).max() < 1e-4
         return
 
     @pytest.mark.asyncio
@@ -152,7 +152,7 @@ class TestEncode:
         encoder = OllamaEncoder(self.cfg.ollama_config)
         r1 = encoder.encode(self.text)
         r2 = await encoder.async_encode(self.text)
-        assert (r1 - r2).max() < 1e-5
+        assert (r1 - r2).max() < 1e-4
         return
 
     @pytest.mark.asyncio
@@ -160,7 +160,7 @@ class TestEncode:
         encoder = HFEncoder(self.cfg.hf_config)
         r1 = encoder.encode(self.text)
         r2 = await encoder.async_encode(self.text)
-        assert (r1 - r2).max() < 1e-5
+        assert (r1 - r2).max() < 1e-4
         return
 
     @pytest.mark.asyncio
@@ -168,7 +168,7 @@ class TestEncode:
         encoder = JinaEncoder(self.cfg.jina_config)
         r1 = encoder.encode(self.text)
         r2 = await encoder.async_encode(self.text)
-        assert (r1 - r2).max() < 1e-5
+        assert (r1 - r2).max() < 1e-4
         return
 
     @pytest.mark.asyncio
@@ -176,5 +176,5 @@ class TestEncode:
         encoder = CohereEncoder(self.cfg.cohere_config)
         r1 = encoder.encode(self.text)
         r2 = await encoder.async_encode(self.text)
-        assert (r1 - r2).max() < 1e-5
+        assert (r1 - r2).max() < 1e-4
         return

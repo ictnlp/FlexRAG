@@ -21,6 +21,7 @@ from librarian.ranker import (
     RankGPTRankerConfig,
     VoyageRanker,
     VoyageRankerConfig,
+    RankingResult,
 )
 
 
@@ -49,7 +50,13 @@ class TestRanker:
         "Shanghai is the largest city in China.",
     ]
 
-    def valid_result(self, r1, r2): ...
+    def valid_result(self, r1: RankingResult, r2: RankingResult) -> None:
+        for c1, c2 in zip(r1.candidates, r2.candidates):
+            assert c1 == c2
+        if r1.scores is not None:
+            for s1, s2 in zip(r1.scores, r2.scores):
+                assert s1 - s2 < 1e-4
+        return
 
     @pytest.mark.asyncio
     async def test_rank_cohere(self):

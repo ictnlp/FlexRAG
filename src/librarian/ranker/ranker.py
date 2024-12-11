@@ -3,7 +3,6 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-from omegaconf import MISSING
 
 from librarian.retriever import RetrievedContext
 from librarian.utils import Register, LOGGER_MANAGER
@@ -15,7 +14,7 @@ logger = LOGGER_MANAGER.get_logger("librarian.rankers")
 @dataclass
 class RankerConfig:
     reserve_num: int = -1
-    ranking_field: str = MISSING
+    ranking_field: Optional[str] = None
 
 
 @dataclass
@@ -35,6 +34,7 @@ class RankerBase(ABC):
         self, query: str, candidates: list[RetrievedContext | str]
     ) -> RankingResult:
         if isinstance(candidates[0], RetrievedContext):
+            assert self.ranking_field is not None
             texts = [ctx.data[self.ranking_field] for ctx in candidates]
         else:
             texts = candidates
@@ -56,6 +56,7 @@ class RankerBase(ABC):
         self, query: str, candidates: list[RetrievedContext | str]
     ) -> RankingResult:
         if isinstance(candidates[0], RetrievedContext):
+            assert self.ranking_field is not None
             texts = [ctx.data[self.ranking_field] for ctx in candidates]
         else:
             texts = candidates
