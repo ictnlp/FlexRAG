@@ -84,7 +84,7 @@ CORPUS_PATH=psgs_w100.tsv.gz
 CORPUS_FIELDS='[title,text]'
 DB_PATH=<path_to_database>
 
-python -m librarian.prepare_index \
+python -m librarian.entrypoints.prepare_index \
     corpus_path=$CORPUS_PATH \
     saving_fields=$CORPUS_FIELDS \
     retriever_type=dense \
@@ -107,7 +107,7 @@ CORPUS_PATH=psgs_w100.tsv.gz
 CORPUS_FIELDS='[title,text]'
 DB_PATH=<path_to_database>
 
-python -m librarian.prepare_index \
+python -m librarian.entrypoints.prepare_index \
     corpus_path=$CORPUS_PATH \
     saving_fields=$CORPUS_FIELDS \
     retriever_type=bm25s \
@@ -124,7 +124,7 @@ When the index is ready, you can run your RAG application. Here is an example of
 
 ### Run the Librarian Example RAG Application with GUI
 ```bash
-python -m librarian.run_interactive \
+python -m librarian.entrypoints.run_interactive \
     assistant_type=modular \
     modular_config.used_fields=[title,text] \
     modular_config.retriever_type=dense \
@@ -147,7 +147,7 @@ OUTPUT_PATH=<path_to_output>
 DB_PATH=<path_to_database>
 OPENAI_KEY=<your_openai_key>
 
-python -m librarian.run_assistant \
+python -m librarian.entrypoints.run_assistant \
     data_path=flash_rag/nq/test.jsonl \
     output_path=${OUTPUT_PATH} \
     assistant_type=modular \
@@ -176,7 +176,7 @@ OUTPUT_PATH=<path_to_output>
 DB_PATH=<path_to_database>
 OPENAI_KEY=<your_openai_key>
 
-python -m librarian.run_assistant \
+python -m librarian.entrypoints.run_assistant \
     data_path=flash_rag/nq/test.jsonl \
     output_path=${OUTPUT_PATH} \
     assistant_type=modular \

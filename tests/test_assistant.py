@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import pytest
 from omegaconf import OmegaConf
 
-from librarian.assistant import Assistant, BasicAssistantConfig
+from librarian.assistant import BasicAssistant, BasicAssistantConfig
 
 
 @dataclass
@@ -22,13 +22,8 @@ class TestAssistant:
     query = ["Who is Bruce Wayne?"] * 2
     # contexts = ["Bruce Wayne is Batman.", "Batman is a superhero."]
 
-    def valid_result(self, r1, r2):
-        pass
-
     @pytest.mark.asyncio
     async def test_answer(self):
-        assistant = Assistant(self.cfg.assistant_config)
+        assistant = BasicAssistant(self.cfg.assistant_config)
         r1, _ = assistant.answer(self.query)
-        r2, _ = await assistant.async_answer(self.query)
-        self.valid_result(r1, r2)
         return

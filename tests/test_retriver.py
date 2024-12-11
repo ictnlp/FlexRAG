@@ -21,7 +21,9 @@ from librarian.retriever import (
 
 @dataclass
 class RetrieverTestConfig:
-    corpus_path: str = MISSING
+    corpus_path: str = os.path.join(
+        os.path.dirname(__file__), "testcorp", "testcorp.jsonl"
+    )
     typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)  # fmt: skip
     bm25s_config: BM25SRetrieverConfig = field(default_factory=BM25SRetrieverConfig)
     elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)  # fmt: skip

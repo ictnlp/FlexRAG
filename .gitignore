@@ -152,4 +152,4 @@ experimental_configs/
 outputs/
 
 # pytest configs
-test/configs/
+tests/configs/
