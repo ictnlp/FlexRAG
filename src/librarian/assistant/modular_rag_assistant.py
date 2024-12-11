@@ -2,6 +2,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from librarian.context_refine import BasicPacker, BasicPackerConfig
 from librarian.models import GENERATORS, GenerationConfig
 from librarian.prompt import ChatPrompt, ChatTurn
 from librarian.ranker import RANKERS
@@ -20,7 +21,7 @@ RankerConfig = RANKERS.make_config(default=None)
 
 @dataclass
 class ModularAssistantConfig(
-    GeneratorConfig, GenerationConfig, RetrieverConfig, RankerConfig
+    GeneratorConfig, GenerationConfig, RetrieverConfig, RankerConfig, BasicPackerConfig
 ):
     response_type: Choices(["short", "long", "original", "custom"]) = "short"  # type: ignore
     prompt_with_context_path: Optional[str] = None
@@ -46,6 +47,9 @@ class ModularAssistant(AssistantBase):
 
         # load ranker
         self.reranker = RANKERS.load(cfg)
+
+        # load packer
+        self.context_packer = BasicPacker(cfg)
 
         # load prompts
         match cfg.response_type:
@@ -100,6 +104,11 @@ class ModularAssistant(AssistantBase):
         if self.reranker is not None:
             results = self.reranker.rank(question, ctxs)
             ctxs = results.candidates
+            search_histories.append(SearchHistory(query=question, contexts=ctxs))
+
+        # packing
+        if len(ctxs) > 1:
+            ctxs = self.context_packer.refine(ctxs)
             search_histories.append(SearchHistory(query=question, contexts=ctxs))
 
         return ctxs, search_histories
