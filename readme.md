@@ -278,3 +278,5 @@ This project benefits from the following open-source projects:
 - [FlashRAG](https://github.com/RUC-NLPIR/FlashRAG)
 - [LanceDB](https://github.com/lancedb/lancedb)
 - [ANN Benchmarks](https://github.com/erikbern/ann-benchmarks)
+- [Chonkie](https://github.com/chonkie-ai/chonkie)
+- [rerankers](https://github.com/AnswerDotAI/rerankers)
