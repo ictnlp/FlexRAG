@@ -1,5 +1,5 @@
 <p align="center">
-<img src="assets/librarian.png" width=55%>
+<img src="assets/librarian-wide.png" width=55%>
 </p>
 
 ![Language](https://img.shields.io/badge/language-python-brightgreen)
