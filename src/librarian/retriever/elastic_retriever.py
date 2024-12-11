@@ -5,7 +5,7 @@ from typing import Iterable, Optional
 from omegaconf import MISSING
 from elasticsearch import Elasticsearch
 
-from librarian.utils import SimpleProgressLogger, LOGGER_MANAGER
+from librarian.utils import SimpleProgressLogger, LOGGER_MANAGER, TIME_METER
 
 from .retriever_base import (
     RETRIEVERS,
@@ -64,6 +64,7 @@ class ElasticRetriever(LocalRetriever):
             es_logger.setLevel(logging.WARNING)
         return
 
+    @TIME_METER("elastic_search", "add_passages")
     def add_passages(self, passages: Iterable[dict[str, str]]):
         def generate_actions():
             index_exists = self.client.indices.exists(index=self.index_name)
@@ -126,6 +127,7 @@ class ElasticRetriever(LocalRetriever):
             p_logger.update(len(actions) // 2, "Indexing")
         return
 
+    @TIME_METER("elastic_search", "search")
     def search_batch(
         self,
         query: list[str],

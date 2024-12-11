@@ -5,6 +5,8 @@ from typing import Optional
 import numpy as np
 from omegaconf import MISSING
 
+from librarian.utils import TIME_METER
+
 from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
 
 
@@ -48,6 +50,7 @@ class SentenceTransformerEncoder(EncoderBase):
         self.normalize = config.normalize
         return
 
+    @TIME_METER("st_encode")
     def encode(self, texts: list[str], **kwargs) -> np.ndarray:
         args = {
             "sentences": texts,

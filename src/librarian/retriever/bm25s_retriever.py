@@ -5,7 +5,7 @@ from typing import Iterable, Optional
 import bm25s
 from omegaconf import MISSING
 
-from librarian.utils import Choices, LOGGER_MANAGER
+from librarian.utils import Choices, LOGGER_MANAGER, TIME_METER
 
 from .retriever_base import (
     RETRIEVERS,
@@ -66,6 +66,7 @@ class BM25SRetriever(LocalRetriever):
         self._indexed_fields = cfg.indexed_fields
         return
 
+    @TIME_METER("bm25s_retriever", "add-passages")
     def add_passages(self, passages: Iterable[dict[str, str]]):
         logger.warning(
             "bm25s Retriever does not support add passages. This function will build the index from scratch."
@@ -83,6 +84,7 @@ class BM25SRetriever(LocalRetriever):
         self._retriever.save(self.database_path, corpus=passages)
         return
 
+    @TIME_METER("bm25s_retriever", "search")
     def search_batch(
         self,
         query: list[str],

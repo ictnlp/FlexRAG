@@ -9,15 +9,16 @@ import requests
 from omegaconf import MISSING
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
-from librarian.utils import Choices, SimpleProgressLogger, LOGGER_MANAGER
+from librarian.utils import LOGGER_MANAGER, Choices, SimpleProgressLogger, TIME_METER
 
 from ..retriever_base import (
     RETRIEVERS,
     RetrievedContext,
     RetrieverBase,
     RetrieverConfigBase,
+    batched_cache,
 )
-from .web_reader import WebRetrievedContext, WEB_READERS
+from .web_reader import WEB_READERS, WebRetrievedContext
 
 logger = LOGGER_MANAGER.get_logger("librarian.retrievers.web_retriever")
 
@@ -53,6 +54,8 @@ class WebRetrieverBase(RetrieverBase):
         self.reader = WEB_READERS.load(cfg)
         return
 
+    @TIME_METER("web_retriever", "search")
+    @batched_cache
     def search(
         self,
         query: list[str] | str,

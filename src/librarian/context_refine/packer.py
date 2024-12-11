@@ -2,7 +2,7 @@ import random as rd
 from dataclasses import dataclass
 
 from librarian.retriever import RetrievedContext
-from librarian.utils import Choices
+from librarian.utils import Choices, TIME_METER
 
 from .refiner import REFINERS, RefinerBase
 
@@ -18,6 +18,7 @@ class BasicPacker(RefinerBase):
         self.order = config.order
         return
 
+    @TIME_METER("repack")
     def refine(self, contexts: list[RetrievedContext]) -> list[RetrievedContext]:
         match self.order:
             case "ascending":

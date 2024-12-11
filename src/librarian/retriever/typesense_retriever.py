@@ -3,7 +3,7 @@ from typing import Generator, Iterable
 
 from omegaconf import MISSING
 
-from librarian.utils import Choices, SimpleProgressLogger, LOGGER_MANAGER
+from librarian.utils import Choices, SimpleProgressLogger, LOGGER_MANAGER, TIME_METER
 
 from .retriever_base import (
     RETRIEVERS,
@@ -51,6 +51,7 @@ class TypesenseRetriever(LocalRetriever):
         self.source = cfg.source
         return
 
+    @TIME_METER("typesense", "add_passages")
     def add_passages(self, passages: Iterable[dict[str, str]]) -> None:
         def get_batch() -> Generator[list[dict[str, str]], None, None]:
             batch = []
@@ -81,6 +82,7 @@ class TypesenseRetriever(LocalRetriever):
             p_logger.update(len(batch), desc="Adding passages")
         return
 
+    @TIME_METER("typesense", "search")
     def search_batch(
         self,
         query: list[str],

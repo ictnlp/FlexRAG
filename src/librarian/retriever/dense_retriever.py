@@ -73,6 +73,7 @@ class DenseRetriever(LocalRetriever):
             self._check_consistency()
         return
 
+    @TIME_METER("dense_retriever", "add-passages")
     def add_passages(self, passages: Iterable[dict[str, str]]):
         """
         Add passages to the retriever database
@@ -130,6 +131,7 @@ class DenseRetriever(LocalRetriever):
         logger.info("Finished adding passages")
         return
 
+    @TIME_METER("dense_retriever", "search")
     def search_batch(
         self,
         query: list[str],
@@ -194,7 +196,7 @@ class DenseRetriever(LocalRetriever):
         fields.remove("vector")
         return fields
 
-    @TIME_METER("retrieve", "refine-index")
+    @TIME_METER("dense_retriever", "refine-index")
     def refine_index(
         self,
         query: np.ndarray,
@@ -237,6 +239,7 @@ class DenseRetriever(LocalRetriever):
         new_scores = np.take_along_axis(dis, new_order, axis=1)
         return new_indices, new_scores
 
+    @TIME_METER("dense_retriever", "build-index")
     def build_index(self) -> None:
         logger.info("Copying embeddings to memory map")
         embeddings = np.memmap(
