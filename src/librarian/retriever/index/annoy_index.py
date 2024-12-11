@@ -60,7 +60,7 @@ class AnnoyIndex(DenseIndexBase):
             case "MANHATTAN":
                 self.index = self.ann(embeddings.shape[1], "manhattan")
         if self.cfg.on_disk_build:
-            self.index.on_disk_build(True)
+            self.index.on_disk_build(self.index_path)
         # add embeddings
         p_logger = SimpleProgressLogger(
             logger, total=len(embeddings), interval=self.log_interval
