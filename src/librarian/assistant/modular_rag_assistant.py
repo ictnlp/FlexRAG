@@ -1,8 +1,6 @@
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Optional
-
-from omegaconf import MISSING
 
 from librarian.models import GENERATORS, GenerationConfig
 from librarian.prompt import ChatPrompt, ChatTurn
@@ -27,7 +25,7 @@ class ModularAssistantConfig(
     response_type: Choices(["short", "long", "original", "custom"]) = "short"  # type: ignore
     prompt_with_context_path: Optional[str] = None
     prompt_without_context_path: Optional[str] = None
-    used_fields: list[str] = MISSING
+    used_fields: list[str] = field(default_factory=list)
 
 
 @ASSISTANTS("modular", config_class=ModularAssistantConfig)
@@ -91,6 +89,8 @@ class ModularAssistant(AssistantBase):
     def search(
         self, question: str
     ) -> tuple[list[RetrievedContext], list[SearchHistory]]:
+        if self.retriever is None:
+            return [], []
         # searching for contexts
         search_histories = []
         ctxs = self.retriever.search(query=[question])[0]
@@ -116,7 +116,11 @@ class ModularAssistant(AssistantBase):
         # prepare user prompt
         usr_prompt = ""
         for n, context in enumerate(contexts):
-            if len(self.used_fields) == 1:
+            if len(self.used_fields) == 0:
+                ctx = ""
+                for field_name, field_value in context.data.items():
+                    ctx += f"{field_name}: {field_value}\n"
+            elif len(self.used_fields) == 1:
                 ctx = context.data[self.used_fields[0]]
             else:
                 ctx = ""
