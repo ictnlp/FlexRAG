@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from librarian.retriever import RetrievedContext
-from librarian.text_process import Pipeline, PipelineConfig
+from librarian.processors import TextProcessPipeline, TextProcessPipelineConfig
 from librarian.utils import LOGGER_MANAGER
 
 from .metrics_base import METRICS
@@ -13,7 +13,7 @@ MetricConfig = METRICS.make_config(allow_multiple=True)
 @dataclass
 class RAGEvaluatorConfig(MetricConfig):
     round: int = 2
-    response_preprocess: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
+    response_preprocess: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
 
 
 class RAGEvaluator:
@@ -21,7 +21,7 @@ class RAGEvaluator:
         self.metrics = {
             name: metric for name, metric in zip(cfg.metrics_type, METRICS.load(cfg))
         }
-        self.response_pipeline = Pipeline(cfg.response_preprocess)
+        self.response_pipeline = TextProcessPipeline(cfg.response_preprocess)
         self.round = cfg.round
         return
 

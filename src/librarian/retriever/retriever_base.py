@@ -7,7 +7,7 @@ from typing import Any, Iterable, Optional
 
 import numpy as np
 
-from librarian.text_process import Pipeline, PipelineConfig
+from librarian.processors import TextProcessPipeline, TextProcessPipelineConfig
 from librarian.utils import SimpleProgressLogger, Register, LOGGER_MANAGER
 
 from librarian.cache import PersistentCache, PersistentCacheConfig, LMDBBackendConfig
@@ -80,7 +80,7 @@ class RetrieverConfigBase:
 @dataclass
 class LocalRetrieverConfig(RetrieverConfigBase):
     batch_size: int = 32
-    query_preprocess_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
+    query_preprocess_pipeline: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
 
 
 @dataclass
@@ -169,7 +169,9 @@ class LocalRetriever(RetrieverBase):
         super().__init__(cfg)
         # set args for process documents
         self.batch_size = cfg.batch_size
-        self.query_preprocess_pipeline = Pipeline(cfg.query_preprocess_pipeline)
+        self.query_preprocess_pipeline = TextProcessPipeline(
+            cfg.query_preprocess_pipeline
+        )
         return
 
     @abstractmethod

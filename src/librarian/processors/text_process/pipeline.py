@@ -1,11 +1,11 @@
 from .processor import PROCESSORS, Processor, TextUnit
 
 
-PipelineConfig = PROCESSORS.make_config(allow_multiple=True)
+TextProcessPipelineConfig = PROCESSORS.make_config(allow_multiple=True)
 
 
-class Pipeline:
-    def __init__(self, cfg: PipelineConfig) -> None:  # type: ignore
+class TextProcessPipeline:
+    def __init__(self, cfg: TextProcessPipelineConfig) -> None:  # type: ignore
         # load processors
         self.processors: list[Processor] = PROCESSORS.load(cfg)
         return

@@ -10,12 +10,12 @@ from .basic_processors import (
     AnswerSimplifier,
 )
 from .basic_filters import ExactDeduplicate
-from .pipeline import Pipeline, PipelineConfig
+from .pipeline import TextProcessPipeline, TextProcessPipelineConfig
 
 
 __all__ = [
-    "Pipeline",
-    "PipelineConfig",
+    "TextProcessPipeline",
+    "TextProcessPipelineConfig",
     "PROCESSORS",
     "Processor",
     "TextUnit",

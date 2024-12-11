@@ -16,7 +16,7 @@ from librarian.retriever import (
     TypesenseRetriever,
     TypesenseRetrieverConfig,
 )
-from librarian.text_process import Pipeline, PipelineConfig
+from librarian.processors import TextProcessPipeline, TextProcessPipelineConfig
 from librarian.utils import Choices, LOGGER_MANAGER
 
 logger = LOGGER_MANAGER.get_logger("librarian.prepare_index")
@@ -37,7 +37,7 @@ class Config:
     data_ranges: Optional[list[list[int]]] = field(default=None)
     saving_fields: list[str] = field(default_factory=list)
     # corpus process configs
-    text_process_pipeline: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
+    text_process_pipeline: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
     text_process_fields: list[str] = field(default_factory=list)
 # fmt: on
 
@@ -70,7 +70,7 @@ def main(cfg: Config):
         retriever.clean()
 
     # prepare data iterator
-    text_processor = Pipeline(cfg.text_process_pipeline)
+    text_processor = TextProcessPipeline(cfg.text_process_pipeline)
 
     def prepare_data():
         for item in IterableDataset(cfg.corpus_path, cfg.data_ranges):

@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from librarian.retriever import RetrievedContext
-from librarian.text_process import Pipeline, PipelineConfig
+from librarian.processors import TextProcessPipeline, TextProcessPipelineConfig
 from librarian.utils import TIME_METER
 
 from .metrics_base import METRICS, MetricsBase
@@ -29,14 +29,14 @@ def get_contain_map_py(evidences: list[str], retrieved: list[str]) -> list[list[
 @dataclass
 class SuccessRateConfig:
     eval_field: Optional[str] = None
-    context_preprocess: PipelineConfig = field(default_factory=PipelineConfig)  # type: ignore
+    context_preprocess: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
 
 
 @METRICS("retrieval_success_rate", config_class=SuccessRateConfig)
 class SuccessRate(MetricsBase):
     def __init__(self, cfg: SuccessRateConfig) -> None:
         self.eval_field = cfg.eval_field
-        self.context_pipeline = Pipeline(cfg.context_preprocess)
+        self.context_pipeline = TextProcessPipeline(cfg.context_preprocess)
         return
 
     @TIME_METER("metrics.retrieval_success_rate")
