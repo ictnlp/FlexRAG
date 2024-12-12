@@ -46,14 +46,22 @@ def get_version() -> str:
         return version
 
 
+def get_long_description() -> str:
+    with open("README.md", encoding="utf-8") as f:
+        return f.read()
+
+
 setup(
     name="librarian-rag",
     version=get_version(),
     author="Zhuocheng Zhang",
     author_email="zhuocheng_zhang@outlook.com",
     description="A RAG Framework for Information Retrieval and Generation.",
+    long_description=get_long_description(),
+    long_description_content_type="text/markdown",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
+    python_requires=">=3.11",
     install_requires=get_requirements(),
     extras_require={
         "gui": ["gradio>=5.8.0"],
