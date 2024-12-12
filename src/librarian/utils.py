@@ -427,6 +427,3 @@ def load_user_module(module_path: str):
     if module_name not in sys.modules:
         sys.path.insert(0, module_parent)
         importlib.import_module(module_name)
-
-
-VERSION = "0.1.0"
