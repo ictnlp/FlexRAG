@@ -49,6 +49,9 @@ class SuccessRate(MetricsBase):
         # compute relevance map
         success_map: list[bool] = []
         for golds, ctxs in zip(golden_responses, retrieved_contexts):
+            if len(ctxs) == 0:
+                success_map.append(False)
+                continue
             if isinstance(ctxs[0], RetrievedContext):
                 ctxs = [ctx.data[self.eval_field] for ctx in ctxs]
             if isinstance(ctxs[0], dict):
