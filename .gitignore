@@ -153,3 +153,6 @@ outputs/
 
 # pytest configs
 tests/configs/
+
+# cibuildwheel
+wheelhouse/

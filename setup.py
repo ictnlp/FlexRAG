@@ -14,6 +14,7 @@ ext_modules = [
         ["src/librarian/metrics/lib_rel.cpp"],
         include_dirs=[pybind11.get_include()],
         language="c++",
+        extra_compile_args=["-O3"],
     ),
 ]
 
@@ -57,6 +58,8 @@ setup(
     author="Zhuocheng Zhang",
     author_email="zhuocheng_zhang@outlook.com",
     description="A RAG Framework for Information Retrieval and Generation.",
+    url="https://github.com/ZhuochengZhang98/librarian",
+    license="MIT License",
     long_description=get_long_description(),
     long_description_content_type="text/markdown",
     packages=find_packages(where="src"),
