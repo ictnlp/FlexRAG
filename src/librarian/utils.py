@@ -350,8 +350,15 @@ class LoggerManager:
 
     def _configure(self):
         self.loggers: dict[str, logging.Logger] = {}
-        logging.basicConfig(level=os.environ.get("LOGLEVEL", "INFO"))
+        logging.basicConfig(
+            level=os.environ.get("LOGLEVEL", "INFO"),
+            format="%(asctime)s | %(name)s | %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
         return
+
+    def getLogger(self, name: str) -> logging.Logger:
+        return self.get_logger(name)
 
     def get_logger(self, name: str) -> logging.Logger:
         if name not in self.loggers:
@@ -383,6 +390,19 @@ class LoggerManager:
         else:
             logger = self.get_logger(name)
             logger.setLevel(level)
+        return
+
+    def set_formatter(self, formatter: logging.Formatter | str, name: str = None):
+        if isinstance(formatter, str):
+            formatter = logging.Formatter(formatter)
+        if name is None:
+            for logger in self.loggers.values():
+                for handler in logger.handlers:
+                    handler.setFormatter(formatter)
+        else:
+            logger = self.get_logger(name)
+            for handler in logger.handlers:
+                handler.setFormatter(formatter)
         return
 
 

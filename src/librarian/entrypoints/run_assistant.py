@@ -44,6 +44,7 @@ class Config(AssistantConfig, DataConfig):
 
 cs = ConfigStore.instance()
 cs.store(name="default", node=Config)
+logger = LOGGER_MANAGER.get_logger("run_assistant")
 
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
@@ -76,7 +77,6 @@ def main(config: Config):
     with open(config_path, "w") as f:
         OmegaConf.save(config, f)
     handler = logging.FileHandler(log_path)
-    logger = LOGGER_MANAGER.get_logger("run_assistant")
     LOGGER_MANAGER.add_handler(handler)
     logger.debug(f"Configs:\n{OmegaConf.to_yaml(config)}")
 
