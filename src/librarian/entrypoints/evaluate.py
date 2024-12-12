@@ -1,4 +1,6 @@
+import json
 from dataclasses import dataclass
+from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
@@ -12,6 +14,7 @@ from librarian.utils import LOGGER_MANAGER
 @dataclass
 class Config(RAGEvaluatorConfig):
     data_path: str = MISSING
+    output_path: Optional[str] = None
 
 
 cs = ConfigStore.instance()
@@ -37,7 +40,7 @@ def main(config: Config):
 
     # evaluate
     evaluator = RAGEvaluator(config)
-    evaluator.evaluate(
+    resp_score, resp_score_detail = evaluator.evaluate(
         questions=questions,
         responses=responses,
         golden_responses=golden_answers,
@@ -45,6 +48,17 @@ def main(config: Config):
         golden_contexts=golden_contexts,
         log=True,
     )
+    if config.output_path is not None:
+        with open(config.output_path, "w") as f:
+            json.dump(
+                {
+                    "eval_scores": resp_score,
+                    "eval_details": resp_score_detail,
+                },
+                f,
+                indent=4,
+                ensure_ascii=False,
+            )
     return
 
 
