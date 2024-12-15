@@ -11,7 +11,7 @@ from librarian.utils import Choices, LOGGER_MANAGER
 
 from .assistant import ASSISTANTS, AssistantBase, SearchHistory, PREDEFINED_PROMPTS
 
-logger = LOGGER_MANAGER.get_logger("librarian.assistant")
+logger = LOGGER_MANAGER.get_logger("librarian.assistant.modular")
 
 
 GeneratorConfig = GENERATORS.make_config()
