@@ -45,7 +45,7 @@ class OpenAIEncoderConfig(EncoderBaseConfig):
     api_key: str = os.environ.get("OPENAI_API_KEY", "EMPTY")
     api_version: str = "2024-07-01-preview"
     verbose: bool = False
-    dimension: int = 512
+    dimension: Optional[int] = None
     proxy: Optional[str] = None
 
 
@@ -256,9 +256,12 @@ class OpenAIEncoder(EncoderBase):
 
     @TIME_METER("openai_encode")
     def encode(self, texts: list[str]) -> np.ndarray:
-        r = self.client.embeddings.create(
-            model=self.model_name, input=texts, dimensions=self.dimension
-        )
+        if self.dimension is None:
+            r = self.client.embeddings.create(model=self.model_name, input=texts)
+        else:
+            r = self.client.embeddings.create(
+                model=self.model_name, input=texts, dimensions=self.dimension
+            )
         embeddings = [i.embedding for i in r.data]
         return np.array(embeddings)
 
@@ -275,6 +278,12 @@ class OpenAIEncoder(EncoderBase):
 
     @property
     def embedding_size(self):
+        if self.dimension is None:
+            return len(
+                self.client.embeddings.create(model=self.model_name, input="test")
+                .data[0]
+                .embedding
+            )
         return self.dimension
 
     def _check(self):
