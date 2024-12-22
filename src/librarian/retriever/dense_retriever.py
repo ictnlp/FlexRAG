@@ -32,7 +32,6 @@ class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
     database_path: str = MISSING
     query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
-    source: str = MISSING
     refine_factor: int = 1
     encode_fields: Optional[list[str]] = None
 
@@ -48,7 +47,6 @@ class DenseRetriever(LocalRetriever):
         super().__init__(cfg)
         # set args
         self.database_path = cfg.database_path
-        self.source = cfg.source
         self.encode_fields = cfg.encode_fields
 
         # load encoder
@@ -56,14 +54,14 @@ class DenseRetriever(LocalRetriever):
         self.passage_encoder = ENCODERS.load(cfg.passage_encoder_config)
 
         # load database
-        self.db_path = os.path.join(self.database_path, f"{self.source}.lance")
+        self.db_path = os.path.join(self.database_path, "database.lance")
         if os.path.exists(self.db_path):
             self.database = lance.dataset(self.db_path)
         else:
             self.database = None
 
         # load index
-        index_path = os.path.join(self.database_path, f"{cfg.source}.{cfg.index_type}")
+        index_path = os.path.join(self.database_path, f"index.{cfg.index_type}")
         self.index = DENSE_INDEX.load(cfg, index_path=index_path)
         self.refine_factor = cfg.refine_factor
         self.distance_function = self.index.distance_function
@@ -156,7 +154,6 @@ class DenseRetriever(LocalRetriever):
                     RetrievedContext(
                         retriever=self.name,
                         query=q,
-                        source=self.source,
                         score=float(s),
                         data=retrieved.iloc[i * top_k + j].to_dict(),
                     )

@@ -46,14 +46,14 @@ class BM25SRetriever(LocalRetriever):
 
         # load retriever
         self.database_path = cfg.database_path
-        if os.path.exists(cfg.database_path) and bool(os.listdir(cfg.database_path)):
+        if os.path.exists(self.database_path) and bool(os.listdir(self.database_path)):
             self._retriever = bm25s.BM25.load(
-                cfg.database_path,
+                self.database_path,
                 mmap=True,
                 load_corpus=True,
             )
         else:
-            os.makedirs(cfg.database_path, exist_ok=True)
+            os.makedirs(self.database_path, exist_ok=True)
             self._retriever = bm25s.BM25(
                 method=cfg.method,
                 idf_method=cfg.idf_method,
