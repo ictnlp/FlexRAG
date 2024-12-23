@@ -1,4 +1,6 @@
+from .chunking import CHUNKERS
 from .dataset import ConcateDataset, Dataset
+from .document_parser import DOCUMENTPARSERS
 from .line_delimited_dataset import LineDelimitedDataset
 from .rag_dataset import (
     RAGTestData,
@@ -6,7 +8,7 @@ from .rag_dataset import (
     RetrievalTestData,
     RetrievalTestIterableDataset,
 )
-from .text_process import TextProcessPipeline, TextProcessPipelineConfig
+from .text_process import PROCESSORS, TextProcessPipeline, TextProcessPipelineConfig
 
 __all__ = [
     "Dataset",
@@ -18,4 +20,7 @@ __all__ = [
     "RetrievalTestIterableDataset",
     "TextProcessPipeline",
     "TextProcessPipelineConfig",
+    "PROCESSORS",
+    "CHUNKERS",
+    "DOCUMENTPARSERS",
 ]
