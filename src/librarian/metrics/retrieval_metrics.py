@@ -1,8 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
+from librarian.data import TextProcessPipeline, TextProcessPipelineConfig
 from librarian.retriever import RetrievedContext
-from librarian.processors import TextProcessPipeline, TextProcessPipelineConfig
 from librarian.utils import TIME_METER
 
 from .metrics_base import METRICS, MetricsBase

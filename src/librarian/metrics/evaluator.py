@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
+from librarian.data import TextProcessPipeline, TextProcessPipelineConfig
 from librarian.retriever import RetrievedContext
-from librarian.processors import TextProcessPipeline, TextProcessPipelineConfig
 from librarian.utils import LOGGER_MANAGER
 
 from .metrics_base import METRICS

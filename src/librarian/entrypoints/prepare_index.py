@@ -5,7 +5,11 @@ import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING, OmegaConf
 
-from librarian.data import IterableDataset
+from librarian.data import (
+    LineDelimitedDataset,
+    TextProcessPipeline,
+    TextProcessPipelineConfig,
+)
 from librarian.retriever import (
     BM25SRetriever,
     BM25SRetrieverConfig,
@@ -16,8 +20,7 @@ from librarian.retriever import (
     TypesenseRetriever,
     TypesenseRetrieverConfig,
 )
-from librarian.processors import TextProcessPipeline, TextProcessPipelineConfig
-from librarian.utils import Choices, LOGGER_MANAGER
+from librarian.utils import LOGGER_MANAGER, Choices
 
 logger = LOGGER_MANAGER.get_logger("librarian.prepare_index")
 
@@ -73,7 +76,7 @@ def main(cfg: Config):
     text_processor = TextProcessPipeline(cfg.text_process_pipeline)
 
     def prepare_data():
-        for item in IterableDataset(cfg.corpus_path, cfg.data_ranges):
+        for item in LineDelimitedDataset(cfg.corpus_path, cfg.data_ranges):
             # remove unused fields
             item = {key: item.get(key, "") for key in cfg.saving_fields}
             # preprocess text fields

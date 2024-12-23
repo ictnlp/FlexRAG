@@ -7,7 +7,7 @@ from typing import Any, Iterable, Optional
 
 import numpy as np
 
-from librarian.processors import TextProcessPipeline, TextProcessPipelineConfig
+from librarian.data import TextProcessPipeline, TextProcessPipelineConfig
 from librarian.utils import SimpleProgressLogger, Register, LOGGER_MANAGER
 
 from librarian.cache import PersistentCache, PersistentCacheConfig, LMDBBackendConfig

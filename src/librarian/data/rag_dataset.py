@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from typing import Iterator, Optional
 
-from .dataset import IterableDataset
+from .line_delimited_dataset import LineDelimitedDataset
 
 
 @dataclass
@@ -12,7 +12,7 @@ class RAGTestData:
     meta_data: Optional[dict] = None
 
 
-class RAGTestIterableDataset(IterableDataset):
+class RAGTestIterableDataset(LineDelimitedDataset):
     def __iter__(self) -> Iterator[RAGTestData]:
         for data in super().__iter__():
             yield RAGTestData(
@@ -31,7 +31,7 @@ class RetrievalTestData:
     meta_data: Optional[dict] = None
 
 
-class RetrievalTestIterableDataset(IterableDataset):
+class RetrievalTestIterableDataset(LineDelimitedDataset):
     def __iter__(self) -> Iterator[RetrievalTestData]:
         for data in super().__iter__():
             yield RetrievalTestData(

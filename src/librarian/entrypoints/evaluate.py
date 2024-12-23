@@ -6,7 +6,7 @@ import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING, OmegaConf
 
-from librarian.data import IterableDataset
+from librarian.data import LineDelimitedDataset
 from librarian.metrics import RAGEvaluatorConfig, RAGEvaluator
 from librarian.utils import LOGGER_MANAGER
 
@@ -30,7 +30,7 @@ def main(config: Config):
     logger.debug(f"Configs:\n{OmegaConf.to_yaml(config)}")
 
     # load dataset
-    dataset = IterableDataset(config.data_path)
+    dataset = LineDelimitedDataset(config.data_path)
 
     questions = [i["question"] for i in dataset]
     responses = [i["response"] for i in dataset]

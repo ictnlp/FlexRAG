@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 
 from omegaconf import MISSING, OmegaConf
 
-from librarian.data import IterableDataset
+from librarian.data import LineDelimitedDataset
 from librarian.retriever import (
     BM25SRetriever,
     BM25SRetrieverConfig,
@@ -67,7 +67,7 @@ class TestRetrievers:
             retriever = DenseRetriever(self.cfg.dense_config)
 
             # build index
-            corpus = IterableDataset(self.cfg.corpus_path)
+            corpus = LineDelimitedDataset(self.cfg.corpus_path)
             retriever.add_passages(corpus)
 
             # search
@@ -84,7 +84,7 @@ class TestRetrievers:
             retriever = BM25SRetriever(self.cfg.bm25s_config)
 
             # build index
-            corpus = IterableDataset(self.cfg.corpus_path)
+            corpus = LineDelimitedDataset(self.cfg.corpus_path)
             retriever.add_passages(corpus)
 
             # search
@@ -99,7 +99,7 @@ class TestRetrievers:
         retriever: ElasticRetriever = setup_elastic
 
         # build index
-        corpus = IterableDataset(self.cfg.corpus_path)
+        corpus = LineDelimitedDataset(self.cfg.corpus_path)
         retriever.add_passages(corpus)
 
         # search
@@ -114,7 +114,7 @@ class TestRetrievers:
         retriever: TypesenseRetriever = setup_typesense
 
         # build index
-        corpus = IterableDataset(self.cfg.corpus_path)
+        corpus = LineDelimitedDataset(self.cfg.corpus_path)
         retriever.add_passages(corpus)
 
         # search
