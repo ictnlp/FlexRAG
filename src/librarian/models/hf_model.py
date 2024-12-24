@@ -6,6 +6,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from omegaconf import MISSING
+from PIL.ImageFile import ImageFile
+from PIL.Image import Image
 from torch.nn.parallel import DataParallel as DP
 from transformers import (
     AutoConfig,
@@ -15,6 +17,8 @@ from transformers import (
     AutoModelForMaskedLM,
     AutoModelForSeq2SeqLM,
     AutoModelForSequenceClassification,
+    AutoModelForVision2Seq,
+    AutoProcessor,
     AutoTokenizer,
     BertModel,
     BertPreTrainedModel,
@@ -28,9 +32,8 @@ from transformers import (
     XLMRobertaPreTrainedModel,
 )
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
-from PIL.ImageFile import ImageFile
 
-from librarian.prompt import ChatPrompt, load_template
+from librarian.prompt import ChatPrompt, MultiModelChatPrompt, load_template
 from librarian.utils import LOGGER_MANAGER, TIME_METER, Choices
 
 from .model_base import (
@@ -41,6 +44,7 @@ from .model_base import (
     GenerationConfig,
     GeneratorBase,
     GeneratorBaseConfig,
+    VLMGeneratorBase,
 )
 from .utils import guess_model_name
 
@@ -179,6 +183,8 @@ def load_hf_model(
             model_class = AutoModel
         case "clip":
             model_class = AutoModel
+        case "vlm":
+            model_class = AutoModelForVision2Seq
         case _:
             model_class = AutoModel
     model = model_class.from_pretrained(
@@ -203,25 +209,32 @@ def load_hf_model(
         tokenizer_path = tokenizer_path
     else:
         tokenizer_path = model_path
-    if model_type == "clip":
-        tokenizer = (
-            AutoTokenizer.from_pretrained(
+    match model_type:
+        case "clip":
+            tokenizer = (
+                AutoTokenizer.from_pretrained(
+                    tokenizer_path,
+                    trust_remote_code=trust_remote_code,
+                    **other_tokenizer_kwargs,
+                ),
+                AutoImageProcessor.from_pretrained(
+                    tokenizer_path,
+                    trust_remote_code=trust_remote_code,
+                    **other_tokenizer_kwargs,
+                ),
+            )
+        case "vlm":
+            tokenizer = AutoProcessor.from_pretrained(
                 tokenizer_path,
                 trust_remote_code=trust_remote_code,
                 **other_tokenizer_kwargs,
-            ),
-            AutoImageProcessor.from_pretrained(
+            )
+        case _:
+            tokenizer = AutoTokenizer.from_pretrained(
                 tokenizer_path,
                 trust_remote_code=trust_remote_code,
                 **other_tokenizer_kwargs,
-            ),
-        )
-    else:
-        tokenizer = AutoTokenizer.from_pretrained(
-            tokenizer_path,
-            trust_remote_code=trust_remote_code,
-            **other_tokenizer_kwargs,
-        )
+            )
     return model, tokenizer
 
 
@@ -387,6 +400,92 @@ class HFGenerator(GeneratorBase):
             self.tokenizer.add_special_tokens({"pad_token": "<pad>"})
             self.model.resize_token_embeddings(len(self.tokenizer))
         return
+
+
+@dataclass
+class HFVLMGeneratorConfig(GeneratorBaseConfig, HFModelConfig):
+    pipeline_parallel: bool = False
+
+
+@GENERATORS("hf_vlm", config_class=HFVLMGeneratorConfig)
+class HFVLMGenerator(VLMGeneratorBase):
+    model: PreTrainedModel
+
+    def __init__(self, cfg: HFVLMGeneratorConfig) -> None:
+        # load model
+        self.model, self.processor = load_hf_model(
+            model_path=cfg.model_path,
+            tokenizer_path=cfg.tokenizer_path,
+            model_type="vlm",
+            device_id=cfg.device_id,
+            load_dtype=cfg.load_dtype,
+            trust_remote_code=cfg.trust_remote_code,
+            pipeline_parallel=cfg.pipeline_parallel,
+        )
+        return
+
+    @TIME_METER("hf_generate")
+    @torch.no_grad()
+    def generate(
+        self,
+        prefixes: list[str],
+        images: list[Image],
+        generation_config: GenerationConfig = GenerationConfig(),
+    ) -> list[list[str]]:
+        bsz = len(prefixes)
+        sample_num = generation_config.sample_num
+        inputs = self.processor(
+            text=prefixes,
+            images=images,
+            return_tensors="pt",
+            padding=True,
+            add_special_tokens=False,
+        )
+        inputs = inputs.to(self.model.device)
+        if "pixel_values" in inputs:
+            inputs["pixel_values"] = inputs["pixel_values"].to(self.model.dtype)
+
+        # prepare generation config
+        hf_gen_cfg = self._get_options(generation_config)
+
+        # generate
+        outputs = self.model.generate(**inputs, generation_config=hf_gen_cfg)
+
+        # truncate the input tokens
+        outputs = outputs.view(bsz, sample_num, -1)
+        input_lengths = inputs["attention_mask"].sum(dim=1)
+        responses = []
+        for i in range(bsz):
+            samples = [sample[input_lengths[i] :] for sample in outputs[i]]
+            samples = [
+                self.processor.decode(sample, skip_special_tokens=True)
+                for sample in samples
+            ]
+            responses.append(samples)
+        return responses
+
+    def chat(
+        self,
+        prompts: list[MultiModelChatPrompt],
+        generation_config: GenerationConfig = GenerationConfig(),
+    ) -> list[list[str]]:
+        input_texts = [
+            self.processor.apply_chat_template(p.to_list(), add_generation_prompt=True)
+            for p in prompts
+        ]
+        images = [p.images for p in prompts]
+        return self.generate(input_texts, images, generation_config)
+
+    def _get_options(self, generation_config: GenerationConfig) -> HFGenerationConfig:
+        return HFGenerationConfig(
+            do_sample=generation_config.do_sample,
+            temperature=generation_config.temperature,
+            max_new_tokens=generation_config.max_new_tokens,
+            top_p=generation_config.top_p,
+            top_k=generation_config.top_k,
+            num_return_sequences=generation_config.sample_num,
+            stop_strings=generation_config.stop_str,
+        )
 
 
 @dataclass

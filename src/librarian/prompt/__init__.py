@@ -1,5 +1,5 @@
 from .template import load_template, ChatTemplate, HFTemplate
-from .prompt_base import ChatPrompt, ChatTurn
+from .prompt_base import ChatPrompt, ChatTurn, MultiModelChatPrompt, MultiModelChatTurn
 
 
 __all__ = [
@@ -8,4 +8,6 @@ __all__ = [
     "load_template",
     "ChatTemplate",
     "HFTemplate",
+    "MultiModelChatPrompt",
+    "MultiModelChatTurn",
 ]

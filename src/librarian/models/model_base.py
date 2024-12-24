@@ -3,8 +3,9 @@ from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
+from PIL.Image import Image
 
-from librarian.prompt import ChatPrompt
+from librarian.prompt import ChatPrompt, MultiModelChatPrompt
 from librarian.utils import Register, LOGGER_MANAGER
 
 
@@ -93,6 +94,44 @@ class GeneratorBase(ABC):
             "Current generator does not support asyncronous generate, thus the code will be run in syncronous mode"
         )
         return self.generate(prefixes=prefixes, generation_config=generation_config)
+
+
+class VLMGeneratorBase(GeneratorBase):
+    @abstractmethod
+    def chat(
+        self,
+        prompts: list[MultiModelChatPrompt],
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
+        """chat with the model using model templates.
+
+        Args:
+            prompts (list[MultiModelChatPrompt]): A batch of MultiModelChatPrompts.
+            generation_config (GenerationConfig, optional): GenerationConfig. Defaults to None.
+
+        Returns:
+            list[list[str]]: A batch of chat responses.
+        """
+        return
+
+    @abstractmethod
+    def generate(
+        self,
+        prefixes: list[str],
+        images: list[Image],
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
+        """generate text with the model using the given prefixes.
+
+        Args:
+            prefixes (list[str]): A batch of prefixes.
+            images (list[Image]): A batch of images.
+            generation_config (GenerationConfig, optional): GenerationConfig. Defaults to None.
+
+        Returns:
+            list[list[str]]: A batch of generated text.
+        """
+        return
 
 
 @dataclass

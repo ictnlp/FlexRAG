@@ -64,10 +64,10 @@ class SimpleProgressLogger:
         return
 
 
-RegisterBaseClass = TypeVar("RegisterBaseClass")
+RegistedType = TypeVar("RegistedType")
 
 
-class Register(Generic[RegisterBaseClass]):
+class Register(Generic[RegistedType]):
     def __init__(self, register_name: str = None):
         self.name = register_name
         self._items = {}
@@ -164,9 +164,7 @@ class Register(Generic[RegisterBaseClass]):
         ]
         return make_dataclass(config_name, config_fields)
 
-    def load(
-        self, config: DictConfig, **kwargs
-    ) -> RegisterBaseClass | list[RegisterBaseClass]:
+    def load(self, config: DictConfig, **kwargs) -> RegistedType | list[RegistedType]:
         choice = getattr(config, f"{self.name}_type", None)
         if choice is None:
             return None
@@ -281,7 +279,7 @@ json.dumps = partial(json.dumps, cls=CustomEncoder)
 json.dump = partial(json.dump, cls=CustomEncoder)
 
 
-class TimeMeter:
+class _TimeMeter:
     def __init__(self):
         self._manager = Manager()
         self.timers = self._manager.dict()
@@ -333,10 +331,10 @@ class TimeMeter:
         return {k: v for k, v in self.timers.items()}
 
 
-TIME_METER = TimeMeter()
+TIME_METER = _TimeMeter()
 
 
-class LoggerManager:
+class _LoggerManager:
     _instance = None
     _lock = threading.Lock()
 
@@ -344,7 +342,7 @@ class LoggerManager:
         if not cls._instance:
             with cls._lock:  # ensure thread safety
                 if not cls._instance:
-                    cls._instance = super(LoggerManager, cls).__new__(cls)
+                    cls._instance = super(_LoggerManager, cls).__new__(cls)
                     cls._instance._configure()  # initialize the LoggerManager
         return cls._instance
 
@@ -406,7 +404,7 @@ class LoggerManager:
         return
 
 
-LOGGER_MANAGER = LoggerManager()
+LOGGER_MANAGER = _LoggerManager()
 
 
 try:

@@ -19,3 +19,8 @@
 - jinaai/jina-reranker-v2-base-multilingual
 - BAAI/bge-reranker-v2-m3
 - intfloat/e5-base-v2
+
+## Tested VLMs
+- Qwen/Qwen2-VL-7B-Instruct
+- meta-llama/Llama-3.2-11B-Vision-Instruct
+- google/paligemma2-10b-ft-docci-448
