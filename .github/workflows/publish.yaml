@@ -1,0 +1,41 @@
+name: Publish Python Package
+
+on:
+  release:
+    types:
+      - published
+
+jobs:
+  build_and_publish:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: pip install setuptools wheel twine cibuildwheel
+
+      - name: Build wheels
+        run: cibuildwheel --platform linux --output-dir wheelhouse
+
+      - name: Publish to GitHub Releases
+        uses: s0/git-tag-release@v1
+        with:
+          files: wheelhouse/*.whl
+          token: ${{ secrets.GH_TOKEN }}
+
+      - name: Publish to PyPI
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.PYPI_TOKEN }}
+        run: twine upload wheelhouse/*.whl

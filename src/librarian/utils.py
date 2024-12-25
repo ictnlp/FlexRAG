@@ -2,7 +2,6 @@ import importlib
 import json
 import logging
 import os
-import subprocess
 import sys
 import threading
 from contextlib import contextmanager
@@ -254,7 +253,7 @@ def Choices(choices: Iterable[str]):
 
 
 # Monkey Patching the JSONEncoder to handle StrEnum
-class CustomEncoder(json.JSONEncoder):
+class _CustomEncoder(json.JSONEncoder):
     def default(self, obj):
         if isinstance(obj, StrEnum):
             return str(obj)
@@ -275,8 +274,8 @@ class CustomEncoder(json.JSONEncoder):
         return super().default(obj)
 
 
-json.dumps = partial(json.dumps, cls=CustomEncoder)
-json.dump = partial(json.dump, cls=CustomEncoder)
+json.dumps = partial(json.dumps, cls=_CustomEncoder)
+json.dump = partial(json.dump, cls=_CustomEncoder)
 
 
 class _TimeMeter:
@@ -405,18 +404,6 @@ class _LoggerManager:
 
 
 LOGGER_MANAGER = _LoggerManager()
-
-
-try:
-    COMMIT_ID = (
-        subprocess.check_output(
-            ["git", "-C", f"{os.path.dirname(__file__)}", "rev-parse", "HEAD"]
-        )
-        .strip()
-        .decode("utf-8")
-    )
-except:
-    COMMIT_ID = "Unknown"
 
 
 def load_user_module(module_path: str):

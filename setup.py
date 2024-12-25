@@ -64,6 +64,13 @@ setup(
     long_description_content_type="text/markdown",
     packages=find_packages(where="src"),
     package_dir={"": "src"},
+    package_data={
+        "librarian": [
+            "ranker/ranker_prompts/*.json",
+            "assistant/assistant_prompts/*.json",
+        ],
+    },
+    include_package_data=True,
     python_requires=">=3.11",
     install_requires=get_requirements(),
     extras_require={
