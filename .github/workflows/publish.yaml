@@ -28,12 +28,6 @@ jobs:
       - name: Build wheels
         run: cibuildwheel --platform linux --output-dir wheelhouse
 
-      - name: Publish to GitHub Releases
-        uses: s0/git-tag-release@v1
-        with:
-          files: wheelhouse/*.whl
-          token: ${{ secrets.GH_TOKEN }}
-
       - name: Publish to PyPI
         env:
           TWINE_USERNAME: __token__
