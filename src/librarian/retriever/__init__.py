@@ -22,6 +22,7 @@ from .web_retrievers import (
     WikipediaRetriever,
     WikipediaRetrieverConfig,
 )
+from .hyde_retriever import HydeRetriever, HydeRetrieverConfig
 
 
 __all__ = [
@@ -49,4 +50,6 @@ __all__ = [
     "SerpApiRetrieverConfig",
     "WikipediaRetriever",
     "WikipediaRetrieverConfig",
+    "HydeRetriever",
+    "HydeRetrieverConfig",
 ]

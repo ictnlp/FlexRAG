@@ -33,6 +33,25 @@ class PickleSerializer(Serializer):
         return pickle.loads(data)
 
 
+class CloudPickleSerializer(Serializer):
+    def __init__(self):
+        try:
+            import cloudpickle
+
+            self.pickler = cloudpickle
+        except:
+            raise ImportError(
+                "Please install cloudpickle using `pip install cloudpickle`."
+            )
+        return
+
+    def serialize(self, obj: Any) -> bytes:
+        return self.pickler.dumps(obj)
+
+    def deserialize(self, data: bytes) -> Any:
+        return self.pickler.loads(data)
+
+
 class JsonSerializer(Serializer):
     def serialize(self, obj: Any) -> bytes:
         return json.dumps(obj).encode("utf-8")
@@ -61,7 +80,7 @@ class MsgpackSerializer(Serializer):
 @dataclass
 class LMDBBackendConfig:
     db_path: str = MISSING
-    serializer: Choices(["pickle", "json", "msgpack"]) = "pickle"  # type: ignore
+    serializer: Choices(["pickle", "json", "msgpack", "cloudpickle"]) = "cloudpickle"  # type: ignore
 
 
 class LMDBBackend(MutableMapping):
@@ -78,6 +97,8 @@ class LMDBBackend(MutableMapping):
                 self.serializer = JsonSerializer()
             case "msgpack":
                 self.serializer = MsgpackSerializer()
+            case "cloudpickle":
+                self.serializer = CloudPickleSerializer()
             case _:
                 raise ValueError(f"Invalid serializer: {cfg.serializer}")
         return

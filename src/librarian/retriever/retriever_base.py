@@ -6,12 +6,11 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, Optional
 
 import numpy as np
+from omegaconf import DictConfig
 
+from librarian.cache import LMDBBackendConfig, PersistentCache, PersistentCacheConfig
 from librarian.data import TextProcessPipeline, TextProcessPipelineConfig
-from librarian.utils import SimpleProgressLogger, Register, LOGGER_MANAGER
-
-from librarian.cache import PersistentCache, PersistentCacheConfig, LMDBBackendConfig
-
+from librarian.utils import LOGGER_MANAGER, Register, SimpleProgressLogger
 
 logger = LOGGER_MANAGER.get_logger("librarian.retrievers")
 
@@ -54,8 +53,15 @@ def batched_cache(func):
             return func(self, query, **search_kwargs)
 
         # search from cache
-        keys = [hashkey(cfg=self.cfg, query=q, **search_kwargs) for q in query]
-        results = [RETRIEVAL_CACHE.get(k, None)[0] for k in keys]
+        # TODO: using namedtuple or other simplier data structure instead of DictConfig/RetrievedContexts
+        if not isinstance(self.cfg, DictConfig):
+            cfg = DictConfig(
+                self.cfg
+            )  # as dataclass is not hashable, we convert the config into DictConfig
+        else:
+            cfg = self.cfg
+        keys = [hashkey(cfg=cfg, query=q, **search_kwargs) for q in query]
+        results = [RETRIEVAL_CACHE.get(k, (None,))[0] for k in keys]
 
         # search from database
         new_query = [q for q, r in zip(query, results) if r is None]
