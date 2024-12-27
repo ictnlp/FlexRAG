@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 import numpy as np
@@ -25,7 +25,7 @@ class GenerationConfig:
     top_p: float = 0.9
     top_k: int = 50
     eos_token_id: Optional[int] = None
-    stop_str: Optional[str] = None
+    stop_str: list[str] = field(default_factory=list)
 
     def __post_init__(self):
         # check values
