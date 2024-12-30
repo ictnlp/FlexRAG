@@ -5,6 +5,7 @@ import pickle
 import shelve
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from hashlib import blake2b
 from typing import Any, MutableMapping
 
 import lmdb
@@ -105,24 +106,28 @@ class LMDBBackend(MutableMapping):
 
     def __getitem__(self, key: Any) -> Any:
         with self.database.begin() as txn:
-            data = txn.get(self.serializer.serialize(key))
+            hashed_key = blake2b(self.serializer.serialize(key)).digest()
+            data = txn.get(hashed_key)
         if data is None:
             raise KeyError(key)
-        return self.serializer.deserialize(data)
+        return self.serializer.deserialize(data)[1]
 
     def __setitem__(self, key: Any, value: Any) -> None:
+        hashed_key = blake2b(self.serializer.serialize(key)).digest()
         with self.database.begin(write=True) as txn:
-            txn.put(self.serializer.serialize(key), self.serializer.serialize(value))
+            txn.put(hashed_key, self.serializer.serialize((key, value)))
         return
 
     def __delitem__(self, key: Any) -> None:
+        hashed_key = blake2b(self.serializer.serialize(key)).digest()
         with self.database.begin(write=True) as txn:
-            txn.delete(self.serializer.serialize(key))
+            txn.delete(hashed_key)
         return
 
     def __contains__(self, key: Any) -> bool:
+        hashed_key = blake2b(self.serializer.serialize(key)).digest()
         with self.database.begin() as txn:
-            return txn.get(self.serializer.serialize(key)) is not None
+            return txn.get(hashed_key) is not None
 
     def __len__(self) -> int:
         with self.database.begin() as txn:
@@ -131,8 +136,8 @@ class LMDBBackend(MutableMapping):
     def __iter__(self):
         with self.database.begin() as txn:
             cursor = txn.cursor()
-            for key, _ in cursor:
-                yield self.serializer.deserialize(key)
+            for _, kv_bytes in cursor:
+                yield self.serializer.deserialize(kv_bytes)[0]
         return
 
     def __repr__(self) -> str:

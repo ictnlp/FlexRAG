@@ -33,6 +33,26 @@ RETRIEVAL_CACHE = PersistentCache(
 
 
 def batched_cache(func):
+    def dataclass_to_dict(data):
+        if not isinstance(data, DictConfig):
+            return OmegaConf.to_container(DictConfig(data))
+        return OmegaConf.to_container(data)
+
+    def retrieved_to_dict(data: list[RetrievedContext]) -> list[dict]:
+        return [r.to_dict() for r in data]
+
+    def dict_to_retrieved(data: list[dict] | None) -> list[RetrievedContext] | None:
+        if data is None:
+            return None
+        return [RetrievedContext(**r) for r in data]
+
+    def check(data: list):
+        for d in data:
+            assert isinstance(d, list)
+            for r in d:
+                assert isinstance(r, RetrievedContext)
+        return
+
     def wrapper(
         self,
         query: list[str],
@@ -44,16 +64,13 @@ def batched_cache(func):
 
         # direct search
         disable_cache = search_kwargs.pop(
-            "disable_cache", os.environ.get("DISABLE_CACHE", False)
+            "disable_cache", os.environ.get("DISABLE_CACHE", "False")
         )
-        if disable_cache:
+        if disable_cache == "True":
             return func(self, query, **search_kwargs)
 
         # search from cache
-        if not isinstance(self.cfg, DictConfig):
-            cfg = OmegaConf.to_object(DictConfig(self.cfg))
-        else:
-            cfg = OmegaConf.to_object(self.cfg)
+        cfg = dataclass_to_dict(self.cfg)
         keys = [
             {
                 "retriever_config": cfg,
@@ -63,17 +80,19 @@ def batched_cache(func):
             for q in query
         ]
         keys = [json.dumps(key, sort_keys=True) for key in keys]
-        results = [RETRIEVAL_CACHE.get(k, (None,))[0] for k in keys]
+        results = [dict_to_retrieved(RETRIEVAL_CACHE.get(k, None)) for k in keys]
 
         # search from database
         new_query = [q for q, r in zip(query, results) if r is None]
         new_indices = [n for n, r in enumerate(results) if r is None]
         if new_query:
             new_results = func(self, new_query, **search_kwargs)
+            # update cache
             for n, r in zip(new_indices, new_results):
                 results[n] = r
-                RETRIEVAL_CACHE[keys[n]] = r, keys[n]
-        assert all(r is not None for r in results)
+                RETRIEVAL_CACHE[keys[n]] = retrieved_to_dict(r)
+        # check results
+        check(results)
         return results
 
     return wrapper
