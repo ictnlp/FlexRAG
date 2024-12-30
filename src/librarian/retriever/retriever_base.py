@@ -6,7 +6,8 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, Optional
 
 import numpy as np
-from omegaconf import DictConfig
+import json
+from omegaconf import DictConfig, OmegaConf
 
 from librarian.cache import LMDBBackendConfig, PersistentCache, PersistentCacheConfig
 from librarian.data import TextProcessPipeline, TextProcessPipelineConfig
@@ -32,10 +33,6 @@ RETRIEVAL_CACHE = PersistentCache(
 
 
 def batched_cache(func):
-    def hashkey(*args, **kwargs):
-        """Return a cache key for the specified hashable arguments."""
-        return tuple(args), tuple(sorted(kwargs.items()))
-
     def wrapper(
         self,
         query: list[str],
@@ -53,14 +50,19 @@ def batched_cache(func):
             return func(self, query, **search_kwargs)
 
         # search from cache
-        # TODO: using namedtuple or other simplier data structure instead of DictConfig/RetrievedContexts
         if not isinstance(self.cfg, DictConfig):
-            cfg = DictConfig(
-                self.cfg
-            )  # as dataclass is not hashable, we convert the config into DictConfig
+            cfg = OmegaConf.to_object(DictConfig(self.cfg))
         else:
-            cfg = self.cfg
-        keys = [hashkey(cfg=cfg, query=q, **search_kwargs) for q in query]
+            cfg = OmegaConf.to_object(self.cfg)
+        keys = [
+            {
+                "retriever_config": cfg,
+                "query": q,
+                "search_kwargs": search_kwargs,
+            }
+            for q in query
+        ]
+        keys = [json.dumps(key, sort_keys=True) for key in keys]
         results = [RETRIEVAL_CACHE.get(k, (None,))[0] for k in keys]
 
         # search from database
