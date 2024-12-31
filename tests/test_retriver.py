@@ -6,8 +6,8 @@ from dataclasses import dataclass, field
 
 from omegaconf import MISSING, OmegaConf
 
-from librarian.data import LineDelimitedDataset
-from librarian.retriever import (
+from flexrag.data import LineDelimitedDataset
+from flexrag.retriever import (
     BM25SRetriever,
     BM25SRetrieverConfig,
     DenseRetriever,

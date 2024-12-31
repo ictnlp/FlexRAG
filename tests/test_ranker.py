@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import pytest
 from omegaconf import OmegaConf
 
-from librarian.ranker import (
+from flexrag.ranker import (
     CohereRanker,
     CohereRankerConfig,
     HFColBertRanker,

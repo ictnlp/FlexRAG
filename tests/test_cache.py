@@ -4,7 +4,7 @@ import tempfile
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from librarian.cache import (
+from flexrag.cache import (
     PersistentCacheConfig,
     PersistentCache,
     LMDBBackendConfig,

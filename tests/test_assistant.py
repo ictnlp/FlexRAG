@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import pytest
 from omegaconf import OmegaConf
 
-from librarian.assistant import BasicAssistant, BasicAssistantConfig
+from flexrag.assistant import BasicAssistant, BasicAssistantConfig
 
 
 @dataclass

@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 import pytest
 from omegaconf import OmegaConf
 
-from librarian.models import (
+from flexrag.models import (
     AnthropicGenerator,
     AnthropicGeneratorConfig,
     CohereEncoder,
@@ -29,7 +29,7 @@ from librarian.models import (
     VLLMGenerator,
     VLLMGeneratorConfig,
 )
-from librarian.prompt import ChatPrompt, ChatTurn
+from flexrag.prompt import ChatPrompt, ChatTurn
 
 
 @dataclass
