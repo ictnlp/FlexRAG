@@ -17,5 +17,4 @@ hydra-core>=1.3
 omegaconf>=2.3.0
 pillow
 accelerate>=0.26.0
-faiss-cpu
 beautifulsoup4

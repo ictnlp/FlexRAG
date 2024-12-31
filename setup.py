@@ -22,7 +22,7 @@ ext_modules = [
 def get_requirements() -> list[str]:
     with open("requirements.txt", encoding="utf-8") as f:
         file_content = f.read()
-        lines = [
+        requirements = [
             line.strip()
             for line in file_content.strip().split("\n")
             if not line.startswith("#")
@@ -33,10 +33,8 @@ def get_requirements() -> list[str]:
 
         logging.info(f"Detected installed faiss: faiss {faiss.__version__}")
     except ImportError:
-        pass
-    else:
-        lines = [line for line in lines if not line.startswith("faiss")]
-    return lines
+        requirements.append("faiss-cpu")
+    return requirements
 
 
 def get_version() -> str:
