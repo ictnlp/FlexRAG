@@ -81,7 +81,7 @@ class MsgpackSerializer(Serializer):
 @dataclass
 class LMDBBackendConfig:
     db_path: str = MISSING
-    serializer: Choices(["pickle", "json", "msgpack", "cloudpickle"]) = "cloudpickle"  # type: ignore
+    serializer: Choices(["pickle", "json", "msgpack", "cloudpickle"]) = "pickle"  # type: ignore
 
 
 class LMDBBackend(MutableMapping):
