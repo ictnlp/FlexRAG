@@ -188,7 +188,7 @@ class OllamaGenerator(GeneratorBase):
             ),
             "num_predict": generation_config.max_new_tokens,
             "num_ctx": self.max_length,
-            "stop": generation_config.stop_str,
+            "stop": list(generation_config.stop_str),
         }
 
     def _check(self) -> None:

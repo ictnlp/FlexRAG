@@ -392,7 +392,7 @@ class HFGenerator(GeneratorBase):
             top_p=generation_config.top_p,
             top_k=generation_config.top_k,
             num_return_sequences=generation_config.sample_num,
-            stop_strings=generation_config.stop_str,
+            stop_strings=list(generation_config.stop_str),
         )
 
     def _patch_model(self) -> None:
@@ -484,7 +484,7 @@ class HFVLMGenerator(VLMGeneratorBase):
             top_p=generation_config.top_p,
             top_k=generation_config.top_k,
             num_return_sequences=generation_config.sample_num,
-            stop_strings=generation_config.stop_str,
+            stop_strings=list(generation_config.stop_str),
         )
 
 

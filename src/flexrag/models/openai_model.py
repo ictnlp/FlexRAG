@@ -209,7 +209,7 @@ class OpenAIGenerator(GeneratorBase):
             "top_p": generation_config.top_p,
             "n": generation_config.sample_num,
             "extra_body": extra_body,
-            "stop": generation_config.stop_str,
+            "stop": list(generation_config.stop_str),
         }
 
     def _check(self):
