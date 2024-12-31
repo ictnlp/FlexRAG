@@ -8,52 +8,52 @@
 
 \[ [English](README.md) | [中文](README-zh.md) \]
 
-FlexRAG is a flexible and high-performance framework designed for Retrieval-Augmented Generation (RAG) tasks, offering support for multimodal data, seamless configuration management, and out-of-the-box performance for both research and prototyping.
+FlexRAG 是一个灵活的高性能框架，专为检索增强生成 (RAG) 任务而设计。FlexRAG 支持多模态数据，提供统一的配置管理及开箱即用的检索系统，为科研和原型设计提供充分支持。
 
-# 📖 Table of Contents
-- [📖 Table of Contents](#-table-of-contents)
-- [✨ Key Features](#-key-features)
-- [🚀 Getting Started](#-getting-started)
-  - [Step 0. Installation](#step-0-installation)
-    - [Install from pip](#install-from-pip)
-    - [Install from source](#install-from-source)
-  - [Step 1. Prepare the Retriever](#step-1-prepare-the-retriever)
-    - [Download the Corpus](#download-the-corpus)
-    - [Prepare the Index](#prepare-the-index)
-  - [Step 2. Run FlexRAG Assistant](#step-2-run-flexrag-assistant)
-    - [Run the FlexRAG Example RAG Application with GUI](#run-the-flexrag-example-rag-application-with-gui)
-    - [Run the FlexRAG Example Assistants for Knowledge Intensive Tasks](#run-the-flexrag-example-assistants-for-knowledge-intensive-tasks)
-    - [Build your own RAG Assistant](#build-your-own-rag-assistant)
-    - [Run your own RAG Application](#run-your-own-rag-application)
-- [🏗️ Architecture](#️-architecture)
-- [📊 Benchmarks](#-benchmarks)
-- [🏷️ License](#️-license)
-- [🖋️ Citation](#️-citation)
-- [❤️ Acknowledgements](#️-acknowledgements)
-
-
-# ✨ Key Features
-- **Multimodal RAG Support**: FlexRAG isn't limited to just text-based Retrieval-Augmented Generation (RAG). It also supports multimodal RAG, opening up a wide range of application possibilities across different media types.
-- **Diverse Data Types**: FlexRAG enables seamless integration of multiple data formats, including text (e.g., CSV, JSONL), images, documents, web snapshots, and more, giving you flexibility in working with varied data sources.
-- **Unified Configuration Management**: Leveraging python `dataclass` and [hydra-core](https://github.com/facebookresearch/hydra), FlexRAG simplifies configuration management, making it easier to handle complex setups and customize your workflow.
-- **Out-of-the-Box**: With carefully optimized default configurations, FlexRAG delivers solid performance without the need for extensive parameter tuning.
-- **High Performance**: Built with persistent cache system and asynchronous methods to significantly improve speed and reduce latency in RAG workflows.
-- **Research & Development Friendly**: Supports multiple development modes and includes a companion repository, [flexrag_examples](https://github.com/ZhuochengZhang98/flexrag_examples), to help you reproduce various RAG algorithms with ease.
-- **Lightweight**: Designed with minimal overhead, FlexRAG is efficient and easy to integrate into your project.
+# 📖 目录
+- [📖 目录](#-目录)
+- [✨ 框架特色](#-框架特色)
+- [🚀 框架入门](#-框架入门)
+  - [步骤0. 安装](#步骤0-安装)
+    - [`pip`安装](#pip安装)
+    - [源码安装](#源码安装)
+  - [步骤1. 准备检索器](#步骤1-准备检索器)
+    - [下载知识库](#下载知识库)
+    - [构建索引](#构建索引)
+  - [步骤2. 运行 FlexRAG Assistant](#步骤2-运行-flexrag-assistant)
+    - [使用 GUI 运行 Modular Assistant](#使用-gui-运行-modular-assistant)
+    - [在知识密集型数据集上运行并测试 Modular Assistant](#在知识密集型数据集上运行并测试-modular-assistant)
+    - [开发您自己的 RAG Assistant](#开发您自己的-rag-assistant)
+    - [开发您自己的 RAG 应用](#开发您自己的-rag-应用)
+- [🏗️ FlexRAG 架构](#️-flexrag-架构)
+- [📊 基准测试](#-基准测试)
+- [🏷️ 许可证](#️-许可证)
+- [🖋️ 引用](#️-引用)
+- [❤️ 致谢](#️-致谢)
 
 
-# 🚀 Getting Started
+# ✨ 框架特色
+- **多模态RAG**: FlexRAG 不仅限于基于文本的检索增强生成 (RAG)。它还支持多模态 RAG，为不同数据类型开辟了广泛的应用可能性。
+- **多数据类型**: FlexRAG 支持多种数据格式，包括文本（例如 CSV、JSONL）、图像、文档、Web 快照等，让您可以灵活地处理各种数据源。
+- **统一的配置管理**: 利用 python `dataclass` 和 [hydra-core](https://github.com/facebookresearch/hydra), FlexRAG 统一了配置管理，让 RAG 流程的配置变得更加简单。
+- **开箱即用**: 通过精心优化的默认配置，FlexRAG 在默认配置下就有良好的性能，简化您的开发流程。
+- **高性能**: 利用持久化缓存和异步函数，FlexRAG 显著提高了 RAG 流程的性能。
+- **科研及开发友好**: 支持多种开发方式。此外，FlexRAG 提供了一个伴生仓库，[flexrag_examples](https://github.com/ZhuochengZhang98/flexrag_examples)，来帮助您复现各类RAG算法。
+- **轻量化**: FlexRAG 采用最少的开销设计，高效且易于集成到您的项目中。
 
-## Step 0. Installation
 
-### Install from pip
-To install FlexRAG via pip:
+# 🚀 框架入门
+
+## 步骤0. 安装
+
+### `pip`安装
+从 `pip` 安装 FlexRAG:
 ```bash
 pip install flexrag
 ```
 
-### Install from source
-Alternatively, to install from the source:
+### 源码安装
+此外，您也可以从源码安装 FlexRAG:
 ```bash
 pip install pybind11
 
@@ -61,13 +61,13 @@ git clone https://github.com/ZhuochengZhang98/flexrag.git
 cd flexrag
 pip install ./
 ```
-You can also install the FlexRAG in editable mode with the `-e` flag.
+您也可以通过 `-e` 标志在可编辑模式下安装 FlexRAG。
 
 
-## Step 1. Prepare the Retriever
+## 步骤1. 准备检索器
 
-### Download the Corpus
-Before starting you RAG application, you need to download the corpus. In this example, we will use the wikipedia corpus provided by [DPR](https://github.com/facebookresearch/DPR) as the corpus. You can download the corpus by running the following command:
+### 下载知识库
+在开始构建您的RAG应用之前，您需要准备语料库。在本例中，我们将使用[DPR](https://github.com/facebookresearch/DPR)提供的维基百科语料库，您可以通过如下命令来下载语料库：
 ```bash
 # Download the corpus
 wget https://dl.fbaipublicfiles.com/dpr/wikipedia_split/psgs_w100.tsv.gz
@@ -75,8 +75,8 @@ wget https://dl.fbaipublicfiles.com/dpr/wikipedia_split/psgs_w100.tsv.gz
 gzip -d psgs_w100.tsv.gz
 ```
 
-### Prepare the Index
-After downloading the corpus, you need to build the index for the retriever. If you want to employ the dense retriever, you can simply run the following command to build the index:
+### 构建索引
+下载语料库后，您需要为检索器构建索引。如果您想使用密集检索器，您可以运行以下命令来构建索引：
 ```bash
 CORPUS_PATH=psgs_w100.tsv.gz
 CORPUS_FIELDS='[title,text]'
@@ -99,7 +99,7 @@ python -m flexrag.entrypoints.prepare_index \
     reinit=True
 ```
 
-If you want to employ the sparse retriever, you can run the following command to build the index:
+如果您想使用稀疏检索器，您可以运行以下命令来构建索引：
 ```bash
 CORPUS_PATH=psgs_w100.tsv.gz
 CORPUS_FIELDS='[title,text]'
@@ -117,10 +117,10 @@ python -m flexrag.entrypoints.prepare_index \
     reinit=True
 ```
 
-## Step 2. Run FlexRAG Assistant
-When the index is ready, you can run RAG `Assistant` provided by FlexRAG. Here is an example of how to run a `Modular Assistant`.
+## 步骤2. 运行 FlexRAG Assistant
+当索引准备好后，您可以运行 FlexRAG 所提供的 `Assistant` 。以下是如何运行`Modular Assistant`的示例。
 
-### Run the FlexRAG Example RAG Application with GUI
+### 使用 GUI 运行 Modular Assistant
 ```bash
 python -m flexrag.entrypoints.run_interactive \
     assistant_type=modular \
@@ -138,8 +138,8 @@ python -m flexrag.entrypoints.run_interactive \
     modular_config.do_sample=False
 ```
 
-### Run the FlexRAG Example Assistants for Knowledge Intensive Tasks
-You can evaluate your RAG assistant on several knowledge intensive datasets with great ease. The following command let you evaluate the `Modular Assistant` with dense retriever on the Natural Questions (NQ) dataset:
+### 在知识密集型数据集上运行并测试 Modular Assistant
+您可以在多个知识密集型数据集上轻松评估您的 RAG Assistant 。以下命令让您可以在 Natural Questions (NQ) 数据集上评估采用稠密检索器的`modular assistant`：
 ```bash
 OUTPUT_PATH=<path_to_output>
 DB_PATH=<path_to_database>
@@ -168,7 +168,7 @@ python -m flexrag.entrypoints.run_assistant \
     log_interval=10
 ```
 
-Similarly, you can evaluate the `Modular Assistant` with sparse retriever on the Natural Questions dataset:
+相似地，您可以在 Natural Questions 数据集上评估采用稀疏检索器的`modular assistant`：
 ```bash
 OUTPUT_PATH=<path_to_output>
 DB_PATH=<path_to_database>
@@ -194,11 +194,10 @@ python -m flexrag.entrypoints.run_assistant \
     log_interval=10
 ```
 
-You can also evaluate your own assistant by adding the `user_module=<your_module_path>` argument to the command.
+您也可以通过在命令行中添加 `user_module=<your_module_path>` 参数来评估您自己的助手。
 
-### Build your own RAG Assistant
-To build your own RAG assistant, you can create a new Python file and import the necessary FlexRAG modules. Here is an example of how to build a RAG assistant:
-
+### 开发您自己的 RAG Assistant
+您也可以通过导入所需的 FlexRAG 模块来创建您自己的 RAG Assistant。以下是如何构建 RAG Assistant 的示例：
 ```python
 from dataclasses import dataclass
 
@@ -230,7 +229,7 @@ class SimpleAssistant(AssistantBase):
         prompt.update(ChatTurn(role="assistant", content=response))
         return response
 ```
-After defining the `SimpleAssistant` class and registering it with the `ASSISTANTS` decorator, you can run the assistant with the following command:
+在完成`SimpleAssistant`定义并使用`ASSISTANTS`装饰器注册该 Assistant 后，您可以通过以下方式来运行您的 Assistant：
 ```bash
 DB_PATH=<path_to_database>
 OPENAI_KEY=<your_openai_key>
@@ -253,10 +252,10 @@ python -m flexrag.entrypoints.run_assistant \
     eval_config.response_preprocess.processor_type=[simplify_answer] \
     log_interval=10
 ```
-In [flexrag_examples](https://github.com/ZhuochengZhang98/flexrag_examples) repository, we provide several detailed examples of how to build a RAG assistant.
+在 [flexrag_examples](https://github.com/ZhuochengZhang98/flexrag_examples) 仓库中，我们也提供了一些示例，详细展示了如何利用 FlexRAG 框架构建 RAG 助手。
 
-### Run your own RAG Application
-In addition to using FlexRAG's built-in Entrypoints to run your RAG Assistant, you can also use FlexRAG to build your own RAG application. The following is an example of how to build a RAG application.
+### 开发您自己的 RAG 应用
+除了直接使用 FlexRAG 内置的 Entrypoints 来运行您的 RAG Assistant 以外，您也可以直接使用 FlexRAG 构建您自己的 RAG 应用。以下是如何构建 RAG 应用的示例：
 ```python
 from flexrag.models import HFEncoderConfig, OpenAIGenerator, OpenAIGeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
@@ -299,24 +298,24 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-For more details on how to build your own RAG application, please refer to the [flexrag_examples](https://github.com/ZhuochengZhang98/flexrag_examples) repository.
+更多使用 FlexRAG 构建 RAG 应用的示例，请参考 [flexrag_examples](https://github.com/ZhuochengZhang98/flexrag_examples) 仓库。
 
 
-# 🏗️ Architecture
-FlexRAG is designed with a **modular** architecture, allowing you to easily customize and extend the framework to meet your specific needs. The following diagram illustrates the architecture of FlexRAG:
+# 🏗️ FlexRAG 架构
+FlexRAG 采用**模块化**架构设计，让您可以轻松定制和扩展框架以满足您的特定需求。下图说明了 FlexRAG 的架构：
 <p align="center">
 <img src="assets/Framework-Librarian-v2.png" width=70%>
 </p>
 
-# 📊 Benchmarks
-We have conducted extensive benchmarks using the FlexRAG framework. For more details, please refer to the [benchmarks](benchmarks.md) page.
+# 📊 基准测试
+我们利用 FlexRAG 进行了大量的基准测试，详情请参考 [benchmarks](benchmarks.md) 页面。
 
-# 🏷️ License
-This repository is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+# 🏷️ 许可证
+本仓库采用 **MIT License** 开源协议. 详情请参考 [LICENSE](LICENSE) 文件。
 
 
-# 🖋️ Citation
-If you find this project helpful, please consider citing it:
+# 🖋️ 引用
+如果您觉得 FlexRAG 对您的研究有所帮助，请引用我们的工作:
 
 ```bibtex
 @software{FlexRAG,
@@ -330,8 +329,8 @@ If you find this project helpful, please consider citing it:
 }
 ```
 
-# ❤️ Acknowledgements
-This project benefits from the following open-source projects:
+# ❤️ 致谢
+下面的开源项目对本项目有所帮助:
 - [Faiss](https://github.com/facebookresearch/faiss)
 - [FlashRAG](https://github.com/RUC-NLPIR/FlashRAG)
 - [LanceDB](https://github.com/lancedb/lancedb)
