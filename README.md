@@ -10,6 +10,8 @@
 
 FlexRAG is a flexible and high-performance framework designed for Retrieval-Augmented Generation (RAG) tasks, offering support for multimodal data, seamless configuration management, and out-of-the-box performance for both research and prototyping.
 
+https://github.com/user-attachments/assets/4dfc0ec9-686b-40e2-b1f0-daa2b918e093
+
 # 📖 Table of Contents
 - [📖 Table of Contents](#-table-of-contents)
 - [✨ Key Features](#-key-features)
