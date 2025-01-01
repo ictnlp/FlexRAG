@@ -56,7 +56,7 @@ setup(
     author="Zhuocheng Zhang",
     author_email="zhuocheng_zhang@outlook.com",
     description="A RAG Framework for Information Retrieval and Generation.",
-    url="https://github.com/ZhuochengZhang98/flexrag",
+    url="https://github.com/ictnlp/flexrag",
     license="MIT License",
     long_description=get_long_description(),
     long_description_content_type="text/markdown",

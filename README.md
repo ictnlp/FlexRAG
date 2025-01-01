@@ -3,7 +3,7 @@
 </p>
 
 ![Language](https://img.shields.io/badge/language-python-brightgreen)
-![github license](https://img.shields.io/github/license/ZhuochengZhang98/flexrag)
+![github license](https://img.shields.io/github/license/ictnlp/flexrag)
 [![DOI](https://zenodo.org/badge/900151663.svg)](https://doi.org/10.5281/zenodo.14306983)
 
 \[ [English](README.md) | [中文](README-zh.md) \]
@@ -40,7 +40,7 @@ https://github.com/user-attachments/assets/4dfc0ec9-686b-40e2-b1f0-daa2b918e093
 - **Unified Configuration Management**: Leveraging python `dataclass` and [hydra-core](https://github.com/facebookresearch/hydra), FlexRAG simplifies configuration management, making it easier to handle complex setups and customize your workflow.
 - **Out-of-the-Box**: With carefully optimized default configurations, FlexRAG delivers solid performance without the need for extensive parameter tuning.
 - **High Performance**: Built with persistent cache system and asynchronous methods to significantly improve speed and reduce latency in RAG workflows.
-- **Research & Development Friendly**: Supports multiple development modes and includes a companion repository, [flexrag_examples](https://github.com/ZhuochengZhang98/flexrag_examples), to help you reproduce various RAG algorithms with ease.
+- **Research & Development Friendly**: Supports multiple development modes and includes a companion repository, [flexrag_examples](https://github.com/ictnlp/flexrag_examples), to help you reproduce various RAG algorithms with ease.
 - **Lightweight**: Designed with minimal overhead, FlexRAG is efficient and easy to integrate into your project.
 
 
@@ -59,7 +59,7 @@ Alternatively, to install from the source:
 ```bash
 pip install pybind11
 
-git clone https://github.com/ZhuochengZhang98/flexrag.git
+git clone https://github.com/ictnlp/flexrag.git
 cd flexrag
 pip install ./
 ```
@@ -255,7 +255,7 @@ python -m flexrag.entrypoints.run_assistant \
     eval_config.response_preprocess.processor_type=[simplify_answer] \
     log_interval=10
 ```
-In [flexrag_examples](https://github.com/ZhuochengZhang98/flexrag_examples) repository, we provide several detailed examples of how to build a RAG assistant.
+In [flexrag_examples](https://github.com/ictnlp/flexrag_examples) repository, we provide several detailed examples of how to build a RAG assistant.
 
 ### Run your own RAG Application
 In addition to using FlexRAG's built-in Entrypoints to run your RAG Assistant, you can also use FlexRAG to build your own RAG application. The following is an example of how to build a RAG application.
@@ -301,7 +301,7 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-For more details on how to build your own RAG application, please refer to the [flexrag_examples](https://github.com/ZhuochengZhang98/flexrag_examples) repository.
+For more details on how to build your own RAG application, please refer to the [flexrag_examples](https://github.com/ictnlp/flexrag_examples) repository.
 
 
 # 🏗️ Architecture
@@ -326,7 +326,7 @@ If you find this project helpful, please consider citing it:
   doi = {10.5281/zenodo.14306984},
   month = {12},
   title = {{FlexRAG}},
-  url = {https://github.com/ZhuochengZhang98/flexrag},
+  url = {https://github.com/ictnlp/flexrag},
   version = {0.1.0},
   year = {2024}
 }

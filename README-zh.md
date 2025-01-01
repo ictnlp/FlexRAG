@@ -3,7 +3,7 @@
 </p>
 
 ![Language](https://img.shields.io/badge/language-python-brightgreen)
-![github license](https://img.shields.io/github/license/ZhuochengZhang98/flexrag)
+![github license](https://img.shields.io/github/license/ictnlp/flexrag)
 [![DOI](https://zenodo.org/badge/900151663.svg)](https://doi.org/10.5281/zenodo.14306983)
 
 \[ [English](README.md) | [中文](README-zh.md) \]
@@ -38,7 +38,7 @@ FlexRAG 是一个灵活的高性能框架，专为检索增强生成 (RAG) 任�
 - **统一的配置管理**: 利用 python `dataclass` 和 [hydra-core](https://github.com/facebookresearch/hydra), FlexRAG 统一了配置管理，让 RAG 流程的配置变得更加简单。
 - **开箱即用**: 通过精心优化的默认配置，FlexRAG 在默认配置下就有良好的性能，简化您的开发流程。
 - **高性能**: 利用持久化缓存和异步函数，FlexRAG 显著提高了 RAG 流程的性能。
-- **科研及开发友好**: 支持多种开发方式。此外，FlexRAG 提供了一个伴生仓库，[flexrag_examples](https://github.com/ZhuochengZhang98/flexrag_examples)，来帮助您复现各类RAG算法。
+- **科研及开发友好**: 支持多种开发方式。此外，FlexRAG 提供了一个伴生仓库，[flexrag_examples](https://github.com/ictnlp/flexrag_examples)，来帮助您复现各类RAG算法。
 - **轻量化**: FlexRAG 采用最少的开销设计，高效且易于集成到您的项目中。
 
 
@@ -57,7 +57,7 @@ pip install flexrag
 ```bash
 pip install pybind11
 
-git clone https://github.com/ZhuochengZhang98/flexrag.git
+git clone https://github.com/ictnlp/flexrag.git
 cd flexrag
 pip install ./
 ```
@@ -252,7 +252,7 @@ python -m flexrag.entrypoints.run_assistant \
     eval_config.response_preprocess.processor_type=[simplify_answer] \
     log_interval=10
 ```
-在 [flexrag_examples](https://github.com/ZhuochengZhang98/flexrag_examples) 仓库中，我们也提供了一些示例，详细展示了如何利用 FlexRAG 框架构建 RAG 助手。
+在 [flexrag_examples](https://github.com/ictnlp/flexrag_examples) 仓库中，我们也提供了一些示例，详细展示了如何利用 FlexRAG 框架构建 RAG 助手。
 
 ### 开发您自己的 RAG 应用
 除了直接使用 FlexRAG 内置的 Entrypoints 来运行您的 RAG Assistant 以外，您也可以直接使用 FlexRAG 构建您自己的 RAG 应用。以下是如何构建 RAG 应用的示例：
@@ -298,7 +298,7 @@ def main():
 if __name__ == "__main__":
     main()
 ```
-更多使用 FlexRAG 构建 RAG 应用的示例，请参考 [flexrag_examples](https://github.com/ZhuochengZhang98/flexrag_examples) 仓库。
+更多使用 FlexRAG 构建 RAG 应用的示例，请参考 [flexrag_examples](https://github.com/ictnlp/flexrag_examples) 仓库。
 
 
 # 🏗️ FlexRAG 架构
@@ -323,7 +323,7 @@ FlexRAG 采用**模块化**架构设计，让您可以轻松定制和扩展框�
   doi = {10.5281/zenodo.14306984},
   month = {12},
   title = {{FlexRAG}},
-  url = {https://github.com/ZhuochengZhang98/flexrag},
+  url = {https://github.com/ictnlp/flexrag},
   version = {0.1.0},
   year = {2024}
 }
