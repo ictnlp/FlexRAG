@@ -29,7 +29,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.prepare_index")
 @dataclass
 class Config:
     # retriever configs
-    retriever_type: Choices(["dense", "elastic", "milvus", "typesense", "bm25s", "lancedb"]) = "dense"  # type: ignore
+    retriever_type: Choices(["dense", "elastic", "typesense", "bm25s"]) = "dense"  # type: ignore
     bm25s_config: BM25SRetrieverConfig = field(default_factory=BM25SRetrieverConfig)
     dense_config: DenseRetrieverConfig = field(default_factory=DenseRetrieverConfig)
     elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)
