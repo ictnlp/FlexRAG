@@ -316,22 +316,6 @@ We have conducted extensive benchmarks using the FlexRAG framework. For more det
 # 🏷️ License
 This repository is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
 
-
-# 🖋️ Citation
-If you find this project helpful, please consider citing it:
-
-```bibtex
-@software{FlexRAG,
-  author = {Zhang Zhuocheng},
-  doi = {10.5281/zenodo.14306984},
-  month = {12},
-  title = {{FlexRAG}},
-  url = {https://github.com/ictnlp/flexrag},
-  version = {0.1.0},
-  year = {2024}
-}
-```
-
 # ❤️ Acknowledgements
 This project benefits from the following open-source projects:
 - [Faiss](https://github.com/facebookresearch/faiss)
