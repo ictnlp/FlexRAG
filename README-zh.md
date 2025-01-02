@@ -4,7 +4,7 @@
 
 ![Language](https://img.shields.io/badge/language-python-brightgreen)
 ![github license](https://img.shields.io/github/license/ictnlp/flexrag)
-[![DOI](https://zenodo.org/badge/900151663.svg)](https://doi.org/10.5281/zenodo.14306983)
+<!-- [![DOI](https://zenodo.org/badge/900151663.svg)](https://doi.org/10.5281/zenodo.14306983) -->
 
 \[ [English](README.md) | [中文](README-zh.md) \]
 
@@ -28,7 +28,6 @@ FlexRAG 是一个灵活的高性能框架，专为检索增强生成 (RAG) 任�
 - [🏗️ FlexRAG 架构](#️-flexrag-架构)
 - [📊 基准测试](#-基准测试)
 - [🏷️ 许可证](#️-许可证)
-- [🖋️ 引用](#️-引用)
 - [❤️ 致谢](#️-致谢)
 
 
@@ -314,7 +313,7 @@ FlexRAG 采用**模块化**架构设计，让您可以轻松定制和扩展框�
 本仓库采用 **MIT License** 开源协议. 详情请参考 [LICENSE](LICENSE) 文件。
 
 
-# 🖋️ 引用
+<!-- # 🖋️ 引用
 如果您觉得 FlexRAG 对您的研究有所帮助，请引用我们的工作:
 
 ```bibtex
@@ -327,7 +326,7 @@ FlexRAG 采用**模块化**架构设计，让您可以轻松定制和扩展框�
   version = {0.1.0},
   year = {2024}
 }
-```
+``` -->
 
 # ❤️ 致谢
 下面的开源项目对本项目有所帮助:
