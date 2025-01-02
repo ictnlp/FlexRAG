@@ -4,7 +4,7 @@
 
 ![Language](https://img.shields.io/badge/language-python-brightgreen)
 ![github license](https://img.shields.io/github/license/ictnlp/flexrag)
-[![DOI](https://zenodo.org/badge/900151663.svg)](https://doi.org/10.5281/zenodo.14306983)
+<!-- [![DOI](https://zenodo.org/badge/900151663.svg)](https://doi.org/10.5281/zenodo.14306983) -->
 
 \[ [English](README.md) | [中文](README-zh.md) \]
 
@@ -30,7 +30,6 @@ https://github.com/user-attachments/assets/4dfc0ec9-686b-40e2-b1f0-daa2b918e093
 - [🏗️ Architecture](#️-architecture)
 - [📊 Benchmarks](#-benchmarks)
 - [🏷️ License](#️-license)
-- [🖋️ Citation](#️-citation)
 - [❤️ Acknowledgements](#️-acknowledgements)
 
 
