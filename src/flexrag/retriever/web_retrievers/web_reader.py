@@ -27,7 +27,7 @@ class WebRetrievedContext:
     raw_content: Optional[dict] = None
 
 
-class WebReader(ABC):
+class WebReaderBase(ABC):
     @abstractmethod
     def read(
         self, retrieved_contexts: list[WebRetrievedContext]
@@ -35,11 +35,10 @@ class WebReader(ABC):
         """
         Parse the retrieved contexts into LLM readable format.
 
-        Args:
-            retrieved_contexts (list[WebRetrievedContext]): Contexts retrieved by the WebRetriever.
-
-        Returns:
-            list[RetrievedContext]: Contexts that can be fed into the LLM.
+        :param retrieved_contexts: Contexts retrieved by the WebRetriever.
+        :type retrieved_contexts: list[WebRetrievedContext]
+        :return: Contexts that can be fed into the LLM.
+        :rtype: list[RetrievedContext]
         """
         return
 
@@ -50,7 +49,7 @@ class WebReader(ABC):
         return
 
 
-WEB_READERS = Register[WebReader]("web_reader")
+WEB_READERS = Register[WebReaderBase]("web_reader")
 
 
 GeneratorConfig = GENERATORS.make_config()
@@ -62,7 +61,7 @@ class JinaReaderLMConfig(GeneratorConfig, WebDownloaderConfig, GenerationConfig)
 
 
 @WEB_READERS("jina_readerlm", config_class=JinaReaderLMConfig)
-class JinaReaderLM(WebReader):
+class JinaReaderLM(WebReaderBase):
     def __init__(self, cfg: JinaReaderLMConfig):
         self.reader = GENERATORS.load(cfg)
         self.downloader = WEB_DOWNLOADERS.load(cfg)
@@ -107,7 +106,7 @@ class JinaReaderConfig:
 
 
 @WEB_READERS("jina_reader", config_class=JinaReaderConfig)
-class JinaReader(WebReader):
+class JinaReader(WebReaderBase):
     def __init__(self, cfg: JinaReaderConfig):
         self.base_url = cfg.base_url
         self.headers = {"Authorization": f"Bearer {cfg.api_key}"}
@@ -137,7 +136,7 @@ class JinaReader(WebReader):
 
 
 @WEB_READERS("snippet")
-class SnippetWebReader(WebReader):
+class SnippetWebReader(WebReaderBase):
     def read(
         self, retrieved_contexts: list[WebRetrievedContext]
     ) -> list[RetrievedContext]:
@@ -162,7 +161,7 @@ class ScreenshotWebReaderConfig(PuppeteerWebDownloaderConfig): ...
 
 
 @WEB_READERS("screenshot", config_class=ScreenshotWebReaderConfig)
-class ScreenshotWebReader(WebReader):
+class ScreenshotWebReader(WebReaderBase):
     def __init__(self, cfg: ScreenshotWebReaderConfig):
         super().__init__()
         assert cfg.return_format == "screenshot"

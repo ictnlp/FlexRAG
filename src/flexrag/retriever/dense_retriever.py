@@ -73,9 +73,6 @@ class DenseRetriever(LocalRetriever):
 
     @TIME_METER("dense_retriever", "add-passages")
     def add_passages(self, passages: Iterable[dict[str, str]]):
-        """
-        Add passages to the retriever database
-        """
 
         def get_batch() -> Generator[list[dict[str, str]], None, None]:
             batch = []
@@ -175,6 +172,7 @@ class DenseRetriever(LocalRetriever):
 
     @property
     def embedding_size(self) -> int:
+        """The embedding size of the retriever."""
         if self.query_encoder is not None:
             return self.query_encoder.embedding_size
         if self.passage_encoder is not None:
@@ -189,7 +187,7 @@ class DenseRetriever(LocalRetriever):
 
     @property
     def fields(self) -> list[str]:
-        fields = self.database.head(num_rows=1).to_pandas().columns.to_list()
+        fields: list = self.database.head(num_rows=1).to_pandas().columns.to_list()
         fields.remove("vector")
         return fields
 
@@ -201,13 +199,12 @@ class DenseRetriever(LocalRetriever):
     ) -> tuple[np.ndarray, np.ndarray]:
         """Refine the retrieved indices based on the distance between the query and the retrieved embeddings.
 
-        Args:
-            query (np.ndarray): The query embeddings with shape [bsz, emb_size]
-            indices (np.ndarray): The retrieved indices with shape [bsz, top_k * refine_factor]
-
-        Returns:
-            indices (np.ndarray): The refined indices with shape [bsz, top_k * refine_factor]
-            scores (np.ndarray): The refined scores with shape [bsz, top_k * refine_factor]
+        :param query: The query embeddings with shape [bsz, emb_size].
+        :type query: np.ndarray
+        :param indices: The retrieved indices with shape [bsz, top_k * refine_factor].
+        :type indices: np.ndarray
+        :return: The refined indices and scores with shape [bsz, top_k * refine_factor].
+        :rtype: tuple[np.ndarray, np.ndarray]
         """
         bsz, kf = indices.shape
         flat_indices = indices.flatten()

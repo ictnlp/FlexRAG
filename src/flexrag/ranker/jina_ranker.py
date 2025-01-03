@@ -7,11 +7,11 @@ from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER
 
-from .ranker import RankerBase, RankerConfig, RANKERS
+from .ranker import RankerBase, RankerBaseConfig, RANKERS
 
 
 @dataclass
-class JinaRankerConfig(RankerConfig):
+class JinaRankerConfig(RankerBaseConfig):
     model: str = "jina-reranker-v2-base-multilingual"
     base_url: str = "https://api.jina.ai/v1/rerank"
     api_key: str = MISSING

@@ -8,11 +8,11 @@ from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER
 
-from .ranker import RankerBase, RankerConfig, RANKERS
+from .ranker import RankerBase, RankerBaseConfig, RANKERS
 
 
 @dataclass
-class MixedbreadRankerConfig(RankerConfig):
+class MixedbreadRankerConfig(RankerBaseConfig):
     model: str = "mxbai-rerank-large-v1"
     base_url: Optional[str] = None
     api_key: str = MISSING

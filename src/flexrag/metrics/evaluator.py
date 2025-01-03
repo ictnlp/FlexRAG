@@ -36,17 +36,20 @@ class RAGEvaluator:
     ):
         """Evaluate the generated responses against the ground truth responses.
 
-        Args:
-            questions (list[str]): A list contains the questions.
-            responses (list[str]): A list contains the generated responses.
-            golden_responses (list[list[str]]): A list contains the golden responses for each question.
-            retrieved_contexts (list[list[str | RetrievedContext]]): A list contains the retrieved contexts.
-            golden_contexts (list[list[str | | RetrievedContext]]): A list contains the golden contexts.
-            log (bool, optional): Whether to log the evaluation results. Defaults to True.
-
-        Returns:
-            eval_result (dict[str, float]): A dict contains the evaluation results.
-            eval_details (dict[str, Any]): A dict contains the evaluation details.
+        :param questions: A list of questions. Defaults to None.
+        :param responses: A list of responses. Defaults to None.
+        :param golden_responses: A list of golden responses. Defaults to None.
+        :param retrieved_contexts: A list of retrieved contexts. Defaults to None.
+        :param golden_contexts: A list of golden contexts. Defaults to None.
+        :param log: Whether to log the evaluation results. Defaults to True.
+        :type questions: list[str], optional
+        :type responses: list[str], optional
+        :type golden_responses: list[list[str]], optional
+        :type retrieved_contexts: list[list[str | RetrievedContext]], optional
+        :type golden_contexts: list[list[str]], optional
+        :type log: bool, optional
+        :return: The evaluation results and the evaluation details.
+        :rtype: tuple[dict[str, float], dict[str, Any]]
         """
         # check the input arguments
         not_none_args = [

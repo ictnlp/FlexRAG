@@ -47,12 +47,12 @@ class GeneratorBase(ABC):
     ) -> list[list[str]]:
         """chat with the model using model templates.
 
-        Args:
-            prompts (list[ChatPrompt]): A batch of ChatPrompts.
-            generation_config (GenerationConfig, optional): GenerationConfig. Defaults to None.
-
-        Returns:
-            list[list[str]]: A batch of chat responses.
+        :param prompts: A batch of ChatPrompts.
+        :param generation_config: GenerationConfig. Defaults to None.
+        :type prompts: list[ChatPrompt]
+        :type generation_config: GenerationConfig
+        :return: A batch of chat responses.
+        :rtype: list[list[str]]
         """
         return
 
@@ -75,12 +75,12 @@ class GeneratorBase(ABC):
     ) -> list[list[str]]:
         """generate text with the model using the given prefixes.
 
-        Args:
-            prefixes (list[str]): A batch of prefixes.
-            generation_config (GenerationConfig, optional): GenerationConfig. Defaults to None.
-
-        Returns:
-            list[list[str]]: A batch of generated text.
+        :param prefixes: A batch of prefixes.
+        :param generation_config: GenerationConfig. Defaults to None.
+        :type prefixes: list[str]
+        :type generation_config: GenerationConfig
+        :return: A batch of generated text.
+        :rtype: list[list[str]]
         """
         return
 
@@ -105,14 +105,25 @@ class VLMGeneratorBase(GeneratorBase):
     ) -> list[list[str]]:
         """chat with the model using model templates.
 
-        Args:
-            prompts (list[MultiModelChatPrompt]): A batch of MultiModelChatPrompts.
-            generation_config (GenerationConfig, optional): GenerationConfig. Defaults to None.
-
-        Returns:
-            list[list[str]]: A batch of chat responses.
+        :param prompts: A batch of MultiModelChatPrompts.
+        :param generation_config: GenerationConfig. Defaults to None.
+        :type prompts: list[MultiModelChatPrompt]
+        :type generation_config: GenerationConfig
+        :return: A batch of chat responses.
+        :rtype: list[list[str]]
         """
         return
+
+    async def async_chat(
+        self,
+        prompts: list[MultiModelChatPrompt],
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
+        """The async version of chat."""
+        logger.warning(
+            "Current encoder does not support asyncronous chat, thus the code will be run in syncronous mode"
+        )
+        return self.chat(prompts=prompts, generation_config=generation_config)
 
     @abstractmethod
     def generate(
@@ -123,15 +134,30 @@ class VLMGeneratorBase(GeneratorBase):
     ) -> list[list[str]]:
         """generate text with the model using the given prefixes.
 
-        Args:
-            prefixes (list[str]): A batch of prefixes.
-            images (list[Image]): A batch of images.
-            generation_config (GenerationConfig, optional): GenerationConfig. Defaults to None.
-
-        Returns:
-            list[list[str]]: A batch of generated text.
+        :param prefixes: A batch of prefixes.
+        :param images: A batch of images.
+        :param generation_config: GenerationConfig. Defaults to None.
+        :type prefixes: list[str]
+        :type images: list[Image]
+        :type generation_config: GenerationConfig
+        :return: A batch of generated text.
+        :rtype: list[list[str]]
         """
         return
+
+    async def async_generate(
+        self,
+        prefixes: list[str],
+        images: list[Image],
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
+        """The async version of generate."""
+        logger.warning(
+            "Current generator does not support asyncronous generate, thus the code will be run in syncronous mode"
+        )
+        return self.generate(
+            prefixes=prefixes, images=images, generation_config=generation_config
+        )
 
 
 @dataclass
@@ -143,11 +169,10 @@ class EncoderBase(ABC):
     def encode(self, texts: list[str]) -> np.ndarray:
         """encode the given texts into embeddings.
 
-        Args:
-            texts (list[str]): A batch of texts.
-
-        Returns:
-            np.ndarray: A batch of embeddings.
+        :param texts: A batch of texts.
+        :type texts: list[str]
+        :return: A batch of embeddings.
+        :rtype: np.ndarray
         """
         return
 

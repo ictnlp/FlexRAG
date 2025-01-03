@@ -20,6 +20,7 @@ from .model_base import (
     GenerationConfig,
     GeneratorBase,
     GeneratorBaseConfig,
+    VLMGeneratorBase,
     GENERATORS,
     ENCODERS,
 )
@@ -44,6 +45,7 @@ from .sentence_transformers_model import (
 
 __all__ = [
     "GeneratorBase",
+    "VLMGeneratorBase",
     "GeneratorBaseConfig",
     "GenerationConfig",
     "EncoderBase",

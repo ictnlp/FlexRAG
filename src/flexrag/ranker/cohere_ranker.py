@@ -8,11 +8,11 @@ from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER
 
-from .ranker import RankerBase, RankerConfig, RANKERS
+from .ranker import RankerBase, RankerBaseConfig, RANKERS
 
 
 @dataclass
-class CohereRankerConfig(RankerConfig):
+class CohereRankerConfig(RankerBaseConfig):
     model: str = "rerank-multilingual-v3.0"
     base_url: Optional[str] = None
     api_key: str = MISSING

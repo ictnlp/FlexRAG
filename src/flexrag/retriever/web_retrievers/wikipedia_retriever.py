@@ -10,7 +10,7 @@ from ..retriever_base import (
     RETRIEVERS,
     RetrievedContext,
     RetrieverBase,
-    RetrieverConfigBase,
+    RetrieverBaseConfig,
 )
 
 
@@ -18,7 +18,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.web_retriever")
 
 
 @dataclass
-class WikipediaRetrieverConfig(RetrieverConfigBase):
+class WikipediaRetrieverConfig(RetrieverBaseConfig):
     search_url: str = "https://en.wikipedia.org/w/index.php?search="
     proxy: Optional[str] = None
 
