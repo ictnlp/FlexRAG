@@ -17,7 +17,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index")
 
 
 @dataclass
-class DenseIndexConfigBase:
+class DenseIndexBaseConfig:
     distance_function: Choices(["IP", "L2"]) = "IP"  # type: ignore
     index_train_num: int = 1000000
     log_interval: int = 10000
@@ -25,7 +25,7 @@ class DenseIndexConfigBase:
 
 
 class DenseIndexBase(ABC):
-    def __init__(self, cfg: DenseIndexConfigBase, index_path: str):
+    def __init__(self, cfg: DenseIndexBaseConfig, index_path: str):
         self.distance_function = cfg.distance_function
         self.index_train_num = cfg.index_train_num
         self.index_path = index_path

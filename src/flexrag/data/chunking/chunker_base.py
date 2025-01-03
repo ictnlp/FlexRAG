@@ -6,13 +6,12 @@ from flexrag.utils import Register
 class ChunkerBase(ABC):
     @abstractmethod
     def chunk(self, text: str) -> list[str]:
-        """Chunk the given text.
+        """Chunk the given text into smaller chunks.
 
-        Args:
-            text (str): The text to chunk.
-
-        Returns:
-            list[str]: The chunks of the text.
+        :param text: The text to chunk.
+        :type text: str
+        :return: The chunks of the text.
+        :rtype: list[str]
         """
         return
 

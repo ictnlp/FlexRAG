@@ -15,7 +15,7 @@ from ..retriever_base import (
     RETRIEVERS,
     RetrievedContext,
     RetrieverBase,
-    RetrieverConfigBase,
+    RetrieverBaseConfig,
     batched_cache,
 )
 from .web_reader import WEB_READERS, WebRetrievedContext
@@ -37,7 +37,7 @@ WebReaderConfig = WEB_READERS.make_config(default="snippet")
 
 
 @dataclass
-class WebRetrieverConfig(RetrieverConfigBase, WebReaderConfig):
+class WebRetrieverConfig(RetrieverBaseConfig, WebReaderConfig):
     timeout: float = 3.0
     retry_times: int = 3
     retry_delay: float = 0.5

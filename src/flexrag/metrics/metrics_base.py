@@ -13,6 +13,22 @@ class MetricsBase(ABC):
         retrieved_contexts: list[list[str | RetrievedContext]] = None,
         golden_contexts: list[list[str]] = None,
     ) -> dict[str, float]:
+        """
+        Compute the metric value.
+
+        :param questions: A list of questions. Defaults to None.
+        :param responses: A list of responses. Defaults to None.
+        :param golden_responses: A list of golden responses. Defaults to None.
+        :param retrieved_contexts: A list of retrieved contexts. Defaults to None.
+        :param golden_contexts: A list of golden contexts. Defaults to None.
+        :type questions: list[str], optional
+        :type responses: list[str], optional
+        :type golden_responses: list[list[str]], optional
+        :type retrieved_contexts: list[list[str | RetrievedContext]], optional
+        :type golden_contexts: list[list[str]], optional
+        :return: The metric value and the metadata of the metric.
+        :rtype: tuple[float, object]
+        """
         return self.compute(
             questions=questions,
             responses=responses,
@@ -33,16 +49,18 @@ class MetricsBase(ABC):
         """
         Compute the metric value.
 
-        Args:
-            questions (list[str], optional): A list of questions. Defaults to None.
-            responses (list[str], optional): A list of responses. Defaults to None.
-            golden_responses (list[list[str]], optional): A list of golden responses. Defaults to None.
-            retrieved_contexts (list[list[str | RetrievedContext]], optional): A list of retrieved contexts. Defaults to None.
-            golden_contexts (list[list[str]], optional): A list of golden contexts. Defaults to None.
-
-        Returns:
-            score (float): The metric value.
-            metadata (object): The metadata of the metric.
+        :param questions: A list of questions. Defaults to None.
+        :param responses: A list of responses. Defaults to None.
+        :param golden_responses: A list of golden responses. Defaults to None.
+        :param retrieved_contexts: A list of retrieved contexts. Defaults to None.
+        :param golden_contexts: A list of golden contexts. Defaults to None.
+        :type questions: list[str], optional
+        :type responses: list[str], optional
+        :type golden_responses: list[list[str]], optional
+        :type retrieved_contexts: list[list[str | RetrievedContext]], optional
+        :type golden_contexts: list[list[str]], optional
+        :return: The metric value and the metadata of the metric.
+        :rtype: tuple[float, object]
         """
         return
 

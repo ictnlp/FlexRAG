@@ -99,13 +99,13 @@ def batched_cache(func):
 
 
 @dataclass
-class RetrieverConfigBase:
+class RetrieverBaseConfig:
     log_interval: int = 100
     top_k: int = 10
 
 
 @dataclass
-class LocalRetrieverConfig(RetrieverConfigBase):
+class LocalRetrieverConfig(RetrieverBaseConfig):
     batch_size: int = 32
     query_preprocess_pipeline: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
 
@@ -129,7 +129,7 @@ class RetrievedContext:
 
 
 class RetrieverBase(ABC):
-    def __init__(self, cfg: RetrieverConfigBase):
+    def __init__(self, cfg: RetrieverBaseConfig):
         self.cfg = cfg
         self.log_interval = cfg.log_interval
         self.top_k = cfg.top_k

@@ -38,7 +38,7 @@ class DoclingParser(DocumentParserBase):
         )
         return
 
-    def process(self, input_file_path: str) -> Document:
+    def parse(self, input_file_path: str) -> Document:
         assert os.path.exists(input_file_path)
         document_ = self.doc_converter.convert(input_file_path).document
         document = Document(

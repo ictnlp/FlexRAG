@@ -8,11 +8,11 @@ import numpy as np
 from flexrag.models.hf_model import HFModelConfig, load_hf_model, HFGenerationConfig
 from flexrag.utils import TIME_METER
 
-from .ranker import RankerBase, RankerConfig, RANKERS
+from .ranker import RankerBase, RankerBaseConfig, RANKERS
 
 
 @dataclass
-class HFCrossEncoderRankerConfig(RankerConfig, HFModelConfig):
+class HFCrossEncoderRankerConfig(RankerBaseConfig, HFModelConfig):
     max_encode_length: int = 512
 
 
@@ -55,7 +55,7 @@ class HFCrossEncoderRanker(RankerBase):
 
 
 @dataclass
-class HFSeq2SeqRankerConfig(RankerConfig, HFModelConfig):
+class HFSeq2SeqRankerConfig(RankerBaseConfig, HFModelConfig):
     max_encode_length: int = 512
     input_template: str = "Query: {query} Document: {candidate} Relevant:"
     positive_token: str = "▁true"
@@ -120,7 +120,7 @@ class HFSeq2SeqRanker(RankerBase):
 
 
 @dataclass
-class HFColBertRankerConfig(RankerConfig, HFModelConfig):
+class HFColBertRankerConfig(RankerBaseConfig, HFModelConfig):
     base_model_type: str = "bert"
     output_dim: int = 128
     max_encode_length: int = 512

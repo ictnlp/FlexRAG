@@ -13,6 +13,14 @@ class TextUnit:
 
 class Processor(ABC):
     def __call__(self, input_text: TextUnit) -> TextUnit:
+        """Process the input text.
+        If the processor has been filtered, the reserved flag of the input TextUnit will be set to False.
+
+        :param input_text: The input text to process.
+        :type input_text: TextUnit
+        :return: The processed text.
+        :rtype: TextUnit
+        """
         input_text.processed_by.append(self.name)
         return self.process(input_text)
 

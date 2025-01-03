@@ -7,13 +7,13 @@ import numpy as np
 
 from flexrag.utils import Choices, SimpleProgressLogger, LOGGER_MANAGER
 
-from .index_base import DENSE_INDEX, DenseIndexBase, DenseIndexConfigBase
+from .index_base import DENSE_INDEX, DenseIndexBase, DenseIndexBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index.annoy")
 
 
 @dataclass
-class AnnoyIndexConfig(DenseIndexConfigBase):
+class AnnoyIndexConfig(DenseIndexBaseConfig):
     distance_function: Choices(["IP", "L2", "COSINE", "HAMMING", "MANHATTAN"]) = "IP"  # type: ignore
     n_trees: int = -1  # -1 means auto
     n_jobs: int = -1  # -1 means auto

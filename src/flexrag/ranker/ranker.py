@@ -12,7 +12,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.rankers")
 
 
 @dataclass
-class RankerConfig:
+class RankerBaseConfig:
     reserve_num: int = -1
     ranking_field: Optional[str] = None
 
@@ -25,7 +25,7 @@ class RankingResult:
 
 
 class RankerBase(ABC):
-    def __init__(self, cfg: RankerConfig) -> None:
+    def __init__(self, cfg: RankerBaseConfig) -> None:
         self.reserve_num = cfg.reserve_num
         self.ranking_field = cfg.ranking_field
         return
@@ -33,6 +33,15 @@ class RankerBase(ABC):
     def rank(
         self, query: str, candidates: list[RetrievedContext | str]
     ) -> RankingResult:
+        """Rank the candidates based on the query.
+
+        :param query: query string.
+        :param candidates: list of candidate strings.
+        :type query: str
+        :type candidates: list[str]
+        :return: indices and scores of the ranked candidates.
+        :rtype: tuple[np.ndarray, np.ndarray]
+        """
         if isinstance(candidates[0], RetrievedContext):
             assert self.ranking_field is not None
             texts = [ctx.data[self.ranking_field] for ctx in candidates]
@@ -55,6 +64,7 @@ class RankerBase(ABC):
     async def async_rank(
         self, query: str, candidates: list[RetrievedContext | str]
     ) -> RankingResult:
+        """The asynchronous version of `rank`."""
         if isinstance(candidates[0], RetrievedContext):
             assert self.ranking_field is not None
             texts = [ctx.data[self.ranking_field] for ctx in candidates]
@@ -78,12 +88,12 @@ class RankerBase(ABC):
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         """Rank the candidates based on the query.
 
-        Args:
-            query (str): query string.
-            candidates (list[str]): list of candidate strings.
-
-        Returns:
-            tuple[np.ndarray, np.ndarray]: indices and scores of the ranked candidates.
+        :param query: query string.
+        :param candidates: list of candidate strings.
+        :type query: str
+        :type candidates: list[str]
+        :return: indices and scores of the ranked candidates.
+        :rtype: tuple[np.ndarray, np.ndarray]
         """
         return
 

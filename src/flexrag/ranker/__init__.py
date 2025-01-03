@@ -12,11 +12,12 @@ from .jina_ranker import JinaRanker, JinaRankerConfig
 from .mixedbread_ranker import MixedbreadRanker, MixedbreadRankerConfig
 from .voyage_ranker import VoyageRanker, VoyageRankerConfig
 
-from .ranker import RankerBase, RANKERS, RankingResult  # isort: skip
+from .ranker import RankerBase, RankerBaseConfig, RANKERS, RankingResult  # isort: skip
 
 
 __all__ = [
     "RankerBase",
+    "RankerBaseConfig",
     "RANKERS",
     "RankingResult",
     "HFCrossEncoderRanker",

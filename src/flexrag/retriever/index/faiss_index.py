@@ -6,13 +6,13 @@ import numpy as np
 
 from flexrag.utils import Choices, LOGGER_MANAGER
 
-from .index_base import DenseIndexBase, DenseIndexConfigBase, DENSE_INDEX
+from .index_base import DenseIndexBase, DenseIndexBaseConfig, DENSE_INDEX
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retriever.index.faiss")
 
 
 @dataclass
-class FaissIndexConfig(DenseIndexConfigBase):
+class FaissIndexConfig(DenseIndexBaseConfig):
     index_type: Choices(["FLAT", "IVF", "PQ", "IVFPQ", "auto"]) = "auto"  # type: ignore
     n_subquantizers: int = 8
     n_bits: int = 8

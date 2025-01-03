@@ -15,14 +15,14 @@ from flexrag.utils import Choices, Register
 
 
 @dataclass
-class BaseWebDownloaderConfig:
+class WebDownloaderBaseConfig:
     allow_parallel: bool = True
 
 
 class WebDownloaderBase(ABC):
     """The helper class for downloading web pages."""
 
-    def __init__(self, cfg: BaseWebDownloaderConfig) -> None:
+    def __init__(self, cfg: WebDownloaderBaseConfig) -> None:
         self.allow_parallel = cfg.allow_parallel
         return
 
@@ -95,7 +95,7 @@ class SimpleWebDownloader(WebDownloaderBase):
 
 
 @dataclass
-class PuppeteerWebDownloaderConfig(BaseWebDownloaderConfig):
+class PuppeteerWebDownloaderConfig(WebDownloaderBaseConfig):
     return_format: Choices(["screenshot", "html"]) = "html"  # type: ignore
     headless: bool = True
     device: Optional[str] = None

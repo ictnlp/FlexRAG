@@ -9,14 +9,14 @@ from flexrag.models import GENERATORS
 from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.utils import TIME_METER
 
-from .ranker import RankerBase, RankerConfig, RANKERS
+from .ranker import RankerBase, RankerBaseConfig, RANKERS
 
 
 GeneratorConfig = GENERATORS.make_config()
 
 
 @dataclass
-class RankGPTRankerConfig(RankerConfig, GeneratorConfig):
+class RankGPTRankerConfig(RankerBaseConfig, GeneratorConfig):
     step_size: int = 10
     window_size: int = 20
     max_chunk_size: int = 300

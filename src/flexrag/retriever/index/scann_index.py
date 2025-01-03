@@ -6,13 +6,13 @@ import numpy as np
 
 from flexrag.utils import LOGGER_MANAGER
 
-from .index_base import DenseIndexBase, DenseIndexConfigBase, DENSE_INDEX
+from .index_base import DenseIndexBase, DenseIndexBaseConfig, DENSE_INDEX
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index.scann")
 
 
 @dataclass
-class ScaNNIndexConfig(DenseIndexConfigBase):
+class ScaNNIndexConfig(DenseIndexBaseConfig):
     num_leaves: int = 2000
     num_leaves_to_search: int = 500
     num_neighbors: int = 10

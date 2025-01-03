@@ -6,7 +6,7 @@ from .retriever_base import (
     LocalRetrieverConfig,
     RetrievedContext,
     RetrieverBase,
-    RetrieverConfigBase,
+    RetrieverBaseConfig,
     RETRIEVERS,
 )
 from .typesense_retriever import TypesenseRetriever, TypesenseRetrieverConfig
@@ -31,7 +31,7 @@ __all__ = [
     "LocalRetriever",
     "LocalRetrieverConfig",
     "RetrieverBase",
-    "RetrieverConfigBase",
+    "RetrieverBaseConfig",
     "RetrievedContext",
     "DenseRetriever",
     "DenseRetrieverConfig",

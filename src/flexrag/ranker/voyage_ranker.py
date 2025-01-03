@@ -6,11 +6,11 @@ from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER
 
-from .ranker import RankerBase, RankerConfig, RANKERS
+from .ranker import RankerBase, RankerBaseConfig, RANKERS
 
 
 @dataclass
-class VoyageRankerConfig(RankerConfig):
+class VoyageRankerConfig(RankerBaseConfig):
     model: str = "rerank-2"
     api_key: str = MISSING
     timeout: float = 3.0

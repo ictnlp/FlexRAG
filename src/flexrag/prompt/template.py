@@ -174,7 +174,16 @@ def load_template(
     tokenizer: PreTrainedTokenizer,
     model_name: Optional[str] = None,
 ) -> ChatTemplate:
-    """Load template for different models."""
+    """
+    Load ChatTemplate for different models. If model_name is not provided, the default template in the Tokenizer will be used.
+
+    :param tokenizer: The tokenizer used to encode the prompt.
+    :param model_name: The name of the model. Default is None.
+    :type tokenizer: PreTrainedTokenizer
+    :type model_name: Optional[str]
+    :return: The loaded ChatTemplate
+    :rtype: ChatTemplate
+    """
     if model_name is None:
         logger.warning("model_name is not provided, using default template.")
         return HFTemplate(tokenizer=tokenizer)
