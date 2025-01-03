@@ -114,6 +114,17 @@ class VLMGeneratorBase(GeneratorBase):
         """
         return
 
+    async def async_chat(
+        self,
+        prompts: list[MultiModelChatPrompt],
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
+        """The async version of chat."""
+        logger.warning(
+            "Current encoder does not support asyncronous chat, thus the code will be run in syncronous mode"
+        )
+        return self.chat(prompts=prompts, generation_config=generation_config)
+
     @abstractmethod
     def generate(
         self,
@@ -133,6 +144,20 @@ class VLMGeneratorBase(GeneratorBase):
         :rtype: list[list[str]]
         """
         return
+
+    async def async_generate(
+        self,
+        prefixes: list[str],
+        images: list[Image],
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
+        """The async version of generate."""
+        logger.warning(
+            "Current generator does not support asyncronous generate, thus the code will be run in syncronous mode"
+        )
+        return self.generate(
+            prefixes=prefixes, images=images, generation_config=generation_config
+        )
 
 
 @dataclass
