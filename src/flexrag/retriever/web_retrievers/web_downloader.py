@@ -27,6 +27,13 @@ class WebDownloaderBase(ABC):
         return
 
     def download(self, urls: str | list[str]) -> Any:
+        """Download the web pages.
+
+        :param urls: The urls to download.
+        :type urls: str | list[str]
+        :return: The downloaded web pages.
+        :rtype: Any
+        """
         if isinstance(urls, str):
             urls = [urls]
         if self.allow_parallel:
@@ -37,6 +44,7 @@ class WebDownloaderBase(ABC):
         return results
 
     async def async_download(self, urls: str | list[str]) -> Any:
+        """Download the web pages asynchronously."""
         if isinstance(urls, str):
             urls = [urls]
         results = await asyncio.gather(
@@ -46,6 +54,13 @@ class WebDownloaderBase(ABC):
 
     @abstractmethod
     def download_page(self, url: str) -> Any:
+        """Download the web page.
+
+        :param url: The url to download.
+        :type url: str
+        :return: The downloaded web pages.
+        :rtype: Any
+        """
         return
 
 

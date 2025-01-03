@@ -35,10 +35,23 @@ class DenseIndexBase(ABC):
 
     @abstractmethod
     def build_index(self, embeddings: np.ndarray) -> None:
+        """Build the index with embeddings.
+
+        :param embeddings: The embeddings to build the index.
+        :type embeddings: np.ndarray
+        :return: None
+        """
         return
 
     def add_embeddings(self, embeddings: np.ndarray, serialize: bool = True) -> None:
-        """Add embeddings to the index."""
+        """Add embeddings to the index.
+
+        :param embeddings: The embeddings to add.
+        :type embeddings: np.ndarray
+        :param serialize: Whether to serialize the index after adding embeddings.
+        :type serialize: bool
+        :return: None
+        """
         assert self.is_trained, "Index is not trained, please build the index first."
         p_logger = SimpleProgressLogger(
             logger, total=embeddings.shape[0], interval=self.log_interval
@@ -64,14 +77,14 @@ class DenseIndexBase(ABC):
     ) -> tuple[np.ndarray, np.ndarray]:
         """Search for the top_k most similar embeddings to the query.
 
-        Args:
-            query (np.ndarray): query embeddings. [n, d]
-            top_k (int, optional): Number of most similar embeddings to return. Defaults to 10.
-            search_kwargs (dict, optional): Additional search arguments. Defaults to {}.
-
-        Returns:
-            ids (np.ndarray): [n, k]
-            scores (np.ndarray): [n, k]
+        :param query: The query embeddings with shape [n, d].
+        :type query: np.ndarray
+        :param top_k: The number of most similar embeddings to return, defaults to 10.
+        :type top_k: int, optional
+        :param search_kwargs: Additional search arguments.
+        :type search_kwargs: Any
+        :return: The indices and scores of the top_k most similar embeddings with shape [n, k].
+        :rtype: tuple[np.ndarray, np.ndarray]
         """
         scores = []
         indices = []

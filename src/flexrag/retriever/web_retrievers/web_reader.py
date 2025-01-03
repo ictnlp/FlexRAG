@@ -35,11 +35,10 @@ class WebReaderBase(ABC):
         """
         Parse the retrieved contexts into LLM readable format.
 
-        Args:
-            retrieved_contexts (list[WebRetrievedContext]): Contexts retrieved by the WebRetriever.
-
-        Returns:
-            list[RetrievedContext]: Contexts that can be fed into the LLM.
+        :param retrieved_contexts: Contexts retrieved by the WebRetriever.
+        :type retrieved_contexts: list[WebRetrievedContext]
+        :return: Contexts that can be fed into the LLM.
+        :rtype: list[RetrievedContext]
         """
         return
 

@@ -18,6 +18,7 @@ The defination of the configuration structure for the `rebuid_index` entrypoint 
 ```{eval-rst}
 .. autoclass:: flexrag.entrypoints.rebuild_index::DenseRetrieverConfig
     :members:
+    :noindex:
 ```
 
 ### run_assistant

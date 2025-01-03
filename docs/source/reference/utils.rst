@@ -9,5 +9,5 @@ Cache
 
 Other Utils
 -----------
-.. automodule:: flexrag.utils
+.. autoclass:: flexrag.utils.Register
     :members:

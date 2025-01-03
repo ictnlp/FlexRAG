@@ -140,6 +140,7 @@ class RetrieverBase(ABC):
         query: list[str],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
+        """Search queries asynchronously."""
         return await asyncio.to_thread(
             self.search,
             query=query,
@@ -154,17 +155,19 @@ class RetrieverBase(ABC):
     ) -> list[list[RetrievedContext]]:
         """Search queries.
 
-        Args:
-            query (list[str]): Queries to search.
-
-        Returns:
-            list[list[RetrievedContext]]: A batch of list that contains k RetrievedContext.
+        :param query: Queries to search.
+        :type query: list[str]
+        :param search_kwargs: Keyword arguments, contains other search arguments.
+        :type search_kwargs: Any
+        :return: A batch of list that contains k RetrievedContext.
+        :rtype: list[list[RetrievedContext]]
         """
         return
 
     @property
     @abstractmethod
     def fields(self) -> list[str]:
+        """The fields of the retrieved data."""
         return
 
     def test_speed(
@@ -173,6 +176,15 @@ class RetrieverBase(ABC):
         test_times: int = 10,
         **search_kwargs,
     ) -> float:
+        """Test the speed of the retriever.
+
+        :param sample_num: The number of samples to test.
+        :type sample_num: int, optional
+        :param test_times: The number of times to test.
+        :type test_times: int, optional
+        :return: The time consumed for retrieval.
+        :rtype: float
+        """
         from nltk.corpus import brown
 
         total_times = []
@@ -204,7 +216,11 @@ class LocalRetriever(RetrieverBase):
     @abstractmethod
     def add_passages(self, passages: Iterable[dict[str, Any]]):
         """
-        Add passages to the retriever database
+        Add passages to the retriever database.
+
+        :param passages: The passages to add.
+        :type passages: Iterable[dict[str, str]]
+        :return: None
         """
         return
 
@@ -216,11 +232,10 @@ class LocalRetriever(RetrieverBase):
     ) -> list[list[RetrievedContext]]:
         """Search queries using local retriever.
 
-        Args:
-            query (list[str]): Queries to search.
-
-        Returns:
-            list[list[RetrievedContext]]: A batch of list that contains k RetrievedContext.
+        :param query: Queries to search.
+        :type query: list[str]
+        :return: A batch of list that contains k RetrievedContext.
+        :rtype: list[list[RetrievedContext]]
         """
         return
 
@@ -246,10 +261,12 @@ class LocalRetriever(RetrieverBase):
 
     @abstractmethod
     def clean(self) -> None:
+        """Clean the retriever database."""
         return
 
     @abstractmethod
     def __len__(self):
+        """Return the number of documents in the retriever database."""
         return
 
 

@@ -23,8 +23,8 @@ Local retrievers are used to retrieve data from the local knowledge base.
 
 .. autoclass:: flexrag.retriever.LocalRetriever
     :members:
-    :inherited-members:
     :show-inheritance:
+    :exclude-members: search
 
 
 .. BM25S Retriever
@@ -35,6 +35,7 @@ Local retrievers are used to retrieve data from the local knowledge base.
 .. autoclass:: flexrag.retriever.BM25SRetriever
     :members:
     :show-inheritance:
+    :exclude-members: add_passages, clean, search_batch, fields
 
 
 .. Dense Retriever
@@ -45,6 +46,7 @@ Local retrievers are used to retrieve data from the local knowledge base.
 .. autoclass:: flexrag.retriever.DenseRetriever
     :members:
     :show-inheritance:
+    :exclude-members: add_passages, clean, search_batch, fields
 
 
 .. Elastic Search Retriever
@@ -55,6 +57,7 @@ Local retrievers are used to retrieve data from the local knowledge base.
 .. autoclass:: flexrag.retriever.ElasticRetriever
     :members:
     :show-inheritance:
+    :exclude-members: add_passages, clean, search_batch, fields
 
 
 .. Hyde Retriever
@@ -65,6 +68,7 @@ Local retrievers are used to retrieve data from the local knowledge base.
 .. autoclass:: flexrag.retriever.HydeRetriever
     :members:
     :show-inheritance:
+    :exclude-members: search_batch
 
 Dense Index
 -----------
@@ -87,6 +91,7 @@ Dense Index is used in DenseRetriever to store and retrieve dense embeddings.
 .. autoclass:: flexrag.retriever.index.AnnoyIndex
     :members:
     :show-inheritance:
+    :exclude-members: build_index, clean, deserialize, embedding_size, is_trained, serialize
 
 
 .. Faiss Index
@@ -97,6 +102,7 @@ Dense Index is used in DenseRetriever to store and retrieve dense embeddings.
 .. autoclass:: flexrag.retriever.index.FaissIndex
     :members:
     :show-inheritance:
+    :exclude-members: build_index, clean, deserialize, embedding_size, is_trained, serialize
 
 
 .. ScaNN Index
@@ -107,6 +113,7 @@ Dense Index is used in DenseRetriever to store and retrieve dense embeddings.
 .. autoclass:: flexrag.retriever.index.ScaNNIndex
     :members:
     :show-inheritance:
+    :exclude-members: build_index, clean, deserialize, embedding_size, is_trained, serialize
 
 Web Retrievers
 --------------
@@ -129,6 +136,7 @@ Web retrievers are used to retrieve data from the web.
 .. autoclass:: flexrag.retriever.BingRetriever
     :members:
     :show-inheritance:
+    :exclude-members: search_item
 
 .. autoclass:: flexrag.retriever.DuckDuckGoRetrieverConfig
     :members:
@@ -137,6 +145,7 @@ Web retrievers are used to retrieve data from the web.
 .. autoclass:: flexrag.retriever.DuckDuckGoRetriever
     :members:
     :show-inheritance:
+    :exclude-members: search_item
 
 .. autoclass:: flexrag.retriever.GoogleRetrieverConfig
     :members:
@@ -145,6 +154,7 @@ Web retrievers are used to retrieve data from the web.
 .. autoclass:: flexrag.retriever.GoogleRetriever
     :members:
     :show-inheritance:
+    :exclude-members: search_item
 
 .. autoclass:: flexrag.retriever.SerpApiRetrieverConfig
     :members:
@@ -153,6 +163,7 @@ Web retrievers are used to retrieve data from the web.
 .. autoclass:: flexrag.retriever.SerpApiRetriever
     :members:
     :show-inheritance:
+    :exclude-members: search_item
 
 .. autoclass:: flexrag.retriever.WikipediaRetrieverConfig
     :members:
@@ -161,6 +172,7 @@ Web retrievers are used to retrieve data from the web.
 .. autoclass:: flexrag.retriever.WikipediaRetriever
     :members:
     :show-inheritance:
+    :exclude-members: search, fields
 
 
 Web Downloader
@@ -182,6 +194,7 @@ Web downloader is used to download data from the web.
 .. autoclass:: flexrag.retriever.web_retrievers.SimpleWebDownloader
     :members:
     :show-inheritance:
+    :exclude-members: download_page
 
 .. autoclass:: flexrag.retriever.web_retrievers.PuppeteerWebDownloaderConfig
     :members:
@@ -190,6 +203,7 @@ Web downloader is used to download data from the web.
 .. autoclass:: flexrag.retriever.web_retrievers.PuppeteerWebDownloader
     :members:
     :show-inheritance:
+    :exclude-members: download_page, async_download
 
 
 Web Reader
@@ -211,6 +225,7 @@ Web reader is used to convert web data into LLM friendly format.
 .. autoclass:: flexrag.retriever.web_retrievers.JinaReader
     :members:
     :show-inheritance:
+    :exclude-members: fields, read
 
 .. autoclass:: flexrag.retriever.web_retrievers.JinaReaderLMConfig
     :members:
@@ -219,10 +234,12 @@ Web reader is used to convert web data into LLM friendly format.
 .. autoclass:: flexrag.retriever.web_retrievers.JinaReaderLM
     :members:
     :show-inheritance:
+    :exclude-members: fields, read
 
 .. autoclass:: flexrag.retriever.web_retrievers.ScreenshotWebReader
     :members:
     :show-inheritance:
+    :exclude-members: fields, read
 
 .. autoclass:: flexrag.retriever.web_retrievers.ScreenshotWebReaderConfig
     :members:
@@ -231,3 +248,4 @@ Web reader is used to convert web data into LLM friendly format.
 .. autoclass:: flexrag.retriever.web_retrievers.SnippetWebReader
     :members:
     :inherited-members:
+    :exclude-members: fields, read
