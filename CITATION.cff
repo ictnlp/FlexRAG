@@ -4,7 +4,11 @@ authors:
   - family-names: "Zhang"
     given-names: "Zhuocheng"
     orcid: "https://orcid.org/0009-0004-4131-7968"
+  - family-names: "Feng"
+    given-names: "Yang"
+  - family-names: "Zhang"
+    given-names: "Min"
 title: "FlexRAG"
-doi: 10.5281/zenodo.14306984
-date-released: 2024-12-8
+doi: 10.5281/zenodo.14593327
+date-released: 2025-1-4
 url: "https://github.com/ictnlp/flexrag"

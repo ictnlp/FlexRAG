@@ -3,8 +3,10 @@
 </p>
 
 ![Language](https://img.shields.io/badge/language-python-brightgreen)
-![github license](https://img.shields.io/github/license/ictnlp/flexrag)
-<!-- [![DOI](https://zenodo.org/badge/900151663.svg)](https://doi.org/10.5281/zenodo.14306983) -->
+[![github license](https://img.shields.io/github/license/ictnlp/flexrag)](LICENSE)
+[![Read the Docs](https://img.shields.io/readthedocs/flexrag)](https://flexrag.readthedocs.io/en/latest/)
+[![PyPI - Version](https://img.shields.io/pypi/v/flexrag)](https://pypi.org/project/flexrag/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14593327.svg)](https://doi.org/10.5281/zenodo.14593327)
 
 \[ [English](README.md) | [中文](README-zh.md) \]
 
@@ -13,6 +15,7 @@ FlexRAG 是一个灵活的高性能框架，专为检索增强生成 (RAG) 任�
 # 📖 目录
 - [📖 目录](#-目录)
 - [✨ 框架特色](#-框架特色)
+- [📢 最新消息](#-最新消息)
 - [🚀 框架入门](#-框架入门)
   - [步骤0. 安装](#步骤0-安装)
     - [`pip`安装](#pip安装)
@@ -40,6 +43,8 @@ FlexRAG 是一个灵活的高性能框架，专为检索增强生成 (RAG) 任�
 - **科研及开发友好**: 支持多种开发方式。此外，FlexRAG 提供了一个伴生仓库，[flexrag_examples](https://github.com/ictnlp/flexrag_examples)，来帮助您复现各类RAG算法。
 - **轻量化**: FlexRAG 采用最少的开销设计，高效且易于集成到您的项目中。
 
+# 📢 最新消息
+- **2025-01-05**: FlexRAG 的[文档](https://flexrag.readthedocs.io/en/latest/)现已上线。
 
 # 🚀 框架入门
 

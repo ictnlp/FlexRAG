@@ -3,8 +3,10 @@
 </p>
 
 ![Language](https://img.shields.io/badge/language-python-brightgreen)
-![github license](https://img.shields.io/github/license/ictnlp/flexrag)
-<!-- [![DOI](https://zenodo.org/badge/900151663.svg)](https://doi.org/10.5281/zenodo.14306983) -->
+[![github license](https://img.shields.io/github/license/ictnlp/flexrag)](LICENSE)
+[![Read the Docs](https://img.shields.io/readthedocs/flexrag)](https://flexrag.readthedocs.io/en/latest/)
+[![PyPI - Version](https://img.shields.io/pypi/v/flexrag)](https://pypi.org/project/flexrag/)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14593327.svg)](https://doi.org/10.5281/zenodo.14593327)
 
 \[ [English](README.md) | [中文](README-zh.md) \]
 
@@ -15,6 +17,7 @@ https://github.com/user-attachments/assets/4dfc0ec9-686b-40e2-b1f0-daa2b918e093
 # 📖 Table of Contents
 - [📖 Table of Contents](#-table-of-contents)
 - [✨ Key Features](#-key-features)
+- [📢 News](#-news)
 - [🚀 Getting Started](#-getting-started)
   - [Step 0. Installation](#step-0-installation)
     - [Install from pip](#install-from-pip)
@@ -42,6 +45,8 @@ https://github.com/user-attachments/assets/4dfc0ec9-686b-40e2-b1f0-daa2b918e093
 - **Research & Development Friendly**: Supports multiple development modes and includes a companion repository, [flexrag_examples](https://github.com/ictnlp/flexrag_examples), to help you reproduce various RAG algorithms with ease.
 - **Lightweight**: Designed with minimal overhead, FlexRAG is efficient and easy to integrate into your project.
 
+# 📢 News
+- **2025-01-05**: Documentation for FlexRAG is now available. Check out the [documentation](https://flexrag.readthedocs.io/en/latest/) for more details.
 
 # 🚀 Getting Started
 
