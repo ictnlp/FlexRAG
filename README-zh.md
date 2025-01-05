@@ -77,7 +77,7 @@ gzip -d psgs_w100.tsv.gz
 ### 构建索引
 下载语料库后，您需要为检索器构建索引。如果您想使用密集检索器，您可以运行以下命令来构建索引：
 ```bash
-CORPUS_PATH=psgs_w100.tsv.gz
+CORPUS_PATH=[psgs_w100.tsv]
 CORPUS_FIELDS='[title,text]'
 DB_PATH=<path_to_database>
 
@@ -100,7 +100,7 @@ python -m flexrag.entrypoints.prepare_index \
 
 如果您想使用稀疏检索器，您可以运行以下命令来构建索引：
 ```bash
-CORPUS_PATH=psgs_w100.tsv.gz
+CORPUS_PATH=[psgs_w100.tsv]
 CORPUS_FIELDS='[title,text]'
 DB_PATH=<path_to_database>
 
