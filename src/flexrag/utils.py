@@ -62,6 +62,9 @@ class SimpleProgressLogger:
             self.logger.info(f"{self.desc}: {num_str} {time_str}")
         return
 
+    def __repr__(self) -> str:
+        return f"ProgressLogger({self.current}/{self.total})"
+
 
 RegistedType = TypeVar("RegistedType")
 

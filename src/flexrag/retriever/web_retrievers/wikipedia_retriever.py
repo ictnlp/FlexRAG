@@ -84,7 +84,7 @@ class WikipediaRetriever(RetrieverBase):
                         page_content += self._clear_str(p)
                         if not p.endswith("\n"):
                             page_content += "\n"
-                    summary = self._get_summary(page_content)
+                summary = self._get_summary(page_content)
         return RetrievedContext(
             retriever=self.name,
             query=query,
