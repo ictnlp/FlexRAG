@@ -84,7 +84,7 @@ gzip -d psgs_w100.tsv.gz
 ### Prepare the Index
 After downloading the corpus, you need to build the index for the retriever. If you want to employ the dense retriever, you can simply run the following command to build the index:
 ```bash
-CORPUS_PATH=psgs_w100.tsv.gz
+CORPUS_PATH=[psgs_w100.tsv]
 CORPUS_FIELDS='[title,text]'
 DB_PATH=<path_to_database>
 
@@ -107,7 +107,7 @@ python -m flexrag.entrypoints.prepare_index \
 
 If you want to employ the sparse retriever, you can run the following command to build the index:
 ```bash
-CORPUS_PATH=psgs_w100.tsv.gz
+CORPUS_PATH=[psgs_w100.tsv]
 CORPUS_FIELDS='[title,text]'
 DB_PATH=<path_to_database>
 
