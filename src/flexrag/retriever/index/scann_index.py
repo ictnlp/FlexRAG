@@ -44,12 +44,19 @@ class ScaNNIndex(DenseIndexBase):
         return
 
     def build_index(self, embeddings: np.ndarray) -> None:
+        # prepare arguments
         if self.is_trained:
             self.clean()
         if self.cfg.distance_function == "IP":
             distance_measure = "dot_product"
         else:
             distance_measure = "squared_l2"
+        train_num = (
+            len(embeddings)
+            if self.cfg.index_train_num <= 0
+            else self.cfg.index_train_num
+        )
+        # prepare builder
         builder = (
             self.scann.scann_ops_pybind.builder(
                 embeddings,
@@ -59,7 +66,7 @@ class ScaNNIndex(DenseIndexBase):
             .tree(
                 num_leaves=self.cfg.num_leaves,
                 num_leaves_to_search=self.cfg.num_leaves_to_search,
-                training_sample_size=self.cfg.index_train_num,
+                training_sample_size=train_num,
             )
             .score_ah(
                 dimensions_per_block=self.cfg.dimensions_per_block,
@@ -70,6 +77,7 @@ class ScaNNIndex(DenseIndexBase):
         builder.set_n_training_threads(self.cfg.threads)
         ids = list(np.arange(len(embeddings)))
         ids = [str(i) for i in ids]
+        # build index
         self.index = builder.build(docids=ids)
         self.index.set_num_threads(self.cfg.threads)
         self.serialize()
