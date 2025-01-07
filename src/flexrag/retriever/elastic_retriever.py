@@ -169,7 +169,9 @@ class ElasticRetriever(LocalRetriever):
         return
 
     def __len__(self) -> int:
-        return self.client.count(index=self.index_name)["count"]
+        if self.index_name in self.indices:
+            return self.client.count(index=self.index_name)["count"]
+        return 0
 
     @property
     def indices(self) -> list[str]:
