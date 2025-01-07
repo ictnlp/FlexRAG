@@ -78,7 +78,8 @@ def main(cfg: Config):
     def prepare_data():
         for item in LineDelimitedDataset(cfg.corpus_path, cfg.data_ranges):
             # remove unused fields
-            item = {key: item.get(key, "") for key in cfg.saving_fields}
+            if len(cfg.saving_fields) > 0:
+                item = {key: item.get(key, "") for key in cfg.saving_fields}
             # preprocess text fields
             for key in cfg.text_process_fields:
                 text = text_processor(item[key])
