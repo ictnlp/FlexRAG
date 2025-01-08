@@ -93,7 +93,7 @@ python -m flexrag.entrypoints.prepare_index \
     saving_fields=$CORPUS_FIELDS \
     retriever_type=dense \
     dense_config.database_path=$DB_PATH \
-    dense_config.encode_fields='[text]' \
+    dense_config.encode_fields=[text] \
     dense_config.passage_encoder_config.encoder_type=hf \
     dense_config.passage_encoder_config.hf_config.model_path='facebook/contriever' \
     dense_config.passage_encoder_config.hf_config.device_id=[0,1,2,3] \
@@ -116,7 +116,7 @@ python -m flexrag.entrypoints.prepare_index \
     saving_fields=$CORPUS_FIELDS \
     retriever_type=bm25s \
     bm25s_config.database_path=$DB_PATH \
-    bm25s_config.indexed_fields='[title,text]' \
+    bm25s_config.indexed_fields=[title,text] \
     bm25s_config.method=lucene \
     bm25s_config.batch_size=512 \
     bm25s_config.log_interval=100000 \
@@ -315,7 +315,7 @@ FlexRAG is designed with a **modular** architecture, allowing you to easily cust
 </p>
 
 # 📊 Benchmarks
-We have conducted extensive benchmarks using the FlexRAG framework. For more details, please refer to the [benchmarks](benchmarks.md) page.
+We have conducted extensive benchmarks using the FlexRAG framework. For more details, please refer to the [benchmarks](benchmarks/README.md) page.
 
 # 🏷️ License
 This repository is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
