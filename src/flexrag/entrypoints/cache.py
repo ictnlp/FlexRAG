@@ -25,7 +25,7 @@ def main(config: Config):
         case "clear":
             RETRIEVAL_CACHE.clear()
         case "export":
-            with open(config.export_path, "w") as f:
+            with open(config.export_path, "w", encoding="utf-8") as f:
                 for key in RETRIEVAL_CACHE:
                     data = json.loads(key)
                     data["retrieved_contexts"] = RETRIEVAL_CACHE[key]

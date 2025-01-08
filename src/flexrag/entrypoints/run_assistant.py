@@ -68,13 +68,13 @@ def main(config: Config):
         config_path = os.path.join(config.output_path, "config.yaml")
         log_path = os.path.join(config.output_path, "log.txt")
     else:
-        details_path = "/dev/null"
-        eval_score_path = "/dev/null"
-        config_path = "/dev/null"
-        log_path = "/dev/null"
+        details_path = os.devnull
+        eval_score_path = os.devnull
+        config_path = os.devnull
+        log_path = os.devnull
 
     # save config and set logger
-    with open(config_path, "w") as f:
+    with open(config_path, "w", encoding="utf-8") as f:
         OmegaConf.save(config, f)
     handler = logging.FileHandler(log_path)
     LOGGER_MANAGER.add_handler(handler)
@@ -87,7 +87,7 @@ def main(config: Config):
     golden_contexts = []
     responses = []
     contexts: list[list[RetrievedContext]] = []
-    with open(details_path, "w") as f:
+    with open(details_path, "w", encoding="utf-8") as f:
         for item in testset:
             questions.append(item.question)
             golden_answers.append(item.golden_answers)
@@ -121,7 +121,7 @@ def main(config: Config):
         golden_contexts=golden_contexts,
         log=True,
     )
-    with open(eval_score_path, "w") as f:
+    with open(eval_score_path, "w", encoding="utf-8") as f:
         json.dump(
             {
                 "eval_scores": resp_score,

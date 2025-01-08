@@ -28,7 +28,7 @@ def _save_error_state(retry_state: RetryCallState) -> Exception:
         "args": retry_state.args,
         "kwargs": retry_state.kwargs,
     }
-    with open("web_retriever_error_state.json", "w") as f:
+    with open("web_retriever_error_state.json", "w", encoding="utf-8") as f:
         json.dump(args, f)
     raise retry_state.outcome.exception()
 

@@ -4,7 +4,7 @@ from .ranker import RANKERS
 from .models import GENERATORS, ENCODERS
 
 
-__VERSION__ = "0.1.4"
+__VERSION__ = "0.1.5"
 
 
 __all__ = [
