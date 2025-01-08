@@ -44,7 +44,7 @@ FlexRAG 是一个灵活的高性能框架，专为检索增强生成 (RAG) 任�
 - **轻量化**: FlexRAG 采用最少的开销设计，高效且易于集成到您的项目中。
 
 # 📢 最新消息
-- **2025-01-08**: FlexRAG 现已支持 Windows 和 MacOS 系统，您可以直接通过 `pip install flexrag` 来安装。
+- **2025-01-08**: FlexRAG 现已支持 Windows 系统，您可以直接通过 `pip install flexrag` 来安装。
 - **2025-01-08**: FlexRAG 在单跳QA数据集上的基准测试现已公开，详情请参考 [benchmarks](benchmarks/README.md) 页面。
 - **2025-01-05**: FlexRAG 的[文档](https://flexrag.readthedocs.io/en/latest/)现已上线。
 
