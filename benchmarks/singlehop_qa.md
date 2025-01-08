@@ -58,9 +58,12 @@ We recommend using facebook/contriever-msmarco or E5 for academic usage as it is
 | Faiss Auto(nprobe=128) |  59.91   | 54.97 | 76.20 | 49.05 | 38.53 | 77.23 |    70.14    | 62.31 | 79.49 |  59.70  | 51.94 | 77.64 |
 | Faiss Auto(nprobe=512) |  64.14   | 59.04 | 81.42 | 49.62 | 39.11 | 77.87 |    70.48    | 62.57 | 79.80 |  61.41  | 53.57 | 79.70 |
 | Faiss Refine           |  64.11   | 58.90 | 81.27 | 48.91 | 38.34 | 77.81 |    70.24    | 62.43 | 79.89 |  61.09  | 53.22 | 79.66 |
-| ScaNN                  |  63.26   | 58.11 | 82.13 |       |       |       |             |       |       |         |       |       |
-| Annoy(40000)           |          |       |       |       |       |       |             |       |       |         |       |       |
-| Annoy(400000)          |          |       |       |       |       |       |             |       |       |         |       |       |
+| ScaNN                  |  63.26   | 58.11 | 82.13 | 49.31 | 39.25 | 77.76 |    70.50    | 62.64 | 79.93 |  61.02  | 53.33 | 79.94 |
+
+
+Observations:
+- Faiss provides a good balance between performance and efficiency.
+- ScaNN offers high retrieval speed and accuracy, but it consumes a large amount of memory, making it suitable for use on platforms with ample memory.
 
 
 ## Reranker Benchmarks
