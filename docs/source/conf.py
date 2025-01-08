@@ -11,7 +11,7 @@ import pathlib
 
 def get_version() -> str:
     version_string_path = pathlib.Path(__file__).parents[2] / "src/flexrag/__init__.py"
-    with open(version_string_path) as f:
+    with open(version_string_path, encoding="utf-8") as f:
         version = re.search(r"__VERSION__ = \"(.*?)\"", f.read()).group(1)
     return version
 

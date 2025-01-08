@@ -49,7 +49,7 @@ def main(config: Config):
         log=True,
     )
     if config.output_path is not None:
-        with open(config.output_path, "w") as f:
+        with open(config.output_path, "w", encoding="utf-8") as f:
             json.dump(
                 {
                     "eval_scores": resp_score,

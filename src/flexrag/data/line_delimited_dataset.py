@@ -12,6 +12,7 @@ class LineDelimitedDataset(Dataset):
         self,
         file_paths: list[str] | str,
         data_ranges: Optional[list[list[int, int]] | list[int, int]] = None,
+        encoding: str = "utf-8",
     ):
         # for single file path
         if isinstance(file_paths, str):
@@ -37,6 +38,7 @@ class LineDelimitedDataset(Dataset):
 
         self.file_paths = file_paths
         self.data_ranges = data_ranges
+        self.encoding = encoding
         return
 
     def __iter__(self) -> Iterator[dict]:
@@ -48,7 +50,7 @@ class LineDelimitedDataset(Dataset):
             if end_point > 0:
                 assert end_point > start_point, f"Invalid data range: {data_range}"
             if file_path.endswith(".jsonl"):
-                with open(file_path, "r") as f:
+                with open(file_path, "r", encoding=self.encoding) as f:
                     for i, line in enumerate(f):
                         if i < start_point:
                             continue
@@ -57,7 +59,7 @@ class LineDelimitedDataset(Dataset):
                         yield json.loads(line)
             elif file_path.endswith(".tsv"):
                 title = []
-                with open(file_path, "r") as f:
+                with open(file_path, "r", encoding=self.encoding) as f:
                     for i, row in enumerate(csv_reader(f, delimiter="\t")):
                         if i == 0:
                             title = row
@@ -69,7 +71,7 @@ class LineDelimitedDataset(Dataset):
                         yield dict(zip(title, row))
             elif file_path.endswith(".csv"):
                 title = []
-                with open(file_path, "r") as f:
+                with open(file_path, "r", encoding=self.encoding) as f:
                     for i, row in enumerate(csv_reader(f)):
                         if i == 0:
                             title = row

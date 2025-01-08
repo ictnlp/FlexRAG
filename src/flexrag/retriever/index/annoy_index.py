@@ -118,14 +118,14 @@ class AnnoyIndex(DenseIndexBase):
         if not os.path.exists(os.path.dirname(self.index_path)):
             os.makedirs(os.path.dirname(self.index_path))
         self.index.save(self.index_path)
-        with open(f"{self.index_path}.meta", "w") as f:
+        with open(f"{self.index_path}.meta", "w", encoding="utf-8") as f:
             f.write(f"distance_function: {self.distance_function}\n")
             f.write(f"embedding_size: {self.embedding_size}\n")
         return
 
     def deserialize(self) -> None:
         logger.info(f"Loading index from {self.index_path}")
-        with open(f"{self.index_path}.meta", "r") as f:
+        with open(f"{self.index_path}.meta", "r", encoding="utf-8") as f:
             self.distance_function = f.readline()[len("distance_function: ") :].strip()
             embedding_size = int(f.readline()[len("embedding_size: ") :].strip())
         match self.distance_function:

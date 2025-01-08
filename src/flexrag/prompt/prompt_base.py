@@ -124,7 +124,7 @@ class ChatPrompt:
             data["history"].append(turn.to_dict())
         for demo in self.demonstrations:
             data["demonstrations"].append([turn.to_dict() for turn in demo])
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
         return
 
@@ -139,7 +139,7 @@ class ChatPrompt:
 
     @classmethod
     def from_json(cls, path: str | PathLike) -> "ChatPrompt":
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         if isinstance(data, list):
             return cls.from_list(data)
@@ -153,7 +153,7 @@ class ChatPrompt:
         )
 
     def load_demonstrations(self, demo_path: str | PathLike):
-        with open(demo_path, "r") as f:
+        with open(demo_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         self.demonstrations = [
             [ChatTurn.from_dict(turn) for turn in demo] for demo in data
@@ -249,7 +249,7 @@ class MultiModelChatPrompt:
             data["history"].append(turn.to_dict())
         for demo in self.demonstrations:
             data["demonstrations"].append([turn.to_dict() for turn in demo])
-        with open(path, "w") as f:
+        with open(path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=4, ensure_ascii=False)
         return
 
@@ -264,7 +264,7 @@ class MultiModelChatPrompt:
 
     @classmethod
     def from_json(cls, path: str | PathLike) -> "ChatPrompt":
-        with open(path, "r") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
         if isinstance(data, list):
             return cls.from_list(data)
@@ -288,7 +288,7 @@ class MultiModelChatPrompt:
         return images
 
     def load_demonstrations(self, demo_path: str | PathLike):
-        with open(demo_path, "r") as f:
+        with open(demo_path, "r", encoding="utf-8") as f:
             data = json.load(f)
         self.demonstrations = [
             [MultiModelChatTurn.from_dict(turn) for turn in demo] for demo in data

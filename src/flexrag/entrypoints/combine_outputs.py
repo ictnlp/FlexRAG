@@ -47,10 +47,10 @@ def main(cfg: Config):
     golden_contexts = []
     responses = []
     contexts = []
-    with open(output_details_path, "w") as f:
+    with open(output_details_path, "w", encoding="utf-8") as f:
         for result_path in cfg.result_paths:
             details_path = os.path.join(result_path, "details.jsonl")
-            for line in open(details_path, "r"):
+            for line in open(details_path, "r", encoding="utf-8"):
                 f.write(line)
                 data = json.loads(line)
                 questions.append(data["question"])
@@ -69,7 +69,7 @@ def main(cfg: Config):
         golden_contexts=golden_contexts,
         log=True,
     )
-    with open(output_eval_score_path, "w") as f:
+    with open(output_eval_score_path, "w", encoding="utf-8") as f:
         json.dump(
             {
                 "eval_scores": resp_score,

@@ -46,6 +46,7 @@ https://github.com/user-attachments/assets/4dfc0ec9-686b-40e2-b1f0-daa2b918e093
 - **Lightweight**: Designed with minimal overhead, FlexRAG is efficient and easy to integrate into your project.
 
 # 📢 News
+- **2025-01-08**: We provide wheels on Windows & MacOS for FlexRAG. You can install FlexRAG via pip on Windows & MacOS now.
 - **2025-01-08**: The benchmark of FlexRAG on Single-hop QA tasks is now available. Check out the [benchmarks](benchmarks/README.md) for more details.
 - **2025-01-05**: Documentation for FlexRAG is now available. Check out the [documentation](https://flexrag.readthedocs.io/en/latest/) for more details.
 
