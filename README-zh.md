@@ -91,7 +91,7 @@ python -m flexrag.entrypoints.prepare_index \
     saving_fields=$CORPUS_FIELDS \
     retriever_type=dense \
     dense_config.database_path=$DB_PATH \
-    dense_config.encode_fields='[text]' \
+    dense_config.encode_fields=[text] \
     dense_config.passage_encoder_config.encoder_type=hf \
     dense_config.passage_encoder_config.hf_config.model_path='facebook/contriever' \
     dense_config.passage_encoder_config.hf_config.device_id=[0,1,2,3] \
@@ -114,7 +114,7 @@ python -m flexrag.entrypoints.prepare_index \
     saving_fields=$CORPUS_FIELDS \
     retriever_type=bm25s \
     bm25s_config.database_path=$DB_PATH \
-    bm25s_config.indexed_fields='[title,text]' \
+    bm25s_config.indexed_fields=[title,text] \
     bm25s_config.method=lucene \
     bm25s_config.batch_size=512 \
     bm25s_config.log_interval=100000 \
@@ -312,7 +312,7 @@ FlexRAG 采用**模块化**架构设计，让您可以轻松定制和扩展框�
 </p>
 
 # 📊 基准测试
-我们利用 FlexRAG 进行了大量的基准测试，详情请参考 [benchmarks](benchmarks.md) 页面。
+我们利用 FlexRAG 进行了大量的基准测试，详情请参考 [benchmarks](benchmarks/README.md) 页面。
 
 # 🏷️ 许可证
 本仓库采用 **MIT License** 开源协议. 详情请参考 [LICENSE](LICENSE) 文件。
