@@ -1,4 +1,5 @@
 import os
+import re
 import shutil
 from dataclasses import dataclass
 
@@ -6,7 +7,7 @@ import numpy as np
 
 from flexrag.utils import LOGGER_MANAGER
 
-from .index_base import DenseIndexBase, DenseIndexBaseConfig, DENSE_INDEX
+from .index_base import DENSE_INDEX, DenseIndexBase, DenseIndexBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index.scann")
 
@@ -120,12 +121,14 @@ class ScaNNIndex(DenseIndexBase):
             return
         if os.path.exists(self.index_path):
             shutil.rmtree(self.index_path)
-        self.index = self._prepare_index()
+        self.index = None
         return
 
     @property
     def embedding_size(self) -> int:
-        return self.index.num_columns()
+        if self.index is None:
+            raise RuntimeError("Index is not built yet.")
+        return int(re.search("input_dim: [0-9]+", self.index.config()).group()[11:])
 
     @property
     def is_trained(self) -> bool:
