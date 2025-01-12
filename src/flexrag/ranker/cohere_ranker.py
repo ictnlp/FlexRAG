@@ -13,6 +13,18 @@ from .ranker import RankerBase, RankerBaseConfig, RANKERS
 
 @dataclass
 class CohereRankerConfig(RankerBaseConfig):
+    """The configuration for the Cohere ranker.
+
+    :param model: the model name of the ranker. Default is "rerank-multilingual-v3.0".
+    :type model: str
+    :param base_url: the base URL of the Cohere ranker. Default is None.
+    :type base_url: Optional[str]
+    :param api_key: the API key for the Cohere ranker. Required.
+    :type api_key: str
+    :param proxy: the proxy for the request. Default is None.
+    :type proxy: Optional[str]
+    """
+
     model: str = "rerank-multilingual-v3.0"
     base_url: Optional[str] = None
     api_key: str = MISSING
@@ -21,6 +33,8 @@ class CohereRankerConfig(RankerBaseConfig):
 
 @RANKERS("cohere", config_class=CohereRankerConfig)
 class CohereRanker(RankerBase):
+    """CohereRanker: The ranker based on the Cohere API."""
+
     def __init__(self, cfg: CohereRankerConfig) -> None:
         super().__init__(cfg)
         from cohere import Client

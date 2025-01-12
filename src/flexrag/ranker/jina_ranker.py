@@ -12,6 +12,16 @@ from .ranker import RankerBase, RankerBaseConfig, RANKERS
 
 @dataclass
 class JinaRankerConfig(RankerBaseConfig):
+    """The configuration for the Jina ranker.
+
+    :param model: the model name of the ranker. Default is "jina-reranker-v2-base-multilingual".
+    :type model: str
+    :param base_url: the base URL of the Jina ranker. Default is "https://api.jina.ai/v1/rerank".
+    :type base_url: str
+    :param api_key: the API key for the Jina ranker. Required.
+    :type api_key: str
+    """
+
     model: str = "jina-reranker-v2-base-multilingual"
     base_url: str = "https://api.jina.ai/v1/rerank"
     api_key: str = MISSING
@@ -19,6 +29,8 @@ class JinaRankerConfig(RankerBaseConfig):
 
 @RANKERS("jina", config_class=JinaRankerConfig)
 class JinaRanker(RankerBase):
+    """JinaRanker: The ranker based on the Jina API."""
+
     def __init__(self, cfg: JinaRankerConfig) -> None:
         super().__init__(cfg)
         self.headers = {

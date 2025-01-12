@@ -128,7 +128,7 @@ class LocalRetrieverConfig(RetrieverBaseConfig):
 
 @dataclass
 class RetrievedContext:
-    """The retrieved context class.
+    """The dataclass for retrieved context.
 
     :param retriever: The name of the retriever. Required.
     :type retriever: str

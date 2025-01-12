@@ -13,11 +13,19 @@ from .ranker import RankerBase, RankerBaseConfig, RANKERS
 
 @dataclass
 class HFCrossEncoderRankerConfig(RankerBaseConfig, HFModelConfig):
+    """The configuration for the HuggingFace Cross Encoder ranker.
+
+    :param max_encode_length: the maximum length for the input encoding. Default is 512.
+    :type max_encode_length: int
+    """
+
     max_encode_length: int = 512
 
 
 @RANKERS("hf_cross_encoder", config_class=HFCrossEncoderRankerConfig)
 class HFCrossEncoderRanker(RankerBase):
+    """HFCrossEncoderRanker: The ranker based on the HuggingFace Cross Encoder model."""
+
     def __init__(self, cfg: HFCrossEncoderRankerConfig):
         # load model
         super().__init__(cfg)
@@ -56,6 +64,19 @@ class HFCrossEncoderRanker(RankerBase):
 
 @dataclass
 class HFSeq2SeqRankerConfig(RankerBaseConfig, HFModelConfig):
+    """The configuration for the HuggingFace Sequence-to-Sequence ranker.
+
+    :param max_encode_length: the maximum length for the input encoding. Default is 512.
+    :type max_encode_length: int
+    :param input_template: the input template for the seq2seq model.
+        Default is "Query: {query} Document: {candidate} Relevant:".
+    :type input_template: str
+    :param positive_token: the positive token for the seq2seq model. Default is "▁true".
+    :type positive_token: str
+    :param negative_token: the negative token for the seq2seq model. Default is "▁false".
+    :type negative_token: str
+    """
+
     max_encode_length: int = 512
     input_template: str = "Query: {query} Document: {candidate} Relevant:"
     positive_token: str = "▁true"
@@ -64,6 +85,8 @@ class HFSeq2SeqRankerConfig(RankerBaseConfig, HFModelConfig):
 
 @RANKERS("hf_seq2seq", config_class=HFSeq2SeqRankerConfig)
 class HFSeq2SeqRanker(RankerBase):
+    """HFSeq2SeqRanker: The ranker based on the HuggingFace Sequence-to-Sequence model."""
+
     def __init__(self, cfg: HFSeq2SeqRankerConfig):
         # load model
         super().__init__(cfg)
@@ -121,6 +144,22 @@ class HFSeq2SeqRanker(RankerBase):
 
 @dataclass
 class HFColBertRankerConfig(RankerBaseConfig, HFModelConfig):
+    """The configuration for the HuggingFace ColBERT ranker.
+
+    :param base_model_type: the base model type for the ColBERT model. Default is "bert".
+    :type base_model_type: str
+    :param output_dim: the output dimension for the ColBERT model. Default is 128.
+    :type output_dim: int
+    :param max_encode_length: the maximum length for the input encoding. Default is 512.
+    :type max_encode_length: int
+    :param query_token: the query token for the ColBERT model. Default is "[unused0]".
+    :type query_token: str
+    :param document_token: the document token for the ColBERT model. Default is "[unused1]".
+    :type document_token: str
+    :param normalize_embeddings: whether to normalize the embeddings. Default is True.
+    :type normalize_embeddings: bool
+    """
+
     base_model_type: str = "bert"
     output_dim: int = 128
     max_encode_length: int = 512
@@ -131,7 +170,9 @@ class HFColBertRankerConfig(RankerBaseConfig, HFModelConfig):
 
 @RANKERS("hf_colbert", config_class=HFColBertRankerConfig)
 class HFColBertRanker(RankerBase):
-    """Code adapted from https://github.com/hotchpotch/JQaRA/blob/main/evaluator/reranker/colbert_reranker.py"""
+    """HFColBertRanker: The ranker based on the HuggingFace ColBERT model.
+    Code adapted from https://github.com/hotchpotch/JQaRA/blob/main/evaluator/reranker/colbert_reranker.py
+    """
 
     def __init__(self, cfg: HFColBertRankerConfig) -> None:
         super().__init__(cfg)

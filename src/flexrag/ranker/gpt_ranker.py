@@ -17,6 +17,16 @@ GeneratorConfig = GENERATORS.make_config()
 
 @dataclass
 class RankGPTRankerConfig(RankerBaseConfig, GeneratorConfig):
+    """The configuration for the RankGPT ranker.
+
+    :param step_size: the step size for the slide window ranking. Default is 10.
+    :type step_size: int
+    :param window_size: the window size for the slide window ranking. Default is 20.
+    :type window_size: int
+    :param max_chunk_size: the maximum chunk size for the slide window ranking. Default is 300.
+    :type max_chunk_size: int
+    """
+
     step_size: int = 10
     window_size: int = 20
     max_chunk_size: int = 300
@@ -24,7 +34,8 @@ class RankGPTRankerConfig(RankerBaseConfig, GeneratorConfig):
 
 @RANKERS("rank_gpt", config_class=RankGPTRankerConfig)
 class RankGPTRanker(RankerBase):
-    """RankGPTRanker
+    """RankGPTRanker:
+    Rank the candidates based on the query using the Large Language model.
     Code was adapted from the original implementation from https://github.com/sunnweiwei/RankGPT
     """
 

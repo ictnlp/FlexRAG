@@ -13,12 +13,33 @@ logger = LOGGER_MANAGER.get_logger("flexrag.rankers")
 
 @dataclass
 class RankerBaseConfig:
+    """The configuration for the ranker.
+
+    :param reserve_num: the number of candidates to reserve.
+        If it is less than 0, all candidates will be reserved. Default is -1.
+    :type reserve_num: int
+    :param ranking_field: the field name of the ranking field in the retrieved context.
+        If it is None, the ranker will only accept a list of strings as candidates.
+    :type ranking_field: Optional[str]
+    """
+
     reserve_num: int = -1
     ranking_field: Optional[str] = None
 
 
 @dataclass
 class RankingResult:
+    """The result of ranking.
+
+    :param query: the query string. Required.
+    :type query: str
+    :param candidates: the ranked candidates.
+        The results are sorted in descending order by relevance. Required.
+    :type candidates: list[RetrievedContext | str]
+    :param scores: the scores of the ranked candidates. Optional.
+    :type scores: Optional[list[float]]
+    """
+
     query: str
     candidates: list[RetrievedContext]
     scores: Optional[list[float]] = None
