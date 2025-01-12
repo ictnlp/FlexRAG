@@ -100,18 +100,48 @@ def batched_cache(func):
 
 @dataclass
 class RetrieverBaseConfig:
+    """Base configuration class for all retrievers.
+
+    :param log_interval: The interval of logging. Default: 100.
+    :type log_interval: int
+    :param top_k: The number of retrieved documents. Default: 10.
+    :type top_k: int
+    """
+
     log_interval: int = 100
     top_k: int = 10
 
 
 @dataclass
 class LocalRetrieverConfig(RetrieverBaseConfig):
+    """Configuration class for LocalRetriever.
+
+    :param batch_size: The batch size for retrieval. Default: 32.
+    :type batch_size: int
+    :param query_preprocess_pipeline: The text process pipeline for query. Default: TextProcessPipelineConfig.
+    :type query_preprocess_pipeline: TextProcessPipelineConfig
+    """
+
     batch_size: int = 32
     query_preprocess_pipeline: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
 
 
 @dataclass
 class RetrievedContext:
+    """The retrieved context class.
+
+    :param retriever: The name of the retriever. Required.
+    :type retriever: str
+    :param query: The query for retrieval. Required.
+    :type query: str
+    :param data: The retrieved data. Required.
+    :type data: dict
+    :param source: The source of the retrieved data. Default: None.
+    :type source: Optional[str]
+    :param score: The relevance score of the retrieved data. Default: 0.0.
+    :type score: float
+    """
+
     retriever: str
     query: str
     data: dict

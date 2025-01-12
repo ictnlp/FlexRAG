@@ -79,6 +79,7 @@ Online Generators
 .. OpenAI Generators
 .. autoclass:: flexrag.models.OpenAIConfig
     :members:
+    :show-inheritance:
     :inherited-members:
 
 .. autoclass:: flexrag.models.OpenAIGeneratorConfig
@@ -102,6 +103,7 @@ Visual Language Model Generators
 .. HF VLM Generators
 .. autoclass:: flexrag.models.HFVLMGeneratorConfig
     :members:
+    :show-inheritance:
     :inherited-members:
 
 .. autoclass:: flexrag.models.HFVLMGenerator

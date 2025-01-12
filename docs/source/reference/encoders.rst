@@ -81,6 +81,7 @@ Oneline Encoders
 .. OpenAI Encoders
 .. autoclass:: flexrag.models.OpenAIEncoderConfig
     :members:
+    :show-inheritance:
     :inherited-members:
 
 .. autoclass:: flexrag.models.OpenAIEncoder
