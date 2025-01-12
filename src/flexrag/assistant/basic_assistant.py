@@ -16,6 +16,17 @@ GeneratorConfig = GENERATORS.make_config()
 
 @dataclass
 class BasicAssistantConfig(GeneratorConfig, GenerationConfig):
+    """The configuration for the basic assistant.
+
+    :param response_type: The type of response to generate.
+        Defaults to "short". Available options are: "short", "long", "original".
+    :type response_type: str, optional
+    :param prompt_path: The path to the prompt file. Defaults to None.
+    :type prompt_path: str, optional
+    :param use_history: Whether to use history prompt. Defaults to False.
+    :type use_history: bool, optional
+    """
+
     response_type: Choices(["short", "long", "original"]) = "short"  # type: ignore
     prompt_path: Optional[str] = None
     use_history: bool = False

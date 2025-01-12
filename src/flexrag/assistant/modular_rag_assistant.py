@@ -23,6 +23,19 @@ RankerConfig = RANKERS.make_config(default=None)
 class ModularAssistantConfig(
     GeneratorConfig, GenerationConfig, RetrieverConfig, RankerConfig, BasicPackerConfig
 ):
+    """The configuration for the modular assistant.
+
+    :param response_type: The type of response to generate.
+        Defaults to "short". Available options are: "short", "long", "original", "custom".
+    :type response_type: str, optional
+    :param prompt_with_context_path: The path to the prompt file for response with context. Defaults to None.
+    :type prompt_with_context_path: str, optional
+    :param prompt_without_context_path: The path to the prompt file for response without context. Defaults to None.
+    :type prompt_without_context_path: str, optional
+    :param used_fields: The fields to use in the context. Defaults to [].
+    :type used_fields: list[str], optional
+    """
+
     response_type: Choices(["short", "long", "original", "custom"]) = "short"  # type: ignore
     prompt_with_context_path: Optional[str] = None
     prompt_without_context_path: Optional[str] = None

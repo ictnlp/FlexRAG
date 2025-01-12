@@ -9,7 +9,7 @@ The ``Assistant`` class serves as an abstraction for Retrieval-Augmented Generat
 
 .. autoclass:: flexrag.assistant.BasicAssistantConfig
     :members:
-    :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.assistant.BasicAssistant
     :members:
@@ -18,7 +18,7 @@ The ``Assistant`` class serves as an abstraction for Retrieval-Augmented Generat
 
 .. autoclass:: flexrag.assistant.ModularAssistantConfig
     :members:
-    :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.assistant.ModularAssistant
     :members:
