@@ -132,6 +132,8 @@ class DenseRetriever(LocalRetriever):
         query: list[str],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
+        assert self.index.is_trained, "Index is not trained."
+        assert self.query_encoder is not None, "Query encoder is not provided."
         top_k = search_kwargs.get("top_k", self.top_k)
         emb_q = self.query_encoder.encode(query)
         indices, scores = self.index.search(
