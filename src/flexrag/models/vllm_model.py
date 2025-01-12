@@ -7,14 +7,30 @@ from transformers import AutoConfig, PretrainedConfig
 from flexrag.prompt import load_template, ChatPrompt
 from flexrag.utils import Choices, TIME_METER, LOGGER_MANAGER
 
-from .model_base import GENERATORS, GenerationConfig, GeneratorBase, GeneratorBaseConfig
+from .model_base import GENERATORS, GenerationConfig, GeneratorBase
 from .utils import guess_model_name
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.vllm")
 
 
 @dataclass
-class VLLMGeneratorConfig(GeneratorBaseConfig):
+class VLLMGeneratorConfig:
+    """Configuration for VLLMGenerator.
+
+    :param model_path: Path to the model. Required.
+    :type model_path: str
+    :param gpu_memory_utilization: Fraction of GPU memory to use. Default to 0.85.
+    :type gpu_memory_utilization: float
+    :param max_model_len: Maximum length of the model. Defaults to 16384.
+    :type max_model_len: int
+    :param tensor_parallel: The number of tensor parallel. Defaults to 1.
+    :type tensor_parallel: int
+    :param load_dtype: The dtype to load the model. Defaults to "auto". Available options are "auto", "float32", "float16", "bfloat16".
+    :type load_dtype: str
+    :param use_minference: Whether to use minference for Long Sequence Inference. Defaults to False.
+    :type use_minference: bool
+    """
+
     model_path: str = MISSING
     gpu_memory_utilization: float = 0.85
     max_model_len: int = 16384
@@ -66,13 +82,15 @@ class VLLMGenerator(GeneratorBase):
         return
 
     @TIME_METER("vllm_generate")
-    def generate(
+    def _generate(
         self,
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        if not isinstance(prefixes, list):
+            prefixes = [prefixes]
         responses = self.model.generate(
-            prompts=prefixes,
+            prefixes,
             sampling_params=self._get_options(generation_config),
             use_tqdm=False,
         )
@@ -84,16 +102,18 @@ class VLLMGenerator(GeneratorBase):
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        if not isinstance(prefixes, list):
+            prefixes = [prefixes]
         responses = await asyncio.to_thread(
             self.model.generate,
-            prompts=prefixes,
+            prefixes,
             sampling_params=self._get_options(generation_config),
             use_tqdm=False,
         )
         responses = [[i.text for i in resp.outputs] for resp in responses]
         return responses
 
-    def chat(
+    def _chat(
         self,
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),

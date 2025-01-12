@@ -7,11 +7,31 @@ from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER
 
-from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
+from .model_base import ENCODERS, EncoderBase
 
 
 @dataclass
-class SentenceTransformerEncoderConfig(EncoderBaseConfig):
+class SentenceTransformerEncoderConfig:
+    """Configuration for SentenceTransformerEncoder.
+
+    :param model_path: The path to the model. Required.
+    :type model_path: str
+    :param device_id: The device id to use. [] for CPU. Defaults to [].
+    :type device_id: list[int]
+    :param trust_remote_code: Whether to trust remote code. Defaults to False.
+    :type trust_remote_code: bool
+    :param task: The task to use. Defaults to None.
+    :type task: Optional[str]
+    :param prompt_name: The prompt name to use. Defaults to None.
+    :type prompt_name: Optional[str]
+    :param prompt: The prompt to use. Defaults to None.
+    :type prompt: Optional[str]
+    :param prompt_dict: The prompt dictionary to use. Defaults to None.
+    :type prompt_dict: Optional[dict]
+    :param normalize: Whether to normalize embeddings. Defaults to False.
+    :type normalize: bool
+    """
+
     model_path: str = MISSING
     device_id: list[int] = field(default_factory=list)
     trust_remote_code: bool = False
@@ -51,7 +71,7 @@ class SentenceTransformerEncoder(EncoderBase):
         return
 
     @TIME_METER("st_encode")
-    def encode(self, texts: list[str], **kwargs) -> np.ndarray:
+    def _encode(self, texts: list[str], **kwargs) -> np.ndarray:
         args = {
             "sentences": texts,
             "batch_size": len(texts),

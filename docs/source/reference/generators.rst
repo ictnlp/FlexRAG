@@ -1,18 +1,29 @@
 Generators
 ==========
 
-Local Generators
-----------------
-
 .. autoclass:: flexrag.models.GeneratorBase
     :members:
     :inherited-members:
 
 
-.. Hugging Face Generators
-.. autoclass:: flexrag.models.HFGeneratorConfig
+.. autoclass:: flexrag.models.GenerationConfig
     :members:
     :inherited-members:
+
+
+Local Generators
+----------------
+
+
+.. Hugging Face Generators
+.. autoclass:: flexrag.models.HFModelConfig
+    :members:
+    :inherited-members:
+
+
+.. autoclass:: flexrag.models.HFGeneratorConfig
+    :members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.models.HFGenerator
     :members:
@@ -66,9 +77,13 @@ Online Generators
     :exclude-members: async_chat, async_generate, chat, generate
 
 .. OpenAI Generators
-.. autoclass:: flexrag.models.OpenAIGeneratorConfig
+.. autoclass:: flexrag.models.OpenAIConfig
     :members:
     :inherited-members:
+
+.. autoclass:: flexrag.models.OpenAIGeneratorConfig
+    :members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.models.OpenAIGenerator
     :members:

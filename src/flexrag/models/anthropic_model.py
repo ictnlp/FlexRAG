@@ -10,18 +10,29 @@ from omegaconf import MISSING
 from flexrag.prompt import ChatPrompt
 from flexrag.utils import TIME_METER, LOGGER_MANAGER
 
-from .model_base import (
-    GenerationConfig,
-    GeneratorBase,
-    GeneratorBaseConfig,
-    GENERATORS,
-)
+from .model_base import GenerationConfig, GeneratorBase, GENERATORS
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.anthropic")
 
 
 @dataclass
-class AnthropicGeneratorConfig(GeneratorBaseConfig):
+class AnthropicGeneratorConfig:
+    """Configuration for AnthropicGenerator.
+
+    :param model_name: The name of the model. Required.
+    :type model_name: str
+    :param base_url: The base url of the API. Defaults to None.
+    :type base_url: Optional[str]
+    :param api_key: The API key. Defaults to os.environ.get("ANTHROPIC_API_KEY", "EMPTY").
+    :type api_key: str
+    :param verbose: Whether to output verbose logs. Defaults to False.
+    :type verbose: bool
+    :param proxy: The proxy to use. Defaults to None.
+    :type proxy: Optional[str]
+    :param allow_parallel: Whether to allow parallel generation. Defaults to True.
+    :type allow_parallel: bool
+    """
+
     model_name: str = MISSING
     base_url: Optional[str] = None
     api_key: str = os.environ.get("ANTHROPIC_API_KEY", "EMPTY")
@@ -48,7 +59,7 @@ class AnthropicGenerator(GeneratorBase):
         return
 
     @TIME_METER("anthropic_generate")
-    def chat(
+    def _chat(
         self,
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
@@ -114,7 +125,7 @@ class AnthropicGenerator(GeneratorBase):
         return responses
 
     @TIME_METER("anthropic_generate")
-    def generate(
+    def _generate(
         self,
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
