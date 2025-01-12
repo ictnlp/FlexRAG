@@ -7,6 +7,9 @@
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import re
 import pathlib
+import sys
+
+sys.path.insert(0, str(pathlib.Path(__file__).parents[2] / "src"))
 
 
 def get_version() -> str:
