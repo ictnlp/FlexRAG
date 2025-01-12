@@ -148,6 +148,8 @@ class OpenAIGenerator(GeneratorBase):
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        if isinstance(prefixes, str):
+            prefixes = [prefixes]
         gen_cfg = self._get_options(generation_config)
         if self.allow_parallel:
             with ThreadPoolExecutor() as pool:

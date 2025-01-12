@@ -31,6 +31,8 @@ class ModularAssistantConfig(
 
 @ASSISTANTS("modular", config_class=ModularAssistantConfig)
 class ModularAssistant(AssistantBase):
+    """The modular RAG assistant that supports retrieval, reranking, and generation."""
+
     def __init__(self, cfg: ModularAssistantConfig):
         # set basic args
         self.gen_cfg = cfg
@@ -76,16 +78,6 @@ class ModularAssistant(AssistantBase):
     def answer(
         self, question: str
     ) -> tuple[str, list[RetrievedContext], dict[str, Any]]:
-        """Answer the given question.
-
-        Args:
-            question (str): The question to answer.
-
-        Returns:
-            response (str): The response to the question.
-            contexts (list[RetrievedContext]): The contexts used to answer the question.
-            metadata (dict): The chatprompt and the context processing history used by the assistant.
-        """
         ctxs, history = self.search(question)
         response, prompt = self.answer_with_contexts(question, ctxs)
         return response, ctxs, {"prompt": prompt, "search_histories": history}

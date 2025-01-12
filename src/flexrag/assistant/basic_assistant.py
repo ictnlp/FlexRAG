@@ -47,16 +47,6 @@ class BasicAssistant(AssistantBase):
         return
 
     def answer(self, question: str) -> tuple[str, None, dict[str, ChatPrompt]]:
-        """Answer the given question.
-
-        Args:
-            question (str): The question to answer.
-
-        Returns:
-            response (str): The response to the question.
-            None: No contexts are used by the basic assistant.
-            metadata (Optional[dict]): The chatprompt used by the assistant.
-        """
         # prepare system prompt
         if self.history_prompt is not None:
             prompt = deepcopy(self.history_prompt)

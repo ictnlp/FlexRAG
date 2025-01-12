@@ -10,6 +10,8 @@ logger = LOGGER_MANAGER.get_logger("flexrag.assistant.chatqa")
 
 @ASSISTANTS("chatqa", config_class=ModularAssistantConfig)
 class ChatQAAssistant(ModularAssistant):
+    """The Modular assistant that employs the ChatQA model for response generation."""
+
     sys_prompt = (
         "System: This is a chat between a user and an artificial intelligence assistant. "
         "The assistant gives helpful, detailed, and polite answers to the user's questions based on the context. "

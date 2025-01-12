@@ -15,13 +15,13 @@ class AssistantBase(ABC):
     ) -> tuple[str, Optional[list[RetrievedContext]], Optional[dict]]:
         """Answer the given question.
 
-        Args:
-            question (str): The question to answer.
-
-        Returns:
-            response (str): The response to the question.
-            contexts (Optional[list[RetrievedContext]]): The contexts used to answer the question.
-            metadata (Optional[dict]): The metadata of the assistant.
+        :param question: The question to answer.
+        :type question: str
+        :return: A tuple containing the following elements:
+            - The response to the question.
+            - The contexts used to answer the question.
+            - The metadata of the assistant.
+        :rtype: tuple[str, Optional[list[RetrievedContext]], Optional[dict]]
         """
         return
 
