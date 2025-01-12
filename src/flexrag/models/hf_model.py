@@ -40,10 +40,8 @@ from .model_base import (
     ENCODERS,
     GENERATORS,
     EncoderBase,
-    EncoderBaseConfig,
     GenerationConfig,
     GeneratorBase,
-    GeneratorBaseConfig,
     VLMGeneratorBase,
 )
 from .utils import guess_model_name
@@ -240,6 +238,21 @@ def load_hf_model(
 
 @dataclass
 class HFModelConfig:
+    """The Base Configuration for Huggingface Models,
+    including `HFGenerator`, `HFVLMGenerator`, `HFEncoder` and `HFClipEncoder`.
+
+    :param model_path: The path to the model. Required.
+    :type model_path: str
+    :param tokenizer_path: The path to the tokenizer. None for the same as model_path. Default is None.
+    :type tokenizer_path: Optional[str]
+    :param trust_remote_code: Whether to trust remote code. Default is False.
+    :type trust_remote_code: bool
+    :param device_id: The device id to use. [] for using CPU. Default is [].
+    :type device_id: list[int]
+    :param load_dtype: The dtype to load the model. Default is "auto". Available choices are "bfloat16", "bf16", "float32", "fp32", "float16", "fp16", "half", "8bit", "4bit", "auto",
+    :type load_dtype: str
+    """
+
     model_path: str = MISSING
     tokenizer_path: Optional[str] = None
     trust_remote_code: bool = False
@@ -261,7 +274,16 @@ class HFModelConfig:
 
 
 @dataclass
-class HFGeneratorConfig(GeneratorBaseConfig, HFModelConfig):
+class HFGeneratorConfig(HFModelConfig):
+    """Configuration for HFGenerator.
+
+    :param pipeline_parallel: Whether to use pipeline parallel. Default is False.
+    :type pipeline_parallel: bool
+    :param use_minference: Whether to use minference for long sequence inference. Default is False.
+    :type use_minference: bool
+    :param model_type: The type of the model. Default is "causal_lm". Available choices are "causal_lm", "seq2seq".
+    """
+
     pipeline_parallel: bool = False
     use_minference: bool = False
     model_type: Choices(["causal_lm", "seq2seq"]) = "causal_lm"  # type: ignore
@@ -305,7 +327,7 @@ class HFGenerator(GeneratorBase):
 
     @TIME_METER("hf_generate")
     @torch.no_grad()
-    def generate(
+    def _generate(
         self,
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
@@ -364,7 +386,7 @@ class HFGenerator(GeneratorBase):
             generation_config=generation_config,
         )
 
-    def chat(
+    def _chat(
         self,
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
@@ -403,7 +425,13 @@ class HFGenerator(GeneratorBase):
 
 
 @dataclass
-class HFVLMGeneratorConfig(GeneratorBaseConfig, HFModelConfig):
+class HFVLMGeneratorConfig(HFModelConfig):
+    """Configuration for HFVLMGenerator.
+
+    :param pipeline_parallel: Whether to use pipeline parallel. Default is False.
+    :type pipeline_parallel: bool
+    """
+
     pipeline_parallel: bool = False
 
 
@@ -426,7 +454,7 @@ class HFVLMGenerator(VLMGeneratorBase):
 
     @TIME_METER("hf_generate")
     @torch.no_grad()
-    def generate(
+    def _generate(
         self,
         prefixes: list[str],
         images: list[Image],
@@ -464,7 +492,7 @@ class HFVLMGenerator(VLMGeneratorBase):
             responses.append(samples)
         return responses
 
-    def chat(
+    def _chat(
         self,
         prompts: list[MultiModelChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
@@ -489,7 +517,21 @@ class HFVLMGenerator(VLMGeneratorBase):
 
 
 @dataclass
-class HFEncoderConfig(EncoderBaseConfig, HFModelConfig):
+class HFEncoderConfig(HFModelConfig):
+    """Configuration for HFEncoder.
+
+    :param max_encode_length: The maximum length of the input sequence. Default is 512.
+    :type max_encode_length: int
+    :param encode_method: The method to get the embedding. Default is "mean". Available choices are "cls", "mean".
+    :type encode_method: str
+    :param normalize: Whether to normalize the embedding. Default is False.
+    :type normalize: bool
+    :param prompt: The prefix to use. Default is "".
+    :type prompt: str
+    :param task: The task to use. Default is "".
+    :type task: str
+    """
+
     max_encode_length: int = 512
     encode_method: Choices(["cls", "mean"]) = "mean"  # type: ignore
     normalize: bool = False
@@ -542,7 +584,7 @@ class HFEncoder(EncoderBase):
         return embeddings.float().cpu().numpy()
 
     @TIME_METER("hf_encode")
-    def encode(self, texts: list[str | list[str]]) -> np.ndarray:
+    def _encode(self, texts: list[str | list[str]]) -> np.ndarray:
         if self.is_jina:  # for jina-embedding
             return self.model.encode(
                 texts,
@@ -593,7 +635,17 @@ class HFEncoder(EncoderBase):
 
 
 @dataclass
-class HFClipEncoderConfig(EncoderBaseConfig, HFModelConfig):
+class HFClipEncoderConfig(HFModelConfig):
+    """Configuration for HFClipEncoder.
+
+    :param max_encode_length: The maximum length of the input sequence. Default is 512.
+    :type max_encode_length: int
+    :param normalize: Whether to normalize the embedding. Default is False.
+    :type normalize: bool
+    :param convert_to_rgb: Whether to convert the image to RGB. Default is False.
+    :type convert_to_rgb: bool
+    """
+
     max_encode_length: int = 512
     normalize: bool = False
     convert_to_rgb: bool = False
@@ -622,7 +674,7 @@ class HFClipEncoder(EncoderBase):
         self.convert_to_rgb = cfg.convert_to_rgb
         return
 
-    def encode(self, data: list[str | ImageFile]) -> np.ndarray:
+    def _encode(self, data: list[str | ImageFile]) -> np.ndarray:
         if isinstance(data[0], str):
             assert all(isinstance(d, str) for d in data)
             return self.encode_text(data)

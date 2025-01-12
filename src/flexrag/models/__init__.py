@@ -4,6 +4,7 @@ from .cohere_model import (
     CohereEncoderConfig,
 )
 from .hf_model import (
+    HFModelConfig,
     HFEncoder,
     HFEncoderConfig,
     HFGenerator,
@@ -19,7 +20,6 @@ from .model_base import (
     EncoderBase,
     GenerationConfig,
     GeneratorBase,
-    GeneratorBaseConfig,
     VLMGeneratorBase,
     GENERATORS,
     ENCODERS,
@@ -31,6 +31,7 @@ from .ollama_model import (
     OllamaEncoderConfig,
 )
 from .openai_model import (
+    OpenAIConfig,
     OpenAIEncoder,
     OpenAIEncoderConfig,
     OpenAIGenerator,
@@ -46,11 +47,11 @@ from .sentence_transformers_model import (
 __all__ = [
     "GeneratorBase",
     "VLMGeneratorBase",
-    "GeneratorBaseConfig",
     "GenerationConfig",
     "EncoderBase",
     "AnthropicGenerator",
     "AnthropicGeneratorConfig",
+    "HFModelConfig",
     "HFGenerator",
     "HFGeneratorConfig",
     "HFEncoder",
@@ -65,6 +66,7 @@ __all__ = [
     "OllamaEncoderConfig",
     "OpenAIGenerator",
     "OpenAIGeneratorConfig",
+    "OpenAIConfig",
     "OpenAIEncoder",
     "OpenAIEncoderConfig",
     "VLLMGenerator",

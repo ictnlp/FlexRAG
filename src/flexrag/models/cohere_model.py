@@ -1,4 +1,5 @@
 import asyncio
+import os
 from dataclasses import dataclass
 from typing import Optional
 
@@ -7,21 +8,39 @@ import numpy as np
 from numpy import ndarray
 from omegaconf import MISSING
 
-from flexrag.utils import TIME_METER
+from flexrag.utils import TIME_METER, Choices
 
-from .model_base import (
-    EncoderBase,
-    EncoderBaseConfig,
-    ENCODERS,
-)
+from .model_base import ENCODERS, EncoderBase
 
 
 @dataclass
-class CohereEncoderConfig(EncoderBaseConfig):
+class CohereEncoderConfig:
+    """Configuration for CohereEncoder.
+
+    :param model: The model to use. Default is "embed-multilingual-v3.0".
+    :type model: str
+    :param input_type: Specifies the type of input passed to the model. Required for embedding models v3 and higher. Default is "search_document". Available options are "search_document", "search_query", "classification", "clustering", "image".
+    :type input_type: str
+    :param base_url: The base URL of the API. Default is None.
+    :type base_url: Optional[str]
+    :param api_key: The API key to use. Default is os.environ.get("COHERE_API_KEY", MISSING).
+    :type api_key: str
+    :param proxy: The proxy to use. Default is None.
+    :type proxy: Optional[str]
+    """
+
     model: str = "embed-multilingual-v3.0"
-    input_type: str = "search_document"
+    input_type: Choices(  # type: ignore
+        [
+            "search_document",
+            "search_query",
+            "classification",
+            "clustering",
+            "image",
+        ]
+    ) = "search_document"
     base_url: Optional[str] = None
-    api_key: str = MISSING
+    api_key: str = os.environ.get("COHERE_API_KEY", MISSING)
     proxy: Optional[str] = None
 
 
@@ -44,7 +63,7 @@ class CohereEncoder(EncoderBase):
         return
 
     @TIME_METER("cohere_encode")
-    def encode(self, texts: list[str]) -> ndarray:
+    def _encode(self, texts: list[str]) -> ndarray:
         r = self.client.embed(
             texts=texts,
             model=self.model,

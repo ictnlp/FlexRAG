@@ -6,11 +6,21 @@ from omegaconf import MISSING
 from flexrag.prompt import ChatPrompt
 from flexrag.utils import TIME_METER
 
-from .model_base import GENERATORS, GenerationConfig, GeneratorBase, GeneratorBaseConfig
+from .model_base import GENERATORS, GenerationConfig, GeneratorBase
 
 
 @dataclass
-class LlamacppGeneratorConfig(GeneratorBaseConfig):
+class LlamacppGeneratorConfig:
+    """Configuration for LlamacppGenerator.
+
+    :param model_path: The path to the model.
+    :type model_path: str
+    :param use_gpu: Whether to use GPU. Default is False.
+    :type use_gpu: bool
+    :param verbose: Whether to output verbose logs. Default is False.
+    :type verbose: bool
+    """
+
     model_path: str = MISSING
     use_gpu: bool = False
     verbose: bool = False
@@ -30,7 +40,7 @@ class LlamacppGenerator(GeneratorBase):
         return
 
     @TIME_METER("llamacpp_generate")
-    def generate(
+    def _generate(
         self,
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
@@ -54,6 +64,8 @@ class LlamacppGenerator(GeneratorBase):
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        if not isinstance(prefixes, list):
+            prefixes = [prefixes]
         responses: list[list[str]] = []
         options, sample_num = self._get_options(generation_config)
         for prefix in prefixes:
@@ -69,7 +81,7 @@ class LlamacppGenerator(GeneratorBase):
         return responses
 
     @TIME_METER("llamacpp_generate")
-    def chat(
+    def _chat(
         self,
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
@@ -93,6 +105,8 @@ class LlamacppGenerator(GeneratorBase):
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        if not isinstance(prompts, list):
+            prompts = [prompts]
         responses: list[list] = []
         options, sample_num = self._get_options(generation_config)
         for prompt in prompts:

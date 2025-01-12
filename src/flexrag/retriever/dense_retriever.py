@@ -29,6 +29,20 @@ EncoderConfig = ENCODERS.make_config(default=None)
 
 @dataclass
 class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
+    """Configuration class for DenseRetriever.
+
+    :param database_path: Path to the database directory. Required.
+    :type database_path: str
+    :param query_encoder_config: Configuration for the query encoder. Default: None.
+    :type query_encoder_config: EncoderConfig
+    :param passage_encoder_config: Configuration for the passage encoder. Default: None.
+    :type passage_encoder_config: EncoderConfig
+    :param refine_factor: Refine factor for the retrieved results. Default: 1.
+    :type refine_factor: int
+    :param encode_fields: Fields to be encoded. None stands for all fields. Default: None.
+    :type encode_fields: Optional[list[str]]
+    """
+
     database_path: str = MISSING
     query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
@@ -132,6 +146,8 @@ class DenseRetriever(LocalRetriever):
         query: list[str],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
+        assert self.index.is_trained, "Index is not trained."
+        assert self.query_encoder is not None, "Query encoder is not provided."
         top_k = search_kwargs.get("top_k", self.top_k)
         emb_q = self.query_encoder.encode(query)
         indices, scores = self.index.search(

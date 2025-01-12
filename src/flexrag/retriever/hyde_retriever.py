@@ -37,6 +37,15 @@ class HydeRewriter:
 
 @dataclass
 class HydeRetrieverConfig(DenseRetrieverConfig, GeneratorConfig):
+    """Configuration class for HydeRetriever.
+
+    :param task: Task for rewriting the query. Default: "WEB_SEARCH".
+        Available options: "WEB_SEARCH", "SCIFACT", "ARGUANA", "TREC_COVID", "FIQA", "DBPEDIA_ENTITY", "TREC_NEWS", "MR_TYDI".
+    :type task: str
+    :param language: Language for rewriting. Default: "en".
+    :type language: str
+    """
+
     task: Choices(HydeRewriter.Prompts.keys()) = "WEB_SEARCH"  # type: ignore
     language: str = "en"
 

@@ -14,10 +14,8 @@ from flexrag.utils import TIME_METER, LOGGER_MANAGER
 from .model_base import (
     GenerationConfig,
     GeneratorBase,
-    GeneratorBaseConfig,
     GENERATORS,
     EncoderBase,
-    EncoderBaseConfig,
     ENCODERS,
 )
 
@@ -25,7 +23,21 @@ logger = LOGGER_MANAGER.get_logger("flexrag.models.ollama")
 
 
 @dataclass
-class OllamaGeneratorConfig(GeneratorBaseConfig):
+class OllamaGeneratorConfig:
+    """Configuration for the OllamaGenerator.
+
+    :param model_name: The name of the model to use. Required.
+    :type model_name: str
+    :param base_url: The base URL of the Ollama server. Required.
+    :type base_url: str
+    :param verbose: Whether to show verbose logs. Default is False.
+    :type verbose: bool
+    :param num_ctx: The number of context tokens to use. Default is 4096.
+    :type num_ctx: int
+    :param allow_parallel: Whether to allow parallel generation. Default is True.
+    :type allow_parallel: bool
+    """
+
     model_name: str = MISSING
     base_url: str = MISSING
     verbose: bool = False
@@ -49,7 +61,7 @@ class OllamaGenerator(GeneratorBase):
         return
 
     @TIME_METER("ollama_generate")
-    def chat(
+    def _chat(
         self,
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
@@ -90,6 +102,8 @@ class OllamaGenerator(GeneratorBase):
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        if not isinstance(prompts, list):
+            prompts = [prompts]
         tasks = []
         options = self._get_options(generation_config)
         for prompt in prompts:
@@ -114,12 +128,14 @@ class OllamaGenerator(GeneratorBase):
         return responses
 
     @TIME_METER("ollama_generate")
-    def generate(
+    def _generate(
         self,
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         # as ollama does not support sample_num, we sample multiple times
+        if not isinstance(prefixes, list):
+            prefixes = [prefixes]
         options = self._get_options(generation_config)
         if self.allow_parallel:
             with ThreadPoolExecutor() as pool:
@@ -156,6 +172,8 @@ class OllamaGenerator(GeneratorBase):
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        if not isinstance(prefixes, list):
+            prefixes = [prefixes]
         tasks = []
         options = self._get_options(generation_config)
         for prefix in prefixes:
@@ -199,7 +217,22 @@ class OllamaGenerator(GeneratorBase):
 
 
 @dataclass
-class OllamaEncoderConfig(EncoderBaseConfig):
+class OllamaEncoderConfig:
+    """Configuration for the OllamaEncoder.
+
+    :param model_name: The name of the model to use. Required.
+    :type model_name: str
+    :param base_url: The base URL of the Ollama server. Required.
+    :type base_url: str
+    :param prompt: The prompt to use. Default is None.
+    :type prompt: Optional[str]
+    :param verbose: Whether to show verbose logs. Default is False.
+    :type verbose: bool
+    :param embedding_size: The size of the embeddings. Default is 768.
+    :type embedding_size: int
+    :param allow_parallel: Whether to allow parallel generation. Default is True.
+    """
+
     model_name: str = MISSING
     base_url: str = MISSING
     prompt: Optional[str] = None
@@ -226,7 +259,7 @@ class OllamaEncoder(EncoderBase):
         return
 
     @TIME_METER("ollama_encode")
-    def encode(self, texts: list[str]) -> ndarray:
+    def _encode(self, texts: list[str]) -> ndarray:
         if self.prompt:
             texts = [f"{self.prompt} {text}" for text in texts]
         if self.allow_parallel:

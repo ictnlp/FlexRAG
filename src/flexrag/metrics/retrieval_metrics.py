@@ -28,6 +28,15 @@ def get_contain_map_py(evidences: list[str], retrieved: list[str]) -> list[list[
 
 @dataclass
 class SuccessRateConfig:
+    """Configuration for SuccessRate metric.
+
+    :param eval_field: The field to evaluate. Defaults to None.
+        If None, only strings are supported as the `retrieved_contexts`.
+    :type eval_field: Optional[str]
+    :param context_preprocess: The preprocessing pipeline for the context. Defaults to TextProcessPipelineConfig.
+    :type context_preprocess: TextProcessPipelineConfig
+    """
+
     eval_field: Optional[str] = None
     context_preprocess: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
 
@@ -53,6 +62,7 @@ class SuccessRate(MetricsBase):
                 success_map.append(False)
                 continue
             if isinstance(ctxs[0], RetrievedContext):
+                assert self.eval_field is not None
                 ctxs = [ctx.data[self.eval_field] for ctx in ctxs]
             if isinstance(ctxs[0], dict):
                 ctxs = [ctx["data"][self.eval_field] for ctx in ctxs]

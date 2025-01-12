@@ -13,11 +13,27 @@ logger = LOGGER_MANAGER.get_logger("flexrag.models")
 
 
 @dataclass
-class GeneratorBaseConfig: ...
-
-
-@dataclass
 class GenerationConfig:
+    """Configuration for text generation.
+
+    :param do_sample: Whether to use sampling for generation. Defaults to True.
+    :type do_sample: bool
+    :param sample_num: The number of samples to generate. Defaults to 1.
+    :type sample_num: int
+    :param temperature: The temperature of the sampling distribution. Defaults to 1.0.
+    :type temperature: float
+    :param max_new_tokens: The maximum number of tokens to generate. Defaults to 512.
+    :type max_new_tokens: int
+    :param top_p: The cumulative probability for nucleus sampling. Defaults to 0.9.
+    :type top_p: float
+    :param top_k: The number of tokens to consider for top-k sampling. Defaults to 50.
+    :type top_k: int
+    :param eos_token_id: The token id for the end of sentence token. Defaults to None.
+    :type eos_token_id: Optional[int]
+    :param stop_str: A list of strings to stop generation. Defaults to [].
+    :type stop_str: list[str]
+    """
+
     do_sample: bool = True
     sample_num: int = 1
     temperature: float = 1.0
@@ -39,26 +55,38 @@ class GenerationConfig:
 
 
 class GeneratorBase(ABC):
-    @abstractmethod
     def chat(
         self,
-        prompts: list[ChatPrompt],
+        prompts: list[ChatPrompt] | list[list[dict]] | ChatPrompt | list[dict],
         generation_config: GenerationConfig = None,
     ) -> list[list[str]]:
         """chat with the model using model templates.
 
         :param prompts: A batch of ChatPrompts.
+        :type prompts: list[ChatPrompt] | list[list[dict]] | ChatPrompt | list[dict]
         :param generation_config: GenerationConfig. Defaults to None.
-        :type prompts: list[ChatPrompt]
         :type generation_config: GenerationConfig
         :return: A batch of chat responses.
         :rtype: list[list[str]]
         """
+        if isinstance(prompts, ChatPrompt) or isinstance(prompts[0], dict):
+            prompts = [prompts]
+        for i in range(len(prompts)):
+            if isinstance(prompts[i], list):
+                prompts[i] = ChatPrompt.from_list(prompts[i])
+        return self._chat(prompts, generation_config=generation_config)
+
+    @abstractmethod
+    def _chat(
+        self,
+        prompts: list[ChatPrompt],
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
         return
 
     async def async_chat(
         self,
-        prompts: list[ChatPrompt],
+        prompts: list[ChatPrompt] | list[list[dict]] | ChatPrompt | list[dict],
         generation_config: GenerationConfig = None,
     ) -> list[list[str]]:
         """The async version of chat."""
@@ -67,21 +95,30 @@ class GeneratorBase(ABC):
         )
         return self.chat(prompts=prompts, generation_config=generation_config)
 
-    @abstractmethod
     def generate(
         self,
-        prefixes: list[str],
+        prefixes: list[str] | str,
         generation_config: GenerationConfig = None,
     ) -> list[list[str]]:
         """generate text with the model using the given prefixes.
 
         :param prefixes: A batch of prefixes.
+        :type prefixes: list[str] | str
         :param generation_config: GenerationConfig. Defaults to None.
-        :type prefixes: list[str]
         :type generation_config: GenerationConfig
         :return: A batch of generated text.
         :rtype: list[list[str]]
         """
+        if isinstance(prefixes, str):
+            prefixes = [prefixes]
+        return self._generate(prefixes, generation_config=generation_config)
+
+    @abstractmethod
+    def _generate(
+        self,
+        prefixes: list[str] | str,
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
         return
 
     async def async_generate(
@@ -97,21 +134,38 @@ class GeneratorBase(ABC):
 
 
 class VLMGeneratorBase(GeneratorBase):
-    @abstractmethod
     def chat(
         self,
-        prompts: list[MultiModelChatPrompt],
+        prompts: (
+            list[MultiModelChatPrompt]
+            | list[list[dict]]
+            | MultiModelChatPrompt
+            | list[dict]
+        ),
         generation_config: GenerationConfig = None,
     ) -> list[list[str]]:
         """chat with the model using model templates.
 
         :param prompts: A batch of MultiModelChatPrompts.
+        :type prompts: list[MultiModelChatPrompt] | list[list[dict]] | MultiModelChatPrompt | list[dict]
         :param generation_config: GenerationConfig. Defaults to None.
-        :type prompts: list[MultiModelChatPrompt]
         :type generation_config: GenerationConfig
         :return: A batch of chat responses.
         :rtype: list[list[str]]
         """
+        if isinstance(prompts, MultiModelChatPrompt) or isinstance(prompts[0], dict):
+            prompts = [prompts]
+        for i in range(len(prompts)):
+            if isinstance(prompts[i], list):
+                prompts[i] = MultiModelChatPrompt.from_list(prompts[i])
+        return self._chat(prompts, generation_config=generation_config)
+
+    @abstractmethod
+    def _chat(
+        self,
+        prompts: list[MultiModelChatPrompt],
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
         return
 
     async def async_chat(
@@ -125,10 +179,9 @@ class VLMGeneratorBase(GeneratorBase):
         )
         return self.chat(prompts=prompts, generation_config=generation_config)
 
-    @abstractmethod
     def generate(
         self,
-        prefixes: list[str],
+        prefixes: list[str] | str,
         images: list[Image],
         generation_config: GenerationConfig = None,
     ) -> list[list[str]]:
@@ -143,6 +196,17 @@ class VLMGeneratorBase(GeneratorBase):
         :return: A batch of generated text.
         :rtype: list[list[str]]
         """
+        if isinstance(prefixes, str):
+            prefixes = [prefixes]
+        return self._generate(prefixes, images, generation_config=generation_config)
+
+    @abstractmethod
+    def _generate(
+        self,
+        prefixes: list[str],
+        images: list[Image],
+        generation_config: GenerationConfig = None,
+    ) -> list[list[str]]:
         return
 
     async def async_generate(
@@ -160,20 +224,22 @@ class VLMGeneratorBase(GeneratorBase):
         )
 
 
-@dataclass
-class EncoderBaseConfig: ...
-
-
 class EncoderBase(ABC):
     @abstractmethod
-    def encode(self, texts: list[str]) -> np.ndarray:
+    def encode(self, texts: list[str] | str) -> np.ndarray:
         """encode the given texts into embeddings.
 
         :param texts: A batch of texts.
-        :type texts: list[str]
+        :type texts: list[str] | str
         :return: A batch of embeddings.
         :rtype: np.ndarray
         """
+        if isinstance(texts, str):
+            texts = [texts]
+        return self._encode(texts)
+
+    @abstractmethod
+    def _encode(self, texts: list[str]) -> np.ndarray:
         return
 
     async def async_encode(self, texts: list[str]) -> np.ndarray:

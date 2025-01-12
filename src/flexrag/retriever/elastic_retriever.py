@@ -19,6 +19,26 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.elastic")
 
 @dataclass
 class ElasticRetrieverConfig(LocalRetrieverConfig):
+    """Configuration class for ElasticRetriever.
+
+    :param host: Host of the ElasticSearch server. Default: "http://localhost:9200".
+    :type host: str
+    :param api_key: API key for the ElasticSearch server. Default: None.
+    :type api_key: Optional[str]
+    :param index_name: Name of the index. Required.
+    :type index_name: str
+    :param custom_properties: Custom properties for building the index. Default: None.
+    :type custom_properties: Optional[dict]
+    :param verbose: Enable verbose logging mode. Default: False.
+    :type verbose: bool
+    :param retry_times: Number of retry times. Default: 3.
+    :type retry_times: int
+    :param retry_delay: Delay time for retry. Default: 0.5.
+    :type retry_delay: float
+    :param id_field: Field name for document ID. None stands for auto-generated ID. Default: None.
+    :type id_field: Optional[str]
+    """
+
     host: str = "http://localhost:9200"
     api_key: Optional[str] = None
     index_name: str = MISSING
@@ -26,7 +46,7 @@ class ElasticRetrieverConfig(LocalRetrieverConfig):
     verbose: bool = False
     retry_times: int = 3
     retry_delay: float = 0.5
-    id_field: str = "id"
+    id_field: Optional[str] = None
 
 
 @RETRIEVERS("elastic", config_class=ElasticRetrieverConfig)

@@ -23,6 +23,19 @@ RankerConfig = RANKERS.make_config(default=None)
 class ModularAssistantConfig(
     GeneratorConfig, GenerationConfig, RetrieverConfig, RankerConfig, BasicPackerConfig
 ):
+    """The configuration for the modular assistant.
+
+    :param response_type: The type of response to generate.
+        Defaults to "short". Available options are: "short", "long", "original", "custom".
+    :type response_type: str, optional
+    :param prompt_with_context_path: The path to the prompt file for response with context. Defaults to None.
+    :type prompt_with_context_path: str, optional
+    :param prompt_without_context_path: The path to the prompt file for response without context. Defaults to None.
+    :type prompt_without_context_path: str, optional
+    :param used_fields: The fields to use in the context. Defaults to [].
+    :type used_fields: list[str], optional
+    """
+
     response_type: Choices(["short", "long", "original", "custom"]) = "short"  # type: ignore
     prompt_with_context_path: Optional[str] = None
     prompt_without_context_path: Optional[str] = None
@@ -31,6 +44,8 @@ class ModularAssistantConfig(
 
 @ASSISTANTS("modular", config_class=ModularAssistantConfig)
 class ModularAssistant(AssistantBase):
+    """The modular RAG assistant that supports retrieval, reranking, and generation."""
+
     def __init__(self, cfg: ModularAssistantConfig):
         # set basic args
         self.gen_cfg = cfg
@@ -76,16 +91,6 @@ class ModularAssistant(AssistantBase):
     def answer(
         self, question: str
     ) -> tuple[str, list[RetrievedContext], dict[str, Any]]:
-        """Answer the given question.
-
-        Args:
-            question (str): The question to answer.
-
-        Returns:
-            response (str): The response to the question.
-            contexts (list[RetrievedContext]): The contexts used to answer the question.
-            metadata (dict): The chatprompt and the context processing history used by the assistant.
-        """
         ctxs, history = self.search(question)
         response, prompt = self.answer_with_contexts(question, ctxs)
         return response, ctxs, {"prompt": prompt, "search_histories": history}

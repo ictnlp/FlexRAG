@@ -22,6 +22,7 @@ Local Ranker
 .. autoclass:: flexrag.ranker.HFCrossEncoderRankerConfig
     :members:
     :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.ranker.HFCrossEncoderRanker
     :members:
@@ -32,6 +33,7 @@ Local Ranker
 .. autoclass:: flexrag.ranker.HFSeq2SeqRankerConfig
     :members:
     :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.ranker.HFSeq2SeqRanker
     :members:
@@ -42,6 +44,7 @@ Local Ranker
 .. autoclass:: flexrag.ranker.HFColBertRankerConfig
     :members:
     :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.ranker.HFColBertRanker
     :members:
@@ -52,6 +55,7 @@ Local Ranker
 .. autoclass:: flexrag.ranker.RankGPTRankerConfig
     :members:
     :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.ranker.RankGPTRanker
     :members:
@@ -64,6 +68,7 @@ Oneline Ranker
 .. autoclass:: flexrag.ranker.CohereRankerConfig
     :members:
     :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.ranker.CohereRanker
     :members:
@@ -74,6 +79,7 @@ Oneline Ranker
 .. autoclass:: flexrag.ranker.JinaRankerConfig
     :members:
     :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.ranker.JinaRanker
     :members:
@@ -84,6 +90,7 @@ Oneline Ranker
 .. autoclass:: flexrag.ranker.MixedbreadRankerConfig
     :members:
     :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.ranker.MixedbreadRanker
     :members:
@@ -94,6 +101,7 @@ Oneline Ranker
 .. autoclass:: flexrag.ranker.VoyageRankerConfig
     :members:
     :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.ranker.VoyageRanker
     :members:

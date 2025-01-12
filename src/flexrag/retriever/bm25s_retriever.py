@@ -19,6 +19,31 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.bm25s")
 
 @dataclass
 class BM25SRetrieverConfig(LocalRetrieverConfig):
+    """Configuration class for BM25SRetriever.
+
+    :param database_path: Path to the database directory. Required.
+    :type database_path: str
+    :param method: BM25S method. Default: "lucene".
+        Available options: "atire", "bm25l", "bm25+", "lucene", "robertson".
+    :type method: str
+    :param idf_method: IDF method. Default: None.
+        Available options: "atire", "bm25l", "bm25+", "lucene", "robertson".
+    :type idf_method: Optional[str]
+    :param backend: Backend for BM25S. Default: "auto".
+        Available options: "numpy", "numba", "auto".
+    :type backend: str
+    :param k1: BM25S parameter k1. Default: 1.5.
+    :type k1: float
+    :param b: BM25S parameter b. Default: 0.75.
+    :type b: float
+    :param delta: BM25S parameter delta. Default: 0.5.
+    :type delta: float
+    :param lang: Language for Tokenization. Default: "english".
+    :type lang: str
+    :param indexed_fields: Fields to be indexed. None stands for all fields. Default: None.
+    :type indexed_fields: Optional[list[str]]
+    """
+
     database_path: str = MISSING
     method: Choices(["atire", "bm25l", "bm25+", "lucene", "robertson"]) = "lucene"  # type: ignore
     idf_method: Optional[Choices(["atire", "bm25l", "bm25+", "lucene", "robertson"])] = None  # type: ignore

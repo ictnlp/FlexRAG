@@ -7,7 +7,7 @@
 |
 
 Welecome to FlexRAG Documentation
-=====================
+=================================
 
 FlexRAG is a flexible and high-performance framework designed for Retrieval-Augmented Generation (RAG) tasks, offering support for multimodal data, seamless configuration management, and out-of-the-box performance for both research and prototyping.
 
@@ -35,6 +35,7 @@ FlexRAG is under active development and is currently in the alpha stage. We welc
    :maxdepth: 1
    :caption: Reference:
 
+   reference/assistant
    reference/encoders
    reference/generators
    reference/retrievers

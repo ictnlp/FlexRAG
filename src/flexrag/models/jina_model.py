@@ -9,15 +9,25 @@ from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER, Choices
 
-from .model_base import (
-    EncoderBase,
-    EncoderBaseConfig,
-    ENCODERS,
-)
+from .model_base import EncoderBase, ENCODERS
 
 
 @dataclass
-class JinaEncoderConfig(EncoderBaseConfig):
+class JinaEncoderConfig:
+    """Configuration for JinaEncoder.
+
+    :param model: The model to use. Default is "jina-embeddings-v3".
+    :type model: str
+    :param base_url: The base URL of the Jina embeddings API. Default is "https://api.jina.ai/v1/embeddings".
+    :type base_url: str
+    :param api_key: The API key for the Jina embeddings API.
+    :type api_key: str
+    :param dimensions: The dimension of the embeddings. Default is 1024.
+    :type dimensions: int
+    :param task: The task for the embeddings. Default is None. Available options are "retrieval.query", "retrieval.passage", "separation", "classification", and "text-matching".
+    :type task: str
+    """
+
     model: str = "jina-embeddings-v3"
     base_url: str = "https://api.jina.ai/v1/embeddings"
     api_key: str = MISSING
@@ -54,7 +64,7 @@ class JinaEncoder(EncoderBase):
         return
 
     @TIME_METER("jina_encode")
-    def encode(self, texts: list[str]) -> ndarray:
+    def _encode(self, texts: list[str]) -> ndarray:
         data = self._data_template.copy()
         data["input"] = texts
         response = requests.post(self.base_url, headers=self.headers, json=data)

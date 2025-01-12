@@ -17,6 +17,23 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.typesense")
 
 @dataclass
 class TypesenseRetrieverConfig(LocalRetrieverConfig):
+    """Configuration class for TypesenseRetriever.
+
+    :param host: Host of the Typesense server. Required.
+    :type host: str
+    :param port: Port of the Typesense server. Default: 8108.
+    :type port: int
+    :param protocol: Protocol of the Typesense server. Default: "http".
+        Available options: "https", "http".
+    :type protocol: str
+    :param api_key: API key for the Typesense server. Required.
+    :type api_key: str
+    :param source: Name of the Typesense collection. Required.
+    :type source: str
+    :param timeout: Timeout for the connection. Default: 200.0.
+    :type timeout: float
+    """
+
     host: str = MISSING
     port: int = 8108
     protocol: Choices(["https", "http"]) = "http"  # type: ignore

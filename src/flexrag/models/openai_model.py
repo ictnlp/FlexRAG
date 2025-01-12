@@ -14,11 +14,9 @@ from flexrag.utils import TIME_METER, LOGGER_MANAGER
 
 from .model_base import (
     EncoderBase,
-    EncoderBaseConfig,
     ENCODERS,
     GenerationConfig,
     GeneratorBase,
-    GeneratorBaseConfig,
     GENERATORS,
 )
 
@@ -26,7 +24,25 @@ logger = LOGGER_MANAGER.get_logger("flexrag.models.openai")
 
 
 @dataclass
-class OpenAIGeneratorConfig(GeneratorBaseConfig):
+class OpenAIConfig:
+    """The Base Configuration for OpenAI Client.
+
+    :param is_azure: Whether the model is hosted on Azure. Default is False.
+    :type is_azure: bool
+    :param model_name: The name of the model to use.
+    :type model_name: str
+    :param base_url: The base URL of the OpenAI API. Default is None.
+    :type base_url: Optional[str]
+    :param api_key: The API key for OpenAI. Default is os.environ.get("OPENAI_API_KEY", "EMPTY").
+    :type api_key: str
+    :param api_version: The API version to use. Default is "2024-07-01-preview".
+    :type api_version: str
+    :param verbose: Whether to show verbose logs. Default is False.
+    :type verbose: bool
+    :param proxy: The proxy to use for the HTTP client. Default is None.
+    :type proxy: Optional[str]
+    """
+
     is_azure: bool = False
     model_name: str = MISSING
     base_url: Optional[str] = None
@@ -34,19 +50,28 @@ class OpenAIGeneratorConfig(GeneratorBaseConfig):
     api_version: str = "2024-07-01-preview"
     verbose: bool = False
     proxy: Optional[str] = None
+
+
+@dataclass
+class OpenAIGeneratorConfig(OpenAIConfig):
+    """Configuration for OpenAI Generator.
+
+    :param allow_parallel: Whether to allow parallel generation. Default is True.
+    :type allow_parallel: bool
+    """
+
     allow_parallel: bool = True
 
 
 @dataclass
-class OpenAIEncoderConfig(EncoderBaseConfig):
-    is_azure: bool = False
-    model_name: str = MISSING
-    base_url: Optional[str] = None
-    api_key: str = os.environ.get("OPENAI_API_KEY", "EMPTY")
-    api_version: str = "2024-07-01-preview"
-    verbose: bool = False
+class OpenAIEncoderConfig(OpenAIConfig):
+    """Configuration for OpenAI Encoder.
+
+    :param is_azure: Whether the model is hosted on Azure. Default is False.
+    :type is_azure: bool
+    """
+
     dimension: Optional[int] = None
-    proxy: Optional[str] = None
 
 
 @GENERATORS("openai", config_class=OpenAIGeneratorConfig)
@@ -87,7 +112,7 @@ class OpenAIGenerator(GeneratorBase):
         return
 
     @TIME_METER("openai_generate")
-    def chat(
+    def _chat(
         self,
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
@@ -125,6 +150,8 @@ class OpenAIGenerator(GeneratorBase):
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        if not isinstance(prompts, list):
+            prompts = [prompts]
         tasks = []
         gen_cfg = self._get_options(generation_config)
         for prompt in prompts:
@@ -143,11 +170,13 @@ class OpenAIGenerator(GeneratorBase):
         return responses
 
     @TIME_METER("openai_generate")
-    def generate(
+    def _generate(
         self,
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        if not isinstance(prefixes, list):
+            prefixes = [prefixes]
         gen_cfg = self._get_options(generation_config)
         if self.allow_parallel:
             with ThreadPoolExecutor() as pool:
@@ -180,6 +209,8 @@ class OpenAIGenerator(GeneratorBase):
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        if not isinstance(prefixes, list):
+            prefixes = [prefixes]
         tasks = []
         gen_cfg = self._get_options(generation_config)
         for prefix in prefixes:
@@ -255,7 +286,7 @@ class OpenAIEncoder(EncoderBase):
         return
 
     @TIME_METER("openai_encode")
-    def encode(self, texts: list[str]) -> np.ndarray:
+    def _encode(self, texts: list[str]) -> np.ndarray:
         if self.dimension is None:
             r = self.client.embeddings.create(model=self.model_name, input=texts)
         else:

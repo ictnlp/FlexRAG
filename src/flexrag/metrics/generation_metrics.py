@@ -10,6 +10,13 @@ from .metrics_base import MetricsBase, METRICS
 
 @dataclass
 class BLEUConfig:
+    """Configuration for BLEU metric.
+
+    :param tokenizer: The tokenizer to use. Defaults to sacrebleu.BLEU.TOKENIZER_DEFAULT.
+        Available choices: Please refer to sacrebleu.BLEU.TOKENIZERS.
+    :type tokenizer: str
+    """
+
     tokenizer: Choices(sacrebleu.BLEU.TOKENIZERS) = sacrebleu.BLEU.TOKENIZER_DEFAULT  # type: ignore
 
 
@@ -34,6 +41,16 @@ class BLEU(MetricsBase):
 
 @dataclass
 class chrFConfig:
+    """Configuration for chrF metric.
+
+    :param chrf_beta: The beta value for the F-score. Defaults to 1.0.
+    :type chrf_beta: float
+    :param chrf_char_order: The order of characters. Defaults to sacrebleu.CHRF.CHAR_ORDER.
+    :type chrf_char_order: int
+    :param chrf_word_order: The order of words. Defaults to sacrebleu.CHRF.WORD_ORDER.
+    :type chrf_word_order: int
+    """
+
     chrf_beta: float = 1.0
     chrf_char_order: int = sacrebleu.CHRF.CHAR_ORDER
     chrf_word_order: int = sacrebleu.CHRF.WORD_ORDER
