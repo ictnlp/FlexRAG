@@ -584,6 +584,7 @@ class HFEncoder(EncoderBase):
         return embeddings.float().cpu().numpy()
 
     @TIME_METER("hf_encode")
+    @torch.no_grad()
     def _encode(self, texts: list[str | list[str]]) -> np.ndarray:
         if self.is_jina:  # for jina-embedding
             return self.model.encode(
@@ -594,21 +595,18 @@ class HFEncoder(EncoderBase):
                 show_progress_bar=False,
                 convert_to_numpy=True,
             )
+
+        # add prompt if needed
         if self.prompt:
             texts = [f"{self.prompt}{i}" for i in texts]
+
+        # prepare encoder
         if (len(texts) >= len(self.devices) * 8) and (self.dp_model is not None):
             encoder = self.dp_model
         else:
             encoder = self.model
-        return self._encode(texts, encoder)
 
-    async def async_encode(self, texts: list[str]) -> np.ndarray:
-        return await asyncio.to_thread(self.encode, texts)
-
-    @torch.no_grad()
-    def _encode(
-        self, texts: list[str | list[str]], model: torch.nn.Module | DP
-    ) -> np.ndarray:
+        # encode
         input_dict = self.tokenizer.batch_encode_plus(
             texts,
             return_tensors="pt",
@@ -616,12 +614,15 @@ class HFEncoder(EncoderBase):
             padding=True,
             truncation=True,
         )  # TODO: This step is slow
-        if not isinstance(model, DP):
-            input_dict = input_dict.to(model.device)
+        if not isinstance(encoder, DP):
+            input_dict = input_dict.to(encoder.device)
         mask = input_dict["attention_mask"]
-        output = model(**input_dict).last_hidden_state
+        output = encoder(**input_dict).last_hidden_state
         embeddings = self.get_embedding(output, mask)
         return embeddings
+
+    async def async_encode(self, texts: list[str]) -> np.ndarray:
+        return await asyncio.to_thread(self.encode, texts)
 
     @property
     def embedding_size(self) -> int:
