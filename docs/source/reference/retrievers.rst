@@ -13,6 +13,10 @@ Retrievers
     :members:
     :inherited-members:
 
+.. autoclass:: flexrag.retriever.RetrieverConfig
+    :members:
+    :inherited-members:
+
 Local Retrievers
 ----------------
 Local retrievers are used to retrieve data from the local knowledge base.
@@ -49,12 +53,23 @@ Local retrievers are used to retrieve data from the local knowledge base.
     :exclude-members: add_passages, clean, search_batch, fields
 
 
-.. Elastic Search Retriever
+.. ElasticSearch Retriever
 .. autoclass:: flexrag.retriever.ElasticRetrieverConfig
     :members:
     :inherited-members:
 
 .. autoclass:: flexrag.retriever.ElasticRetriever
+    :members:
+    :show-inheritance:
+    :exclude-members: add_passages, clean, search_batch, fields
+
+
+.. Typesense Retriever
+.. autoclass:: flexrag.retriever.TypesenseRetrieverConfig
+    :members:
+    :inherited-members:
+
+.. autoclass:: flexrag.retriever.TypesenseRetriever
     :members:
     :show-inheritance:
     :exclude-members: add_passages, clean, search_batch, fields

@@ -5,15 +5,15 @@ from typing import Optional
 import requests
 from omegaconf import MISSING
 
-from flexrag.models import GenerationConfig, GENERATORS
+from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.utils import Register
 
 from ..retriever_base import RetrievedContext
 from .web_downloader import (
     WEB_DOWNLOADERS,
-    PuppeteerWebDownloaderConfig,
     PuppeteerWebDownloader,
+    PuppeteerWebDownloaderConfig,
 )
 
 
@@ -52,7 +52,6 @@ class WebReaderBase(ABC):
 WEB_READERS = Register[WebReaderBase]("web_reader")
 
 
-GeneratorConfig = GENERATORS.make_config()
 WebDownloaderConfig = WEB_DOWNLOADERS.make_config()
 
 

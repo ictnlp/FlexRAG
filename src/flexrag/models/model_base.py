@@ -225,7 +225,6 @@ class VLMGeneratorBase(GeneratorBase):
 
 
 class EncoderBase(ABC):
-    @abstractmethod
     def encode(self, texts: list[str] | str) -> np.ndarray:
         """encode the given texts into embeddings.
 

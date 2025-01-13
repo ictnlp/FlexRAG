@@ -7,15 +7,12 @@ from typing import Optional
 import numpy as np
 from omegaconf import MISSING
 
-from flexrag.models import ENCODERS, GENERATORS
+from flexrag.models import ENCODERS, GENERATORS, EncoderConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.retriever import RetrievedContext
 from flexrag.utils import TIME_METER
 
 from .refiner import REFINERS, RefinerBase
-
-EncoderConfig = ENCODERS.make_config()
-GeneratorConfig = GENERATORS.make_config()
 
 
 @dataclass
@@ -177,6 +174,7 @@ class RecompExtractiveSummarizer(RefinerBase):
 
     def __init__(self, cfg: RecompExtractiveSummarizerConfig) -> None:
         self.model = ENCODERS.load(cfg)
+        assert self.model is not None, "The encoder model is not provided."
         self.concatenate = cfg.concatenate_contexts
         self.top_k = cfg.preserved_sents
         self.substitute = cfg.substitute

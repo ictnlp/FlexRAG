@@ -1,6 +1,6 @@
-from .chunking import CHUNKERS
+from .chunking import CHUNKERS, ChunkerConfig
 from .dataset import ConcateDataset, Dataset
-from .document_parser import DOCUMENTPARSERS
+from .document_parser import DOCUMENTPARSERS, DocumentParserConfig
 from .line_delimited_dataset import LineDelimitedDataset
 from .rag_dataset import (
     RAGTestData,
@@ -22,5 +22,7 @@ __all__ = [
     "TextProcessPipelineConfig",
     "PROCESSORS",
     "CHUNKERS",
+    "ChunkerConfig",
     "DOCUMENTPARSERS",
+    "DocumentParserConfig",
 ]

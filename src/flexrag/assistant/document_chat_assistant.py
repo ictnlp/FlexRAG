@@ -1,21 +1,16 @@
 from dataclasses import dataclass
 from typing import Any
 
-from flexrag.data import CHUNKERS, DOCUMENTPARSERS
-from flexrag.models import GENERATORS, GenerationConfig
+from flexrag.data import CHUNKERS, DOCUMENTPARSERS, ChunkerConfig, DocumentParserConfig
+from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.ranker import RANKERS
+from flexrag.ranker import RANKERS, RankerConfig
 from flexrag.retriever import DenseRetriever, DenseRetrieverConfig, RetrievedContext
 from flexrag.utils import LOGGER_MANAGER
 
 from .assistant import ASSISTANTS, AssistantBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant.modular")
-
-GeneratorConfig = GENERATORS.make_config()
-RankerConfig = RANKERS.make_config(default=None)
-ParserConfig = DOCUMENTPARSERS.make_config(default="markitdown")
-ChunkerConfig = CHUNKERS.make_config(default="sentence")
 
 
 @dataclass
@@ -24,7 +19,7 @@ class DocumentChatAssistantConfig(
     GenerationConfig,
     DenseRetrieverConfig,
     RankerConfig,
-    ParserConfig,
+    DocumentParserConfig,
     ChunkerConfig,
 ): ...
 

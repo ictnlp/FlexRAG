@@ -3,20 +3,15 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from flexrag.context_refine import BasicPacker, BasicPackerConfig
-from flexrag.models import GENERATORS, GenerationConfig
+from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.ranker import RANKERS
-from flexrag.retriever import RETRIEVERS, RetrievedContext
-from flexrag.utils import Choices, LOGGER_MANAGER
+from flexrag.ranker import RANKERS, RankerConfig
+from flexrag.retriever import RETRIEVERS, RetrievedContext, RetrieverConfig
+from flexrag.utils import LOGGER_MANAGER, Choices
 
-from .assistant import ASSISTANTS, AssistantBase, SearchHistory, PREDEFINED_PROMPTS
+from .assistant import ASSISTANTS, PREDEFINED_PROMPTS, AssistantBase, SearchHistory
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant.modular")
-
-
-GeneratorConfig = GENERATORS.make_config()
-RetrieverConfig = RETRIEVERS.make_config(default=None)
-RankerConfig = RANKERS.make_config(default=None)
 
 
 @dataclass
@@ -56,6 +51,7 @@ class ModularAssistant(AssistantBase):
 
         # load generator
         self.generator = GENERATORS.load(cfg)
+        assert self.generator is not None, "Generator is not loaded."
 
         # load retriever
         self.retriever = RETRIEVERS.load(cfg)
