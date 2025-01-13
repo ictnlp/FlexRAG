@@ -5,14 +5,11 @@ from dataclasses import dataclass
 
 import numpy as np
 
-from flexrag.models import GENERATORS
+from flexrag.models import GENERATORS, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.utils import TIME_METER
 
-from .ranker import RankerBase, RankerBaseConfig, RANKERS
-
-
-GeneratorConfig = GENERATORS.make_config()
+from .ranker import RANKERS, RankerBase, RankerBaseConfig
 
 
 @dataclass

@@ -25,6 +25,9 @@ from .web_retrievers import (
 from .hyde_retriever import HydeRetriever, HydeRetrieverConfig
 
 
+RetrieverConfig = RETRIEVERS.make_config(config_name="RetrieverConfig", default=None)
+
+
 __all__ = [
     "BM25SRetriever",
     "BM25SRetrieverConfig",
@@ -46,6 +49,7 @@ __all__ = [
     "TypesenseRetriever",
     "TypesenseRetrieverConfig",
     "RETRIEVERS",
+    "RetrieverConfig",
     "SerpApiRetriever",
     "SerpApiRetrieverConfig",
     "WikipediaRetriever",

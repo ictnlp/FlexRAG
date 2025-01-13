@@ -8,9 +8,14 @@ from .basic_chunkers import (
     SentenceChunkerConfig,
 )
 
+
+ChunkerConfig = CHUNKERS.make_config(default="sentence")
+
+
 __all__ = [
     "ChunkerBase",
     "CHUNKERS",
+    "ChunkerConfig",
     "CharChunker",
     "CharChunkerConfig",
     "TokenChunker",

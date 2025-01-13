@@ -15,10 +15,14 @@ from .voyage_ranker import VoyageRanker, VoyageRankerConfig
 from .ranker import RankerBase, RankerBaseConfig, RANKERS, RankingResult  # isort: skip
 
 
+RankerConfig = RANKERS.make_config(config_name="RankerConfig", default=None)
+
+
 __all__ = [
     "RankerBase",
     "RankerBaseConfig",
     "RANKERS",
+    "RankerConfig",
     "RankingResult",
     "HFCrossEncoderRanker",
     "HFCrossEncoderRankerConfig",

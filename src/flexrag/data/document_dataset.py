@@ -2,16 +2,13 @@ from dataclasses import dataclass, field
 from glob import glob
 from typing import Iterator
 
-from .chunking import CHUNKERS
+from .chunking import CHUNKERS, ChunkerConfig
 from .dataset import Dataset
-from .document_parser import DOCUMENTPARSERS, Document
-
-ParserConfig = DOCUMENTPARSERS.make_config(default="markitdown")
-ChunkerConfig = CHUNKERS.make_config(default=None)
+from .document_parser import DOCUMENTPARSERS, Document, DocumentParserConfig
 
 
 @dataclass
-class DocumentDatasetConfig(ParserConfig, ChunkerConfig):
+class DocumentDatasetConfig(DocumentParserConfig, ChunkerConfig):
     document_paths: list[str] | str = field(default_factory=list)
 
 

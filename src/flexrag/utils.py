@@ -204,7 +204,24 @@ class Register(Generic[RegistedType]):
             for name in self.mainnames
             if self[name]["config_class"] is not None
         ]
-        return make_dataclass(config_name, config_fields)
+        generated_config = make_dataclass(config_name, config_fields)
+
+        # set docstring
+        docstring = (
+            f"Configuration class for {self.name} "
+            f"(name: {config_name}, default: {default}).\n\n"
+        )
+        docstring += f":param {choice_name}: The {self.name} type to use.\n"
+        if allow_multiple:
+            docstring += f":type {choice_name}: list[str]\n"
+        else:
+            docstring += f":type {choice_name}: str\n"
+        for name in self.mainnames:
+            if self[name]["config_class"] is not None:
+                docstring += f":param {self[name]['short_names'][0]}_config: The config for {name}.\n"
+                docstring += f":type {self[name]['short_names'][0]}_config: {self[name]['config_class'].__name__}\n"
+        generated_config.__doc__ = docstring
+        return generated_config
 
     def load(self, config: DictConfig, **kwargs) -> RegistedType | list[RegistedType]:
         """Load the item(s) from the generated config.

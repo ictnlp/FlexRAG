@@ -15,6 +15,10 @@ The ranker is the component that determines the order of the results returned by
     :members:
     :inherited-members:
 
+.. autoclass:: flexrag.ranker.RankerConfig
+    :members:
+    :inherited-members:
+
 
 Local Ranker
 ------------

@@ -44,6 +44,10 @@ from .sentence_transformers_model import (
 )
 
 
+GeneratorConfig = GENERATORS.make_config(config_name="GeneratorConfig")
+EncoderConfig = ENCODERS.make_config(config_name="EncoderConfig", default=None)
+
+
 __all__ = [
     "GeneratorBase",
     "VLMGeneratorBase",

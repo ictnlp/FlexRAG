@@ -1,13 +1,17 @@
 Encoders
 ========
 
-Local Encoders
---------------
-
 .. autoclass:: flexrag.models.EncoderBase
     :members:
     :inherited-members:
 
+.. autoclass:: flexrag.models.EncoderConfig
+    :members:
+    :inherited-members:
+
+
+Local Encoders
+--------------
 
 .. Huggingface Encoders
 .. autoclass:: flexrag.models.HFEncoderConfig

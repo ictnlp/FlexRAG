@@ -1,12 +1,10 @@
 from dataclasses import dataclass
 
-from flexrag.models import GENERATORS, GeneratorBase
+from flexrag.models import GENERATORS, GeneratorBase, GeneratorConfig
 from flexrag.utils import TIME_METER, Choices
 
 from .dense_retriever import DenseRetriever, DenseRetrieverConfig
 from .retriever_base import RETRIEVERS, RetrievedContext
-
-GeneratorConfig = GENERATORS.make_config()
 
 
 class HydeRewriter:
