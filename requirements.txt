@@ -1,6 +1,5 @@
 # basic
 numpy<2.0.0
-tqdm
 tenacity
 hydra-core>=1.3
 omegaconf>=2.3.0
@@ -28,11 +27,13 @@ sacremoses
 opencc
 # retrievers
 pandas
-lancedb
+pylance
 bm25s
 elasticsearch>=8.14.0
 torch>=2.3.0
 beautifulsoup4
 typesense
+httpx
+scipy
 # gui
 gradio>=5.8.0

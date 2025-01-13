@@ -50,3 +50,9 @@ html_theme_options = {
     "repository_url": "https://github.com/ictnlp/flexrag",
     "use_repository_button": True,
 }
+
+# -- Options for autodoc -----------------------------------------------------
+
+autodoc_mock_imports = [
+    "gradio",  # as gradio has a lot of dependencies, we mock it to speed up building the docs.
+]
