@@ -66,6 +66,9 @@ def batched_cache(func):
         disable_cache = search_kwargs.pop(
             "disable_cache", os.environ.get("DISABLE_CACHE", "False")
         )
+        # FIXME: The meta information is too large to be stored in the lmdb.
+        # mdb_put: MDB_MAP_FULL: Environment mapsize limit reached
+        disable_cache = "True"
         if disable_cache == "True":
             return func(self, query, **search_kwargs)
 
