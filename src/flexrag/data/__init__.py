@@ -1,23 +1,31 @@
+# isort: off
+# document chunking
 from .chunking import CHUNKERS, ChunkerConfig
-from .dataset import ConcateDataset, Dataset
+
+# document parser
 from .document_parser import DOCUMENTPARSERS, DocumentParserConfig
+
+# datasets
+from .dataset import ChainDataset, IterableDataset, MappingDataset, ConcatDataset
 from .line_delimited_dataset import LineDelimitedDataset
-from .rag_dataset import (
-    RAGTestData,
-    RAGTestIterableDataset,
-    RetrievalTestData,
-    RetrievalTestIterableDataset,
-)
+from .rag_dataset import RAGTestData, RAGTestIterableDataset
+from .retrieval_dataset import MTEBDataset, MTEBDatasetConfig, RetrievalData
+
+
+# text processor
 from .text_process import PROCESSORS, TextProcessPipeline, TextProcessPipelineConfig
 
 __all__ = [
-    "Dataset",
-    "ConcateDataset",
+    "IterableDataset",
+    "ChainDataset",
+    "MappingDataset",
+    "ConcatDataset",
     "LineDelimitedDataset",
     "RAGTestData",
     "RAGTestIterableDataset",
-    "RetrievalTestData",
-    "RetrievalTestIterableDataset",
+    "RetrievalData",
+    "MTEBDataset",
+    "MTEBDatasetConfig",
     "TextProcessPipeline",
     "TextProcessPipelineConfig",
     "PROCESSORS",

@@ -3,7 +3,7 @@ from glob import glob
 from typing import Iterator
 
 from .chunking import CHUNKERS, ChunkerConfig
-from .dataset import Dataset
+from .dataset import IterableDataset
 from .document_parser import DOCUMENTPARSERS, Document, DocumentParserConfig
 
 
@@ -12,7 +12,7 @@ class DocumentDatasetConfig(DocumentParserConfig, ChunkerConfig):
     document_paths: list[str] | str = field(default_factory=list)
 
 
-class DocumentDataset(Dataset):
+class DocumentDataset(IterableDataset):
     def __init__(self, cfg: DocumentDatasetConfig) -> None:
         # parse paths
         if isinstance(cfg.document_paths, str):

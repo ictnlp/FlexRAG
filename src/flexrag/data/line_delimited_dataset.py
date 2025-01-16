@@ -4,10 +4,10 @@ from itertools import zip_longest
 import json
 from csv import reader as csv_reader
 
-from .dataset import Dataset
+from .dataset import IterableDataset
 
 
-class LineDelimitedDataset(Dataset):
+class LineDelimitedDataset(IterableDataset):
     def __init__(
         self,
         file_paths: list[str] | str,
