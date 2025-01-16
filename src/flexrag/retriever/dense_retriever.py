@@ -9,16 +9,12 @@ import pandas as pd
 from omegaconf import MISSING
 from scipy.spatial.distance import cdist
 
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import ENCODERS, EncoderBase, EncoderConfig
 from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger
 
 from .index import DENSE_INDEX, DenseIndexBase
-from .retriever_base import (
-    RETRIEVERS,
-    LocalRetriever,
-    LocalRetrieverConfig,
-    RetrievedContext,
-)
+from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retreviers.dense")
 

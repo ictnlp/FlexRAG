@@ -1,9 +1,12 @@
 import json
 import os
 from dataclasses import dataclass, field
+from collections import defaultdict
 from typing import Optional
 
 from omegaconf import MISSING
+
+from flexrag.common_dataclass import Context
 
 from .dataset import MappingDataset
 
@@ -11,8 +14,7 @@ from .dataset import MappingDataset
 @dataclass
 class RetrievalData:
     question: str
-    contexts: Optional[list[str]] = None
-    context_ids: Optional[list[str]] = None
+    contexts: Optional[list[Context]] = None
     meta_data: dict = field(default_factory=dict)
 
 
@@ -48,7 +50,7 @@ class MTEBDatasetConfig:
 
 class MTEBDataset(MappingDataset[RetrievalData]):
     def __init__(self, config: MTEBDatasetConfig) -> None:
-        self.dataset = [
+        qrels: list[dict] = [
             json.loads(line)
             for line in open(
                 os.path.join(config.data_path, "qrels", f"{config.subset}.jsonl"),
@@ -56,7 +58,7 @@ class MTEBDataset(MappingDataset[RetrievalData]):
                 encoding=config.encoding,
             )
         ]
-        self.queries = [
+        queries = [
             json.loads(line)
             for line in open(
                 os.path.join(config.data_path, "queries.jsonl"),
@@ -64,10 +66,10 @@ class MTEBDataset(MappingDataset[RetrievalData]):
                 encoding=config.encoding,
             )
         ]
-        self.queries = {query["_id"]: query for query in self.queries}
+        queries = {query["_id"]: query for query in queries}
 
         if config.load_corpus:
-            self.corpus = [
+            corpus = [
                 json.loads(line)
                 for line in open(
                     os.path.join(config.data_path, "corpus.jsonl"),
@@ -75,24 +77,39 @@ class MTEBDataset(MappingDataset[RetrievalData]):
                     encoding=config.encoding,
                 )
             ]
-            self.corpus = {doc["_id"]: doc for doc in self.corpus}
+            corpus = {doc["_id"]: doc for doc in corpus}
         else:
-            self.corpus = None
+            corpus = None
+
+        # merge qrels, queries, and corpus into RetrievalData
+        dataset_map: dict[str, int] = {}
+        self.dataset: list[RetrievalData] = []
+        for qrel in qrels:
+            # construct the context
+            context = Context(
+                context_id=qrel["corpus-id"],
+                score=float(qrel.get("score", 0.0)),
+            )
+            if corpus is not None:
+                context.data = corpus[qrel["corpus-id"]]
+            query = queries[qrel["query-id"]]["text"]
+
+            if qrel["query-id"] not in dataset_map:
+                dataset_map[qrel["query-id"]] = len(self.dataset)
+                self.dataset.append(
+                    RetrievalData(
+                        question=query,
+                        contexts=[context],
+                        meta_data={"query-id": qrel["query-id"]},
+                    )
+                )
+            else:
+                index = dataset_map[qrel["query-id"]]
+                self.dataset[index].contexts.append(context)
         return
 
     def __len__(self) -> int:
         return len(self.dataset)
 
     def __getitem__(self, index: int) -> RetrievalData:
-        data = self.dataset[index]
-        query = self.queries[data["query-id"]]
-        if self.corpus is not None:
-            context = [self.corpus[data["corpus-id"]]]
-        else:
-            context = None
-        return RetrievalData(
-            question=query["text"],
-            context_ids=data["corpus-id"],
-            contexts=context,
-            meta_data={"query-id": data["query-id"]},
-        )
+        return self.dataset[index]

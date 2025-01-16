@@ -5,11 +5,11 @@ from typing import Optional
 import requests
 from omegaconf import MISSING
 
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.utils import Register
 
-from ..retriever_base import RetrievedContext
 from .web_downloader import (
     WEB_DOWNLOADERS,
     PuppeteerWebDownloader,

@@ -5,14 +5,10 @@ from typing import Iterable, Optional
 import bm25s
 from omegaconf import MISSING
 
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.utils import Choices, LOGGER_MANAGER, TIME_METER
 
-from .retriever_base import (
-    RETRIEVERS,
-    LocalRetriever,
-    LocalRetrieverConfig,
-    RetrievedContext,
-)
+from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.bm25s")
 

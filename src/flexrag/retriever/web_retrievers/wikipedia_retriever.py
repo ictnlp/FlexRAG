@@ -5,14 +5,10 @@ from typing import Optional
 import requests
 from bs4 import BeautifulSoup
 
-from flexrag.utils import SimpleProgressLogger, LOGGER_MANAGER
-from ..retriever_base import (
-    RETRIEVERS,
-    RetrievedContext,
-    RetrieverBase,
-    RetrieverBaseConfig,
-)
+from flexrag.common_dataclass import RetrievedContext
+from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger
 
+from ..retriever_base import RETRIEVERS, RetrieverBase, RetrieverBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.web_retriever")
 

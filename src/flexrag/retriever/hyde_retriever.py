@@ -1,10 +1,11 @@
 from dataclasses import dataclass
 
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import GENERATORS, GeneratorBase, GeneratorConfig
 from flexrag.utils import TIME_METER, Choices
 
 from .dense_retriever import DenseRetriever, DenseRetrieverConfig
-from .retriever_base import RETRIEVERS, RetrievedContext
+from .retriever_base import RETRIEVERS
 
 
 class HydeRewriter:

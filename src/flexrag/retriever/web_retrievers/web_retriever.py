@@ -9,11 +9,11 @@ import requests
 from omegaconf import MISSING
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.utils import LOGGER_MANAGER, Choices, SimpleProgressLogger, TIME_METER
 
 from ..retriever_base import (
     RETRIEVERS,
-    RetrievedContext,
     RetrieverBase,
     RetrieverBaseConfig,
     batched_cache,

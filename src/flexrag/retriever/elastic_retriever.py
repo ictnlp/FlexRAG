@@ -5,14 +5,10 @@ from typing import Iterable, Optional
 from omegaconf import MISSING
 from elasticsearch import Elasticsearch
 
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.utils import SimpleProgressLogger, LOGGER_MANAGER, TIME_METER
 
-from .retriever_base import (
-    RETRIEVERS,
-    LocalRetriever,
-    LocalRetrieverConfig,
-    RetrievedContext,
-)
+from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.elastic")
 

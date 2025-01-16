@@ -3,8 +3,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.prompt import ChatPrompt
-from flexrag.retriever import RetrievedContext
 from flexrag.utils import Register
 
 

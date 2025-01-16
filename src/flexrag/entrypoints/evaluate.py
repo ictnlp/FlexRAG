@@ -7,12 +7,12 @@ from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING, OmegaConf
 
 from flexrag.data import LineDelimitedDataset
-from flexrag.metrics import RAGEvaluatorConfig, RAGEvaluator
+from flexrag.metrics import EvaluatorConfig, Evaluator
 from flexrag.utils import LOGGER_MANAGER
 
 
 @dataclass
-class Config(RAGEvaluatorConfig):
+class Config(EvaluatorConfig):
     data_path: str = MISSING
     output_path: Optional[str] = None
 
@@ -39,7 +39,7 @@ def main(config: Config):
     golden_contexts = [i["golden_contexts"] for i in dataset]
 
     # evaluate
-    evaluator = RAGEvaluator(config)
+    evaluator = Evaluator(config)
     resp_score, resp_score_detail = evaluator.evaluate(
         questions=questions,
         responses=responses,

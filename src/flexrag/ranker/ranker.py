@@ -4,7 +4,7 @@ from typing import Optional
 
 import numpy as np
 
-from flexrag.retriever import RetrievedContext
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.utils import Register, LOGGER_MANAGER
 
 

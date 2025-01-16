@@ -6,7 +6,7 @@ import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING, OmegaConf
 
-from flexrag.metrics import RAGEvaluator
+from flexrag.metrics import Evaluator
 from flexrag.utils import LOGGER_MANAGER
 
 
@@ -30,7 +30,7 @@ def main(cfg: Config):
     # load the metadata
     config_path = os.path.join(cfg.result_paths[0], "config.yaml")
     loaded_config = OmegaConf.load(config_path)
-    evaluator = RAGEvaluator(loaded_config.eval_config)
+    evaluator = Evaluator(loaded_config.eval_config)
 
     # prepare output path
     if not os.path.exists(cfg.output_path):

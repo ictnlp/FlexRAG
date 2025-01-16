@@ -1,4 +1,4 @@
-from flexrag.retriever import RetrievedContext
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.utils import LOGGER_MANAGER
 
 from .assistant import ASSISTANTS

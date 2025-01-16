@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from flexrag.retriever import RetrievedContext
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.utils import Register
 
 

@@ -3,14 +3,10 @@ from typing import Generator, Iterable
 
 from omegaconf import MISSING
 
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.utils import Choices, SimpleProgressLogger, LOGGER_MANAGER, TIME_METER
 
-from .retriever_base import (
-    RETRIEVERS,
-    LocalRetriever,
-    LocalRetrieverConfig,
-    RetrievedContext,
-)
+from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.typesense")
 

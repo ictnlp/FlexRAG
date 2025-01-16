@@ -3,12 +3,13 @@ import os
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Optional
+from typing import Any, Iterable
 
 import numpy as np
 import json
 from omegaconf import DictConfig, OmegaConf
 
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.cache import LMDBBackendConfig, PersistentCache, PersistentCacheConfig
 from flexrag.data import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import LOGGER_MANAGER, Register, SimpleProgressLogger
@@ -127,38 +128,6 @@ class LocalRetrieverConfig(RetrieverBaseConfig):
 
     batch_size: int = 32
     query_preprocess_pipeline: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
-
-
-@dataclass
-class RetrievedContext:
-    """The dataclass for retrieved context.
-
-    :param retriever: The name of the retriever. Required.
-    :type retriever: str
-    :param query: The query for retrieval. Required.
-    :type query: str
-    :param data: The retrieved data. Required.
-    :type data: dict
-    :param source: The source of the retrieved data. Default: None.
-    :type source: Optional[str]
-    :param score: The relevance score of the retrieved data. Default: 0.0.
-    :type score: float
-    """
-
-    retriever: str
-    query: str
-    data: dict
-    source: Optional[str] = None
-    score: float = 0.0
-
-    def to_dict(self):
-        return {
-            "retriever": self.retriever,
-            "query": self.query,
-            "source": self.source,
-            "score": self.score,
-            "data": self.data,
-        }
 
 
 class RetrieverBase(ABC):

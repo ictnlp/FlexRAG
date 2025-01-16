@@ -7,6 +7,8 @@ from .metrics_base import MetricsBase, METRICS
 
 
 class MatchingMetrics(MetricsBase):
+    name: str
+
     @abstractmethod
     def compute_item(self, golds: list[str], response: str) -> float:
         return
@@ -19,17 +21,21 @@ class MatchingMetrics(MetricsBase):
         for golds, response in zip(golden_responses, responses):
             matching_list.append(self.compute_item(golds, response))
         matching_score = sum(matching_list) / len(matching_list)
-        return matching_score, {"item_score": matching_list}
+        return {self.name: matching_score}, {"item_score": matching_list}
 
 
 @METRICS("generation_em")
 class ExactMatch(MatchingMetrics):
+    name = "generation_em"
+
     def compute_item(self, golds: list[str], response: str) -> float:
         return float(response in golds)
 
 
 @METRICS("generation_accuracy")
 class Accuracy(MatchingMetrics):
+    name = "generation_accuracy"
+
     def compute_item(self, golds: list[str], response: str) -> float:
         return float(any(gold in response for gold in golds))
 
@@ -55,17 +61,23 @@ def f1_recall_precision(golds: list[str], response: str) -> tuple[float, float, 
 
 @METRICS("generation_f1")
 class F1(MatchingMetrics):
+    name = "generation_f1"
+
     def compute_item(self, golds: list[str], response: str) -> float:
         return f1_recall_precision(golds, response)[0]
 
 
 @METRICS("generation_recall")
 class Recall(MatchingMetrics):
+    name = "generation_recall"
+
     def compute_item(self, golds: list[str], response: str) -> float:
         return f1_recall_precision(golds, response)[1]
 
 
 @METRICS("generation_precision")
 class Precision(MatchingMetrics):
+    name = "generation_precision"
+
     def compute_item(self, golds: list[str], response: str) -> float:
         return f1_recall_precision(golds, response)[2]

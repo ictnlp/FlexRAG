@@ -30,13 +30,13 @@ class BLEU(MetricsBase):
     @TIME_METER("metrics.generation_bleu")
     def compute(
         self, responses: list[str], golden_responses: list[list[str]], **kwargs
-    ) -> tuple[float, dict[str, float]]:
+    ) -> tuple[dict[str, float], dict[str, float]]:
         bleu = sacrebleu.corpus_bleu(
             hypotheses=responses,
             references=golden_responses,
             tokenize=self.tokenizer,
         )
-        return bleu.score, vars(bleu)
+        return {"response_bleu": bleu.score}, vars(bleu)
 
 
 @dataclass
@@ -68,58 +68,62 @@ class chrF(MetricsBase):
     @TIME_METER("metrics.generation_chrf")
     def compute(
         self, responses: list[str], golden_responses: list[list[str]], **kwargs
-    ) -> tuple[float, dict[str, float]]:
+    ) -> tuple[dict[str, float], dict[str, float]]:
         chrf = sacrebleu.corpus_chrf(
             hypotheses=responses,
             references=golden_responses,
             beta=self.beta,
         )
-        return chrf.score, vars(chrf)
+        return {"response_chrf": chrf.score}, vars(chrf)
 
 
+@METRICS("generation_rouge")
 class Rouge(MetricsBase):
-    scorer: rouge.Rouge
+    def __init__(self) -> None:
+        self.scorer = rouge.Rouge(metrics=["rouge-1", "rouge-2", "rouge-l"])
+        return
 
     @TIME_METER("metrics.generation_rouge")
     def compute(
         self, responses: list[str], golden_responses: list[list[str]], **kwargs
-    ) -> tuple[float, dict[str, float]]:
-        score_dict = {"r": [], "p": [], "f": []}
+    ) -> tuple[dict[str, float], dict[str, float]]:
+        score_dict = {
+            "rouge-1": {"r": [], "p": [], "f": []},
+            "rouge-2": {"r": [], "p": [], "f": []},
+            "rouge-l": {"r": [], "p": [], "f": []},
+        }
+        # collect all the scores
         for golds, response in zip(golden_responses, responses):
-            rouge_score = self.compute_item(golds, response)
-            for key in score_dict.keys():
-                score_dict[key].append(rouge_score[key])
-        for key in score_dict.keys():
-            score_dict[key] = sum(score_dict[key]) / len(score_dict[key])
-        return score_dict["f"], score_dict
+            details = self.compute_item(golds, response)
+            for metric in score_dict.keys():
+                for key in ["r", "p", "f"]:
+                    score_dict[metric][key].append(details[metric][key])
+        # average the scores
+        for metric in score_dict.keys():
+            for key in ["r", "p", "f"]:
+                score_dict[metric][key] = sum(score_dict[metric][key]) / len(
+                    score_dict[metric][key]
+                )
+        return {
+            "rouge-1": score_dict["rouge-1"]["f"],
+            "rouge-2": score_dict["rouge-2"]["f"],
+            "rouge-l": score_dict["rouge-l"]["f"],
+        }, score_dict
 
     def compute_item(
         self, golds: list[str], response: str
-    ) -> tuple[float, dict[str, float]]:
-        score_dict = {"r": 0.0, "p": 0.0, "f": 0.0}
+    ) -> tuple[dict[str, float], dict[str, float]]:
+        # as rouge score does not support multiple references, we take the max score.
+        score_dict = {
+            "rouge-1": {"r": 0.0, "p": 0.0, "f": 0.0},
+            "rouge-2": {"r": 0.0, "p": 0.0, "f": 0.0},
+            "rouge-l": {"r": 0.0, "p": 0.0, "f": 0.0},
+        }
         for gold in golds:
-            rouge_score = self.scorer.get_scores(response, gold)
-            for key in score_dict.keys():
-                score_dict[key] = max(score_dict[key], rouge_score[0][key])
-        return score_dict["f"], score_dict
-
-
-@METRICS("generation_rouge-1")
-class Rouge1(Rouge):
-    def __init__(self) -> None:
-        self.scorer = rouge.Rouge(metrics=["rouge-1"])
-        return
-
-
-@METRICS("generation_rouge-2")
-class Rouge2(Rouge):
-    def __init__(self) -> None:
-        self.scorer = rouge.Rouge(metrics=["rouge-2"])
-        return
-
-
-@METRICS("generation_rouge-l")
-class RougeL(Rouge):
-    def __init__(self) -> None:
-        self.scorer = rouge.Rouge(metrics=["rouge-l"])
-        return
+            rouge_score = self.scorer.get_scores(response, gold)[0]
+            for metric in score_dict.keys():
+                for key in ["r", "p", "f"]:
+                    score_dict[metric][key] = max(
+                        score_dict[metric][key], rouge_score[metric][key]
+                    )
+        return score_dict
