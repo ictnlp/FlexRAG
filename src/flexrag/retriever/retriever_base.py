@@ -1,17 +1,17 @@
 import asyncio
+import json
 import os
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Iterable
+from typing import Iterable
 
 import numpy as np
-import json
 from omegaconf import DictConfig, OmegaConf
 
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.cache import LMDBBackendConfig, PersistentCache, PersistentCacheConfig
-from flexrag.data import TextProcessPipeline, TextProcessPipelineConfig
+from flexrag.common_dataclass import Context, RetrievedContext
+from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import LOGGER_MANAGER, Register, SimpleProgressLogger
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers")
@@ -216,12 +216,12 @@ class LocalRetriever(RetrieverBase):
         return
 
     @abstractmethod
-    def add_passages(self, passages: Iterable[dict[str, Any]]):
+    def add_passages(self, passages: Iterable[Context]):
         """
         Add passages to the retriever database.
 
         :param passages: The passages to add.
-        :type passages: Iterable[dict[str, str]]
+        :type passages: Iterable[Context]
         :return: None
         """
         return

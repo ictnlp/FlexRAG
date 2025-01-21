@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
 
 from flexrag.common_dataclass import RetrievedContext
-from flexrag.data import TextProcessPipeline, TextProcessPipelineConfig
+from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import LOGGER_MANAGER
 
 from .metrics_base import METRICS, MetricsBase

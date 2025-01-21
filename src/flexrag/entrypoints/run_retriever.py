@@ -9,8 +9,8 @@ import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 
-from flexrag.common_dataclass import RetrievedContext
-from flexrag.data import MTEBDataset, MTEBDatasetConfig
+from flexrag.common_dataclass import Context, RetrievedContext
+from flexrag.datasets import MTEBDataset, MTEBDatasetConfig
 from flexrag.metrics import Evaluator, EvaluatorConfig
 from flexrag.retriever import RETRIEVERS
 from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, load_user_module
@@ -72,7 +72,7 @@ def main(config: Config):
     # search and generate
     p_logger = SimpleProgressLogger(logger, interval=config.log_interval)
     questions = []
-    goldens = []
+    goldens: list[list[Context]] = []
     retrieved: list[list[RetrievedContext]] = []
     with open(details_path, "w", encoding="utf-8") as f:
         for item in testset:

@@ -1,6 +1,8 @@
 import os
 import shutil
 from dataclasses import dataclass, field
+from hashlib import sha1
+from functools import cached_property
 from typing import Generator, Iterable, Optional
 
 import lance
@@ -9,7 +11,7 @@ import pandas as pd
 from omegaconf import MISSING
 from scipy.spatial.distance import cdist
 
-from flexrag.common_dataclass import RetrievedContext
+from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.models import ENCODERS, EncoderBase, EncoderConfig
 from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger
 
@@ -81,7 +83,7 @@ class DenseRetriever(LocalRetriever):
         return
 
     @TIME_METER("dense_retriever", "add-passages")
-    def add_passages(self, passages: Iterable[dict[str, str]]):
+    def add_passages(self, passages: Iterable[Context]):
 
         def get_batch() -> Generator[list[dict[str, str]], None, None]:
             batch = []
@@ -89,7 +91,9 @@ class DenseRetriever(LocalRetriever):
                 if len(batch) == self.batch_size:
                     yield batch
                     batch = []
-                batch.append(passage)
+                data = passage.data.copy()
+                data[self.id_field_name] = passage.context_id
+                batch.append(data)
             if batch:
                 yield batch
             return
@@ -132,7 +136,7 @@ class DenseRetriever(LocalRetriever):
             self.build_index()
         else:
             self.index.serialize()
-        logger.info("Finished adding passages")
+        logger.info("Finished adding passages.")
         return
 
     @TIME_METER("dense_retriever", "search")
@@ -145,6 +149,8 @@ class DenseRetriever(LocalRetriever):
         assert self.query_encoder is not None, "Query encoder is not provided."
         top_k = search_kwargs.get("top_k", self.top_k)
         emb_q = self.query_encoder.encode(query)
+
+        # retrieve using vector index
         indices, scores = self.index.search(
             emb_q, top_k * self.refine_factor, **search_kwargs
         )
@@ -152,22 +158,26 @@ class DenseRetriever(LocalRetriever):
             refined_indices, refined_scores = self.refine_index(emb_q, indices)
             indices = refined_indices[:, :top_k]
             scores = refined_scores[:, :top_k]
+
+        # form final results
         retrieved = self.database.take(
             indices.flatten(), columns=self.fields
         ).to_pandas()
-        results = []
+        results: list[list[RetrievedContext]] = []
         for i, (q, score) in enumerate(zip(query, scores)):
-            results.append(
-                [
+            results.append([])
+            for j, s in enumerate(score):
+                data = retrieved.iloc[i * top_k + j].to_dict()
+                context_id = data.pop(self.id_field_name)
+                results[-1].append(
                     RetrievedContext(
+                        context_id=context_id,
                         retriever=self.name,
                         query=q,
                         score=float(s),
-                        data=retrieved.iloc[i * top_k + j].to_dict(),
+                        data=data,
                     )
-                    for j, s in enumerate(score)
-                ]
-            )
+                )
         return results
 
     def clean(self) -> None:
@@ -272,3 +282,7 @@ class DenseRetriever(LocalRetriever):
                 self.index.embedding_size == self.embedding_size
             ), "Inconsistent embedding size."
         return
+
+    @cached_property
+    def id_field_name(self) -> str:
+        return sha1("context_id".encode()).hexdigest()

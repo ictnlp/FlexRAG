@@ -1,51 +1,48 @@
-from typing import Optional, Iterator
-from glob import glob
-from itertools import zip_longest
 import json
 from csv import reader as csv_reader
+from dataclasses import dataclass, field
+from glob import glob
+from typing import Iterator
 
 from .dataset import IterableDataset
 
 
-class LineDelimitedDataset(IterableDataset):
-    def __init__(
-        self,
-        file_paths: list[str] | str,
-        data_ranges: Optional[list[list[int, int]] | list[int, int]] = None,
-        encoding: str = "utf-8",
-    ):
-        # for single file path
-        if isinstance(file_paths, str):
-            file_paths = [file_paths]
-            if data_ranges is not None:
-                assert isinstance(data_ranges[0], int), "Invalid data ranges"
-                assert isinstance(data_ranges[1], int), "Invalid data ranges"
-                data_ranges = [data_ranges]
+@dataclass
+class LineDelimitedDatasetConfig:
+    """The Configuration for LineDelimitedDataset."""
 
+    file_paths: list[str]
+    data_ranges: list[list[int, int]] = field(default_factory=list)
+    encoding: str = "utf-8"
+
+
+class LineDelimitedDataset(IterableDataset):
+    """The Iterative Dataset for Loading Line Delimited Files (csv, tsv, jsonl)."""
+
+    def __init__(self, cfg: LineDelimitedDatasetConfig) -> None:
         # process unix style path
-        file_paths = [glob(p) for p in file_paths]
+        file_paths = [glob(p) for p in cfg.file_paths]
         for p in file_paths:
             if len(p) != 1:
                 assert (
-                    data_ranges is None
-                ), "Data ranges do not support unix style path pattern"
+                    len(cfg.data_ranges) == 0
+                ), "`data_ranges` do not support unix style path pattern"
         file_paths = [p for file_path in file_paths for p in file_path]
 
-        if data_ranges is None:
-            data_ranges = []
+        # check data_ranges consistency
+        if len(cfg.data_ranges) != 0:
+            assert len(cfg.data_ranges) == len(file_paths), "Invalid data ranges"
         else:
-            assert len(data_ranges) == len(file_paths), "Invalid data ranges"
+            cfg.data_ranges = [[0, -1] for _ in file_paths]
 
         self.file_paths = file_paths
-        self.data_ranges = data_ranges
-        self.encoding = encoding
+        self.data_ranges = cfg.data_ranges
+        self.encoding = cfg.encoding
         return
 
     def __iter__(self) -> Iterator[dict]:
         # read data
-        for file_path, data_range in zip_longest(
-            self.file_paths, self.data_ranges, fillvalue=[0, -1]
-        ):
+        for file_path, data_range in zip(self.file_paths, self.data_ranges):
             start_point, end_point = data_range
             if end_point > 0:
                 assert end_point > start_point, f"Invalid data range: {data_range}"
@@ -83,4 +80,7 @@ class LineDelimitedDataset(IterableDataset):
                         yield dict(zip(title, row))
             else:
                 raise ValueError(f"Unsupported file format: {file_path}")
-            return
+        return
+
+    def __repr__(self) -> str:
+        return f"LineDelimitedDataset({self.file_paths})"

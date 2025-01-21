@@ -8,7 +8,7 @@ from .chunker_base import ChunkerBase, CHUNKERS
 from ..text_process.utils import UnifiedTokenizer, UTokenizerConfig
 
 
-logger = LOGGER_MANAGER.get_logger("flexrag.data.chunking.basic_chunkers")
+logger = LOGGER_MANAGER.get_logger("flexrag.chunking.basic_chunkers")
 
 
 @dataclass

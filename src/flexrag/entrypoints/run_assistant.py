@@ -7,11 +7,11 @@ from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import MISSING, OmegaConf
+from omegaconf import OmegaConf
 
 from flexrag.assistant import ASSISTANTS
 from flexrag.common_dataclass import RetrievedContext
-from flexrag.data import RAGTestIterableDataset
+from flexrag.datasets import RAGEvalDataset, RAGEvalDatasetConfig
 from flexrag.metrics import Evaluator, EvaluatorConfig
 from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, load_user_module
 
@@ -22,20 +22,14 @@ for arg in sys.argv:
         sys.argv.remove(arg)
 
 
-@dataclass
-class DataConfig:
-    data_path: str = MISSING
-    data_range: Optional[list[int]] = None
-    output_path: Optional[str] = None
-
-
 AssistantConfig = ASSISTANTS.make_config()
 
 
 @dataclass
-class Config(AssistantConfig, DataConfig):
+class Config(AssistantConfig, RAGEvalDatasetConfig):
     eval_config: EvaluatorConfig = field(default_factory=EvaluatorConfig)  # fmt: skip
     log_interval: int = 10
+    output_path: Optional[str] = None
 
 
 cs = ConfigStore.instance()
@@ -50,7 +44,7 @@ def main(config: Config):
     config = OmegaConf.merge(default_cfg, config)
 
     # load dataset
-    testset = RAGTestIterableDataset(config.data_path, config.data_range)
+    testset = RAGEvalDataset(config)
 
     # load assistant
     assistant = ASSISTANTS.load(config)

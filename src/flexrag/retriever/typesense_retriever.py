@@ -3,8 +3,8 @@ from typing import Generator, Iterable
 
 from omegaconf import MISSING
 
-from flexrag.common_dataclass import RetrievedContext
-from flexrag.utils import Choices, SimpleProgressLogger, LOGGER_MANAGER, TIME_METER
+from flexrag.common_dataclass import Context, RetrievedContext
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, SimpleProgressLogger
 
 from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
 
@@ -24,8 +24,8 @@ class TypesenseRetrieverConfig(LocalRetrieverConfig):
     :type protocol: str
     :param api_key: API key for the Typesense server. Required.
     :type api_key: str
-    :param source: Name of the Typesense collection. Required.
-    :type source: str
+    :param index_name: Name of the Typesense collection. Required.
+    :type index_name: str
     :param timeout: Timeout for the connection. Default: 200.0.
     :type timeout: float
     """
@@ -34,7 +34,7 @@ class TypesenseRetrieverConfig(LocalRetrieverConfig):
     port: int = 8108
     protocol: Choices(["https", "http"]) = "http"  # type: ignore
     api_key: str = MISSING
-    source: str = MISSING
+    index_name: str = MISSING
     timeout: float = 200.0
 
 
@@ -61,26 +61,28 @@ class TypesenseRetriever(LocalRetriever):
                 "connection_timeout_seconds": cfg.timeout,
             }
         )
-        self.source = cfg.source
+        self.index_name = cfg.index_name
         return
 
     @TIME_METER("typesense", "add_passages")
-    def add_passages(self, passages: Iterable[dict[str, str]]) -> None:
+    def add_passages(self, passages: Iterable[Context]) -> None:
         def get_batch() -> Generator[list[dict[str, str]], None, None]:
             batch = []
             for passage in passages:
                 if len(batch) == self.batch_size:
                     yield batch
                     batch = []
-                batch.append(passage)
+                data = passage.data.copy()
+                data[self.id_field_name] = passage.context_id
+                batch.append(data)
             if batch:
                 yield batch
             return
 
         # create collection if not exists
-        if self.source not in self._sources:
+        if self.index_name not in self.indices:
             schema = {
-                "name": self.source,
+                "name": self.index_name,
                 "fields": [
                     {"name": ".*", "type": "auto", "index": True, "infix": True}
                 ],
@@ -90,9 +92,10 @@ class TypesenseRetriever(LocalRetriever):
         # import documents
         p_logger = SimpleProgressLogger(logger=logger, interval=self.log_interval)
         for batch in get_batch():
-            r = self.client.collections[self.source].documents.import_(batch)
+            r = self.client.collections[self.index_name].documents.import_(batch)
             assert all([i["success"] for i in r])
             p_logger.update(len(batch), desc="Adding passages")
+        logger.info("Finished adding passages.")
         return
 
     @TIME_METER("typesense", "search")
@@ -101,9 +104,10 @@ class TypesenseRetriever(LocalRetriever):
         query: list[str],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
+        # prepare search parameters
         search_params = [
             {
-                "collection": self.source,
+                "collection": self.index_name,
                 "q": q,
                 "query_by": ",".join(self.fields),
                 "per_page": search_kwargs.get("top_k", self.top_k),
@@ -111,6 +115,8 @@ class TypesenseRetriever(LocalRetriever):
             }
             for q in query
         ]
+
+        # search
         try:
             responses = self.client.multi_search.perform(
                 search_queries={"searches": search_params},
@@ -120,41 +126,50 @@ class TypesenseRetriever(LocalRetriever):
             logger.error(f"Typesense error: {e}")
             logger.error(f"Current query: {query}")
             return [[] for _ in query]
-        retrieved = [
-            [
-                RetrievedContext(
-                    retriever="Typesense",
-                    query=q,
-                    data=i["document"],
-                    source=self.source,
-                    score=i["text_match"],
+
+        # form final results
+        retrieved = []
+        for q, response in zip(query, responses["results"]):
+            retrieved.append([])
+            for i in response["hits"]:
+                data = i["document"]
+                context_id = data.pop(self.id_field_name)
+                retrieved[-1].append(
+                    RetrievedContext(
+                        context_id=context_id,
+                        retriever="Typesense",
+                        query=q,
+                        data=i["document"],
+                        source=self.index_name,
+                        score=i["text_match"],
+                    )
                 )
-                for i in response["hits"]
-            ]
-            for q, response in zip(query, responses["results"])
-        ]
         return retrieved
 
     def clean(self) -> None:
-        if self.source in self._sources:
-            self.client.collections[self.source].delete()
+        if self.index_name in self.indices:
+            self.client.collections[self.index_name].delete()
         return
 
     def __len__(self) -> int:
         info = self.client.collections.retrieve()
-        info = [i for i in info if i["name"] == self.source]
+        info = [i for i in info if i["name"] == self.index_name]
         if len(info) > 0:
             return info[0]["num_documents"]
         return 0
 
     @property
-    def _sources(self) -> list[str]:
+    def indices(self) -> list[str]:
         return [i["name"] for i in self.client.collections.retrieve()]
 
     @property
     def fields(self) -> list[str]:
         return [
             i["name"]
-            for i in self.client.collections[self.source].retrieve()["fields"]
+            for i in self.client.collections[self.index_name].retrieve()["fields"]
             if i["name"] != ".*"
         ]
+
+    @property
+    def id_field_name(self) -> str:
+        return "id"  # `id` is the reserved field name in Typesense

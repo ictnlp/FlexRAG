@@ -1,20 +1,17 @@
 import json
 from dataclasses import dataclass
-from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import MISSING, OmegaConf
+from omegaconf import OmegaConf
 
-from flexrag.data import LineDelimitedDataset
+from flexrag.datasets import LineDelimitedDataset, LineDelimitedDatasetConfig
 from flexrag.metrics import EvaluatorConfig, Evaluator
 from flexrag.utils import LOGGER_MANAGER
 
 
 @dataclass
-class Config(EvaluatorConfig):
-    data_path: str = MISSING
-    output_path: Optional[str] = None
+class Config(EvaluatorConfig, LineDelimitedDatasetConfig): ...
 
 
 cs = ConfigStore.instance()
@@ -30,7 +27,7 @@ def main(config: Config):
     logger.debug(f"Configs:\n{OmegaConf.to_yaml(config)}")
 
     # load dataset
-    dataset = LineDelimitedDataset(config.data_path)
+    dataset = LineDelimitedDataset(config)
 
     questions = [i["question"] for i in dataset]
     responses = [i["response"] for i in dataset]

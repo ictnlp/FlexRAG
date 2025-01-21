@@ -1,12 +1,14 @@
 import os
 from dataclasses import dataclass
+from functools import cached_property
+from hashlib import sha1
 from typing import Iterable, Optional
 
 import bm25s
 from omegaconf import MISSING
 
-from flexrag.common_dataclass import RetrievedContext
-from flexrag.utils import Choices, LOGGER_MANAGER, TIME_METER
+from flexrag.common_dataclass import Context, RetrievedContext
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, SimpleProgressLogger
 
 from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
 
@@ -63,6 +65,10 @@ class BM25SRetriever(LocalRetriever):
 
             self._stemmer = Stemmer.Stemmer(cfg.lang)
         except:
+            logger.warning(
+                "Stemmer is not available. "
+                "You can install `PyStemmer` by `pip install PyStemmer` for better results."
+            )
             self._stemmer = None
 
         # load retriever
@@ -88,21 +94,34 @@ class BM25SRetriever(LocalRetriever):
         return
 
     @TIME_METER("bm25s_retriever", "add-passages")
-    def add_passages(self, passages: Iterable[dict[str, str]]):
+    def add_passages(self, passages: Iterable[Context]):
         logger.warning(
             "bm25s Retriever does not support add passages. This function will build the index from scratch."
         )
-        passages = list(passages)
-        if len(self._indexed_fields) == 1:
-            indexed = [p[self._indexed_fields[0]] for p in passages]
-        else:
-            indexed = [" ".join([p[f] for f in self._indexed_fields]) for p in passages]
+        logger.info("Preparing the passages for indexing.")
+
+        # prepare the passages
+        p_logger = SimpleProgressLogger(logger, interval=self.log_interval)
+        passages_ = []
+        indexed_ = []
+        for p in passages:
+            data = p.data.copy()
+            data[self.id_field_name] = p.context_id
+            passages_.append(data)
+            if len(self._indexed_fields) == 1:
+                indexed_.append(data[self._indexed_fields[0]])
+            else:
+                indexed_.append(" ".join([data[f] for f in self._indexed_fields]))
+            p_logger.update(1, "Preparing the passages")
+
+        # tokenize and index
+        logger.info("Indexing the passages.")
         indexed_tokens = bm25s.tokenize(
-            indexed, stopwords=self._lang, stemmer=self._stemmer
+            indexed_, stopwords=self._lang, stemmer=self._stemmer
         )
         self._retriever.index(indexed_tokens)
-        self._retriever.corpus = passages
-        self._retriever.save(self.database_path, corpus=passages)
+        self._retriever.corpus = passages_
+        self._retriever.save(self.database_path, corpus=passages_)
         return
 
     @TIME_METER("bm25s_retriever", "search")
@@ -121,19 +140,20 @@ class BM25SRetriever(LocalRetriever):
         )
 
         # form final results
-        results = []
+        results: list[list[RetrievedContext]] = []
         for q, ctxs, score in zip(query, contexts, scores):
-            results.append(
-                [
+            results.append([])
+            for ctx, s in zip(ctxs, score):
+                docid = ctx.pop(self.id_field_name)
+                results[-1].append(
                     RetrievedContext(
+                        context_id=docid,
                         retriever=self.name,
                         query=q,
                         data=ctx,
-                        score=score[i],
+                        score=float(s),
                     )
-                    for i, ctx in enumerate(ctxs)
-                ]
-            )
+                )
         return results
 
     def clean(self) -> None:
@@ -151,3 +171,7 @@ class BM25SRetriever(LocalRetriever):
         if self._retriever.corpus is not None:
             return self._retriever.corpus[0].keys()
         return []
+
+    @cached_property
+    def id_field_name(self) -> str:
+        return sha1("context_id".encode()).hexdigest()

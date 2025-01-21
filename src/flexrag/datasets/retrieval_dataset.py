@@ -1,7 +1,6 @@
 import json
 import os
 from dataclasses import dataclass, field
-from collections import defaultdict
 from typing import Optional
 
 from omegaconf import MISSING
@@ -86,12 +85,11 @@ class MTEBDataset(MappingDataset[RetrievalData]):
         self.dataset: list[RetrievalData] = []
         for qrel in qrels:
             # construct the context
-            context = Context(
-                context_id=qrel["corpus-id"],
-                score=float(qrel.get("score", 0.0)),
-            )
+            context = Context(context_id=qrel["corpus-id"])
             if corpus is not None:
                 context.data = corpus[qrel["corpus-id"]]
+            if "score" in qrel:  # relevance level of the context
+                context.meta_data["score"] = int(qrel["score"])
             query = queries[qrel["query-id"]]["text"]
 
             if qrel["query-id"] not in dataset_map:
