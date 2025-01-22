@@ -9,7 +9,38 @@ from .dataset import IterableDataset
 
 @dataclass
 class LineDelimitedDatasetConfig:
-    """The Configuration for LineDelimitedDataset."""
+    """The configuration for ``LineDelimitedDataset``.
+
+    :param file_paths: The paths to the line delimited files.
+        It supports unix style path pattern.
+    :type file_paths: list[str]
+    :param data_ranges: The data ranges to load from the files.
+        The format is a list of [start_point, end_point] for each file.
+        If end_point is -1, it will read to the end of the file.
+        If not specified, it will read the whole file.
+    :type data_ranges: list[list[int, int]]
+    :param encoding: The encoding of the files.
+    :type encoding: str
+
+    Example 1: Loading specific lines from given files.
+
+        >>> cfg = LineDelimitedDatasetConfig(
+        ...     file_paths=["data1.jsonl", "data2.csv"],
+        ...     data_ranges=[[0, 10], [0, 20]],
+        ...     encoding="utf-8",
+        ... )
+        >>> dataset = LineDelimitedDataset(cfg)
+        >>> items = [i for i in dataset]
+
+    Example 2: Loading multiple files using unix style path pattern.
+
+        >>> cfg = LineDelimitedDatasetConfig(
+        ...     file_paths=["data/*.jsonl"],
+        ...     encoding="utf-8",
+        ... )
+        >>> dataset = LineDelimitedDataset(cfg)
+        >>> items = [i for i in dataset]
+    """
 
     file_paths: list[str]
     data_ranges: list[list[int, int]] = field(default_factory=list)
@@ -17,7 +48,7 @@ class LineDelimitedDatasetConfig:
 
 
 class LineDelimitedDataset(IterableDataset):
-    """The Iterative Dataset for Loading Line Delimited Files (csv, tsv, jsonl)."""
+    """The iterative dataset for loading line delimited files (csv, tsv, jsonl)."""
 
     def __init__(self, cfg: LineDelimitedDatasetConfig) -> None:
         # process unix style path

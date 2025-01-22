@@ -9,10 +9,6 @@ Retrievers
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.retriever.RetrievedContext
-    :members:
-    :inherited-members:
-
 .. autoclass:: flexrag.retriever.RetrieverConfig
     :members:
     :inherited-members:

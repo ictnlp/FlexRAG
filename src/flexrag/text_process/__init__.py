@@ -1,17 +1,16 @@
-from .processor import PROCESSORS, Processor, TextUnit
+from .basic_filters import ExactDeduplicate, LengthFilter, LengthFilterConfig
 from .basic_processors import (
-    TokenNormalizerConfig,
-    TokenNormalizer,
+    AnswerSimplifier,
     ChineseSimplifier,
     Lowercase,
-    Unifier,
-    TruncatorConfig,
+    TokenNormalizer,
+    TokenNormalizerConfig,
     Truncator,
-    AnswerSimplifier,
+    TruncatorConfig,
+    Unifier,
 )
-from .basic_filters import ExactDeduplicate
 from .pipeline import TextProcessPipeline, TextProcessPipelineConfig
-
+from .processor import PROCESSORS, Processor, TextUnit
 
 __all__ = [
     "TextProcessPipeline",
@@ -28,4 +27,6 @@ __all__ = [
     "Truncator",
     "AnswerSimplifier",
     "ExactDeduplicate",
+    "LengthFilter",
+    "LengthFilterConfig",
 ]

@@ -1,17 +1,19 @@
 import json
 from dataclasses import dataclass
+from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 
 from flexrag.datasets import LineDelimitedDataset, LineDelimitedDatasetConfig
-from flexrag.metrics import EvaluatorConfig, Evaluator
+from flexrag.metrics import Evaluator, EvaluatorConfig
 from flexrag.utils import LOGGER_MANAGER
 
 
 @dataclass
-class Config(EvaluatorConfig, LineDelimitedDatasetConfig): ...
+class Config(EvaluatorConfig, LineDelimitedDatasetConfig):
+    output_path: Optional[str] = None
 
 
 cs = ConfigStore.instance()

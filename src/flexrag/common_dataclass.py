@@ -63,3 +63,10 @@ class RAGEvalData:
     golden_contexts: Optional[list[Context]] = None
     golden_answers: Optional[list[str]] = None
     meta_data: dict = field(default_factory=dict)
+
+
+@dataclass
+class IREvalData:
+    question: str
+    contexts: Optional[list[Context]] = None
+    meta_data: dict = field(default_factory=dict)

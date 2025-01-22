@@ -14,7 +14,18 @@ from .matching_metrics import (
     Recall,
 )
 from .metrics_base import MetricsBase
-from .retrieval_metrics import SuccessRate, SuccessRateConfig
+from .retrieval_metrics import (
+    SuccessRate,
+    SuccessRateConfig,
+    RetrievalRecall,
+    RetrievalRecallConfig,
+    RetrievalPrecision,
+    RetrievalPrecisionConfig,
+    RetrievalMAP,
+    RetrievalMAPConfig,
+    RetrievalNDCG,
+    RetrievalNDCGConfig,
+)
 
 from .evaluator import Evaluator, EvaluatorConfig  # isort: skip
 
@@ -33,6 +44,14 @@ __all__ = [
     "chrFConfig",
     "SuccessRate",
     "SuccessRateConfig",
+    "RetrievalRecall",
+    "RetrievalRecallConfig",
+    "RetrievalPrecision",
+    "RetrievalPrecisionConfig",
+    "RetrievalMAP",
+    "RetrievalMAPConfig",
+    "RetrievalNDCG",
+    "RetrievalNDCGConfig",
     "Evaluator",
     "EvaluatorConfig",
 ]

@@ -8,10 +8,33 @@ ItemTypeConcat = TypeVar("ItemTypeConcat")
 
 
 class IterableDataset(Iterable[ItemTypeI], Generic[ItemTypeI]):
-    """IterableDataset is a dataset that can be iterated over.
+    r"""IterableDataset is a BaseClass for datasets that can be iterated over.
 
     The subclasses of IterableDataset should implement the following methods:
-    - __iter__(self) -> Iterator[ItemTypeI]: return an iterator over the items in the dataset.
+
+        >>> # return an iterator over the items in the dataset.
+        >>> def __iter__(self) -> Iterator[ItemTypeI]: ...
+
+    The following methods are implemented automatically:
+
+        >>> # concatenate multiple IterableDatasets.
+        >>> def __add__(self, other: IterableDataset[ItemTypeI]) -> IterableDataset[ItemTypeI]: ...
+
+    For example:
+
+        >>> class MyDataset(IterableDataset[int]):
+        ...     def __init__(self, n: int):
+        ...         self.n = n
+        ...         return
+        ...
+        ...     def __iter__(self) -> Iterator[int]:
+        ...         for i in range(self.n):
+        ...             yield i
+        ...
+        >>> dataset = MyDataset(3)
+        >>> # Iterate over the dataset.
+        >>> for item in dataset:
+        ...     print(item)
     """
 
     def __add__(
@@ -21,16 +44,42 @@ class IterableDataset(Iterable[ItemTypeI], Generic[ItemTypeI]):
 
 
 class MappingDataset(Generic[ItemTypeM]):
-    """MappingDataset is a dataset that can be indexed by integers.
+    r"""MappingDataset is a BaseClass for datasets that can be indexed by integers.
 
     The subclasses of MappingDataset should implement the following methods:
-    - __getitem__(self, index: int) -> ItemTypeM: return the item at the given index.
-    - __len__(self) -> int: return the number of items in the dataset.
+
+        >>> # retrun the item at the given index.
+        >>> def __getitem__(self, index: int) -> ItemTypeM: ...
+        >>> # return the number of items in the dataset.
+        >>> def __len__(self) -> int: ...
 
     The following methods are implemented automatically:
-    - __iter__(self) -> Iterator[ItemTypeM]: return an iterator over the items in the dataset.
-    - __contains__(self, key: int) -> bool: return whether the dataset contains the given index.
-    - get(self, index: int, default=None) -> ItemTypeM: return the item at the given index or the default value.
+
+        >>> # concatenate multiple MappingDatasets.
+        >>> def __add__(self, other: MappingDataset[ItemTypeM]) -> MappingDataset[ItemTypeM]: ...
+        >>> # return whether the dataset contains the given index.
+        >>> def __contains__(self, key: int) -> bool: ...
+        >>> # return an iterator over the items in the dataset.
+        >>> def __iter__(self) -> Iterator[ItemTypeM]: ...
+
+    For example:
+
+        >>> class MyDataset(MappingDataset[int]):
+        ...     def __init__(self, n: int):
+        ...         self.n = n
+        ...         return
+        ...
+        ...     def __getitem__(self, index: int) -> int:
+        ...         if 0 <= index < self.n:
+        ...             return index
+        ...         raise IndexError(f"Index {index} out of range.")
+        ...
+        ...     def __len__(self) -> int:
+        ...         return self.n
+        ...
+        >>> dataset = MyDataset(3)
+        >>> for i in range(len(dataset)):
+        ...     print(dataset[i])
     """
 
     def __add__(
@@ -52,6 +101,8 @@ class MappingDataset(Generic[ItemTypeM]):
 
 
 class ChainDataset(IterableDataset[ItemTypeChain]):
+    """ChainDataset concatenates multiple IterableDatasets."""
+
     def __init__(self, *datasets: IterableDataset):
         self.datasets = datasets
         return
@@ -63,6 +114,8 @@ class ChainDataset(IterableDataset[ItemTypeChain]):
 
 
 class ConcatDataset(MappingDataset[ItemTypeConcat]):
+    """ConcatDataset concatenates multiple MappingDatasets."""
+
     def __init__(self, *datasets: MappingDataset):
         self.datasets = datasets
         return

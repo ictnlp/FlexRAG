@@ -1,35 +1,32 @@
 import json
 import os
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import dataclass
 
 from omegaconf import MISSING
 
-from flexrag.common_dataclass import Context
+from flexrag.common_dataclass import Context, IREvalData
 
 from .dataset import MappingDataset
 
 
 @dataclass
-class RetrievalData:
-    question: str
-    contexts: Optional[list[Context]] = None
-    meta_data: dict = field(default_factory=dict)
-
-
-@dataclass
 class MTEBDatasetConfig:
-    """Configuration for loading MTEB Retrieval Dataset.
+    """Configuration for loading `MTEB <https://huggingface.co/mteb>`_ Retrieval Dataset.
+    The __getitem__ method will return `IREvalData` objects.
 
-    For example, to load the NQ dataset, you can use the following configuration:
-    ```python
-    config = MTEBDatasetConfig(
-        data_path="mteb/nq",
-        subset="test",
-        load_corpus=False,
-    )
-    dataset = MTEBDataset(config)
-    ```
+    For example, to load the NQ dataset, you can download the test set by running the following command:
+
+        >>> git lfs install
+        >>> git clone https://huggingface.co/datasets/mteb/nq nq
+
+    Then you can use the following code to load the dataset:
+
+        >>> config = MTEBDatasetConfig(
+        ...     data_path="nq",
+        ...     subset="test",
+        ...     load_corpus=False,
+        ... )
+        >>> dataset = MTEBDataset(config)
 
     :param data_path: Path to the data directory. Required.
     :type data_path: str
@@ -47,7 +44,9 @@ class MTEBDatasetConfig:
     load_corpus: bool = False
 
 
-class MTEBDataset(MappingDataset[RetrievalData]):
+class MTEBDataset(MappingDataset[IREvalData]):
+    """Dataset for loading MTEB Retrieval Dataset."""
+
     def __init__(self, config: MTEBDatasetConfig) -> None:
         qrels: list[dict] = [
             json.loads(line)
@@ -82,7 +81,7 @@ class MTEBDataset(MappingDataset[RetrievalData]):
 
         # merge qrels, queries, and corpus into RetrievalData
         dataset_map: dict[str, int] = {}
-        self.dataset: list[RetrievalData] = []
+        self.dataset: list[IREvalData] = []
         for qrel in qrels:
             # construct the context
             context = Context(context_id=qrel["corpus-id"])
@@ -95,7 +94,7 @@ class MTEBDataset(MappingDataset[RetrievalData]):
             if qrel["query-id"] not in dataset_map:
                 dataset_map[qrel["query-id"]] = len(self.dataset)
                 self.dataset.append(
-                    RetrievalData(
+                    IREvalData(
                         question=query,
                         contexts=[context],
                         meta_data={"query-id": qrel["query-id"]},
@@ -109,5 +108,5 @@ class MTEBDataset(MappingDataset[RetrievalData]):
     def __len__(self) -> int:
         return len(self.dataset)
 
-    def __getitem__(self, index: int) -> RetrievalData:
+    def __getitem__(self, index: int) -> IREvalData:
         return self.dataset[index]
