@@ -16,11 +16,17 @@ from flexrag.utils import Choices, Register
 
 @dataclass
 class WebDownloaderBaseConfig:
+    """The configuration for the ``WebDownloaderBase``.
+
+    :param allow_parallel: Whether to allow parallel downloading. Default is True.
+    :type allow_parallel: bool
+    """
+
     allow_parallel: bool = True
 
 
 class WebDownloaderBase(ABC):
-    """The helper class for downloading web pages."""
+    """The base class for the web downloaders."""
 
     def __init__(self, cfg: WebDownloaderBaseConfig) -> None:
         self.allow_parallel = cfg.allow_parallel
@@ -69,6 +75,22 @@ WEB_DOWNLOADERS = Register[WebDownloaderBase]("web_downloader")
 
 @dataclass
 class SimpleWebDownloaderConfig(WebDownloaderBaseConfig):
+    """The configuration for the ``SimpleWebDownloader``.
+
+    :param proxy: The proxy to use. Default is None.
+    :type proxy: Optional[str]
+    :param timeout: The timeout for the requests. Default is 3.0.
+    :type timeout: float
+    :param max_retries: The maximum number of retries. Default is 3.
+    :type max_retries: int
+    :param retry_delay: The delay between retries. Default is 0.5.
+    :type retry_delay: float
+    :param skip_bad_response: Whether to skip bad responses. Default is True.
+    :type skip_bad_response: bool
+    :param headers: The headers to use. Default is None.
+    :type headers: Optional[dict]
+    """
+
     proxy: Optional[str] = None
     timeout: float = 3.0
     max_retries: int = 3
@@ -112,6 +134,21 @@ class SimpleWebDownloader(WebDownloaderBase):
 
 @dataclass
 class PuppeteerWebDownloaderConfig(WebDownloaderBaseConfig):
+    """The configuration for the ``PuppeteerWebDownloader``.
+
+    :param return_format: The return format.
+        Available options are "screenshot" and "html". Default is "html".
+    :type return_format: str
+    :param headless: Whether to run the browser in headless mode. Default is True.
+    :type headless: bool
+    :param device: The device to emulate. Default is None.
+    :type device: Optional[str]
+    :param page_width: The width of the emulate device. Default is 1280.
+    :type page_width: int
+    :param page_height: The height of the emulate device. Default is 1024.
+    :type page_height: int
+    """
+
     return_format: Choices(["screenshot", "html"]) = "html"  # type: ignore
     headless: bool = True
     device: Optional[str] = None
@@ -172,3 +209,6 @@ class PuppeteerWebDownloader(WebDownloaderBase):
 
     async def async_download(self, urls: str | list[str]) -> list[str | ImageFile]:
         return await asyncio.gather(*[self.async_download_page(url) for url in urls])
+
+
+WebDownloaderConfig = WEB_DOWNLOADERS.make_config()

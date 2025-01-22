@@ -6,6 +6,7 @@ from .web_downloader import (
     PuppeteerWebDownloader,
     PuppeteerWebDownloaderConfig,
     WEB_DOWNLOADERS,
+    WebDownloaderConfig,
 )
 from .web_reader import (
     WebReaderBase,
@@ -18,10 +19,11 @@ from .web_reader import (
     ScreenshotWebReaderConfig,
     WebRetrievedContext,
     WEB_READERS,
+    WebReaderConfig,
 )
 from .web_retriever import (
     WebRetrieverBase,
-    WebRetrieverConfig,
+    WebRetrieverBaseConfig,
     BingRetriever,
     BingRetrieverConfig,
     DuckDuckGoRetriever,
@@ -47,7 +49,7 @@ __all__ = [
     "SnippetWebReader",
     "WebRetrievedContext",
     "WebRetrieverBase",
-    "WebRetrieverConfig",
+    "WebRetrieverBaseConfig",
     "BingRetriever",
     "BingRetrieverConfig",
     "DuckDuckGoRetriever",
@@ -61,7 +63,9 @@ __all__ = [
     "ScreenshotWebReader",
     "ScreenshotWebReaderConfig",
     "WEB_DOWNLOADERS",
+    "WebDownloaderConfig",
     "WEB_READERS",
+    "WebReaderConfig",
     "WikipediaRetriever",
     "WikipediaRetrieverConfig",
 ]

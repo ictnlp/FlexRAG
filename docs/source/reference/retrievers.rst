@@ -130,7 +130,7 @@ Web Retrievers
 --------------
 Web retrievers are used to retrieve data from the web.
 
-.. autoclass:: flexrag.retriever.web_retrievers.WebRetrieverConfig
+.. autoclass:: flexrag.retriever.web_retrievers.WebRetrieverBaseConfig
     :members:
     :inherited-members:
 
