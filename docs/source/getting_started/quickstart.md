@@ -14,13 +14,14 @@ gzip -d psgs_w100.tsv.gz
 ### Preparing the Index
 After downloading the corpus, you need to build the index for the retriever. If you want to employ the dense retriever, you can simply run the following command to build the index:
 ```bash
-CORPUS_PATH='[psgs_w100.tsv]'
+CORPUS_PATH='psgs_w100.tsv'
 CORPUS_FIELDS='[title,text]'
 DB_PATH=<path_to_database>
 
 python -m flexrag.entrypoints.prepare_index \
-    corpus_path=$CORPUS_PATH \
+    file_paths=[$CORPUS_PATH] \
     saving_fields=$CORPUS_FIELDS \
+    id_field='id' \
     retriever_type=dense \
     dense_config.database_path=$DB_PATH \
     dense_config.encode_fields='[text]' \
@@ -30,20 +31,21 @@ python -m flexrag.entrypoints.prepare_index \
     dense_config.index_type=faiss \
     dense_config.faiss_config.batch_size=4096 \
     dense_config.faiss_config.log_interval=100000 \
-    dense_config.batch_size=4096 \
+    dense_config.batch_size=2048 \
     dense_config.log_interval=100000 \
     reinit=True
 ```
 
 If you want to employ the sparse retriever, you can run the following command to build the index:
 ```bash
-CORPUS_PATH='[psgs_w100.tsv]'
+CORPUS_PATH='psgs_w100.tsv'
 CORPUS_FIELDS='[title,text]'
 DB_PATH=<path_to_database>
 
 python -m flexrag.entrypoints.prepare_index \
-    corpus_path=$CORPUS_PATH \
+    file_paths=[$CORPUS_PATH] \
     saving_fields=$CORPUS_FIELDS \
+    id_field='id' \
     retriever_type=bm25s \
     bm25s_config.database_path=$DB_PATH \
     bm25s_config.indexed_fields='[title,text]' \
@@ -82,7 +84,7 @@ DB_PATH=<path_to_database>
 OPENAI_KEY=<your_openai_key>
 
 python -m flexrag.entrypoints.run_assistant \
-    data_path=flash_rag/nq/test.jsonl \
+    file_paths=[nq/test.jsonl] \
     output_path=${OUTPUT_PATH} \
     assistant_type=modular \
     modular_config.used_fields=[title,text] \
@@ -111,7 +113,7 @@ DB_PATH=<path_to_database>
 OPENAI_KEY=<your_openai_key>
 
 python -m flexrag.entrypoints.run_assistant \
-    data_path=flash_rag/nq/test.jsonl \
+    file_paths=[nq/test.jsonl] \
     output_path=${OUTPUT_PATH} \
     assistant_type=modular \
     modular_config.used_fields=[title,text] \
@@ -181,7 +183,7 @@ MODULE_PATH=<path_to_simple_assistant_module>
 
 python -m flexrag.entrypoints.run_assistant \
     user_module=${MODULE_PATH} \
-    data_path=${DATA_PATH} \
+    file_paths=[${DATA_PATH}] \
     assistant_type=simple \
     simple_config.model_name='gpt-4o-mini' \
     simple_config.api_key=${OPENAI_KEY} \
