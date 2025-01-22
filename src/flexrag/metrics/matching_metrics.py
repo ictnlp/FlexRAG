@@ -26,6 +26,8 @@ class MatchingMetrics(MetricsBase):
 
 @METRICS("generation_em")
 class ExactMatch(MatchingMetrics):
+    """ExactMatch metric computes if any of the golden responses is exactly the same as the predicted response."""
+
     name = "generation_em"
 
     def compute_item(self, golds: list[str], response: str) -> float:
@@ -34,6 +36,8 @@ class ExactMatch(MatchingMetrics):
 
 @METRICS("generation_accuracy")
 class Accuracy(MatchingMetrics):
+    """Accuracy metric computes if any of the golden responses is in the predicted response."""
+
     name = "generation_accuracy"
 
     def compute_item(self, golds: list[str], response: str) -> float:
@@ -61,6 +65,8 @@ def f1_recall_precision(golds: list[str], response: str) -> tuple[float, float, 
 
 @METRICS("generation_f1")
 class F1(MatchingMetrics):
+    """F1 metric computes the F1 score of the predicted response against the golden responses."""
+
     name = "generation_f1"
 
     def compute_item(self, golds: list[str], response: str) -> float:
@@ -69,6 +75,8 @@ class F1(MatchingMetrics):
 
 @METRICS("generation_recall")
 class Recall(MatchingMetrics):
+    """Recall metric computes the recall of the predicted response against the golden responses."""
+
     name = "generation_recall"
 
     def compute_item(self, golds: list[str], response: str) -> float:
@@ -77,6 +85,8 @@ class Recall(MatchingMetrics):
 
 @METRICS("generation_precision")
 class Precision(MatchingMetrics):
+    """Precision metric computes the precision of the predicted response against the golden responses."""
+
     name = "generation_precision"
 
     def compute_item(self, golds: list[str], response: str) -> float:

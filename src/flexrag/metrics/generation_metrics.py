@@ -10,7 +10,8 @@ from .metrics_base import MetricsBase, METRICS
 
 @dataclass
 class BLEUConfig:
-    """Configuration for BLEU metric.
+    """Configuration for ``BLEU`` metric.
+    The computation of BLEU score is based on `sacrebleu <https://github.com/mjpost/sacrebleu>`_.
 
     :param tokenizer: The tokenizer to use. Defaults to sacrebleu.BLEU.TOKENIZER_DEFAULT.
         Available choices: Please refer to sacrebleu.BLEU.TOKENIZERS.
@@ -22,6 +23,8 @@ class BLEUConfig:
 
 @METRICS("generation_bleu", config_class=BLEUConfig)
 class BLEU(MetricsBase):
+    """The BLEU metric."""
+
     def __init__(self, cfg: BLEUConfig):
         super().__init__(cfg)
         self.tokenizer = cfg.tokenizer
@@ -41,7 +44,8 @@ class BLEU(MetricsBase):
 
 @dataclass
 class chrFConfig:
-    """Configuration for chrF metric.
+    """Configuration for ``chrF`` metric.
+    The computation of chrF score is based on `sacrebleu <https://github.com/mjpost/sacrebleu>`_.
 
     :param chrf_beta: The beta value for the F-score. Defaults to 1.0.
     :type chrf_beta: float
@@ -58,6 +62,8 @@ class chrFConfig:
 
 @METRICS("generation_chrf", config_class=chrFConfig)
 class chrF(MetricsBase):
+    """The chrF metric."""
+
     def __init__(self, cfg: chrFConfig) -> None:
         super().__init__(cfg)
         self.beta = cfg.chrf_beta
@@ -79,6 +85,11 @@ class chrF(MetricsBase):
 
 @METRICS("generation_rouge")
 class Rouge(MetricsBase):
+    """The Rouge metric.
+    The computation of Rouge score is based on `rouge <https://github.com/pltrdy/rouge>`_.
+    This metric will return the average of the Rouge-1, Rouge-2, and Rouge-L F1 scores.
+    """
+
     def __init__(self) -> None:
         self.scorer = rouge.Rouge(metrics=["rouge-1", "rouge-2", "rouge-l"])
         return

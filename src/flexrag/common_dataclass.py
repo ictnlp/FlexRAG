@@ -59,6 +59,18 @@ class RetrievedContext(Context):
 
 @dataclass
 class RAGEvalData:
+    """The dataclass for RAG evaluation data.
+
+    :param question: The question for evaluation. Required.
+    :type question: str
+    :param golden_contexts: The contexts related to the question. Default: None.
+    :type golden_contexts: Optional[list[Context]]
+    :param golden_answers: The golden answers for the question. Default: None.
+    :type golden_answers: Optional[list[str]]
+    :param meta_data: The metadata of the evaluation data. Default: {}.
+    :type meta_data: dict
+    """
+
     question: str = MISSING
     golden_contexts: Optional[list[Context]] = None
     golden_answers: Optional[list[str]] = None
@@ -67,6 +79,16 @@ class RAGEvalData:
 
 @dataclass
 class IREvalData:
+    """The dataclass for Information Retrieval evaluation data.
+
+    :param question: The question for evaluation. Required.
+    :type question: str
+    :param contexts: The contexts related to the question. Default: None.
+    :type contexts: Optional[list[Context]]
+    :param meta_data: The metadata of the evaluation data. Default: {}.
+    :type meta_data: dict
+    """
+
     question: str
     contexts: Optional[list[Context]] = None
     meta_data: dict = field(default_factory=dict)

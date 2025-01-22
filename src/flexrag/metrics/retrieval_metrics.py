@@ -31,7 +31,8 @@ def get_contain_map_py(evidences: list[str], retrieved: list[str]) -> list[list[
 
 @dataclass
 class SuccessRateConfig:
-    """Configuration for SuccessRate metric.
+    """Configuration for ``SuccessRate`` metric.
+    This metric computes whether the retrieved contexts contain any of the golden responses.
 
     :param eval_field: The field to evaluate. Defaults to None.
         If None, only strings are supported as the `retrieved_contexts`.
@@ -46,10 +47,7 @@ class SuccessRateConfig:
 
 @METRICS("retrieval_success_rate", config_class=SuccessRateConfig)
 class SuccessRate(MetricsBase):
-    """SuccessRate metric.
-
-    This metric computes whether the retrieved contexts contain any of the golden responses.
-    """
+    """The SuccessRate metric computes whether the retrieved contexts contain any of the golden responses."""
 
     def __init__(self, cfg: SuccessRateConfig) -> None:
         self.eval_field = cfg.eval_field
@@ -166,14 +164,20 @@ def pytrec_evaluate(
 
 @dataclass
 class RetrievalRecallConfig:
+    """Configuration for ``RetrievalRecall`` metric.
+    This metric computes the recall of the retrieved contexts.
+    The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
+
+    :param k_values: The k values for evaluation. Defaults to [1, 5, 10].
+    :type k_values: list[int]
+    """
+
     k_values: list[int] = field(default_factory=lambda: [1, 5, 10])
 
 
 @METRICS("retrieval_recall", config_class=RetrievalRecallConfig)
 class RetrievalRecall(MetricsBase):
-    """RetrievalRecall metric.
-
-    This metric computes the recall of the retrieved contexts."""
+    """The RetrievalRecall metric computes the recall of the retrieved contexts."""
 
     def __init__(self, cfg: RetrievalRecallConfig) -> None:
         self.k_values = cfg.k_values
@@ -197,14 +201,20 @@ class RetrievalRecall(MetricsBase):
 
 @dataclass
 class RetrievalPrecisionConfig:
+    """Configuration for ``RetrievalPrecision`` metric.
+    This metric computes the precision of the retrieved contexts.
+    The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
+
+    :param k_values: The k values for evaluation. Defaults to [1, 5, 10].
+    :type k_values: list[int]
+    """
+
     k_values: list[int] = field(default_factory=lambda: [1, 5, 10])
 
 
 @METRICS("retrieval_precision", config_class=RetrievalPrecisionConfig)
 class RetrievalPrecision(MetricsBase):
-    """RetrievalPrecision metric.
-
-    This metric computes the precision of the retrieved contexts."""
+    """The RetrievalPrecision metric computes the precision of the retrieved contexts."""
 
     def __init__(self, cfg: RetrievalPrecisionConfig) -> None:
         self.k_values = cfg.k_values
@@ -228,11 +238,21 @@ class RetrievalPrecision(MetricsBase):
 
 @dataclass
 class RetrievalMAPConfig:
+    """Configuration for ``RetrievalMAP`` metric.
+    This metric computes the MAP of the retrieved contexts.
+    The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
+
+    :param k_values: The k values for evaluation. Defaults to [1, 5, 10].
+    :type k_values: list[int]
+    """
+
     k_values: list[int] = field(default_factory=list)
 
 
 @METRICS("retrieval_map", config_class=RetrievalMAPConfig)
 class RetrievalMAP(MetricsBase):
+    """The RetrievalMAP metric computes the Mean Average Precision (MAP) of the retrieved contexts."""
+
     def __init__(self, cfg: RetrievalMAPConfig) -> None:
         self.k_values = cfg.k_values
         return
@@ -255,11 +275,21 @@ class RetrievalMAP(MetricsBase):
 
 @dataclass
 class RetrievalNDCGConfig:
+    """Configuration for ``RetrievalNDCG`` metric.
+    This metric computes the nDCG of the retrieved contexts.
+    The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
+
+    :param k_values: The k values for evaluation. Defaults to [1, 5, 10].
+    :type k_values: list[int]
+    """
+
     k_values: list[int] = field(default_factory=list)
 
 
 @METRICS("retrieval_ndcg", config_class=RetrievalNDCGConfig)
 class RetrievalNDCG(MetricsBase):
+    """The RetrievalNDCG metric computes the Normalized Discounted Cumulative Gain (nDCG) of the retrieved contexts."""
+
     def __init__(self, cfg: RetrievalNDCGConfig) -> None:
         self.k_values = cfg.k_values
         return
