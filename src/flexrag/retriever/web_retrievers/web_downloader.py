@@ -26,13 +26,13 @@ class WebDownloaderBase(ABC):
         self.allow_parallel = cfg.allow_parallel
         return
 
-    def download(self, urls: str | list[str]) -> Any:
+    def download(self, urls: str | list[str]) -> list[Any]:
         """Download the web pages.
 
         :param urls: The urls to download.
         :type urls: str | list[str]
         :return: The downloaded web pages.
-        :rtype: Any
+        :rtype: list[Any]
         """
         if isinstance(urls, str):
             urls = [urls]
@@ -68,7 +68,7 @@ WEB_DOWNLOADERS = Register[WebDownloaderBase]("web_downloader")
 
 
 @dataclass
-class SimpleWebDownloaderConfig:
+class SimpleWebDownloaderConfig(WebDownloaderBaseConfig):
     proxy: Optional[str] = None
     timeout: float = 3.0
     max_retries: int = 3
@@ -82,6 +82,7 @@ class SimpleWebDownloader(WebDownloaderBase):
     """Download the html content using httpx."""
 
     def __init__(self, cfg: SimpleWebDownloaderConfig) -> None:
+        super().__init__(cfg)
         # setting httpx client
         self.client = Client(
             headers=cfg.headers,
