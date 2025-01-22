@@ -3,6 +3,8 @@
 </p>
 
 ![Language](https://img.shields.io/badge/language-python-brightgreen)
+[![Code Style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
+[![Imports: isort](https://img.shields.io/badge/imports-isort-blue)](https://pycqa.github.io/isort/)
 [![github license](https://img.shields.io/github/license/ictnlp/flexrag)](LICENSE)
 [![Read the Docs](https://img.shields.io/readthedocs/flexrag)](https://flexrag.readthedocs.io/en/latest/)
 [![PyPI - Version](https://img.shields.io/pypi/v/flexrag)](https://pypi.org/project/flexrag/)
@@ -33,6 +35,7 @@ FlexRAG 是一个灵活的高性能框架，专为检索增强生成 (RAG) 任�
 - **轻量化**: FlexRAG 采用最少的开销设计，高效且易于集成到您的项目中。
 
 # 📢 最新消息
+- **2025-01-22**: 新的命令行入口 `run_retriever` 以及大量新的信息检索指标（如 `RetrievalMAP` ）现已上线，请阅读[文档](https://flexrag.readthedocs.io/en/latest/)以获取更多信息。
 - **2025-01-08**: FlexRAG 现已支持 Windows 系统，您可以直接通过 `pip install flexrag` 来安装。
 - **2025-01-08**: FlexRAG 在单跳QA数据集上的基准测试现已公开，详情请参考 [benchmarks](benchmarks/README.md) 页面。
 - **2025-01-05**: FlexRAG 的[文档](https://flexrag.readthedocs.io/en/latest/)现已上线。

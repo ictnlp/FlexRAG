@@ -56,3 +56,8 @@ html_theme_options = {
 autodoc_mock_imports = [
     "gradio",  # as gradio has a lot of dependencies, we mock it to speed up building the docs.
 ]
+
+
+# -- Options for copybutton --------------------------------------------------
+copybutton_prompt_text = r">>> |\.\.\. "
+copybutton_prompt_is_regexp = True
