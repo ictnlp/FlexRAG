@@ -2,17 +2,28 @@ from dataclasses import dataclass, field
 from glob import glob
 from typing import Iterator
 
-from .chunking import CHUNKERS, ChunkerConfig
-from .dataset import Dataset
-from .document_parser import DOCUMENTPARSERS, Document, DocumentParserConfig
+from flexrag.chunking import CHUNKERS, ChunkerConfig
+from flexrag.document_parser import DOCUMENTPARSERS, Document, DocumentParserConfig
+
+from .dataset import IterableDataset
 
 
 @dataclass
 class DocumentDatasetConfig(DocumentParserConfig, ChunkerConfig):
+    """The configuration for DocumentDataset.
+    The documents will be parsed by the DocumentParser specified in the config and then chunked by the Chunker.
+    If the Chunker is not specified, the dataset will yield the whole document.
+
+    :param document_paths: The paths to the documents.
+    :type document_paths: list[str] | str
+    """
+
     document_paths: list[str] | str = field(default_factory=list)
 
 
-class DocumentDataset(Dataset):
+class DocumentDataset(IterableDataset):
+    """DocumentDataset is a dataset that iterates over documents (PDFs, Words, HTMLs, etc.)."""
+
     def __init__(self, cfg: DocumentDatasetConfig) -> None:
         # parse paths
         if isinstance(cfg.document_paths, str):

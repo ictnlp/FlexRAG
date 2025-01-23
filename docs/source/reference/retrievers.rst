@@ -9,10 +9,6 @@ Retrievers
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.retriever.RetrievedContext
-    :members:
-    :inherited-members:
-
 .. autoclass:: flexrag.retriever.RetrieverConfig
     :members:
     :inherited-members:
@@ -134,7 +130,7 @@ Web Retrievers
 --------------
 Web retrievers are used to retrieve data from the web.
 
-.. autoclass:: flexrag.retriever.web_retrievers.WebRetrieverConfig
+.. autoclass:: flexrag.retriever.web_retrievers.WebRetrieverBaseConfig
     :members:
     :inherited-members:
 

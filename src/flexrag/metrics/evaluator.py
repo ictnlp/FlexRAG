@@ -1,24 +1,24 @@
 from dataclasses import dataclass, field
 
-from flexrag.data import TextProcessPipeline, TextProcessPipelineConfig
-from flexrag.retriever import RetrievedContext
+from flexrag.common_dataclass import RetrievedContext
+from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import LOGGER_MANAGER
 
-from .metrics_base import METRICS
+from .metrics_base import METRICS, MetricsBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.metrics")
 MetricConfig = METRICS.make_config(allow_multiple=True)
 
 
 @dataclass
-class RAGEvaluatorConfig(MetricConfig):
+class EvaluatorConfig(MetricConfig):
     round: int = 2
     response_preprocess: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
 
 
-class RAGEvaluator:
-    def __init__(self, cfg: RAGEvaluatorConfig) -> None:
-        self.metrics = {
+class Evaluator:
+    def __init__(self, cfg: EvaluatorConfig) -> None:
+        self.metrics: dict[str, MetricsBase] = {
             name: metric for name, metric in zip(cfg.metrics_type, METRICS.load(cfg))
         }
         self.response_pipeline = TextProcessPipeline(cfg.response_preprocess)
@@ -71,10 +71,12 @@ class RAGEvaluator:
         # evaluate
         evaluation_results = {}
         evaluation_details = {}
-        responses = [self.response_pipeline(res) for res in responses]
-        golden_responses = [
-            [self.response_pipeline(g) for g in golds] for golds in golden_responses
-        ]
+        if responses is not None:
+            responses = [self.response_pipeline(res) for res in responses]
+        if golden_responses is not None:
+            golden_responses = [
+                [self.response_pipeline(g) for g in golds] for golds in golden_responses
+            ]
         for metric in self.metrics:
             metric = str(metric)  # make json serializable
             r, r_detail = self.metrics[metric](
@@ -85,7 +87,8 @@ class RAGEvaluator:
                 golden_contexts=golden_contexts,
             )
             if log:
-                logger.info(f"{metric}: {r*100:.{self.round}f}%")
-            evaluation_results[metric] = r
+                for name, score in r.items():
+                    logger.info(f"{name}: {score*100:.{self.round}f}%")
+            evaluation_results.update(r)
             evaluation_details[metric] = r_detail
         return evaluation_results, evaluation_details

@@ -7,9 +7,9 @@ from typing import Optional
 import numpy as np
 from omegaconf import MISSING
 
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import ENCODERS, GENERATORS, EncoderConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.retriever import RetrievedContext
 from flexrag.utils import TIME_METER
 
 from .refiner import REFINERS, RefinerBase

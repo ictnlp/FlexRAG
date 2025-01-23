@@ -4,7 +4,6 @@ from .elastic_retriever import ElasticRetriever, ElasticRetrieverConfig
 from .retriever_base import (
     LocalRetriever,
     LocalRetrieverConfig,
-    RetrievedContext,
     RetrieverBase,
     RetrieverBaseConfig,
     RETRIEVERS,
@@ -35,7 +34,6 @@ __all__ = [
     "LocalRetrieverConfig",
     "RetrieverBase",
     "RetrieverBaseConfig",
-    "RetrievedContext",
     "DenseRetriever",
     "DenseRetrieverConfig",
     "ElasticRetriever",

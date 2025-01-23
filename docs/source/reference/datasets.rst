@@ -1,0 +1,78 @@
+Datasets
+========
+This module provides a set of classes and functions for loading and processing datasets.
+
+.. BaseClasses
+.. autoclass:: flexrag.datasets.IterableDataset
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.datasets.MappingDataset
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.datasets.ChainDataset
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.datasets.ConcatDataset
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. Line Delimited Dataset
+.. autoclass:: flexrag.datasets.LineDelimitedDatasetConfig
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.datasets.LineDelimitedDataset
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. RAG Datasets
+.. autoclass:: flexrag.datasets.RAGEvalDatasetConfig
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.datasets.RAGEvalDataset
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.datasets.RAGCorpusDatasetConfig
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.datasets.RAGCorpusDataset
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. Retrieval Datasets
+.. autoclass:: flexrag.datasets.MTEBDatasetConfig
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.datasets.MTEBDataset
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. Document Datasets
+.. autoclass:: flexrag.datasets.DocumentDatasetConfig
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.datasets.DocumentDataset
+    :members:
+    :inherited-members:
+    :show-inheritance:

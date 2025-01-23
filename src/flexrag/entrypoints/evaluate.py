@@ -4,16 +4,15 @@ from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import MISSING, OmegaConf
+from omegaconf import OmegaConf
 
-from flexrag.data import LineDelimitedDataset
-from flexrag.metrics import RAGEvaluatorConfig, RAGEvaluator
+from flexrag.datasets import LineDelimitedDataset, LineDelimitedDatasetConfig
+from flexrag.metrics import Evaluator, EvaluatorConfig
 from flexrag.utils import LOGGER_MANAGER
 
 
 @dataclass
-class Config(RAGEvaluatorConfig):
-    data_path: str = MISSING
+class Config(EvaluatorConfig, LineDelimitedDatasetConfig):
     output_path: Optional[str] = None
 
 
@@ -30,7 +29,7 @@ def main(config: Config):
     logger.debug(f"Configs:\n{OmegaConf.to_yaml(config)}")
 
     # load dataset
-    dataset = LineDelimitedDataset(config.data_path)
+    dataset = LineDelimitedDataset(config)
 
     questions = [i["question"] for i in dataset]
     responses = [i["response"] for i in dataset]
@@ -39,7 +38,7 @@ def main(config: Config):
     golden_contexts = [i["golden_contexts"] for i in dataset]
 
     # evaluate
-    evaluator = RAGEvaluator(config)
+    evaluator = Evaluator(config)
     resp_score, resp_score_detail = evaluator.evaluate(
         questions=questions,
         responses=responses,

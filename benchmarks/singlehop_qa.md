@@ -59,11 +59,14 @@ We recommend using facebook/contriever-msmarco or E5 for academic usage as it is
 | Faiss Auto(nprobe=512) |  64.14   | 59.04 | 81.42 | 49.62 | 39.11 | 77.87 |    70.48    | 62.57 | 79.80 |  61.41  | 53.57 | 79.70 |
 | Faiss Refine           |  64.11   | 58.90 | 81.27 | 48.91 | 38.34 | 77.81 |    70.24    | 62.43 | 79.89 |  61.09  | 53.22 | 79.66 |
 | ScaNN                  |  63.26   | 58.11 | 82.13 | 49.31 | 39.25 | 77.76 |    70.50    | 62.64 | 79.93 |  61.02  | 53.33 | 79.94 |
+| Annoy(search_k=40000)  |  26.95   | 24.23 | 47.96 | 31.67 | 23.49 | 52.41 |    52.17    | 45.35 | 59.95 |  36.93  | 31.02 | 53.44 |
+| Annoy(search_k=400000) |  38.69   | 35.10 | 58.90 | 42.90 | 33.35 | 66.81 |    63.07    | 55.60 | 72.09 |  48.22  | 41.35 | 65.93 |
 
 
 Observations:
-- Faiss provides a good balance between performance and efficiency.
+- Faiss(Auto) provides a good balance between performance and efficiency.
 - ScaNN offers high retrieval speed and accuracy, but it consumes a large amount of memory, making it suitable for use on platforms with ample memory.
+- Annoy can use memory-mapping technology to reduce memory usage, but it incurs significant overhead during index construction and has lower accuracy for high-dimensional vector retrieval.
 
 
 ## Reranker Benchmarks

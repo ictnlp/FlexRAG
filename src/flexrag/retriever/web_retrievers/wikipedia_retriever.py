@@ -5,27 +5,33 @@ from typing import Optional
 import requests
 from bs4 import BeautifulSoup
 
-from flexrag.utils import SimpleProgressLogger, LOGGER_MANAGER
-from ..retriever_base import (
-    RETRIEVERS,
-    RetrievedContext,
-    RetrieverBase,
-    RetrieverBaseConfig,
-)
+from flexrag.common_dataclass import RetrievedContext
+from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger
 
+from ..retriever_base import RETRIEVERS, RetrieverBase, RetrieverBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.web_retriever")
 
 
 @dataclass
 class WikipediaRetrieverConfig(RetrieverBaseConfig):
+    """The configuration for the ``WikipediaRetriever``.
+
+    :param search_url: The search URL for Wikipedia.
+        Default is "https://en.wikipedia.org/w/index.php?search=".
+    :type search_url: str
+    :param proxy: The proxy to use. Default is None.
+    :type proxy: Optional[str]
+    """
+
     search_url: str = "https://en.wikipedia.org/w/index.php?search="
     proxy: Optional[str] = None
 
 
 @RETRIEVERS("wikipedia", config_class=WikipediaRetrieverConfig)
 class WikipediaRetriever(RetrieverBase):
-    """Adapted from https://github.com/ysymyth/ReAct"""
+    """WikipediaRetriever retrieves information from Wikipedia directly.
+    Adapted from https://github.com/ysymyth/ReAct"""
 
     name = "wikipedia"
 

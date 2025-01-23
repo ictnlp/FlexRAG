@@ -4,9 +4,9 @@ import uuid
 import pytest
 from dataclasses import dataclass, field
 
-from omegaconf import MISSING, OmegaConf
+from omegaconf import OmegaConf
 
-from flexrag.data import LineDelimitedDataset
+from flexrag.datasets import LineDelimitedDataset, LineDelimitedDatasetConfig
 from flexrag.retriever import (
     BM25SRetriever,
     BM25SRetrieverConfig,
@@ -20,7 +20,7 @@ from flexrag.retriever import (
 
 
 @dataclass
-class RetrieverTestConfig:
+class RetrieverTestConfig(LineDelimitedDatasetConfig):
     corpus_path: str = os.path.join(
         os.path.dirname(__file__), "testcorp", "testcorp.jsonl"
     )
@@ -41,7 +41,7 @@ def setup_elastic():
 
 @pytest.fixture
 def setup_typesense():
-    TestRetrievers.cfg.typesense_config.source = str(uuid.uuid4())
+    TestRetrievers.cfg.typesense_config.index_name = str(uuid.uuid4())
     retriever = TypesenseRetriever(TestRetrievers.cfg.typesense_config)
     yield retriever
     retriever.clean()

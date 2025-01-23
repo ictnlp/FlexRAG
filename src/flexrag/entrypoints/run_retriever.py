@@ -9,10 +9,10 @@ import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 
-from flexrag.assistant import ASSISTANTS
-from flexrag.common_dataclass import RetrievedContext
-from flexrag.datasets import RAGEvalDataset, RAGEvalDatasetConfig
+from flexrag.common_dataclass import Context, RetrievedContext
+from flexrag.datasets import MTEBDataset, MTEBDatasetConfig
 from flexrag.metrics import Evaluator, EvaluatorConfig
+from flexrag.retriever import RETRIEVERS
 from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, load_user_module
 
 # load user modules before loading config
@@ -21,20 +21,19 @@ for arg in sys.argv:
         load_user_module(arg.split("=")[1])
         sys.argv.remove(arg)
 
-
-AssistantConfig = ASSISTANTS.make_config()
+RetrieverConfig = RETRIEVERS.make_config(config_name="RetrieverConfig")
 
 
 @dataclass
-class Config(AssistantConfig, RAGEvalDatasetConfig):
+class Config(RetrieverConfig, MTEBDatasetConfig):
+    output_path: Optional[str] = None
     eval_config: EvaluatorConfig = field(default_factory=EvaluatorConfig)  # fmt: skip
     log_interval: int = 10
-    output_path: Optional[str] = None
 
 
 cs = ConfigStore.instance()
 cs.store(name="default", node=Config)
-logger = LOGGER_MANAGER.get_logger("run_assistant")
+logger = LOGGER_MANAGER.get_logger("run_retriever")
 
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
@@ -44,10 +43,10 @@ def main(config: Config):
     config = OmegaConf.merge(default_cfg, config)
 
     # load dataset
-    testset = RAGEvalDataset(config)
+    testset = MTEBDataset(config)
 
     # load assistant
-    assistant = ASSISTANTS.load(config)
+    retriever = RETRIEVERS.load(config)
 
     # prepare output paths
     if config.output_path is not None:
@@ -73,27 +72,20 @@ def main(config: Config):
     # search and generate
     p_logger = SimpleProgressLogger(logger, interval=config.log_interval)
     questions = []
-    golden_answers = []
-    golden_contexts = []
-    responses = []
-    contexts: list[list[RetrievedContext]] = []
+    goldens: list[list[Context]] = []
+    retrieved: list[list[RetrievedContext]] = []
     with open(details_path, "w", encoding="utf-8") as f:
         for item in testset:
             questions.append(item.question)
-            golden_answers.append(item.golden_answers)
-            golden_contexts.append(item.golden_contexts)
-            response, ctxs, metadata = assistant.answer(question=item.question)
-            responses.append(response)
-            contexts.append(ctxs)
+            goldens.append(item.contexts)
+            ctxs = retriever.search(query=item.question)[0]
+            retrieved.append(ctxs)
             json.dump(
                 {
                     "question": item.question,
-                    "golden": item.golden_answers,
-                    "golden_contexts": item.golden_contexts,
-                    "metadata_test": item.meta_data,
-                    "response": response,
+                    "golden_contexts": item.contexts,
+                    "metadata": item.meta_data,
                     "contexts": ctxs,
-                    "metadata": metadata,
                 },
                 f,
                 ensure_ascii=False,
@@ -105,10 +97,8 @@ def main(config: Config):
     evaluator = Evaluator(config.eval_config)
     resp_score, resp_score_detail = evaluator.evaluate(
         questions=questions,
-        responses=responses,
-        golden_responses=golden_answers,
-        retrieved_contexts=contexts,
-        golden_contexts=golden_contexts,
+        retrieved_contexts=retrieved,
+        golden_contexts=goldens,
         log=True,
     )
     with open(eval_score_path, "w", encoding="utf-8") as f:

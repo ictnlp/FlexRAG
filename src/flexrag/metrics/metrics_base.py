@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.utils import Register
-from flexrag.retriever import RetrievedContext
 
 
 class MetricsBase(ABC):
@@ -12,7 +12,7 @@ class MetricsBase(ABC):
         golden_responses: list[list[str]] = None,
         retrieved_contexts: list[list[str | RetrievedContext]] = None,
         golden_contexts: list[list[str]] = None,
-    ) -> dict[str, float]:
+    ) -> tuple[dict[str, float], dict]:
         """
         Compute the metric value.
 
@@ -26,8 +26,8 @@ class MetricsBase(ABC):
         :type golden_responses: list[list[str]], optional
         :type retrieved_contexts: list[list[str | RetrievedContext]], optional
         :type golden_contexts: list[list[str]], optional
-        :return: The metric value and the metadata of the metric.
-        :rtype: tuple[float, object]
+        :return: The metric scores and the metadata of the metric.
+        :rtype: tuple[dict[str, float], dict]
         """
         return self.compute(
             questions=questions,
@@ -45,7 +45,7 @@ class MetricsBase(ABC):
         golden_responses: list[list[str]] = None,
         retrieved_contexts: list[list[str | RetrievedContext]] = None,
         golden_contexts: list[list[str]] = None,
-    ) -> tuple[float, object]:
+    ) -> tuple[dict[str, float], dict]:
         """
         Compute the metric value.
 
@@ -59,8 +59,8 @@ class MetricsBase(ABC):
         :type golden_responses: list[list[str]], optional
         :type retrieved_contexts: list[list[str | RetrievedContext]], optional
         :type golden_contexts: list[list[str]], optional
-        :return: The metric value and the metadata of the metric.
-        :rtype: tuple[float, object]
+        :return: The metric scores and the metadata of the metric.
+        :rtype: tuple[dict[str, float], dict]
         """
         return
 

@@ -1,16 +1,17 @@
 import asyncio
+import json
 import os
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Any, Iterable, Optional
+from typing import Iterable
 
 import numpy as np
-import json
 from omegaconf import DictConfig, OmegaConf
 
 from flexrag.cache import LMDBBackendConfig, PersistentCache, PersistentCacheConfig
-from flexrag.data import TextProcessPipeline, TextProcessPipelineConfig
+from flexrag.common_dataclass import Context, RetrievedContext
+from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import LOGGER_MANAGER, Register, SimpleProgressLogger
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers")
@@ -66,6 +67,9 @@ def batched_cache(func):
         disable_cache = search_kwargs.pop(
             "disable_cache", os.environ.get("DISABLE_CACHE", "False")
         )
+        # FIXME: The meta information is too large to be stored in the lmdb.
+        # mdb_put: MDB_MAP_FULL: Environment mapsize limit reached
+        disable_cache = "True"
         if disable_cache == "True":
             return func(self, query, **search_kwargs)
 
@@ -124,38 +128,6 @@ class LocalRetrieverConfig(RetrieverBaseConfig):
 
     batch_size: int = 32
     query_preprocess_pipeline: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
-
-
-@dataclass
-class RetrievedContext:
-    """The dataclass for retrieved context.
-
-    :param retriever: The name of the retriever. Required.
-    :type retriever: str
-    :param query: The query for retrieval. Required.
-    :type query: str
-    :param data: The retrieved data. Required.
-    :type data: dict
-    :param source: The source of the retrieved data. Default: None.
-    :type source: Optional[str]
-    :param score: The relevance score of the retrieved data. Default: 0.0.
-    :type score: float
-    """
-
-    retriever: str
-    query: str
-    data: dict
-    source: Optional[str] = None
-    score: float = 0.0
-
-    def to_dict(self):
-        return {
-            "retriever": self.retriever,
-            "query": self.query,
-            "source": self.source,
-            "score": self.score,
-            "data": self.data,
-        }
 
 
 class RetrieverBase(ABC):
@@ -244,12 +216,12 @@ class LocalRetriever(RetrieverBase):
         return
 
     @abstractmethod
-    def add_passages(self, passages: Iterable[dict[str, Any]]):
+    def add_passages(self, passages: Iterable[Context]):
         """
         Add passages to the retriever database.
 
         :param passages: The passages to add.
-        :type passages: Iterable[dict[str, str]]
+        :type passages: Iterable[Context]
         :return: None
         """
         return

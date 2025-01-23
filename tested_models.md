@@ -11,6 +11,8 @@
 - intfloat/e5-base-v2
 - openai/clip-vit-base-patch32
 - jinaai/jina-clip-v2
+- Alibaba-NLP/gte-multilingual-base
+- Alibaba-NLP/gte-modernbert-base
 
 ## Tested ReRankers
 - unicamp-dl/InRanker-base

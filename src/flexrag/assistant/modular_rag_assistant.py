@@ -2,11 +2,12 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any, Optional
 
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.context_refine import BasicPacker, BasicPackerConfig
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.ranker import RANKERS, RankerConfig
-from flexrag.retriever import RETRIEVERS, RetrievedContext, RetrieverConfig
+from flexrag.retriever import RETRIEVERS, RetrieverConfig
 from flexrag.utils import LOGGER_MANAGER, Choices
 
 from .assistant import ASSISTANTS, PREDEFINED_PROMPTS, AssistantBase, SearchHistory

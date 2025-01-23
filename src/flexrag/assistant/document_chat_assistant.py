@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 from typing import Any
 
-from flexrag.data import CHUNKERS, DOCUMENTPARSERS, ChunkerConfig, DocumentParserConfig
+from flexrag.common_dataclass import RetrievedContext
+from flexrag.chunking import CHUNKERS, ChunkerConfig
+from flexrag.document_parser import DOCUMENTPARSERS, DocumentParserConfig
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.ranker import RANKERS, RankerConfig
-from flexrag.retriever import DenseRetriever, DenseRetrieverConfig, RetrievedContext
+from flexrag.retriever import DenseRetriever, DenseRetrieverConfig
 from flexrag.utils import LOGGER_MANAGER
 
 from .assistant import ASSISTANTS, AssistantBase

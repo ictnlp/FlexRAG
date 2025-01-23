@@ -9,16 +9,16 @@ import requests
 from omegaconf import MISSING
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
-from flexrag.utils import LOGGER_MANAGER, Choices, SimpleProgressLogger, TIME_METER
+from flexrag.common_dataclass import RetrievedContext
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, SimpleProgressLogger
 
 from ..retriever_base import (
     RETRIEVERS,
-    RetrievedContext,
     RetrieverBase,
     RetrieverBaseConfig,
     batched_cache,
 )
-from .web_reader import WEB_READERS, WebRetrievedContext
+from .web_reader import WEB_READERS, WebReaderConfig, WebRetrievedContext
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.web_retriever")
 
@@ -33,21 +33,26 @@ def _save_error_state(retry_state: RetryCallState) -> Exception:
     raise retry_state.outcome.exception()
 
 
-WebReaderConfig = WEB_READERS.make_config(default="snippet")
-
-
 @dataclass
-class WebRetrieverConfig(RetrieverBaseConfig, WebReaderConfig):
-    timeout: float = 3.0
+class WebRetrieverBaseConfig(RetrieverBaseConfig, WebReaderConfig):
+    """The configuration for the ``WebRetrieverBase``.
+
+    :param retry_times: The number of times to retry. Default is 3.
+    :type retry_times: int
+    :param retry_delay: The delay between retries. Default is 0.5.
+    :type retry_delay: float
+    """
+
     retry_times: int = 3
     retry_delay: float = 0.5
 
 
 class WebRetrieverBase(RetrieverBase):
-    def __init__(self, cfg: WebRetrieverConfig):
+    """The base class for the web retrievers."""
+
+    def __init__(self, cfg: WebRetrieverBaseConfig):
         super().__init__(cfg)
         # set retry parameters
-        self.timeout = cfg.timeout
         self.retry_times = cfg.retry_times
         self.retry_delay = cfg.retry_delay
         # load web reader
@@ -94,14 +99,14 @@ class WebRetrieverBase(RetrieverBase):
         top_k: int,
         **search_kwargs,
     ) -> list[WebRetrievedContext]:
-        """Search queries using local retriever.
+        """Search the query using the search engine.
 
-        Args:
-            query (str): Query to search.
-            top_k (int, optional): N documents to return.
-
-        Returns:
-            list[WebRetrievedContext]: k WebRetrievedContext.
+        :param query: The query to search.
+        :type query: str
+        :param top_k: The number of documents to return.
+        :type top_k: int
+        :return: The retrieved contexts.
+        :rtype: list[WebRetrievedContext]
         """
         return
 
@@ -111,19 +116,35 @@ class WebRetrieverBase(RetrieverBase):
 
 
 @dataclass
-class BingRetrieverConfig(WebRetrieverConfig):
+class BingRetrieverConfig(WebRetrieverBaseConfig):
+    """The configuration for the ``BingRetriever``.
+
+    :param subscription_key: The subscription key for the Bing Search API.
+        Default is os.environ.get("BING_SEARCH_KEY", "EMPTY").
+    :type subscription_key: str
+    :param endpoint: The endpoint for the Bing Search API.
+        Default is "https://api.bing.microsoft.com".
+    :type endpoint: str
+    :param timeout: The timeout for the requests. Default is 3.0.
+    :type timeout: float
+    """
+
     subscription_key: str = os.environ.get("BING_SEARCH_KEY", "EMPTY")
     endpoint: str = "https://api.bing.microsoft.com"
+    timeout: float = 3.0
 
 
 @RETRIEVERS("bing", config_class=BingRetrieverConfig)
 class BingRetriever(WebRetrieverBase):
+    """The BingRetriever retrieves the web pages using the Bing Search API."""
+
     name = "bing"
 
     def __init__(self, cfg: BingRetrieverConfig):
         super().__init__(cfg)
         self.endpoint = cfg.endpoint + "/v7.0/search"
         self.headers = {"Ocp-Apim-Subscription-Key": cfg.subscription_key}
+        self.timeout = cfg.timeout
         return
 
     def search_item(
@@ -157,12 +178,20 @@ class BingRetriever(WebRetrieverBase):
 
 
 @dataclass
-class DuckDuckGoRetrieverConfig(WebRetrieverConfig):
+class DuckDuckGoRetrieverConfig(WebRetrieverBaseConfig):
+    """The configuration for the ``DuckDuckGoRetriever``.
+
+    :param proxy: The proxy to use. Default is None.
+    :type proxy: Optional[str]
+    """
+
     proxy: Optional[str] = None
 
 
 @RETRIEVERS("ddg", config_class=DuckDuckGoRetrieverConfig)
 class DuckDuckGoRetriever(WebRetrieverBase):
+    """The DuckDuckGoRetriever retrieves the web pages using the DuckDuckGo Search API."""
+
     name = "ddg"
 
     def __init__(self, cfg: DuckDuckGoRetrieverConfig):
@@ -194,15 +223,35 @@ class DuckDuckGoRetriever(WebRetrieverBase):
 
 
 @dataclass
-class GoogleRetrieverConfig(WebRetrieverConfig):
+class GoogleRetrieverConfig(WebRetrieverBaseConfig):
+    """The configuration for the ``GoogleRetriever``.
+
+    :param subscription_key: The subscription key for the Google Search API.
+        Default is os.environ.get("GOOGLE_SEARCH_KEY", "EMPTY").
+    :type subscription_key: str
+    :param search_engine_id: The search engine id for the Google Search API.
+        Default is os.environ.get("GOOGLE_SEARCH_ENGINE_ID", "EMPTY").
+    :type search_engine_id: str
+    :param endpoint: The endpoint for the Google Search API.
+        Default is "https://customsearch.googleapis.com/customsearch/v1".
+    :type endpoint: str
+    :param proxy: The proxy to use. Default is None.
+    :type proxy: Optional[str]
+    :param timeout: The timeout for the requests. Default is 3.0.
+    :type timeout: float
+    """
+
     subscription_key: str = os.environ.get("GOOGLE_SEARCH_KEY", "EMPTY")
     search_engine_id: str = os.environ.get("GOOGLE_SEARCH_ENGINE_ID", "EMPTY")
     endpoint: str = "https://customsearch.googleapis.com/customsearch/v1"
     proxy: Optional[str] = None
+    timeout: float = 3.0
 
 
 @RETRIEVERS("google", config_class=GoogleRetrieverConfig)
 class GoogleRetriever(WebRetrieverBase):
+    """The GoogleRetriever retrieves the web pages using the `Google Custom Search` API."""
+
     name = "google"
 
     def __init__(self, cfg: GoogleRetrieverConfig):
@@ -250,7 +299,21 @@ class GoogleRetriever(WebRetrieverBase):
 
 
 @dataclass
-class SerpApiRetrieverConfig(WebRetrieverConfig):
+class SerpApiRetrieverConfig(WebRetrieverBaseConfig):
+    """The configuration for the ``SerpApiRetriever``.
+
+    :param api_key: The API key for the SerpApi.
+        Default is os.environ.get("SERP_API_KEY", MISSING).
+    :type api_key: str
+    :param engine: The search engine to use. Default is "google".
+        Available choices are "google", "bing", "baidu", "yandex", "yahoo", "google_scholar", "duckduckgo".
+    :type engine: str
+    :param country: The country to search. Default is "us".
+    :type country: str
+    :param language: The language to search. Default is "en".
+    :type language: str
+    """
+
     api_key: str = os.environ.get("SERP_API_KEY", MISSING)
     engine: Choices(  # type: ignore
         [
@@ -269,6 +332,8 @@ class SerpApiRetrieverConfig(WebRetrieverConfig):
 
 @RETRIEVERS("serpapi", config_class=SerpApiRetrieverConfig)
 class SerpApiRetriever(WebRetrieverBase):
+    """The SerpApiRetriever retrieves the web pages using the `SerpApi <https://serpapi.com/>_`."""
+
     def __init__(self, cfg: SerpApiRetrieverConfig):
         super().__init__(cfg)
         try:

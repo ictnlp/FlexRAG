@@ -1,15 +1,10 @@
 from dataclasses import dataclass, field
-from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import MISSING, OmegaConf
+from omegaconf import OmegaConf
 
-from flexrag.data import (
-    LineDelimitedDataset,
-    TextProcessPipeline,
-    TextProcessPipelineConfig,
-)
+from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
 from flexrag.retriever import (
     BM25SRetriever,
     BM25SRetrieverConfig,
@@ -27,7 +22,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.prepare_index")
 
 # fmt: off
 @dataclass
-class Config:
+class Config(RAGCorpusDatasetConfig):
     # retriever configs
     retriever_type: Choices(["dense", "elastic", "typesense", "bm25s"]) = "dense"  # type: ignore
     bm25s_config: BM25SRetrieverConfig = field(default_factory=BM25SRetrieverConfig)
@@ -35,13 +30,6 @@ class Config:
     elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)
     typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)
     reinit: bool = False
-    # corpus configs
-    corpus_path: list[str] = MISSING
-    data_ranges: Optional[list[list[int]]] = field(default=None)
-    saving_fields: list[str] = field(default_factory=list)
-    # corpus process configs
-    text_process_pipeline: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
-    text_process_fields: list[str] = field(default_factory=list)
 # fmt: on
 
 
@@ -72,23 +60,7 @@ def main(cfg: Config):
         logger.warning("Reinitializing retriever and removing all passages")
         retriever.clean()
 
-    # prepare data iterator
-    text_processor = TextProcessPipeline(cfg.text_process_pipeline)
-
-    def prepare_data():
-        for item in LineDelimitedDataset(cfg.corpus_path, cfg.data_ranges):
-            # remove unused fields
-            if len(cfg.saving_fields) > 0:
-                item = {key: item.get(key, "") for key in cfg.saving_fields}
-            # preprocess text fields
-            for key in cfg.text_process_fields:
-                text = text_processor(item[key])
-                if text is None:
-                    text = ""
-                item[key] = text
-            yield item
-
-    retriever.add_passages(passages=prepare_data())
+    retriever.add_passages(passages=RAGCorpusDataset(cfg))
     return
 
 

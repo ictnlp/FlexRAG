@@ -29,8 +29,8 @@ release = get_version()
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
-    "sphinx.ext.autodoc",
     "sphinx.ext.napoleon",
+    "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
     "sphinx_copybutton",
     "myst_parser",
@@ -56,3 +56,8 @@ html_theme_options = {
 autodoc_mock_imports = [
     "gradio",  # as gradio has a lot of dependencies, we mock it to speed up building the docs.
 ]
+
+
+# -- Options for copybutton --------------------------------------------------
+copybutton_prompt_text = r">>> |\.\.\. "
+copybutton_prompt_is_regexp = True

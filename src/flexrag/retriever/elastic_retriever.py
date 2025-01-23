@@ -5,14 +5,10 @@ from typing import Iterable, Optional
 from omegaconf import MISSING
 from elasticsearch import Elasticsearch
 
+from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.utils import SimpleProgressLogger, LOGGER_MANAGER, TIME_METER
 
-from .retriever_base import (
-    RETRIEVERS,
-    LocalRetriever,
-    LocalRetrieverConfig,
-    RetrievedContext,
-)
+from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.elastic")
 
@@ -35,8 +31,6 @@ class ElasticRetrieverConfig(LocalRetrieverConfig):
     :type retry_times: int
     :param retry_delay: Delay time for retry. Default: 0.5.
     :type retry_delay: float
-    :param id_field: Field name for document ID. None stands for auto-generated ID. Default: None.
-    :type id_field: Optional[str]
     """
 
     host: str = "http://localhost:9200"
@@ -46,7 +40,6 @@ class ElasticRetrieverConfig(LocalRetrieverConfig):
     verbose: bool = False
     retry_times: int = 3
     retry_delay: float = 0.5
-    id_field: Optional[str] = None
 
 
 @RETRIEVERS("elastic", config_class=ElasticRetrieverConfig)
@@ -63,7 +56,6 @@ class ElasticRetriever(LocalRetriever):
         self.retry_times = cfg.retry_times
         self.retry_delay = cfg.retry_delay
         self.custom_properties = cfg.custom_properties
-        self.id_field = cfg.id_field
 
         # prepare client
         self.client = Elasticsearch(
@@ -85,7 +77,7 @@ class ElasticRetriever(LocalRetriever):
         return
 
     @TIME_METER("elastic_search", "add_passages")
-    def add_passages(self, passages: Iterable[dict[str, str]]):
+    def add_passages(self, passages: Iterable[Context]):
         def generate_actions():
             index_exists = self.client.indices.exists(index=self.index_name)
             actions = []
@@ -95,7 +87,7 @@ class ElasticRetriever(LocalRetriever):
                     if self.custom_properties is None:
                         properties = {
                             key: {"type": "text", "analyzer": "english"}
-                            for key in passage.keys()
+                            for key in passage.data.keys()
                         }
                     else:
                         properties = self.custom_properties
@@ -112,18 +104,14 @@ class ElasticRetriever(LocalRetriever):
                     index_exists = True
 
                 # prepare action
-                if (self.id_field is not None) and (self.id_field in passage):
-                    docid = passage[self.id_field]
-                else:
-                    docid = str(len(self) + n)
                 action = {
                     "index": {
                         "_index": self.index_name,
-                        "_id": docid,
+                        "_id": passage.context_id,
                     }
                 }
                 actions.append(action)
-                actions.append(passage)
+                actions.append(passage.data)
                 if len(actions) == self.batch_size * 2:
                     yield actions
                     actions = []
@@ -145,6 +133,7 @@ class ElasticRetriever(LocalRetriever):
                 ]
                 raise RuntimeError(f"Failed to index passages: {err_passage_ids}")
             p_logger.update(len(actions) // 2, "Indexing")
+        logger.info(f"Finished adding passages.")
         return
 
     @TIME_METER("elastic_search", "search")
@@ -221,10 +210,11 @@ class ElasticRetriever(LocalRetriever):
             results.append(
                 [
                     RetrievedContext(
+                        context_id=i["_id"],
                         retriever=self.name,
                         query=q,
                         data=i["_source"],
-                        source=self.index_name,
+                        source=i["_index"],
                         score=i["_score"],
                     )
                     for i in r
