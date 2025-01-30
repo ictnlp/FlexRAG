@@ -5,54 +5,56 @@ from flexrag.common_dataclass import Context, RAGEvalData
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import LOGGER_MANAGER
 
+from .hf_dataset import HFDataset, HFDatasetConfig
 from .line_delimited_dataset import LineDelimitedDataset, LineDelimitedDatasetConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.rag_dataset")
 
 
 @dataclass
-class RAGEvalDatasetConfig(LineDelimitedDatasetConfig):
+class RAGEvalDatasetConfig(HFDatasetConfig):
     """The configuration for ``RAGEvalDataset``.
     This dataset helps to load the evaluation dataset collected by `FlashRAG <https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets>`_.
     The ``__iter__`` method will yield `RAGEvalData` objects.
 
-    For example, you can download the test set of the `NaturalQuestions` dataset by running the following command:
-
-        >>> wget https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets/resolve/main/nq/test.jsonl
-
-    Then you can use the following code to load the dataset::
+    For example, you can load the `test` set of the `NaturalQuestions` dataset by running the following code:
 
         >>> cfg = RAGEvalDatasetConfig(
-        ...     file_paths=["test.jsonl"],
-        ...     encoding="utf-8",
+        ...     name="nq",
+        ...     split="test",
         ... )
         >>> dataset = RAGEvalDataset(cfg)
     """
 
+    path: str = "RUC-NLPIR/FlashRAG_datasets"
 
-class RAGEvalDataset(LineDelimitedDataset):
+
+class RAGEvalDataset(HFDataset):
     """The dataset for loading RAG evaluation data."""
 
     def __init__(self, cfg: RAGEvalDatasetConfig) -> None:
         super().__init__(cfg)
         return
 
+    def __getitem__(self, index: int) -> RAGEvalData:
+        data = super().__getitem__(index)
+        golden_contexts = data.pop("golden_contexts", None)
+        golden_contexts = (
+            [Context(**context) for context in golden_contexts]
+            if golden_contexts is not None
+            else None
+        )
+        formatted_data = RAGEvalData(
+            question=data.pop("question"),
+            golden_contexts=golden_contexts,
+            golden_answers=data.pop("golden_answers", None),
+        )
+        formatted_data.meta_data = data.pop("meta_data", {})
+        formatted_data.meta_data.update(data)
+        return formatted_data
+
     def __iter__(self) -> Iterator[RAGEvalData]:
-        for data in super().__iter__():
-            golden_contexts = data.pop("golden_contexts", None)
-            golden_contexts = (
-                [Context(**context) for context in golden_contexts]
-                if golden_contexts is not None
-                else None
-            )
-            formatted_data = RAGEvalData(
-                question=data.pop("question"),
-                golden_contexts=golden_contexts,
-                golden_answers=data.pop("golden_answers", None),
-            )
-            formatted_data.meta_data = data.pop("meta_data", {})
-            formatted_data.meta_data.update(data)
-            yield formatted_data
+        yield from super().__iter__()
 
 
 @dataclass
