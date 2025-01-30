@@ -224,7 +224,7 @@ class OpenAIGenerator(GeneratorBase):
                     )
                 )
             )
-        responses = [[i.message.content for i in (await r).choices] for r in tasks]
+        responses = [[i.text for i in (await r).choices] for r in tasks]
         return responses
 
     def _get_options(self, generation_config: GenerationConfig) -> dict:

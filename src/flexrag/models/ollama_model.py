@@ -76,7 +76,7 @@ class OllamaGenerator(GeneratorBase):
                             model=self.model_name,
                             messages=prompt.to_list(),
                             options=options,
-                        )["message"]["content"]
+                        ).message.content
                         for _ in range(generation_config.sample_num)
                     ],
                     prompts,
@@ -93,7 +93,7 @@ class OllamaGenerator(GeneratorBase):
                         messages=prompt,
                         options=options,
                     )
-                    responses[-1].append(response["message"]["content"])
+                    responses[-1].append(response.message.content)
         return responses
 
     @TIME_METER("ollama_generate")
@@ -122,8 +122,7 @@ class OllamaGenerator(GeneratorBase):
                     )
                 )
         responses = [
-            [(await task)["message"]["content"] for task in task_list]
-            for task_list in tasks
+            [(await task).message.content for task in task_list] for task_list in tasks
         ]
         return responses
 
@@ -146,7 +145,7 @@ class OllamaGenerator(GeneratorBase):
                             prompt=prefix,
                             raw=True,
                             options=options,
-                        )["message"]["content"]
+                        ).response
                         for _ in range(generation_config.sample_num)
                     ],
                     prefixes,
@@ -163,7 +162,7 @@ class OllamaGenerator(GeneratorBase):
                         raw=True,
                         options=options,
                     )
-                    responses[-1].append(response["message"]["content"])
+                    responses[-1].append(response.response)
         return responses
 
     @TIME_METER("ollama_generate")
@@ -180,7 +179,7 @@ class OllamaGenerator(GeneratorBase):
             # as ollama does not support sample_num, we sample multiple times
             tasks.append([])
             for _ in range(generation_config.sample_num):
-                tasks.append(
+                tasks[-1].append(
                     asyncio.create_task(
                         asyncio.to_thread(
                             self.client.generate,
@@ -192,8 +191,7 @@ class OllamaGenerator(GeneratorBase):
                     )
                 )
         responses = [
-            [(await task)["message"]["content"] for task in task_list]
-            for task_list in tasks
+            [(await task).response for task in task_list] for task_list in tasks
         ]
         return responses
 
@@ -210,7 +208,7 @@ class OllamaGenerator(GeneratorBase):
         }
 
     def _check(self) -> None:
-        models = [i["name"] for i in self.client.list()["models"]]
+        models = [i["model"] for i in self.client.list()["models"]]
         if self.model_name not in models:
             raise ValueError(f"Model {self.model_name} not found in {models}")
         return

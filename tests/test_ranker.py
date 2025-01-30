@@ -23,18 +23,22 @@ from flexrag.ranker import (
     VoyageRankerConfig,
     RankingResult,
 )
+from flexrag.utils import LOGGER_MANAGER
+
+
+logger = LOGGER_MANAGER.get_logger("tests.test_ranker")
 
 
 @dataclass
 class RankerTestConfig:
-    cohere_config: CohereRankerConfig = field(default_factory=CohereRankerConfig)
-    jina_config: JinaRankerConfig = field(default_factory=JinaRankerConfig)
-    mixedbread_config: MixedbreadRankerConfig = field(default_factory=MixedbreadRankerConfig)  # fmt: skip
-    voyage_config: VoyageRankerConfig = field(default_factory=VoyageRankerConfig)
-    rankgpt_config: RankGPTRankerConfig = field(default_factory=RankGPTRankerConfig)
-    hf_cross_config: HFCrossEncoderRankerConfig = field(default_factory=HFCrossEncoderRankerConfig)  # fmt: skip
-    hf_seq2seq_config: HFSeq2SeqRankerConfig = field(default_factory=HFSeq2SeqRankerConfig)  # fmt: skip
-    hf_colbert_config: HFColBertRankerConfig = field(default_factory=HFColBertRankerConfig)  # fmt: skip
+    cohere_configs: list[CohereRankerConfig] = field(default_factory=list)
+    jina_configs: list[JinaRankerConfig] = field(default_factory=list)
+    mixedbread_configs: list[MixedbreadRankerConfig] = field(default_factory=list)
+    voyage_configs: list[VoyageRankerConfig] = field(default_factory=list)
+    rankgpt_configs: list[RankGPTRankerConfig] = field(default_factory=list)
+    hf_cross_configs: list[HFCrossEncoderRankerConfig] = field(default_factory=list)
+    hf_seq2seq_configs: list[HFSeq2SeqRankerConfig] = field(default_factory=list)
+    hf_colbert_configs: list[HFColBertRankerConfig] = field(default_factory=list)
 
 
 class TestRanker:
@@ -60,64 +64,88 @@ class TestRanker:
 
     @pytest.mark.asyncio
     async def test_rank_cohere(self):
-        ranker = CohereRanker(self.cfg.cohere_config)
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        for cfg in self.cfg.cohere_configs:
+            logger.debug(f"Testing CohereRanker({cfg.model}).")
+            ranker = CohereRanker(cfg)
+            r1 = ranker.rank(self.query, self.candidates)
+            r2 = await ranker.async_rank(self.query, self.candidates)
+            self.valid_result(r1, r2)
+            logger.debug(f"Testing CohereRanker({cfg.model}) done.")
         return
 
     @pytest.mark.asyncio
     async def test_rank_jina(self):
-        ranker = JinaRanker(self.cfg.jina_config)
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        for cfg in self.cfg.jina_configs:
+            logger.debug(f"Testing JinaRanker({cfg.model}).")
+            ranker = JinaRanker(cfg)
+            r1 = ranker.rank(self.query, self.candidates)
+            r2 = await ranker.async_rank(self.query, self.candidates)
+            self.valid_result(r1, r2)
+            logger.debug(f"Testing JinaRanker({cfg.model}) done.")
         return
 
     @pytest.mark.asyncio
     async def test_rank_mixedbread(self):
-        ranker = MixedbreadRanker(self.cfg.mixedbread_config)
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        for cfg in self.cfg.mixedbread_configs:
+            logger.debug(f"Testing MixedbreadRanker({cfg.model}).")
+            ranker = MixedbreadRanker(cfg)
+            r1 = ranker.rank(self.query, self.candidates)
+            r2 = await ranker.async_rank(self.query, self.candidates)
+            self.valid_result(r1, r2)
+            logger.debug(f"Testing MixedbreadRanker({cfg.model}) done.")
         return
 
     @pytest.mark.asyncio
     async def test_rank_voyage(self):
-        ranker = VoyageRanker(self.cfg.voyage_config)
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        for cfg in self.cfg.voyage_configs:
+            logger.debug(f"Testing VoyageRanker({cfg.model}).")
+            ranker = VoyageRanker(cfg)
+            r1 = ranker.rank(self.query, self.candidates)
+            r2 = await ranker.async_rank(self.query, self.candidates)
+            self.valid_result(r1, r2)
+            logger.debug(f"Testing VoyageRanker({cfg.model}) done.")
         return
 
     @pytest.mark.asyncio
     async def test_rank_gpt(self):
-        ranker = RankGPTRanker(self.cfg.rankgpt_config)
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        for cfg in self.cfg.rankgpt_configs:
+            logger.debug(f"Testing RankGPTRanker({cfg.generator_type}).")
+            ranker = RankGPTRanker(cfg)
+            r1 = ranker.rank(self.query, self.candidates)
+            r2 = await ranker.async_rank(self.query, self.candidates)
+            self.valid_result(r1, r2)
+            logger.debug(f"Testing RankGPTRanker({cfg.generator_type}) done.")
         return
 
     @pytest.mark.asyncio
     async def test_rank_hf_cross(self):
-        ranker = HFCrossEncoderRanker(self.cfg.hf_cross_config)
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        for cfg in self.cfg.hf_cross_configs:
+            logger.debug(f"Testing HFCrossEncoderRanker({cfg.model_path}).")
+            ranker = HFCrossEncoderRanker(cfg)
+            r1 = ranker.rank(self.query, self.candidates)
+            r2 = await ranker.async_rank(self.query, self.candidates)
+            self.valid_result(r1, r2)
+            logger.debug(f"Testing HFCrossEncoderRanker({cfg.model_path}) done.")
         return
 
     @pytest.mark.asyncio
     async def test_rank_hf_seq2seq(self):
-        ranker = HFSeq2SeqRanker(self.cfg.hf_seq2seq_config)
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        for cfg in self.cfg.hf_seq2seq_configs:
+            logger.debug(f"Testing HFSeq2SeqRanker({cfg.model_path}).")
+            ranker = HFSeq2SeqRanker(cfg)
+            r1 = ranker.rank(self.query, self.candidates)
+            r2 = await ranker.async_rank(self.query, self.candidates)
+            self.valid_result(r1, r2)
+            logger.debug(f"Testing HFSeq2SeqRanker({cfg.model_path}) done.")
         return
 
     @pytest.mark.asyncio
     async def test_rank_hf_colbert(self):
-        ranker = HFColBertRanker(self.cfg.hf_colbert_config)
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        for cfg in self.cfg.hf_colbert_configs:
+            logger.debug(f"Testing HFColBertRanker({cfg.model_path}).")
+            ranker = HFColBertRanker(cfg)
+            r1 = ranker.rank(self.query, self.candidates)
+            r2 = await ranker.async_rank(self.query, self.candidates)
+            self.valid_result(r1, r2)
+            logger.debug(f"Testing HFColBertRanker({cfg.model_path}) done.")
         return
