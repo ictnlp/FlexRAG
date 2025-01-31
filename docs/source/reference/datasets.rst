@@ -23,6 +23,17 @@ This module provides a set of classes and functions for loading and processing d
     :inherited-members:
     :show-inheritance:
 
+.. HuggingFace Datasets
+.. autoclass:: flexrag.datasets.HFDatasetConfig
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.datasets.HFDataset
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
 .. Line Delimited Dataset
 .. autoclass:: flexrag.datasets.LineDelimitedDatasetConfig
     :members:

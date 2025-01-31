@@ -24,6 +24,20 @@ class RAGEvalDatasetConfig(HFDatasetConfig):
         ...     split="test",
         ... )
         >>> dataset = RAGEvalDataset(cfg)
+
+    You can also load the dataset from a local repository by specifying the path.
+    For example, you can download the dataset by running the following command:
+
+        >>> git lfs install
+        >>> git clone https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets flashrag
+
+    Then you can load the dataset by running the following code:
+
+        >>> cfg = RAGEvalDatasetConfig(
+        ...     path="flashrag",
+        ...     name="nq",
+        ...     split="test.jsonl",
+        ... )
     """
 
     path: str = "RUC-NLPIR/FlashRAG_datasets"

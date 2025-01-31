@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 from datasets import Dataset as _Dataset
@@ -11,6 +11,7 @@ from .dataset import MappingDataset
 @dataclass
 class HFDatasetConfig:
     """The configuration for the ``HFDataset``.
+    The ``HFDataset`` is a wrapper class that employs the ``load_dataset`` method in HuggingFace ``datasets`` library to load the dataset.
 
     :param path: Path or name of the dataset.
     :type path: str
@@ -18,8 +19,8 @@ class HFDatasetConfig:
     :type name: Optional[str]
     :param data_dir: Defining the ``data_dir`` of the dataset configuration.
     :type data_dir: Optional[str]
-    :param data_files: Path(s) to source data file(s).
-    :type data_files: Optional[str]
+    :param data_files: Paths to source data files.
+    :type data_files: list[str]
     :param split: Which split of the data to load.
     :type split: Optional[str]
     :param cache_dir: Directory to read/write data.
@@ -29,14 +30,30 @@ class HFDatasetConfig:
     :param trust_remote_code:  Whether or not to allow for datasets defined on the Hub using a dataset script.
     :type trust_remote_code: bool
 
-    For more information, please refer to the HuggingFace ``datasets`` documentation:
+    For example, you can load the dataset from the HuggingFace by running the following code:
+
+        >>> cfg = HFDatasetConfig(
+        ...     path="mteb/nq",
+        ...     split="test",
+        ... )
+        >>> dataset = HFDataset(cfg)
+
+    You can also load the dataset from a local repository by specifying the path:
+
+        >>> cfg = HFDatasetConfig(
+        ...     path="json",
+        ...     data_files=["path/to/local/my_dataset.json"],
+        ... )
+        >>> dataset = HFDataset(cfg)
+
+    For more information about the parameters, please refer to the HuggingFace ``datasets`` documentation:
     https://huggingface.co/docs/datasets/main/en/package_reference/loading_methods#datasets.load_dataset
     """
 
     path: str
     name: Optional[str] = None
     data_dir: Optional[str] = None
-    data_files: Optional[str] = None
+    data_files: list[str] = field(default_factory=list)
     split: Optional[str] = None
     cache_dir: Optional[str] = None
     token: Optional[str] = None
@@ -49,11 +66,12 @@ class HFDataset(MappingDataset):
     dataset: _Dataset
 
     def __init__(self, cfg: HFDatasetConfig) -> None:
+        super().__init__()
         self.dataset = load_dataset(
             path=cfg.path,
             name=cfg.name,
             data_dir=cfg.data_dir,
-            data_files=cfg.data_files,
+            data_files=cfg.data_files if cfg.data_files else None,
             split=cfg.split,
             cache_dir=cfg.cache_dir,
             token=cfg.token,
