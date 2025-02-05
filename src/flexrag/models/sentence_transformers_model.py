@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass, field
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 from omegaconf import MISSING
@@ -30,6 +30,8 @@ class SentenceTransformerEncoderConfig:
     :type prompt_dict: Optional[dict]
     :param normalize: Whether to normalize embeddings. Defaults to False.
     :type normalize: bool
+    :param model_kwargs: Additional keyword arguments for loading the model. Defaults to {}.
+    :type model_kwargs: dict[str, Any]
     """
 
     model_path: str = MISSING
@@ -40,6 +42,7 @@ class SentenceTransformerEncoderConfig:
     prompt: Optional[str] = None
     prompt_dict: Optional[dict] = None
     normalize: bool = False
+    model_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
 @ENCODERS("sentence_transformer", config_class=SentenceTransformerEncoderConfig)
@@ -55,6 +58,7 @@ class SentenceTransformerEncoder(EncoderBase):
             trust_remote_code=config.trust_remote_code,
             backend="torch",
             prompts=config.prompt_dict,
+            model_kwargs=config.model_kwargs,
         )
         if len(config.device_id) > 1:
             self.pool = self.model.start_multi_process_pool(
