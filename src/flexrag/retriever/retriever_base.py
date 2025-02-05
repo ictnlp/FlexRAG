@@ -4,23 +4,35 @@ import os
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
+from hashlib import blake2b
 from typing import Iterable
 
 import numpy as np
 from omegaconf import DictConfig, OmegaConf
 
-from flexrag.cache import LMDBBackendConfig, PersistentCache, PersistentCacheConfig
+from flexrag.cache import (
+    LMDBBackendConfig,
+    PersistentCacheBase,
+    PersistentCacheConfig,
+    LRUPersistentCache,
+    LFUPersistentCache,
+    FIFOPersistentCache,
+)
 from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import LOGGER_MANAGER, Register, SimpleProgressLogger
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers")
 
-RETRIEVAL_CACHE = PersistentCache(
-    PersistentCacheConfig(
-        backend="lmdb",
+
+# load cache for retrieval
+RETRIEVAL_CACHE: PersistentCacheBase | None
+if os.environ.get("DISABLE_CACHE", "False") == "True":
+    RETRIEVAL_CACHE = None
+else:
+    cache_config = PersistentCacheConfig(
         maxsize=10000000,
-        evict_order="LRU",
+        storage_backend_type="lmdb",
         lmdb_config=LMDBBackendConfig(
             db_path=os.environ.get(
                 "RETRIEVAL_CACHE_PATH",
@@ -30,7 +42,16 @@ RETRIEVAL_CACHE = PersistentCache(
             )
         ),
     )
-)
+    match os.environ.get("RETRIEVAL_CACHE_TYPE", "FIFO"):
+        case "LRU":
+            RETRIEVAL_CACHE = LRUPersistentCache(cache_config)
+        case "LFU":
+            RETRIEVAL_CACHE = LFUPersistentCache(cache_config)
+        case "FIFO":
+            RETRIEVAL_CACHE = FIFOPersistentCache(cache_config)
+        case _:
+            logger.warning("Invalid cache type, cache is disabled.")
+            RETRIEVAL_CACHE = None
 
 
 def batched_cache(func):
@@ -64,13 +85,7 @@ def batched_cache(func):
             query = [query]
 
         # direct search
-        disable_cache = search_kwargs.pop(
-            "disable_cache", os.environ.get("DISABLE_CACHE", "False")
-        )
-        # FIXME: The meta information is too large to be stored in the lmdb.
-        # mdb_put: MDB_MAP_FULL: Environment mapsize limit reached
-        disable_cache = "True"
-        if disable_cache == "True":
+        if RETRIEVAL_CACHE is None:
             return func(self, query, **search_kwargs)
 
         # search from cache
@@ -83,7 +98,6 @@ def batched_cache(func):
             }
             for q in query
         ]
-        keys = [json.dumps(key, sort_keys=True) for key in keys]
         results = [dict_to_retrieved(RETRIEVAL_CACHE.get(k, None)) for k in keys]
 
         # search from database

@@ -1,87 +1,62 @@
+from abc import abstractmethod
 from collections import Counter, OrderedDict
 from dataclasses import dataclass
 from hashlib import blake2b
-from typing import Any, MutableMapping, Optional, Literal
+from typing import Any, MutableMapping, Optional
 
-from flexrag.utils import Choices, LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER
 
-from .backends import PersistentBackendConfig, load_backend
+from .backends import STORAGEBACKENDS, StorageBackendConfig
+from .serializer import SERIALIZERS, SerializerConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.cache")
 
 
-def tupled_hashkey(*args, **kwargs):
-    """Return a cache key for the specified hashable arguments."""
-    return tuple(args), tuple(sorted(kwargs.items()))
-
-
 @dataclass
-class PersistentCacheConfig(PersistentBackendConfig):
+class PersistentCacheConfig(StorageBackendConfig, SerializerConfig):
     maxsize: Optional[int] = None
-    evict_order: Choices(["LRU", "LFU", "FIFO"]) = "LRU"  # type: ignore
-    reset_arguments: bool = False
 
 
-class PersistentCache(MutableMapping):
+class PersistentCacheBase(MutableMapping):
     def __init__(self, cfg: PersistentCacheConfig) -> None:
-        self.__backend = load_backend(cfg)
-
-        # set basic arguments
-        if cfg.maxsize is None:
-            logger.warning("maxsize is not set. Set to infinity.")
-            maxsize = float("inf")
-        else:
-            maxsize = cfg.maxsize
-        self.__meta_key = blake2b("meta".encode()).hexdigest()
-        meta_data = self.__backend.get(
-            self.__meta_key,
-            {
-                "maxsize": maxsize,
-                "evict_order": cfg.evict_order,
-                "order": OrderedDict(),
-                "counter": Counter(),
-            },
-        )
-        self.__backend[self.__meta_key] = meta_data
-        if cfg.reset_arguments:
-            self.reset_arguments(maxsize, cfg.evict_order)
-
-        # check consistency
-        self.__check(fully_check=True)
+        self.backend = STORAGEBACKENDS.load(cfg)
+        self.serializer = SERIALIZERS.load(cfg)
+        self._maxsize = cfg.maxsize
         return
 
-    def __getitem__(self, key) -> Any:
-        if key in self.__backend:
-            self.__update(key, action="get")
-            return self.__backend[key]
+    def __getitem__(self, key: Any) -> Any:
+        hashed_key = self.hash_key(key)
+        if hashed_key in self.backend:
+            return self.serializer.deserialize(self.backend[hashed_key])[1]
         raise KeyError(key)
 
-    def __setitem__(self, key, value: Any) -> None:
-        self.__update(key, action="set")
-        self.__backend[key] = value
-        while len(self) > self.maxsize:
-            self.popitem()
+    def __setitem__(self, key: Any, value: Any) -> None:
+        hashed_key = self.hash_key(key)
+        self.backend[hashed_key] = self.serializer.serialize((key, value))
+        self.reduce_size()
         return
 
-    def __delitem__(self, key) -> None:
-        del self.__backend[key]
-        self.__update(key, action="delete")
+    def __delitem__(self, key: Any) -> None:
+        hashed_key = self.hash_key(key)
+        del self.backend[hashed_key]
         return
 
     def __len__(self) -> int:
-        return len(self.__backend) - 1
+        return len(self.backend)
 
     def __iter__(self):
-        meta_key = blake2b("meta".encode()).hexdigest()
-        for key in self.__backend:
-            if key == meta_key:
-                continue
+        for hashed_key in self.backend:
+            key, _ = self.serializer.deserialize(self.backend[hashed_key])
             yield key
 
     def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(evict_order={self.evict_order}, maxsize={self.maxsize}, currsize={self.currsize}) {repr(self.__backend)}"
+        return (
+            f"{self.__class__.__name__}"
+            f"(maxsize={self.maxsize}, currsize={len(self)}) "
+            f"{repr(self.backend)}"
+        )
 
-    def __call__(self, func: callable) -> callable:
+    def cache(self, func: callable) -> callable:
         def tupled_args(*args, **kwargs):
             """Return a cache key for the specified hashable arguments."""
             return tuple(args), tuple(sorted(kwargs.items()))
@@ -96,78 +71,166 @@ class PersistentCache(MutableMapping):
 
         return wrapper
 
-    def popitem(self) -> tuple:
-        if not self:
-            raise KeyError("popitem(): cache is empty")
-        meta = self.__backend[self.__meta_key]
-        meta["counter"] = Counter(meta["counter"])
-        meta["order"] = OrderedDict(meta["order"])
-        match meta["evict_order"]:
-            case "LRU":
-                key, _ = meta["order"].popitem(last=False)
-            case "LFU":
-                key, _ = meta["counter"].most_common(1)[0]
-            case "FIFO":
-                key, _ = meta["order"].popitem(last=False)
-        value = self.__backend.pop(key)
-        del meta["counter"][key]
-        self.__backend[self.__meta_key] = meta
-        return key, value
+    def __call__(self, func: callable) -> callable:
+        return self.cache(func)
 
-    def reset_arguments(self, maxsize: int, evict_order: str = None) -> None:
-        meta = self.__backend[self.__meta_key]
-        meta["maxsize"] = maxsize
-        meta["evict_order"] = evict_order or meta["evict_order"]
-        while self.currsize > self.maxsize:
+    @abstractmethod
+    def popitem(self) -> tuple:
+        return
+
+    def reduce_size(self, size: int = None) -> None:
+        if size is None:
+            size = self.maxsize
+        while len(self) > size:
             self.popitem()
         return
 
-    def __update(self, key, action: Literal["delete", "get", "set"]) -> None:
-        meta = self.__backend[self.__meta_key]
-        meta["counter"] = Counter(meta["counter"])
-        meta["order"] = OrderedDict(meta["order"])
-        match action:
-            case "delete":
-                if key in meta["order"]:
-                    del meta["order"][key]
-                if key in meta["counter"]:
-                    del meta["counter"][key]
-            case "get":
-                if (meta["evict_order"] == "LRU") and (key in meta["order"]):
-                    meta["order"].move_to_end(key)
-                meta["counter"][key] -= 1
-            case "set":
-                if key in meta["order"]:
-                    meta["order"].move_to_end(key)
-                else:
-                    meta["order"][key] = None
-                meta["counter"][key] -= 1
-        self.__backend[self.__meta_key] = meta  # write back
-        return
-
-    def __check(self, fully_check: bool = False) -> None:
-        """Check the consistency of the cache."""
-        meta = self.__backend[self.__meta_key]
-        assert len(meta["order"]) == len(self)
-        assert len(meta["counter"]) == len(self)
-        if fully_check:
-            keys = set(self.__backend.keys())
-            meta_key = blake2b("meta".encode()).hexdigest()
-            assert set(meta["order"].keys()) == keys - {meta_key}
-            assert set(meta["counter"].keys()) == keys - {meta_key}
-        return
+    def hash_key(self, key: Any) -> bytes:
+        """Hash the key."""
+        return blake2b(self.serializer.serialize(key)).digest()
 
     @property
     def maxsize(self) -> int:
-        """The maximum size of the cache."""
-        return self.__backend[self.__meta_key]["maxsize"]
+        if self._maxsize is None:
+            return float("inf")
+        return self._maxsize
 
-    @property
-    def currsize(self) -> int:
-        """The current size of the cache."""
-        return len(self)
 
-    @property
-    def evict_order(self) -> str:
-        """The eviction order of the cache."""
-        return self.__backend[self.__meta_key]["evict_order"]
+class RandomPersistentCache(PersistentCacheBase):
+    def __init__(self, cfg: PersistentCacheConfig) -> None:
+        super().__init__(cfg)
+        if len(self.backend) > self.maxsize:
+            logger.warning(
+                "The current cache size is larger than the maxsize."
+                "Some items will be evicted."
+            )
+            self.reduce_size()
+        return
+
+    def popitem(self) -> tuple:
+        if len(self) == 0:
+            raise KeyError("popitem(): cache is empty")
+        hashed_key = next(iter(self.backend))
+        key, value = self.serializer.deserialize(self.backend.pop(hashed_key))
+        return key, value
+
+
+class LRUPersistentCache(PersistentCacheBase):
+    def __init__(self, cfg: PersistentCacheConfig) -> None:
+        super().__init__(cfg)
+        self.order = OrderedDict()
+        if len(self.backend) > 0:
+            logger.warning(
+                "LRUPersistentCache currently does not support loading order from disk."
+                "The order will be reset."
+            )
+            for key in self.backend:
+                self.order[key] = None
+        if len(self.backend) > self.maxsize:
+            logger.warning(
+                "The current cache size is larger than the maxsize."
+                "Some items will be evicted."
+            )
+            self.reduce_size()
+        return
+
+    def __getitem__(self, key: Any) -> Any:
+        self.order.move_to_end(self.hash_key(key))
+        return super().__getitem__(key)
+
+    def __setitem__(self, key, value) -> None:
+        self.order[self.hash_key(key)] = None
+        return super().__setitem__(key, value)
+
+    def __delitem__(self, key) -> None:
+        del self.order[self.hash_key(key)]
+        return super().__delitem__(key)
+
+    def popitem(self) -> tuple:
+        if len(self) == 0:
+            raise KeyError("popitem(): cache is empty")
+        hashed_key = next(iter(self.order))
+        key, value = self.serializer.deserialize(self.backend.pop(hashed_key))
+        del self.order[hashed_key]
+        return key, value
+
+
+class LFUPersistentCache(PersistentCacheBase):
+    def __init__(self, cfg: PersistentCacheConfig) -> None:
+        super().__init__(cfg)
+        self.counter = Counter()
+        if len(self.backend) > 0:
+            logger.warning(
+                "LFUPersistentCache currently does not support loading counter from disk."
+                "The counter will be reset."
+            )
+            for key in self.backend:
+                self.counter[key] = -1
+        if len(self.backend) > self.maxsize:
+            logger.warning(
+                "The current cache size is larger than the maxsize."
+                "Some items will be evicted."
+            )
+            self.reduce_size()
+        return
+
+    def __getitem__(self, key: Any) -> Any:
+        if self.hash_key(key) in self.backend:
+            self.counter[self.hash_key(key)] -= 1
+        return super().__getitem__(key)
+
+    def __setitem__(self, key, value) -> None:
+        hashed_key = self.hash_key(key)
+        if hashed_key not in self.backend:
+            self.reduce_size(self.maxsize - 1)
+        self.counter[hashed_key] = -1
+        self.backend[hashed_key] = self.serializer.serialize((key, value))
+        return
+
+    def __delitem__(self, key) -> None:
+        del self.counter[self.hash_key(key)]
+        return super().__delitem__(key)
+
+    def popitem(self) -> tuple:
+        if len(self) == 0:
+            raise KeyError("popitem(): cache is empty")
+        hashed_key, _ = self.counter.most_common(1)[0]
+        key, value = self.serializer.deserialize(self.backend.pop(hashed_key))
+        del self.counter[hashed_key]
+        return key, value
+
+
+class FIFOPersistentCache(PersistentCacheBase):
+    def __init__(self, cfg: PersistentCacheConfig) -> None:
+        super().__init__(cfg)
+        self.order = OrderedDict()
+        if len(self.backend) > 0:
+            logger.warning(
+                "FIFOPersistentCache currently does not support loading order from disk."
+                "The order will be reset."
+            )
+            for key in self.backend:
+                self.order[key] = None
+        if len(self.backend) > self.maxsize:
+            logger.warning(
+                "The current cache size is larger than the maxsize."
+                "Some items will be evicted."
+            )
+            self.reduce_size()
+        return
+
+    def __setitem__(self, key, value) -> None:
+        self.order[self.hash_key(key)] = None
+        return super().__setitem__(key, value)
+
+    def __delitem__(self, key) -> None:
+        del self.order[self.hash_key(key)]
+        return super().__delitem__(key)
+
+    def popitem(self) -> tuple:
+        if len(self) == 0:
+            raise KeyError("popitem(): cache is empty")
+        hashed_key = next(iter(self.order))
+        key, value = self.serializer.deserialize(self.backend.pop(hashed_key))
+        del self.order[hashed_key]
+        return key, value

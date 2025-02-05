@@ -1,133 +1,103 @@
 import atexit
-import json
 import os
-import pickle
-import shelve
-from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from hashlib import blake2b
-from typing import Any, MutableMapping
+from collections import OrderedDict
+from dataclasses import dataclass
+from typing import MutableMapping
 
 import lmdb
 from omegaconf import MISSING
 
-from flexrag.utils import Choices
+from flexrag.utils import Register
 
 
-class Serializer(ABC):
-    """A simple interface for serializing and deserializing objects."""
+class StorageBackendBase(MutableMapping[bytes, bytes]):
+    """The Binary Storage Backend For ``PersistentCache``.
+    The backend should provide interfaces like ``MutableMapping``.
+    Thus, The following methods should be implemented:
 
-    @abstractmethod
-    def serialize(self, obj: Any) -> bytes:
-        return
+        >>> def __getitem__(self, key: bytes) -> bytes:
+        ...     pass
+        >>> def __setitem__(self, key: bytes, value: bytes) -> None:
+        ...     pass
+        >>> def __delitem__(self, key: bytes) -> None:
+        ...     pass
+        >>> def __iter__(self) -> Iterable[bytes]:
+        ...     pass
+        >>> def __len__(self) -> int:
+        ...     pass
 
-    @abstractmethod
-    def deserialize(self, data: bytes) -> Any:
-        return
+    The following methods will be implemented automatically:
+
+        >>> def __contains__(self, key: bytes) -> bool:
+        ...     pass
+        >>> def keys(self) -> KeysView:
+        ...     pass
+        >>> def values(self) -> ValuesView:
+        ...     pass
+        >>> def items(self) -> ItemsView:
+        ...     pass
+        >>> def get(self, key: bytes, default: Any = None) -> bytes | Any:
+        ...     pass
+        >>> def __eq__(self, other: StorageBackend) -> bool:
+        ...     pass
+        >>> def __ne__(self, other: StorageBackend) -> bool:
+        ...     pass
+        >>> def pop(self, key: bytes, default: Any = None) -> bytes | Any:
+        ...     pass
+        >>> def popitem(self) -> Tuple:
+        ...     pass
+        >>> def clear(self) -> None:
+        ...     pass
+        >>> def update(self, other: MutableMapping) -> None:
+        ...     pass
+        >>> def setdefault(self, key: bytes, default: Any = None) -> Any:
+        ...     pass
+    """
+
+    def __repr__(self) -> str:
+        f"{self.__class__.__name__}(len={len(self)})"
 
 
-class PickleSerializer(Serializer):
-    def serialize(self, obj: Any) -> bytes:
-        return pickle.dumps(obj)
-
-    def deserialize(self, data: bytes) -> Any:
-        return pickle.loads(data)
+STORAGEBACKENDS = Register[StorageBackendBase]("storage_backend")
 
 
-class CloudPickleSerializer(Serializer):
-    def __init__(self):
-        try:
-            import cloudpickle
-
-            self.pickler = cloudpickle
-        except:
-            raise ImportError(
-                "Please install cloudpickle using `pip install cloudpickle`."
-            )
-        return
-
-    def serialize(self, obj: Any) -> bytes:
-        return self.pickler.dumps(obj)
-
-    def deserialize(self, data: bytes) -> Any:
-        return self.pickler.loads(data)
-
-
-class JsonSerializer(Serializer):
-    def serialize(self, obj: Any) -> bytes:
-        return json.dumps(obj).encode("utf-8")
-
-    def deserialize(self, data: bytes) -> Any:
-        return json.loads(data.decode("utf-8"))
-
-
-class MsgpackSerializer(Serializer):
-    def __init__(self) -> None:
-        try:
-            import msgpack
-
-            self.msgpack = msgpack
-        except ImportError:
-            raise ImportError("Please install msgpack using `pip install msgpack`.")
-        return
-
-    def serialize(self, obj: Any) -> bytes:
-        return self.msgpack.packb(obj, use_bin_type=True)
-
-    def deserialize(self, data: bytes) -> Any:
-        return self.msgpack.unpackb(data, raw=False)
+@dataclass
+class LevelDBBackendConfig:
+    db_path: str = MISSING
 
 
 @dataclass
 class LMDBBackendConfig:
     db_path: str = MISSING
-    serializer: Choices(["pickle", "json", "msgpack", "cloudpickle"]) = "pickle"  # type: ignore
+    db_size: int = 1 << 30  # 2^30 bytes = 1GB
 
 
-class LMDBBackend(MutableMapping):
+@STORAGEBACKENDS("lmdb", config_class=LMDBBackendConfig)
+class LMDBBackend(StorageBackendBase):
     def __init__(self, cfg: LMDBBackendConfig) -> None:
         self.db_path = cfg.db_path
         if not os.path.exists(os.path.dirname(cfg.db_path)):
             os.makedirs(os.path.dirname(cfg.db_path), exist_ok=True)
-        self.database = lmdb.open(cfg.db_path)
+        self.database = lmdb.open(cfg.db_path, map_size=cfg.db_size)
         atexit.register(self.database.close)
-        match cfg.serializer:
-            case "pickle":
-                self.serializer = PickleSerializer()
-            case "json":
-                self.serializer = JsonSerializer()
-            case "msgpack":
-                self.serializer = MsgpackSerializer()
-            case "cloudpickle":
-                self.serializer = CloudPickleSerializer()
-            case _:
-                raise ValueError(f"Invalid serializer: {cfg.serializer}")
         return
 
-    def __getitem__(self, key: Any) -> Any:
+    def __getitem__(self, key: bytes) -> bytes:
         with self.database.begin() as txn:
-            hashed_key = blake2b(self.serializer.serialize(key)).digest()
-            data = txn.get(hashed_key)
+            data = txn.get(key)
         if data is None:
             raise KeyError(key)
-        return self.serializer.deserialize(data)[1]
+        return data
 
-    def __setitem__(self, key: Any, value: Any) -> None:
-        hashed_key = blake2b(self.serializer.serialize(key)).digest()
+    def __setitem__(self, key: bytes, value: bytes) -> None:
         with self.database.begin(write=True) as txn:
-            txn.put(hashed_key, self.serializer.serialize((key, value)))
+            txn.put(key, value)
         return
 
-    def __delitem__(self, key: Any) -> None:
-        hashed_key = blake2b(self.serializer.serialize(key)).digest()
+    def __delitem__(self, key: bytes) -> None:
         with self.database.begin(write=True) as txn:
-            txn.delete(hashed_key)
+            txn.delete(key)
         return
-
-    def __contains__(self, key: Any) -> bool:
-        hashed_key = blake2b(self.serializer.serialize(key)).digest()
-        with self.database.begin() as txn:
-            return txn.get(hashed_key) is not None
 
     def __len__(self) -> int:
         with self.database.begin() as txn:
@@ -136,78 +106,16 @@ class LMDBBackend(MutableMapping):
     def __iter__(self):
         with self.database.begin() as txn:
             cursor = txn.cursor()
-            for _, kv_bytes in cursor:
-                yield self.serializer.deserialize(kv_bytes)[0]
+            for key, _ in cursor:
+                yield key
         return
 
     def __repr__(self) -> str:
         return f"{self.__class__.__name__}(db_path={self.db_path}, len={len(self)})"
 
 
-@dataclass
-class ShelveBackendConfig:
-    db_path: str = MISSING
-    protocal: int = pickle.DEFAULT_PROTOCOL
+@STORAGEBACKENDS("dict")
+class DictBackend(OrderedDict, StorageBackendBase): ...
 
 
-class ShelveBackend(MutableMapping):
-    def __init__(self, cfg: ShelveBackendConfig) -> None:
-        if not os.path.exists(cfg.db_path):
-            os.makedirs(cfg.db_path, exist_ok=True)
-        self.db_path = os.path.join(cfg.db_path, "cache")
-        self.protocal = cfg.protocal
-        return
-
-    def __getitem__(self, key: Any) -> Any:
-        key_ = json.dumps(key)
-        with shelve.open(self.db_path, protocol=self.protocal) as database:
-            return database[key_]
-
-    def __setitem__(self, key: Any, value: Any) -> None:
-        key_ = json.dumps(key)
-        with shelve.open(self.db_path, protocol=self.protocal) as database:
-            database[key_] = value
-        return
-
-    def __delitem__(self, key: Any) -> None:
-        key_ = json.dumps(key)
-        with shelve.open(self.db_path, protocol=self.protocal) as database:
-            del database[key_]
-        return
-
-    def __contains__(self, key: Any) -> bool:
-        key_ = json.dumps(key)
-        with shelve.open(self.db_path, protocol=self.protocal) as database:
-            return key_ in database
-
-    def __len__(self) -> int:
-        with shelve.open(self.db_path, protocol=self.protocal) as database:
-            return len(database)
-
-    def __iter__(self):
-        with shelve.open(self.db_path, protocol=self.protocal) as database:
-            for key in database:
-                yield json.loads(key)
-
-    def __repr__(self) -> str:
-        return f"{self.__class__.__name__}(db_path={self.db_path}, len={len(self)})"
-
-
-@dataclass
-class PersistentBackendConfig:
-    backend: str = "lmdb"
-    lmdb_config: LMDBBackendConfig = field(default_factory=LMDBBackendConfig)
-    shelve_config: ShelveBackendConfig = field(default_factory=ShelveBackendConfig)
-
-
-def load_backend(cfg: PersistentBackendConfig) -> MutableMapping:
-    match cfg.backend:
-        case "lmdb":
-            return LMDBBackend(cfg.lmdb_config)
-        case "shelve":
-            return ShelveBackend(cfg.shelve_config)
-        case "dict":
-            return dict()
-        case _:
-            raise ValueError(f"Invalid backend: {cfg.backend}")
-    return
+StorageBackendConfig = STORAGEBACKENDS.make_config(default="dict")
