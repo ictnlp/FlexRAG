@@ -72,10 +72,9 @@ class LlamacppGenerator(GeneratorBase):
             responses.append([])
             for _ in range(sample_num):
                 r = await asyncio.to_thread(
-                    self.model.create_completion(
-                        prompt=prefix,
-                        **options,
-                    )
+                    self.model.create_completion,
+                    prompt=prefix,
+                    **options,
                 )
                 responses[-1].append(r["choices"][0]["text"])
         return responses

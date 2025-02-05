@@ -1,12 +1,12 @@
 import os
 import tempfile
 import uuid
-import pytest
 from dataclasses import dataclass, field
 
+import pytest
 from omegaconf import OmegaConf
 
-from flexrag.datasets import LineDelimitedDataset, LineDelimitedDatasetConfig
+from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
 from flexrag.retriever import (
     BM25SRetriever,
     BM25SRetrieverConfig,
@@ -20,9 +20,11 @@ from flexrag.retriever import (
 
 
 @dataclass
-class RetrieverTestConfig(LineDelimitedDatasetConfig):
-    corpus_path: str = os.path.join(
-        os.path.dirname(__file__), "testcorp", "testcorp.jsonl"
+class RetrieverTestConfig(RAGCorpusDatasetConfig):
+    file_paths: list[str] = field(
+        default_factory=lambda: [
+            os.path.join(os.path.dirname(__file__), "testcorp", "testcorp.jsonl")
+        ]
     )
     typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)  # fmt: skip
     bm25s_config: BM25SRetrieverConfig = field(default_factory=BM25SRetrieverConfig)
@@ -67,7 +69,7 @@ class TestRetrievers:
             retriever = DenseRetriever(self.cfg.dense_config)
 
             # build index
-            corpus = LineDelimitedDataset(self.cfg.corpus_path)
+            corpus = RAGCorpusDataset(self.cfg)
             retriever.add_passages(corpus)
 
             # search
@@ -84,7 +86,7 @@ class TestRetrievers:
             retriever = BM25SRetriever(self.cfg.bm25s_config)
 
             # build index
-            corpus = LineDelimitedDataset(self.cfg.corpus_path)
+            corpus = RAGCorpusDataset(self.cfg)
             retriever.add_passages(corpus)
 
             # search
@@ -99,7 +101,7 @@ class TestRetrievers:
         retriever: ElasticRetriever = setup_elastic
 
         # build index
-        corpus = LineDelimitedDataset(self.cfg.corpus_path)
+        corpus = RAGCorpusDataset(self.cfg)
         retriever.add_passages(corpus)
 
         # search
@@ -114,7 +116,7 @@ class TestRetrievers:
         retriever: TypesenseRetriever = setup_typesense
 
         # build index
-        corpus = LineDelimitedDataset(self.cfg.corpus_path)
+        corpus = RAGCorpusDataset(self.cfg)
         retriever.add_passages(corpus)
 
         # search

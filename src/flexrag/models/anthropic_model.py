@@ -4,6 +4,7 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
+import httpx
 from concurrent.futures import ThreadPoolExecutor
 from omegaconf import MISSING
 
@@ -46,10 +47,16 @@ class AnthropicGenerator(GeneratorBase):
     def __init__(self, cfg: AnthropicGeneratorConfig) -> None:
         from anthropic import Anthropic
 
+        # set proxy
+        if cfg.proxy is not None:
+            client = httpx.Client(proxies=cfg.proxy)
+        else:
+            client = None
+
         self.client = Anthropic(
             api_key=cfg.api_key,
             base_url=cfg.base_url,
-            proxies=cfg.proxy,
+            http_client=client,
         )
         self.model_name = cfg.model_name
         self.allow_parallel = cfg.allow_parallel
@@ -65,7 +72,7 @@ class AnthropicGenerator(GeneratorBase):
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         # as anthropic does not support sample_num, we sample multiple times
-        gen_cfg = self._get_options(generation_config, is_chat=True)
+        gen_cfg = self._get_options(generation_config)
         if self.allow_parallel:
             with ThreadPoolExecutor() as pool:
                 responses = pool.map(
@@ -102,7 +109,7 @@ class AnthropicGenerator(GeneratorBase):
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        gen_cfg = self._get_options(generation_config, is_chat=True)
+        gen_cfg = self._get_options(generation_config)
         tasks = []
         for prompt in prompts:
             prompt = prompt.to_list()
@@ -130,34 +137,7 @@ class AnthropicGenerator(GeneratorBase):
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        gen_cfg = self._get_options(generation_config)
-        if self.allow_parallel:
-            with ThreadPoolExecutor() as pool:
-                responses = pool.map(
-                    lambda prefix: [
-                        self.client.completions.create(
-                            model=self.model_name,
-                            prompt=prefix,
-                            **gen_cfg,
-                        ).completion
-                        for _ in range(generation_config.sample_num)
-                    ],
-                    prefixes,
-                )
-                responses = list(responses)
-        else:
-            responses: list[list[str]] = []
-            for prefix in prefixes:
-                # as anthropic does not support sample_num, we sample multiple times
-                responses.append([])
-                for _ in range(generation_config.sample_num):
-                    response = self.client.completions.create(
-                        model=self.model_name,
-                        prompt=prefix,
-                        **gen_cfg,
-                    )
-                    responses[-1].append(response.completion)
-        return responses
+        raise NotImplementedError("The Anthropic text completion API is deprecated.")
 
     @TIME_METER("anthropic_generate")
     async def async_generate(
@@ -165,46 +145,15 @@ class AnthropicGenerator(GeneratorBase):
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        tasks = []
-        gen_cfg = self._get_options(generation_config)
-        for prefix in prefixes:
-            # as anthropic does not support sample_num, we sample multiple times
-            tasks.append([])
-            for _ in range(generation_config.sample_num):
-                tasks[-1].append(
-                    asyncio.create_task(
-                        await asyncio.to_thread(
-                            self.client.completions.create,
-                            model=self.model_name,
-                            prompt=prefix,
-                            **gen_cfg,
-                        )
-                    )
-                )
-        responses = [
-            [(await task).completion for task in task_list] for task_list in tasks
-        ]
-        return responses
+        raise NotImplementedError("The Anthropic text completion API is deprecated.")
 
-    def _get_options(
-        self, generation_config: GenerationConfig, is_chat: bool = False
-    ) -> dict:
-        if is_chat:
-            return {
-                "temperature": (
-                    generation_config.temperature
-                    if generation_config.do_sample
-                    else 0.0
-                ),
-                "max_tokens": generation_config.max_new_tokens,
-                "top_p": generation_config.top_p,
-                "top_k": generation_config.top_k,
-            }
+    def _get_options(self, generation_config: GenerationConfig) -> dict:
         return {
             "temperature": (
                 generation_config.temperature if generation_config.do_sample else 0.0
             ),
-            "max_tokens_to_sample": generation_config.max_new_tokens,
+            "max_tokens": generation_config.max_new_tokens,
             "top_p": generation_config.top_p,
             "top_k": generation_config.top_k,
+            "stop_sequences": generation_config.stop_str,
         }

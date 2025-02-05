@@ -9,6 +9,8 @@ The defination of the configuration structure for the `prepare_index` entrypoint
 ```{eval-rst}
 .. autoclass:: flexrag.entrypoints.prepare_index::Config
     :members:
+    :noindex:
+    :show-inheritance:
 ```
 
 ### rebuild_index
@@ -19,6 +21,7 @@ The defination of the configuration structure for the `rebuid_index` entrypoint 
 .. autoclass:: flexrag.entrypoints.rebuild_index::DenseRetrieverConfig
     :members:
     :noindex:
+    :show-inheritance:
 ```
 
 ### run_assistant
@@ -28,6 +31,8 @@ The defination of the configuration structure for the `run_assistant` entrypoint
 ```{eval-rst}
 .. autoclass:: flexrag.entrypoints.run_assistant::Config
     :members:
+    :noindex:
+    :show-inheritance:
 ```
 
 ### run_interactive
@@ -37,6 +42,8 @@ The defination of the configuration structure for the `run_interactive` entrypoi
 ```{eval-rst}
 .. autoclass:: flexrag.entrypoints.run_interactive::Config
     :members:
+    :noindex:
+    :show-inheritance:
 ```
 
 ### cache
@@ -46,6 +53,8 @@ The defination of the configuration structure for the `cache` entrypoint is as f
 ```{eval-rst}
 .. autoclass:: flexrag.entrypoints.cache::Config
     :members:
+    :noindex:
+    :show-inheritance:
 ```
 
 ### evaluate
@@ -55,6 +64,8 @@ The defination of the configuration structure for the `evaluate` entrypoint is a
 ```{eval-rst}
 .. autoclass:: flexrag.entrypoints.evaluate::Config
     :members:
+    :noindex:
+    :show-inheritance:
 ```
 
 

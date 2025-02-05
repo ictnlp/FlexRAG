@@ -44,7 +44,7 @@ from .model_base import (
     GeneratorBase,
     VLMGeneratorBase,
 )
-from .utils import guess_model_name
+from .utils import guess_model_name, configure_attn
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.hf_model")
 
@@ -165,6 +165,14 @@ def load_hf_model(
     else:
         device_map = None
 
+    # configure attention implementation
+    attn_args = configure_attn(
+        model_path=model_path,
+        device_id=device_id,
+        load_dtype=load_dtype,
+        trust_remote_code=trust_remote_code,
+    )
+
     # load model
     match model_type:
         case "causal_lm":
@@ -193,6 +201,7 @@ def load_hf_model(
         load_in_8bit=load_in_8bit,
         trust_remote_code=trust_remote_code,
         **other_model_kwargs,
+        **attn_args,
     )
 
     # patch: some model does not support `int` device_map
@@ -350,6 +359,7 @@ class HFGenerator(GeneratorBase):
         outputs = self.model.generate(
             **inputs,
             generation_config=hf_gen_cfg,
+            tokenizer=self.tokenizer,  # for stop_strings
         )
 
         # truncate the input tokens
@@ -407,15 +417,17 @@ class HFGenerator(GeneratorBase):
         )
 
     def _get_options(self, generation_config: GenerationConfig) -> HFGenerationConfig:
-        return HFGenerationConfig(
+        cfg = HFGenerationConfig(
             do_sample=generation_config.do_sample,
             temperature=generation_config.temperature,
             max_new_tokens=generation_config.max_new_tokens,
             top_p=generation_config.top_p,
             top_k=generation_config.top_k,
             num_return_sequences=generation_config.sample_num,
-            stop_strings=list(generation_config.stop_str),
         )
+        if generation_config.stop_str:  # empty list is not allowed
+            cfg.stop_strings = list(generation_config.stop_str)
+        return cfg
 
     def _patch_model(self) -> None:
         if self.tokenizer.pad_token_id is None:

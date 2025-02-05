@@ -58,13 +58,13 @@ class GeneratorBase(ABC):
     def chat(
         self,
         prompts: list[ChatPrompt] | list[list[dict]] | ChatPrompt | list[dict],
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         """chat with the model using model templates.
 
         :param prompts: A batch of ChatPrompts.
         :type prompts: list[ChatPrompt] | list[list[dict]] | ChatPrompt | list[dict]
-        :param generation_config: GenerationConfig. Defaults to None.
+        :param generation_config: GenerationConfig. Defaults to GenerationConfig().
         :type generation_config: GenerationConfig
         :return: A batch of chat responses.
         :rtype: list[list[str]]
@@ -80,14 +80,14 @@ class GeneratorBase(ABC):
     def _chat(
         self,
         prompts: list[ChatPrompt],
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         return
 
     async def async_chat(
         self,
         prompts: list[ChatPrompt] | list[list[dict]] | ChatPrompt | list[dict],
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         """The async version of chat."""
         logger.warning(
@@ -98,13 +98,13 @@ class GeneratorBase(ABC):
     def generate(
         self,
         prefixes: list[str] | str,
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         """generate text with the model using the given prefixes.
 
         :param prefixes: A batch of prefixes.
         :type prefixes: list[str] | str
-        :param generation_config: GenerationConfig. Defaults to None.
+        :param generation_config: GenerationConfig. Defaults to GenerationConfig().
         :type generation_config: GenerationConfig
         :return: A batch of generated text.
         :rtype: list[list[str]]
@@ -117,14 +117,14 @@ class GeneratorBase(ABC):
     def _generate(
         self,
         prefixes: list[str] | str,
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         return
 
     async def async_generate(
         self,
         prefixes: list[str],
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         """The async version of generate."""
         logger.warning(
@@ -142,13 +142,13 @@ class VLMGeneratorBase(GeneratorBase):
             | MultiModelChatPrompt
             | list[dict]
         ),
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         """chat with the model using model templates.
 
         :param prompts: A batch of MultiModelChatPrompts.
         :type prompts: list[MultiModelChatPrompt] | list[list[dict]] | MultiModelChatPrompt | list[dict]
-        :param generation_config: GenerationConfig. Defaults to None.
+        :param generation_config: GenerationConfig. Defaults to GenerationConfig().
         :type generation_config: GenerationConfig
         :return: A batch of chat responses.
         :rtype: list[list[str]]
@@ -164,14 +164,14 @@ class VLMGeneratorBase(GeneratorBase):
     def _chat(
         self,
         prompts: list[MultiModelChatPrompt],
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         return
 
     async def async_chat(
         self,
         prompts: list[MultiModelChatPrompt],
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         """The async version of chat."""
         logger.warning(
@@ -183,13 +183,13 @@ class VLMGeneratorBase(GeneratorBase):
         self,
         prefixes: list[str] | str,
         images: list[Image],
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         """generate text with the model using the given prefixes.
 
         :param prefixes: A batch of prefixes.
         :param images: A batch of images.
-        :param generation_config: GenerationConfig. Defaults to None.
+        :param generation_config: GenerationConfig. Defaults to GenerationConfig().
         :type prefixes: list[str]
         :type images: list[Image]
         :type generation_config: GenerationConfig
@@ -205,7 +205,7 @@ class VLMGeneratorBase(GeneratorBase):
         self,
         prefixes: list[str],
         images: list[Image],
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         return
 
@@ -213,7 +213,7 @@ class VLMGeneratorBase(GeneratorBase):
         self,
         prefixes: list[str],
         images: list[Image],
-        generation_config: GenerationConfig = None,
+        generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         """The async version of generate."""
         logger.warning(

@@ -1,4 +1,7 @@
-from transformers import PretrainedConfig
+import transformers
+import torch
+import torch.distributed as dist
+from transformers import AutoConfig, PretrainedConfig
 
 from flexrag.utils import LOGGER_MANAGER
 
@@ -76,3 +79,93 @@ def guess_model_name(model_cfg: PretrainedConfig) -> str | None:
 
     logger.warning(f"Unable to guess model name from config: {model_cfg}")
     return None
+
+
+def get_gpu_capability(device_id: list[int]) -> float:
+    """Get the GPU capability of the first GPU."""
+    if len(device_id) == 0:
+        return 0.0
+    try:
+        caps = []
+        for device in device_id:
+            cap = torch.cuda.get_device_capability(device)
+            caps.append(float(f"{cap[0]}.{cap[1]}"))
+        cap = min(caps)
+    except:
+        logger.warning("device_capability is not available. Using 8.0 as default")
+        cap = 8.0
+    return cap
+
+
+def configure_attn(
+    model_path: str,
+    device_id: list[int],
+    load_dtype: str | None | torch.dtype,
+    trust_remote_code: bool = False,
+) -> dict:
+    gpu_cap = get_gpu_capability(device_id)
+    model_config = AutoConfig.from_pretrained(
+        model_path, trust_remote_code=trust_remote_code
+    )
+    arch_name = getattr(model_config, "architectures", [None])[0]
+    cls = getattr(transformers, arch_name, None)
+
+    # do not configure attention for third-party models
+    if (cls is None) or trust_remote_code:
+        logger.warning(
+            "The attention configuration is not available for third-party models."
+        )
+        return {}
+
+    # check code availability
+    support_flash = getattr(cls, "_supports_flash_attn_2", False)
+    support_sdpa = getattr(cls, "_supports_sdpa", False)
+
+    # check FlashAttention availability
+    has_flash_attn = True
+    try:
+        import flash_attn
+    except:
+        has_flash_attn = False
+
+    # check dtype compatibility
+    if load_dtype not in {torch.float16, torch.bfloat16}:
+        if support_flash:
+            logger.warning(
+                "FlashAttention/Pytorch SDPA only supports float16 and bfloat16. "
+                "Please explicitly set `load_dtype` to one of them to enable FlashAttention."
+            )
+        support_flash = False
+        support_sdpa = False
+
+    # set attention implementation
+    attn_args = {}
+    if support_flash and (gpu_cap >= 8.0) and has_flash_attn:
+        attn_args["attn_implementation"] = "flash_attention_2"
+        torch.backends.cuda.enable_flash_sdp(True)
+        torch.backends.cuda.enable_mem_efficient_sdp(True)
+        torch.backends.cuda.enable_math_sdp(True)
+        logger.warning("Enable flash_attention_2.")
+    elif support_sdpa and (gpu_cap >= 8.0):
+        attn_args["attn_implementation"] = "sdpa"
+        torch.backends.cuda.enable_flash_sdp(True)
+        torch.backends.cuda.enable_mem_efficient_sdp(True)
+        torch.backends.cuda.enable_math_sdp(True)
+        logger.warning("Enable pytorch flash_attn SDPA kernel.")
+    elif support_sdpa and (7.0 <= gpu_cap < 8.0):
+        attn_args["attn_implementation"] = "sdpa"
+        torch.backends.cuda.enable_flash_sdp(False)
+        torch.backends.cuda.enable_mem_efficient_sdp(True)
+        torch.backends.cuda.enable_math_sdp(True)
+        logger.warning("Enable pytorch memory efficient SDPA kernel.")
+        logger.warning("SDPA memory efficient mode does not support bf16.")
+    elif support_sdpa and (0 < gpu_cap < 7.0):
+        attn_args["attn_implementation"] = "sdpa"
+        torch.backends.cuda.enable_flash_sdp(False)
+        torch.backends.cuda.enable_mem_efficient_sdp(False)
+        torch.backends.cuda.enable_math_sdp(True)
+        logger.warning("Enable pytorch math SDPA kernel.")
+    else:
+        attn_args["attn_implementation"] = "eager"
+        logger.info(f"flash attention is not available.")
+    return attn_args
