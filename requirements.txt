@@ -9,6 +9,8 @@ accelerate>=0.26.0
 rouge
 sacrebleu>=2.4.2
 pytrec_eval>=0.5
+# datasets
+datasets>=3.2.0
 # models
 openai>=1.30.1
 anthropic
