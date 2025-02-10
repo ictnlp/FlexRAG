@@ -233,7 +233,7 @@ class EncoderBase(ABC):
         :return: A batch of embeddings.
         :rtype: np.ndarray
         """
-        if isinstance(texts, str):
+        if not isinstance(texts, list):
             texts = [texts]
         return self._encode(texts)
 

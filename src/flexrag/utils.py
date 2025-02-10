@@ -12,8 +12,12 @@ from multiprocessing import Manager
 from time import perf_counter
 from typing import Coroutine, Generic, Iterable, Optional, TypeVar
 
+import colorama
 import numpy as np
 from omegaconf import MISSING, DictConfig, ListConfig, OmegaConf
+
+
+colorama.init(autoreset=True)
 
 
 class SimpleProgressLogger:
@@ -400,6 +404,29 @@ class _TimeMeter:
 TIME_METER = _TimeMeter()
 
 
+class ColoredFormatter(logging.Formatter):
+    def __init__(self, *args, color_map: dict[str, str] = None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if color_map is None:
+            color_map = {
+                "DEBUG": colorama.Fore.CYAN,
+                "INFO": colorama.Fore.GREEN,
+                "WARNING": colorama.Fore.YELLOW,
+                "ERROR": colorama.Fore.RED,
+                "CRITICAL": colorama.Fore.RED,
+            }
+        self.color_map = color_map
+        return
+
+    def format(self, record) -> str:
+        message = super().format(record)
+        color = self.color_map.get(record.levelname, "")
+        levelname = record.levelname
+        colored_levelname = f"{color}{levelname}{colorama.Style.RESET_ALL}"
+        message = message.replace(levelname, colored_levelname)
+        return message
+
+
 class _LoggerManager:
     _instance = None
     _lock = threading.Lock()
@@ -414,22 +441,49 @@ class _LoggerManager:
 
     def _configure(self):
         self.loggers: dict[str, logging.Logger] = {}
-        logging.basicConfig(
-            level=os.environ.get("LOGLEVEL", "INFO"),
-            format="%(asctime)s | %(name)s | %(levelname)s - %(message)s",
+        self.default_level = os.environ.get("LOGLEVEL", "INFO")
+        self.default_fmt = ColoredFormatter(
+            fmt="%(asctime)s | %(name)s | %(levelname)s - %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
+        self.default_handler = logging.StreamHandler()
+        self.default_handler.setLevel(self.default_level)
+        self.default_handler.setFormatter(self.default_fmt)
         return
 
     def getLogger(self, name: str) -> logging.Logger:
+        """Get the logger by name. If the logger does not exist, create a new one.
+
+        :param name: The name of the logger.
+        :type name: str
+        :return: The logger.
+        :rtype: logging.Logger
+        """
         return self.get_logger(name)
 
     def get_logger(self, name: str) -> logging.Logger:
+        """Get the logger by name. If the logger does not exist, create a new one.
+
+        :param name: The name of the logger.
+        :type name: str
+        :return: The logger.
+        :rtype: logging.Logger
+        """
         if name not in self.loggers:
             self.loggers[name] = logging.getLogger(name)
+            self.loggers[name].propagate = False  # prevent duplicate logs
+            self.add_handler(self.default_handler, name)
+            self.set_level(self.default_level, name)
         return self.loggers[name]
 
     def add_handler(self, handler: logging.Handler, name: str = None):
+        """Add the handler to the logger.
+
+        :param handler: The handler to add.
+        :type handler: logging.Handler
+        :param name: The name of the logger, None for all FlexRAG loggers, defaults to None.
+        :type name: str, optional
+        """
         if name is None:
             for logger in self.loggers.values():
                 logger.addHandler(handler)
@@ -439,6 +493,13 @@ class _LoggerManager:
         return
 
     def remove_handler(self, handler: logging.Handler, name: str = None):
+        """Remove the handler from the logger.
+
+        :param handler: The handler to remove.
+        :type handler: logging.Handler
+        :param name: The name of the logger, None for all FlexRAG loggers, defaults to None.
+        :type name: str, optional
+        """
         if name is None:
             for logger in self.loggers.values():
                 logger.removeHandler(handler)
@@ -448,6 +509,13 @@ class _LoggerManager:
         return
 
     def set_level(self, level: int, name: str = None):
+        """Set the level of the logger.
+
+        :param level: The level to set.
+        :type level: int
+        :param name: The name of the logger, None for all FlexRAG loggers, defaults to None.
+        :type name: str, optional
+        """
         if name is None:
             for logger in self.loggers.values():
                 logger.setLevel(level)
@@ -457,12 +525,21 @@ class _LoggerManager:
         return
 
     def set_formatter(self, formatter: logging.Formatter | str, name: str = None):
+        """Set the formatter of the logger.
+
+        :param formatter: The formatter to set.
+        :type formatter: logging.Formatter | str
+        :param name: The name of the logger, None for all FlexRAG loggers, defaults to None.
+        :type name: str, optional
+        """
         if isinstance(formatter, str):
             formatter = logging.Formatter(formatter)
         if name is None:
             for logger in self.loggers.values():
                 for handler in logger.handlers:
                     handler.setFormatter(formatter)
+            console_handler = logging.StreamHandler()
+            console_handler.setFormatter(formatter)
         else:
             logger = self.get_logger(name)
             for handler in logger.handlers:

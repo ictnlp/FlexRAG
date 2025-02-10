@@ -3,9 +3,6 @@ from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 
 from flexrag.retriever import DenseRetriever, DenseRetrieverConfig
-from flexrag.utils import LOGGER_MANAGER
-
-logger = LOGGER_MANAGER.get_logger("flexrag.rebuild_index")
 
 
 cs = ConfigStore.instance()
