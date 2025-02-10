@@ -34,10 +34,11 @@ class RAGEvalDatasetConfig(HFDatasetConfig):
     Then you can load the dataset by running the following code:
 
         >>> cfg = RAGEvalDatasetConfig(
-        ...     path="flashrag",
-        ...     name="nq",
-        ...     split="test.jsonl",
+        ...     path="json",
+        ...     data_files=["flashrag/nq/test.jsonl"],
+        ...     split="train",
         ... )
+        >>> dataset = RAGEvalDataset(cfg)
 
     Available datasets include:
 
@@ -50,7 +51,6 @@ class RAGEvalDatasetConfig(HFDatasetConfig):
         - boolq: dev, train
         - commonsenseqa: dev, train
         - curatedtrec: test, train
-        - domainrag: test
         - eli5: dev, train
         - fermi: dev, test, train
         - fever: dev, train

@@ -32,8 +32,8 @@ class TestRAGEvalDataset:
         "nq": ["dev", "test", "train"],
         "openbookqa": ["dev", "test", "train"],
         "piqa": ["dev", "train"],
-        # "popqa": ["test"],  # Error in loading due to dataset schema
-        # "quartz": ["dev", "test", "train"],  # Error in loading due to dataset schema
+        "popqa": ["test"],
+        "quartz": ["dev", "test", "train"],
         "siqa": ["dev", "train"],
         "squad": ["dev", "train"],
         "t-rex": ["dev", "train"],
