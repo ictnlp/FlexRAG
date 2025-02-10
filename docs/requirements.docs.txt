@@ -26,4 +26,5 @@ torch>=2.3.0
 beautifulsoup4
 datasets
 pytrec_eval
+colorama
 # gradio>=5.8.0
