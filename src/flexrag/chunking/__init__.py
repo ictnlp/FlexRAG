@@ -4,6 +4,8 @@ from .basic_chunkers import (
     CharChunkerConfig,
     TokenChunker,
     TokenChunkerConfig,
+    RecursiveChunker,
+    RecursiveChunkerConfig,
     SentenceChunker,
     SentenceChunkerConfig,
 )
@@ -20,6 +22,8 @@ __all__ = [
     "CharChunkerConfig",
     "TokenChunker",
     "TokenChunkerConfig",
+    "RecursiveChunker",
+    "RecursiveChunkerConfig",
     "SentenceChunker",
     "SentenceChunkerConfig",
 ]
