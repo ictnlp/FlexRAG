@@ -9,7 +9,10 @@ from flexrag.chunking import (
     SentenceChunkerConfig,
     TokenChunker,
     TokenChunkerConfig,
+    SemanticChunker,
+    SemanticChunkerConfig,
 )
+from flexrag.models import HFEncoderConfig
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
 
 
@@ -32,6 +35,13 @@ class TestChunker:
         ),
     ]
 
+    def chunks_test(self, chunks: list[str], doc: str, strict: bool = True):
+        if strict:
+            assert "".join(chunks) == doc
+        else:
+            assert re.sub("\s", "", "".join(chunks)) == re.sub("\s", "", doc)
+        return
+
     def test_char_chunker(self):
         # chunk without overlap
         chunker = CharChunker(CharChunkerConfig(max_chars=10, overlap=0))
@@ -39,7 +49,7 @@ class TestChunker:
             chunks = chunker.chunk(doc)
             for chunk in chunks:
                 assert len(chunk) <= 10
-            assert "".join(chunks) == doc
+            self.chunks_test(chunks, doc)
 
         # chunk with overlap
         chunker = CharChunker(CharChunkerConfig(max_chars=10, overlap=3))
@@ -58,7 +68,7 @@ class TestChunker:
             chunks = chunker.chunk(doc)
             for chunk in chunks:
                 assert len(tokenizer.tokenize(chunk)) <= 5
-            assert "".join(chunks) == doc
+            self.chunks_test(chunks, doc)
 
         # chunk with overlap
         chunker = TokenChunker(TokenChunkerConfig(max_tokens=5, overlap=1))
@@ -75,7 +85,7 @@ class TestChunker:
             chunks = chunker.chunk(doc)
             for chunk in chunks:
                 assert len(tokenizer.tokenize(chunk)) <= 10
-            assert "".join(chunks) == doc
+            self.chunks_test(chunks, doc)
         return
 
     def test_sentence_chunker(self):
@@ -85,7 +95,7 @@ class TestChunker:
         )
         for doc in self.docs:
             chunks = chunker.chunk(doc)
-            assert re.sub("\s", "", "".join(chunks)) == re.sub("\s", "", doc)
+            self.chunks_test(chunks, doc, strict=False)
 
         # test regex sentence splitter
         chunker = SentenceChunker(
@@ -93,5 +103,38 @@ class TestChunker:
         )
         for doc in self.docs:
             chunks = chunker.chunk(doc)
-            assert "".join(chunks) == doc
+            self.chunks_test(chunks, doc)
+        return
+
+    def test_sementic_chunker(self):
+        for doc in self.docs:
+            # chunk with threshold_percentile
+            cfg = SemanticChunkerConfig(
+                threshold_percentile=50,
+                encoder_type="hf",
+                hf_config=HFEncoderConfig(model_path="BAAI/bge-small-en-v1.5"),
+            )
+            chunker = SemanticChunker(cfg)
+            chunks = chunker.chunk(doc)
+            self.chunks_test(chunks, doc, strict=False)
+
+            # chunk with threshold
+            cfg = SemanticChunkerConfig(
+                threshold=0.95,
+                encoder_type="hf",
+                hf_config=HFEncoderConfig(model_path="BAAI/bge-small-en-v1.5"),
+            )
+            chunker = SemanticChunker(cfg)
+            chunks = chunker.chunk(doc)
+            self.chunks_test(chunks, doc, strict=False)
+
+            # chunk with max_tokens
+            cfg = SemanticChunkerConfig(
+                max_tokens=30,
+                encoder_type="hf",
+                hf_config=HFEncoderConfig(model_path="BAAI/bge-small-en-v1.5"),
+            )
+            chunker = SemanticChunker(cfg)
+            chunks = chunker.chunk(doc)
+            self.chunks_test(chunks, doc, strict=False)
         return

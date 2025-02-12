@@ -9,6 +9,7 @@ from .basic_chunkers import (
     SentenceChunker,
     SentenceChunkerConfig,
 )
+from .semantic_chunker import SemanticChunker, SemanticChunkerConfig
 
 
 ChunkerConfig = CHUNKERS.make_config(default="sentence")
@@ -26,4 +27,6 @@ __all__ = [
     "RecursiveChunkerConfig",
     "SentenceChunker",
     "SentenceChunkerConfig",
+    "SemanticChunker",
+    "SemanticChunkerConfig",
 ]
