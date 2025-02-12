@@ -38,6 +38,7 @@ FlexRAG is under active development and is currently in the alpha stage. We welc
    reference/assistant
    reference/encoders
    reference/generators
+   reference/tokenizers
    reference/retrievers
    reference/rankers
    reference/metrics

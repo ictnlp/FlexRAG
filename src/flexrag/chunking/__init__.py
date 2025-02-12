@@ -4,12 +4,15 @@ from .basic_chunkers import (
     CharChunkerConfig,
     TokenChunker,
     TokenChunkerConfig,
+    RecursiveChunker,
+    RecursiveChunkerConfig,
     SentenceChunker,
     SentenceChunkerConfig,
 )
+from .semantic_chunker import SemanticChunker, SemanticChunkerConfig
 
 
-ChunkerConfig = CHUNKERS.make_config(default="sentence")
+ChunkerConfig = CHUNKERS.make_config(default="sentence", config_name="ChunkerConfig")
 
 
 __all__ = [
@@ -20,6 +23,10 @@ __all__ = [
     "CharChunkerConfig",
     "TokenChunker",
     "TokenChunkerConfig",
+    "RecursiveChunker",
+    "RecursiveChunkerConfig",
     "SentenceChunker",
     "SentenceChunkerConfig",
+    "SemanticChunker",
+    "SemanticChunkerConfig",
 ]

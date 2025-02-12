@@ -41,3 +41,6 @@ httpx
 scipy
 # gui
 gradio>=5.8.0
+# chunking
+regex
+nltk
