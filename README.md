@@ -57,7 +57,7 @@ Visit our [documentation](https://flexrag.readthedocs.io/en/latest/) to learn mo
 # 🏗️ Architecture
 FlexRAG is designed with a **modular** architecture, allowing you to easily customize and extend the framework to meet your specific needs. The following diagram illustrates the architecture of FlexRAG:
 <p align="center">
-<img src="assets/Framework-Librarian-v2.png" width=70%>
+<img src="assets/Framework-FlexRAG.png" width=70%>
 </p>
 
 # 📊 Benchmarks

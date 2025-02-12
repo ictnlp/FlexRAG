@@ -54,7 +54,7 @@ pip install flexrag
 # 🏗️ FlexRAG 架构
 FlexRAG 采用**模块化**架构设计，让您可以轻松定制和扩展框架以满足您的特定需求。下图说明了 FlexRAG 的架构：
 <p align="center">
-<img src="assets/Framework-Librarian-v2.png" width=70%>
+<img src="assets/Framework-FlexRAG-zh.png" width=70%>
 </p>
 
 # 📊 基准测试
