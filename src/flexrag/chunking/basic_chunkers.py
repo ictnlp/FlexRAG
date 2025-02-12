@@ -25,6 +25,15 @@ class CharChunkerConfig:
     :type max_chars: int
     :param overlap: The number of characters to overlap between chunks. Default is 0.
     :type overlap: int
+
+    For example, to chunk a text into chunks with 1024 characters with 128 characters overlap:
+
+    .. code-block:: python
+
+        from flexrag.chunking import CharChunkerConfig, CharChunker
+
+        cfg = CharChunkerConfig(max_chars=1024, overlap=128)
+        chunker = CharChunker(cfg)
     """
 
     max_chars: int = 2048
@@ -55,6 +64,24 @@ class TokenChunkerConfig(TokenizerConfig):
     :type max_tokens: int
     :param overlap: The number of tokens to overlap between chunks. Default is 0.
     :type overlap: int
+
+    For example, to chunk a text into chunks with 256 tokens with 128 tokens overlap:
+
+    .. code-block:: python
+
+        from flexrag.chunking import TokenChunkerConfig, TokenChunker
+        from flexrag.models.tokenizer import TikTokenTokenizerConfig
+
+        cfg = TokenChunkerConfig(
+            max_tokens=256,
+            overlap=128,
+            tokenizer_type="tiktoken",
+            tiktoken_config=TikTokenTokenizerConfig(model_name="gpt-4o"),
+        )
+        chunker = TokenChunker(cfg)
+
+    Note that the ``TokenChunker`` relies on the ``tokenize`` and ``detokenize`` methods of the tokenizer to split the text.
+    Thus the space between may be lost if the tokenizer is not reversible.
     """
 
     max_tokens: int = 512
@@ -91,8 +118,33 @@ class RecursiveChunkerConfig(TokenizerConfig):
     :param max_tokens: The maximum number of tokens in each chunk. Default is 512.
     :type max_tokens: int
     :param seperators: The seperators used to split text recursively.
-        The order of the seperators matters. Default is `PREDEFINED_SPLIT_PATTERNS["en"]`.
+        The order of the seperators matters. Default is ``PREDEFINED_SPLIT_PATTERNS["en"]``.
     :type seperators: dict[str, str]
+
+    For example, to split a text recursively with 256 tokens in each chunk:
+
+    .. code-block:: python
+
+        from flexrag.chunking import RecursiveChunkerConfig, RecursiveChunker
+
+        cfg = RecursiveChunkerConfig(max_tokens=256)
+        chunker = RecursiveChunker(cfg)
+
+    You can also specify your own seperator list:
+
+    .. code-block:: python
+
+        from flexrag.chunking import RecursiveChunkerConfig, RecursiveChunker
+
+        cfg = RecursiveChunkerConfig(
+            max_tokens=256,
+            split_pattern={"level1": "pattern1", "level2": "pattern2"},
+        )
+        chunker = RecursiveChunker(cfg)
+
+    Note that the ``RecursiveChunker`` relies on the regex pattern to split the text,
+    thus you need to make sure your pattern will not consume the splitter.
+    A good practice is to use the lookbehind and lookahead assertion to avoid consuming the splitter.
     """
 
     max_tokens: int = 512
@@ -106,7 +158,7 @@ class RecursiveChunker(ChunkerBase):
     """RecursiveChunker splits text into chunks recursively using the specified seperators.
 
     The order of the seperators matters. The text will be split recursively based on the seperators in the order of the list.
-    The default seperators are defined in `PREDEFINED_SPLIT_PATTERNS`.
+    The default seperators are defined in ``PREDEFINED_SPLIT_PATTERNS``.
 
     If the text is still too long after splitting with the last level seperators, the text will be split into tokens.
     """
@@ -172,6 +224,18 @@ class SentenceChunkerConfig(TokenizerConfig, SentenceSplitterConfig):
     :type max_chars: Optional[int]
     :param overlap: The number of sentences to overlap between chunks. Default is 0.
     :type overlap: int
+
+    For example, to chunk a text into chunks with 10 sentences in each chunk:
+
+    .. code-block:: python
+
+        from flexrag.chunking import SentenceChunkerConfig, SentenceChunker
+
+        cfg = SentenceChunkerConfig(max_sents=10)
+        chunker = SentenceChunker(cfg)
+
+    Note that the ``SentenceChunker`` relies on the sentence splitter to split the text,
+    thus the space between may be lost if the sentence splitter is not reversible.
     """
 
     max_sents: Optional[int] = None

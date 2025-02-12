@@ -12,7 +12,7 @@ from .basic_chunkers import (
 from .semantic_chunker import SemanticChunker, SemanticChunkerConfig
 
 
-ChunkerConfig = CHUNKERS.make_config(default="sentence")
+ChunkerConfig = CHUNKERS.make_config(default="sentence", config_name="ChunkerConfig")
 
 
 __all__ = [

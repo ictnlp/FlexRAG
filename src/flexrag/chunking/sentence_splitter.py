@@ -26,6 +26,7 @@ class SentenceSplitterBase(ABC):
     @property
     @abstractmethod
     def reversible(self) -> bool:
+        """return True if the splitted sentences can be concatenate back to the original text."""
         return
 
 
@@ -34,7 +35,11 @@ SENTENCE_SPLITTERS = Register[SentenceSplitterBase]("sentence_splitter")
 
 @dataclass
 class NLTKSentenceSplitterConfig:
-    """Configuration for NLTKSentenceSplitter."""
+    """Configuration for NLTKSentenceSplitter.
+
+    :param language: The language to use for the sentence splitter. Default is "english".
+    :type language: str
+    """
 
     language: str = "english"
 
@@ -81,7 +86,15 @@ PREDEFINED_SPLIT_PATTERNS = {
 
 @dataclass
 class RegexSplitterConfig:
-    """Configuration for RegexSentenceSplitter."""
+    """Configuration for RegexSentenceSplitter.
+
+    :param pattern: The regular expression pattern to split the text.
+        Default is ``PREDEFINED_SPLIT_PATTERNS["en"]["sentence"]``
+    :type pattern: str
+
+    Note that some patterns may lose the seperators between sentences.
+    A good practice is to use the lookbehind and lookahead assertion to avoid consuming the splitter.
+    """
 
     pattern: str = PREDEFINED_SPLIT_PATTERNS["en"]["sentence"]
 
@@ -110,7 +123,11 @@ class RegexSplitter(SentenceSplitterBase):
 
 @dataclass
 class SpacySentenceSplitterConfig:
-    """Configuration for SpacySentenceSplitter."""
+    """Configuration for SpacySentenceSplitter.
+
+    :param model: The spaCy model to use for sentence splitting. Default is "en_core_web_sm".
+    :type model: str
+    """
 
     model: str = "en_core_web_sm"
 
@@ -136,4 +153,6 @@ class SpacySentenceSplitter(SentenceSplitterBase):
         return False
 
 
-SentenceSplitterConfig = SENTENCE_SPLITTERS.make_config(default="nltk_splitter")
+SentenceSplitterConfig = SENTENCE_SPLITTERS.make_config(
+    default="nltk_splitter", config_name="SentenceSplitterConfig"
+)
