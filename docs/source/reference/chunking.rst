@@ -24,34 +24,42 @@ Chunkers
 .. autoclass:: flexrag.chunking.CharChunker
     :members:
     :show-inheritance:
-    :exclude-members: chunk
 
 .. autoclass:: flexrag.chunking.TokenChunkerConfig
     :members:
     :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.chunking.TokenChunker
     :members:
     :show-inheritance:
-    :exclude-members: chunk
 
 .. autoclass:: flexrag.chunking.RecursiveChunkerConfig
     :members:
     :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.chunking.RecursiveChunker
     :members:
     :show-inheritance:
-    :exclude-members: chunk
 
 .. autoclass:: flexrag.chunking.SentenceChunkerConfig
     :members:
     :inherited-members:
+    :show-inheritance:
 
 .. autoclass:: flexrag.chunking.SentenceChunker
     :members:
     :show-inheritance:
-    :exclude-members: chunk
+
+.. autoclass:: flexrag.chunking.SemanticChunkerConfig
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.chunking.SemanticChunker
+    :members:
+    :show-inheritance:
 
 
 Sentence Splitters
