@@ -10,13 +10,13 @@ from omegaconf import MISSING
 from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, SimpleProgressLogger
 
-from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
+from .retriever_base import RETRIEVERS, EditableRetriever, EditableRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.bm25s")
 
 
 @dataclass
-class BM25SRetrieverConfig(LocalRetrieverConfig):
+class BM25SRetrieverConfig(EditableRetrieverConfig):
     """Configuration class for BM25SRetriever.
 
     :param database_path: Path to the database directory. Required.
@@ -54,7 +54,7 @@ class BM25SRetrieverConfig(LocalRetrieverConfig):
 
 
 @RETRIEVERS("bm25s", config_class=BM25SRetrieverConfig)
-class BM25SRetriever(LocalRetriever):
+class BM25SRetriever(EditableRetriever):
     name = "BM25SSearch"
 
     def __init__(self, cfg: BM25SRetrieverConfig) -> None:

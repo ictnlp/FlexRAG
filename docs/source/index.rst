@@ -28,6 +28,7 @@ FlexRAG is under active development and is currently in the alpha stage. We welc
    :maxdepth: 2
    :caption: Tutorial:
 
+   tutorial/preparing_retriever
    tutorial/entrypoints
    tutorial/using_register
 

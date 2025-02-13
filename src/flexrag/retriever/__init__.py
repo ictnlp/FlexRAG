@@ -2,8 +2,8 @@ from .bm25s_retriever import BM25SRetriever, BM25SRetrieverConfig
 from .dense_retriever import DenseRetriever, DenseRetrieverConfig
 from .elastic_retriever import ElasticRetriever, ElasticRetrieverConfig
 from .retriever_base import (
-    LocalRetriever,
-    LocalRetrieverConfig,
+    EditableRetriever,
+    EditableRetrieverConfig,
     RetrieverBase,
     RetrieverBaseConfig,
     RETRIEVERS,
@@ -30,8 +30,8 @@ RetrieverConfig = RETRIEVERS.make_config(config_name="RetrieverConfig", default=
 __all__ = [
     "BM25SRetriever",
     "BM25SRetrieverConfig",
-    "LocalRetriever",
-    "LocalRetrieverConfig",
+    "EditableRetriever",
+    "EditableRetrieverConfig",
     "RetrieverBase",
     "RetrieverBaseConfig",
     "DenseRetriever",

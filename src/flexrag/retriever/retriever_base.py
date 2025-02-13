@@ -129,7 +129,7 @@ class RetrieverBaseConfig:
 
 
 @dataclass
-class LocalRetrieverConfig(RetrieverBaseConfig):
+class EditableRetrieverConfig(RetrieverBaseConfig):
     """Configuration class for LocalRetriever.
 
     :param batch_size: The batch size for retrieval. Default: 32.
@@ -143,6 +143,10 @@ class LocalRetrieverConfig(RetrieverBaseConfig):
 
 
 class RetrieverBase(ABC):
+    """The base class for all retrievers.
+    The subclasses should implement the ``search`` method and the ``fields`` property.
+    """
+
     def __init__(self, cfg: RetrieverBaseConfig):
         self.cfg = cfg
         self.log_interval = cfg.log_interval
@@ -217,8 +221,8 @@ class RetrieverBase(ABC):
         return end_time - start_time
 
 
-class LocalRetriever(RetrieverBase):
-    def __init__(self, cfg: LocalRetrieverConfig) -> None:
+class EditableRetriever(RetrieverBase):
+    def __init__(self, cfg: EditableRetrieverConfig) -> None:
         super().__init__(cfg)
         # set args for process documents
         self.batch_size = cfg.batch_size
