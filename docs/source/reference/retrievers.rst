@@ -1,5 +1,12 @@
 Retrievers
 ==========
+Retrievers are used to retrieve data from the local knowledge base or the web.
+
+
+The Retriever Interface
+-----------------------
+``RetrieverBase`` is the base class for all retrievers, including the subclasses of ``EditableRetriever`` and ``WebRetrieverBase``.
+
 
 .. autoclass:: flexrag.retriever.RetrieverBaseConfig
     :members:
@@ -13,19 +20,34 @@ Retrievers
     :members:
     :inherited-members:
 
-Local Retrievers
-----------------
-Local retrievers are used to retrieve data from the local knowledge base.
+RetrieverConfig is the general configuration for all registered retrievers.
+You can load any retriever by specifying the retriever name in the configuration.
+For example, to load the ``BM25S`` retriever, you can use the following configuration:
 
-.. autoclass:: flexrag.retriever.LocalRetrieverConfig
+.. code-block:: python
+
+    from flexrag.retriever import RetrieverConfig, RETRIEVERS, BM25SRetrieverConfig
+
+    config = RetrieverConfig(
+        retriever_type='bm25s',
+        bm25s_config=BM25SRetrieverConfig(
+            database_path='<path_to_database>',
+        )
+    )
+    retriever = RETRIEVERS.load(config)
+
+Editable Retrievers
+-------------------
+In FlexRAG, the ``EditableRetriever`` is a concept referring to a retriever that includes the ``add_passages`` and ``clean`` methods, allowing you to build the retriever using your own knowledge base.
+FlexRAG provides following editable retrievers: ``BM25SRetriever``, ``DenseRetriever``, ``ElasticRetriever``, ``TypesenseRetriever``, and ``HydeRetriever``.
+
+.. autoclass:: flexrag.retriever.EditableRetrieverConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.retriever.LocalRetriever
+.. autoclass:: flexrag.retriever.EditableRetriever
     :members:
     :show-inheritance:
-    :exclude-members: search
-
 
 .. BM25S Retriever
 .. autoclass:: flexrag.retriever.BM25SRetrieverConfig
@@ -35,8 +57,6 @@ Local retrievers are used to retrieve data from the local knowledge base.
 .. autoclass:: flexrag.retriever.BM25SRetriever
     :members:
     :show-inheritance:
-    :exclude-members: add_passages, clean, search_batch, fields
-
 
 .. Dense Retriever
 .. autoclass:: flexrag.retriever.DenseRetrieverConfig
@@ -46,8 +66,6 @@ Local retrievers are used to retrieve data from the local knowledge base.
 .. autoclass:: flexrag.retriever.DenseRetriever
     :members:
     :show-inheritance:
-    :exclude-members: add_passages, clean, search_batch, fields
-
 
 .. ElasticSearch Retriever
 .. autoclass:: flexrag.retriever.ElasticRetrieverConfig
@@ -57,8 +75,6 @@ Local retrievers are used to retrieve data from the local knowledge base.
 .. autoclass:: flexrag.retriever.ElasticRetriever
     :members:
     :show-inheritance:
-    :exclude-members: add_passages, clean, search_batch, fields
-
 
 .. Typesense Retriever
 .. autoclass:: flexrag.retriever.TypesenseRetrieverConfig
@@ -68,8 +84,6 @@ Local retrievers are used to retrieve data from the local knowledge base.
 .. autoclass:: flexrag.retriever.TypesenseRetriever
     :members:
     :show-inheritance:
-    :exclude-members: add_passages, clean, search_batch, fields
-
 
 .. Hyde Retriever
 .. autoclass:: flexrag.retriever.HydeRetrieverConfig
@@ -79,11 +93,10 @@ Local retrievers are used to retrieve data from the local knowledge base.
 .. autoclass:: flexrag.retriever.HydeRetriever
     :members:
     :show-inheritance:
-    :exclude-members: search_batch
 
 Dense Index
 -----------
-Dense Index is used in DenseRetriever to store and retrieve dense embeddings.
+Dense Index is used in ``DenseRetriever`` to store and retrieve dense embeddings.
 
 .. autoclass:: flexrag.retriever.index.DenseIndexBase
     :members:
@@ -92,7 +105,6 @@ Dense Index is used in DenseRetriever to store and retrieve dense embeddings.
 .. autoclass:: flexrag.retriever.index.DenseIndexBaseConfig
     :members:
     :inherited-members:
-
 
 .. Annoy Index
 .. autoclass:: flexrag.retriever.index.AnnoyIndexConfig
@@ -128,7 +140,7 @@ Dense Index is used in DenseRetriever to store and retrieve dense embeddings.
 
 Web Retrievers
 --------------
-Web retrievers are used to retrieve data from the web.
+Web retrievers are used to retrieve data from the web. Different from the ``EditableRetriever``, web retrievers can be used without building a knowledge base, as they retrieve data using web search engines.
 
 .. autoclass:: flexrag.retriever.web_retrievers.WebRetrieverBaseConfig
     :members:

@@ -16,7 +16,7 @@ from flexrag.models import ENCODERS, EncoderBase, EncoderConfig
 from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger
 
 from .index import DENSE_INDEX, DenseIndexBase
-from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
+from .retriever_base import RETRIEVERS, EditableRetriever, EditableRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retreviers.dense")
 
@@ -25,7 +25,7 @@ DenseIndexConfig = DENSE_INDEX.make_config()
 
 
 @dataclass
-class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
+class DenseRetrieverConfig(EditableRetrieverConfig, DenseIndexConfig):
     """Configuration class for DenseRetriever.
 
     :param database_path: Path to the database directory. Required.
@@ -48,7 +48,7 @@ class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
 
 
 @RETRIEVERS("dense", config_class=DenseRetrieverConfig)
-class DenseRetriever(LocalRetriever):
+class DenseRetriever(EditableRetriever):
     name = "Dense Retrieval"
     index: DenseIndexBase
     query_encoder: EncoderBase

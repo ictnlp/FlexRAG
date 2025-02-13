@@ -8,13 +8,13 @@ from elasticsearch import Elasticsearch
 from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.utils import SimpleProgressLogger, LOGGER_MANAGER, TIME_METER
 
-from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
+from .retriever_base import RETRIEVERS, EditableRetriever, EditableRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.elastic")
 
 
 @dataclass
-class ElasticRetrieverConfig(LocalRetrieverConfig):
+class ElasticRetrieverConfig(EditableRetrieverConfig):
     """Configuration class for ElasticRetriever.
 
     :param host: Host of the ElasticSearch server. Default: "http://localhost:9200".
@@ -43,7 +43,7 @@ class ElasticRetrieverConfig(LocalRetrieverConfig):
 
 
 @RETRIEVERS("elastic", config_class=ElasticRetrieverConfig)
-class ElasticRetriever(LocalRetriever):
+class ElasticRetriever(EditableRetriever):
     name = "ElasticSearch"
 
     def __init__(self, cfg: ElasticRetrieverConfig) -> None:

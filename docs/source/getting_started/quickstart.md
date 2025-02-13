@@ -77,14 +77,15 @@ python -m flexrag.entrypoints.run_interactive \
 ```
 
 ### Evaluating the FlexRAG Modular Assistants
-You can evaluate your RAG assistant on several knowledge intensive datasets with great ease. FlexRAG support Knowledge intensive datasets provided by [FlashRAG](https://github.com/RUC-NLPIR/FlashRAG), which can be downloaded from [huggingface](https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets). The following command let you evaluate the `Modular Assistant` with dense retriever on the Natural Questions (NQ) dataset:
+You can evaluate your RAG assistant on several knowledge intensive datasets with great ease. FlexRAG support Knowledge intensive datasets provided by [FlashRAG](https://github.com/RUC-NLPIR/FlashRAG), which can be access from [huggingface](https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets). The following command let you evaluate the `Modular Assistant` with dense retriever on the Natural Questions (NQ) dataset:
 ```bash
 OUTPUT_PATH=<path_to_output>
 DB_PATH=<path_to_database>
 OPENAI_KEY=<your_openai_key>
 
 python -m flexrag.entrypoints.run_assistant \
-    file_paths=[nq/test.jsonl] \
+    name=nq \
+    split=test \
     output_path=${OUTPUT_PATH} \
     assistant_type=modular \
     modular_config.used_fields=[title,text] \
@@ -113,7 +114,8 @@ DB_PATH=<path_to_database>
 OPENAI_KEY=<your_openai_key>
 
 python -m flexrag.entrypoints.run_assistant \
-    file_paths=[nq/test.jsonl] \
+    name=nq \
+    split=test \
     output_path=${OUTPUT_PATH} \
     assistant_type=modular \
     modular_config.used_fields=[title,text] \
@@ -178,12 +180,12 @@ After defining the `SimpleAssistant` class and registering it with the `ASSISTAN
 ```bash
 DB_PATH=<path_to_database>
 OPENAI_KEY=<your_openai_key>
-DATA_PATH=<path_to_data>
 MODULE_PATH=<path_to_simple_assistant_module>
 
 python -m flexrag.entrypoints.run_assistant \
     user_module=${MODULE_PATH} \
-    file_paths=[${DATA_PATH}] \
+    name=nq \
+    split=test \
     assistant_type=simple \
     simple_config.model_name='gpt-4o-mini' \
     simple_config.api_key=${OPENAI_KEY} \

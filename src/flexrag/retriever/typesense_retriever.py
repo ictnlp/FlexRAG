@@ -6,13 +6,13 @@ from omegaconf import MISSING
 from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, SimpleProgressLogger
 
-from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
+from .retriever_base import RETRIEVERS, EditableRetriever, EditableRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.typesense")
 
 
 @dataclass
-class TypesenseRetrieverConfig(LocalRetrieverConfig):
+class TypesenseRetrieverConfig(EditableRetrieverConfig):
     """Configuration class for TypesenseRetriever.
 
     :param host: Host of the Typesense server. Required.
@@ -39,7 +39,7 @@ class TypesenseRetrieverConfig(LocalRetrieverConfig):
 
 
 @RETRIEVERS("typesense", config_class=TypesenseRetrieverConfig)
-class TypesenseRetriever(LocalRetriever):
+class TypesenseRetriever(EditableRetriever):
     name = "Typesense"
 
     def __init__(self, cfg: TypesenseRetrieverConfig) -> None:
