@@ -5,7 +5,7 @@ from abc import abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 
-import requests
+import httpx
 from omegaconf import MISSING
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
@@ -122,15 +122,15 @@ class BingRetrieverConfig(WebRetrieverBaseConfig):
     :param subscription_key: The subscription key for the Bing Search API.
         Default is os.environ.get("BING_SEARCH_KEY", "EMPTY").
     :type subscription_key: str
-    :param endpoint: The endpoint for the Bing Search API.
-        Default is "https://api.bing.microsoft.com".
-    :type endpoint: str
+    :param base_url: The base_url for the Bing Search API.
+        Default is "https://api.bing.microsoft.com/v7.0/search".
+    :type base_url: str
     :param timeout: The timeout for the requests. Default is 3.0.
     :type timeout: float
     """
 
     subscription_key: str = os.environ.get("BING_SEARCH_KEY", "EMPTY")
-    endpoint: str = "https://api.bing.microsoft.com"
+    base_url: str = "https://api.bing.microsoft.com/v7.0/search"
     timeout: float = 3.0
 
 
@@ -142,9 +142,12 @@ class BingRetriever(WebRetrieverBase):
 
     def __init__(self, cfg: BingRetrieverConfig):
         super().__init__(cfg)
-        self.endpoint = cfg.endpoint + "/v7.0/search"
-        self.headers = {"Ocp-Apim-Subscription-Key": cfg.subscription_key}
-        self.timeout = cfg.timeout
+        self.client = httpx.Client(
+            base_url=cfg.base_url,
+            headers={"Ocp-Apim-Subscription-Key": cfg.subscription_key},
+            timeout=cfg.timeout,
+            follow_redirects=True,
+        )
         return
 
     def search_item(
@@ -155,12 +158,7 @@ class BingRetriever(WebRetrieverBase):
     ) -> list[WebRetrievedContext]:
         params = {"q": query, "mkt": "en-US", "count": top_k}
         params.update(search_kwargs)
-        response = requests.get(
-            self.endpoint,
-            headers=self.headers,
-            params=params,
-            timeout=self.timeout,
-        )
+        response = self.client.get("", params=params)
         response.raise_for_status()
         result = response.json()
         if "webPages" not in result:
@@ -256,13 +254,14 @@ class GoogleRetriever(WebRetrieverBase):
 
     def __init__(self, cfg: GoogleRetrieverConfig):
         super().__init__(cfg)
-        self.endpoint = cfg.endpoint
         self.subscription_key = cfg.subscription_key
         self.engine_id = cfg.search_engine_id
-        self.proxy = {
-            "http": cfg.proxy,
-            "https": cfg.proxy,
-        }
+        self.client = httpx.Client(
+            base_url=cfg.endpoint,
+            timeout=cfg.timeout,
+            proxy=cfg.proxy,
+            follow_redirects=True,
+        )
         return
 
     def search_item(
@@ -277,12 +276,7 @@ class GoogleRetriever(WebRetrieverBase):
             "q": query,
             "num": top_k,
         }
-        response = requests.get(
-            self.endpoint,
-            params=params,
-            proxies=self.proxy,
-            timeout=self.timeout,
-        )
+        response = self.client.get("", params=params)
         response.raise_for_status()
         result = response.json()
         result = [

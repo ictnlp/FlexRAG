@@ -1,8 +1,8 @@
-import asyncio
+import os
 from dataclasses import dataclass
 from typing import Optional
 
-import requests
+import httpx
 import numpy as np
 from numpy import ndarray
 from omegaconf import MISSING
@@ -26,11 +26,13 @@ class JinaEncoderConfig:
     :type dimensions: int
     :param task: The task for the embeddings. Default is None. Available options are "retrieval.query", "retrieval.passage", "separation", "classification", and "text-matching".
     :type task: str
+    :param proxy: The proxy to use. Defaults to None.
+    :type proxy: Optional[str]
     """
 
     model: str = "jina-embeddings-v3"
     base_url: str = "https://api.jina.ai/v1/embeddings"
-    api_key: str = MISSING
+    api_key: str = os.environ.get("JINA_API_KEY", MISSING)
     dimensions: int = 1024
     task: Optional[
         Choices(  # type: ignore
@@ -43,17 +45,33 @@ class JinaEncoderConfig:
             ]
         )
     ] = None
+    proxy: Optional[str] = None
 
 
 @ENCODERS("jina", config_class=JinaEncoderConfig)
 class JinaEncoder(EncoderBase):
     def __init__(self, cfg: JinaEncoderConfig):
-        self.headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {cfg.api_key}",
-        }
-        self.base_url = cfg.base_url
-        self._data_template = {
+        # prepare client
+        self.client = httpx.Client(
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {cfg.api_key}",
+            },
+            proxy=cfg.proxy,
+            base_url=cfg.base_url,
+            follow_redirects=True,
+        )
+        self.async_client = httpx.AsyncClient(
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {cfg.api_key}",
+            },
+            proxy=cfg.proxy,
+            base_url=cfg.base_url,
+            follow_redirects=True,
+        )
+        # prepare template
+        self.data_template = {
             "model": cfg.model,
             "task": cfg.task,
             "dimensions": cfg.dimensions,
@@ -65,23 +83,21 @@ class JinaEncoder(EncoderBase):
 
     @TIME_METER("jina_encode")
     def _encode(self, texts: list[str]) -> ndarray:
-        data = self._data_template.copy()
+        data = self.data_template.copy()
         data["input"] = texts
-        response = requests.post(self.base_url, headers=self.headers, json=data)
+        response = self.client.post("", json=data)
         response.raise_for_status()
         embeddings = [i["embedding"] for i in response.json()["data"]]
         return np.array(embeddings)
 
     @TIME_METER("jina_encode")
     async def async_encode(self, texts: list[str]) -> ndarray:
-        data = self._data_template.copy()
+        data = self.data_template.copy()
         data["input"] = texts
-        response = await asyncio.to_thread(
-            requests.post, self.base_url, headers=self.headers, json=data
-        )
+        response = await self.async_client.post("", json=data)
         embeddings = [i["embedding"] for i in response.json()["data"]]
         return np.array(embeddings)
 
     @property
     def embedding_size(self) -> int:
-        return self._data_template["dimension"]
+        return self.data_template["dimension"]

@@ -2,7 +2,7 @@ import time
 from dataclasses import dataclass
 from typing import Optional
 
-import requests
+import httpx
 from bs4 import BeautifulSoup
 
 from flexrag.common_dataclass import RetrievedContext
@@ -39,11 +39,7 @@ class WikipediaRetriever(RetrieverBase):
         super().__init__(cfg)
         # set basic configs
         self.search_url = cfg.search_url
-        self.session = requests.Session()
-        self.session.proxies = {
-            "http": cfg.proxy,
-            "https": cfg.proxy,
-        }
+        self.client = httpx.Client(proxy=cfg.proxy)
         return
 
     def search(
@@ -66,7 +62,7 @@ class WikipediaRetriever(RetrieverBase):
 
     def search_item(self, query: str, **kwargs) -> RetrievedContext:
         search_url = self.search_url + query.replace(" ", "+")
-        response_text = self.session.get(search_url).text
+        response_text = self.client.get(search_url).text
 
         soup = BeautifulSoup(response_text, features="html.parser")
         result_divs = soup.find_all("div", {"class": "mw-search-result-heading"})

@@ -4,7 +4,7 @@ from typing import Optional
 
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.utils import LOGGER_MANAGER, Choices
+from flexrag.utils import LOGGER_MANAGER
 
 from .assistant import ASSISTANTS, AssistantBase
 
@@ -15,16 +15,12 @@ logger = LOGGER_MANAGER.get_logger("flexrag.assistant")
 class BasicAssistantConfig(GeneratorConfig, GenerationConfig):
     """The configuration for the basic assistant.
 
-    :param response_type: The type of response to generate.
-        Defaults to "short". Available options are: "short", "long", "original".
-    :type response_type: str, optional
     :param prompt_path: The path to the prompt file. Defaults to None.
     :type prompt_path: str, optional
-    :param use_history: Whether to use history prompt. Defaults to False.
+    :param use_history: Whether to save the chat history for multi-turn conversation. Defaults to False.
     :type use_history: bool, optional
     """
 
-    response_type: Choices(["short", "long", "original"]) = "short"  # type: ignore
     prompt_path: Optional[str] = None
     use_history: bool = False
 

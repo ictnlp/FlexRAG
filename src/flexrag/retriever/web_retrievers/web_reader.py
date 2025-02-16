@@ -1,9 +1,10 @@
+import os
 import re
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Optional
 
-import requests
+import httpx
 from omegaconf import MISSING
 
 from flexrag.common_dataclass import RetrievedContext
@@ -236,12 +237,15 @@ class JinaReaderConfig:
 
     :param base_url: The base URL of the Jina Reader API. Default is "https://r.jina.ai".
     :type base_url: str
-    :param api_key: The API key for the Jina Reader API. Required.
+    :param api_key: The API key for the Jina Reader API. Default is os.environ.get("JINA_API_KEY", MISSING).
     :type api_key: str
+    :param proxy: The proxy to use. Defaults to None.
+    :type proxy: Optional[str]
     """
 
     base_url: str = "https://r.jina.ai"
-    api_key: str = MISSING
+    api_key: str = os.environ.get("JINA_API_KEY", MISSING)
+    proxy: Optional[str] = None
 
 
 @WEB_READERS("jina_reader", config_class=JinaReaderConfig)
@@ -249,15 +253,18 @@ class JinaReader(WebReaderBase):
     """The JinaReader reads the web pages using the Jina Reader API."""
 
     def __init__(self, cfg: JinaReaderConfig):
-        self.base_url = cfg.base_url
-        self.headers = {"Authorization": f"Bearer {cfg.api_key}"}
+        self.client = httpx.Client(
+            base_url=cfg.base_url,
+            headers={"Authorization": f"Bearer {cfg.api_key}"},
+            proxy=cfg.proxy,
+            follow_redirects=True,
+        )
         return
 
     def read(
         self, retrieved_contexts: list[WebRetrievedContext]
     ) -> list[RetrievedContext]:
-        urls = [f"{self.base_url}/{rc.url}" for rc in retrieved_contexts]
-        responses = [requests.get(url, headers=self.headers) for url in urls]
+        responses = [self.client.get(f"/{rc.url}") for rc in retrieved_contexts]
         contexts = []
         for rc, response in zip(retrieved_contexts, responses):
             if response.status_code == 200:
