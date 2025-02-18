@@ -51,6 +51,10 @@ class BM25SRetrieverConfig(LocalRetrieverConfig):
 
 @RETRIEVERS("bm25s", config_class=BM25SRetrieverConfig)
 class BM25SRetriever(LocalRetriever):
+    """BM25SRetriever is a retriever that retrieves passages using the BM25 algorithm.
+    The implementation is based on the `bm25s <https://github.com/xhluca/bm25s>`_ project.
+    """
+
     name = "BM25SSearch"
 
     def __init__(self, cfg: BM25SRetrieverConfig) -> None:

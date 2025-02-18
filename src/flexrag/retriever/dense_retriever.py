@@ -45,6 +45,8 @@ class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
 
 @RETRIEVERS("dense", config_class=DenseRetrieverConfig)
 class DenseRetriever(LocalRetriever):
+    """DenseRetriever is a retriever that retrieves the most relevant passages based on semantic embeddings."""
+
     name = "Dense Retrieval"
     index: DenseIndexBase
     query_encoder: EncoderBase
