@@ -37,6 +37,8 @@ Considering the excellent performance and simple installation of the BM25S, we b
 | nomic-ai/nomic-embed-text-v1.5               |  65.06   | 59.90 |   81.70   | 50.31 | 40.08 |   78.14   |    69.10    | 61.32 |   67.50   |  61.49  | 53.77 |   75.78   |
 | jinaai/jina-embeddings-v3                    |  67.43   | 62.33 |   86.20   | 50.02 | 40.17 |   81.52   |    70.06    | 62.14 |   79.51   |  62.50  | 54.88 |   82.41   |
 | facebook/dragon-plus-query-encoder           |  66.67   | 61.69 |   84.06   | 46.79 | 37.17 |   73.80   |    70.30    | 62.54 |   68.40   |  61.25  | 53.80 |   75.42   |
+| Alibaba-NLP/gte-multilingual-base            |  61.61   | 56.68 |   78.48   | 50.00 | 39.89 |   77.31   |    68.31    | 60.66 |   76.81   |  59.97  | 52.41 |   77.53   |
+| Alibaba-NLP/gte-modernbert-base              |  66.67   | 61.69 |   84.06   | 46.79 | 37.17 |   73.80   |    70.30    | 62.54 |   68.40   |  61.25  | 53.80 |   75.42   |
 
 Observations:
 - All dense retrievers have better performance than sparse retrievers.
