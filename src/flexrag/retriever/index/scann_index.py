@@ -24,10 +24,10 @@ class ScaNNIndexConfig(DenseIndexBaseConfig):
 
 @DENSE_INDEX("scann", config_class=ScaNNIndexConfig)
 class ScaNNIndex(DenseIndexBase):
-    """ScaNNIndex is a wrapper for the `scann <https://github.com/google-research/google-research/tree/master/scann>'_ library.
+    """ScaNNIndex is a wrapper for the `ScaNN <https://github.com/google-research/google-research/tree/master/scann>`_ library.
 
     ScaNNIndex runs on CPUs with both high speed and accuracy.
-    However, it requires more memory than `FaissIndex`.
+    However, it requires more memory than ``FaissIndex``.
     """
 
     def __init__(self, cfg: ScaNNIndexConfig, index_path: str = None) -> None:
