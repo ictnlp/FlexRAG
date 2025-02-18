@@ -83,6 +83,7 @@ def batched_cache(func):
     def wrapper(
         self,
         query: list[str],
+        disable_cache: bool = False,
         **search_kwargs,
     ):
         # check query
@@ -90,7 +91,7 @@ def batched_cache(func):
             query = [query]
 
         # direct search
-        if RETRIEVAL_CACHE is None:
+        if (RETRIEVAL_CACHE is None) or disable_cache:
             return func(self, query, **search_kwargs)
 
         # search from cache
@@ -203,7 +204,7 @@ class RetrieverBase(ABC):
         for _ in range(test_times):
             query = [sents[i % len(sents)] for i in range(sample_num)]
             start_time = time.perf_counter()
-            _ = self.search(query, self.top_k, disable_cache=True, **search_kwargs)
+            _ = self.search(query, self.top_k, **search_kwargs)
             end_time = time.perf_counter()
             total_times.append(end_time - start_time)
         avg_time = sum(total_times) / test_times

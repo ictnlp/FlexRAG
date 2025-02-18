@@ -7,6 +7,7 @@ import pytest
 from omegaconf import OmegaConf
 
 from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
+from flexrag.models import EncoderConfig, HFEncoderConfig
 from flexrag.retriever import (
     BM25SRetriever,
     BM25SRetrieverConfig,
@@ -20,16 +21,9 @@ from flexrag.retriever import (
 
 
 @dataclass
-class RetrieverTestConfig(RAGCorpusDatasetConfig):
-    file_paths: list[str] = field(
-        default_factory=lambda: [
-            os.path.join(os.path.dirname(__file__), "testcorp", "testcorp.jsonl")
-        ]
-    )
+class RetrieverTestConfig:
     typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)  # fmt: skip
-    bm25s_config: BM25SRetrieverConfig = field(default_factory=BM25SRetrieverConfig)
     elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)  # fmt: skip
-    dense_config: DenseRetrieverConfig = field(default_factory=DenseRetrieverConfig)
 
 
 @pytest.fixture
@@ -65,11 +59,40 @@ class TestRetrievers:
     def test_dense_retriever(self):
         with tempfile.TemporaryDirectory() as tempdir:
             # load retriever
-            self.cfg.dense_config.database_path = tempdir
-            retriever = DenseRetriever(self.cfg.dense_config)
+            retriever_cfg = DenseRetrieverConfig(
+                top_k=10,
+                database_path=tempdir,
+                query_encoder_config=EncoderConfig(
+                    encoder_type="hf",
+                    hf_config=HFEncoderConfig(
+                        model_path="sentence-transformers/all-MiniLM-L6-v2",
+                        device_id=[0],
+                    ),
+                ),
+                passage_encoder_config=EncoderConfig(
+                    encoder_type="hf",
+                    hf_config=HFEncoderConfig(
+                        model_path="sentence-transformers/all-MiniLM-L6-v2",
+                        device_id=[0],
+                    ),
+                ),
+                encode_fields=["text"],
+                index_type="faiss",
+                batch_size=512,
+                refine_factor=10,
+            )
+            retriever = DenseRetriever(retriever_cfg)
 
             # build index
-            corpus = RAGCorpusDataset(self.cfg)
+            data_cfg = RAGCorpusDatasetConfig(
+                file_paths=[
+                    os.path.join(
+                        os.path.dirname(__file__), "testcorp", "testcorp.jsonl"
+                    )
+                ],
+                id_field="id",
+            )
+            corpus = RAGCorpusDataset(data_cfg)
             retriever.add_passages(corpus)
 
             # search
@@ -82,11 +105,25 @@ class TestRetrievers:
     def test_bm25s_retriever(self):
         with tempfile.TemporaryDirectory() as tempdir:
             # load retriever
-            self.cfg.bm25s_config.database_path = tempdir
-            retriever = BM25SRetriever(self.cfg.bm25s_config)
+            retriever_cfg = BM25SRetrieverConfig(
+                top_k=10,
+                database_path=tempdir,
+                method="lucene",
+                idf_method="lucene",
+                indexed_fields=["text"],
+            )
+            retriever = BM25SRetriever(retriever_cfg)
 
             # build index
-            corpus = RAGCorpusDataset(self.cfg)
+            data_cfg = RAGCorpusDatasetConfig(
+                file_paths=[
+                    os.path.join(
+                        os.path.dirname(__file__), "testcorp", "testcorp.jsonl"
+                    )
+                ],
+                id_field="id",
+            )
+            corpus = RAGCorpusDataset(data_cfg)
             retriever.add_passages(corpus)
 
             # search
@@ -101,7 +138,13 @@ class TestRetrievers:
         retriever: ElasticRetriever = setup_elastic
 
         # build index
-        corpus = RAGCorpusDataset(self.cfg)
+        data_cfg = RAGCorpusDatasetConfig(
+            file_paths=[
+                os.path.join(os.path.dirname(__file__), "testcorp", "testcorp.jsonl")
+            ],
+            id_field="id",
+        )
+        corpus = RAGCorpusDataset(data_cfg)
         retriever.add_passages(corpus)
 
         # search
@@ -116,7 +159,13 @@ class TestRetrievers:
         retriever: TypesenseRetriever = setup_typesense
 
         # build index
-        corpus = RAGCorpusDataset(self.cfg)
+        data_cfg = RAGCorpusDatasetConfig(
+            file_paths=[
+                os.path.join(os.path.dirname(__file__), "testcorp", "testcorp.jsonl")
+            ],
+            id_field="id",
+        )
+        corpus = RAGCorpusDataset(data_cfg)
         retriever.add_passages(corpus)
 
         # search
