@@ -18,6 +18,19 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index")
 
 @dataclass
 class DenseIndexBaseConfig:
+    """The configuration for the `DenseIndexBase`.
+
+    :param distance_function: The distance function to use. Defaults to "IP".
+        available choices are "IP" and "L2".
+    :type distance_function: str
+    :param index_train_num: The number of embeddings to train the index. Defaults to 1000000.
+    :type index_train_num: int
+    :log_interval: The interval to log the progress. Defaults to 10000.
+    :type log_interval: int
+    :batch_size: The batch size to add embeddings. Defaults to 512.
+    :type batch_size: int
+    """
+
     distance_function: Choices(["IP", "L2"]) = "IP"  # type: ignore
     index_train_num: int = 1000000
     log_interval: int = 10000
@@ -25,7 +38,10 @@ class DenseIndexBaseConfig:
 
 
 class DenseIndexBase(ABC):
-    def __init__(self, cfg: DenseIndexBaseConfig, index_path: str):
+    """The base class for all dense indexes."""
+
+    def __init__(self, cfg: DenseIndexBaseConfig, index_path: str = None):
+
         self.distance_function = cfg.distance_function
         self.index_train_num = cfg.index_train_num
         self.index_path = index_path
@@ -36,6 +52,7 @@ class DenseIndexBase(ABC):
     @abstractmethod
     def build_index(self, embeddings: np.ndarray) -> None:
         """Build the index with embeddings.
+        The index will be serialized automatically if the `index_path` is set.
 
         :param embeddings: The embeddings to build the index.
         :type embeddings: np.ndarray
@@ -43,13 +60,12 @@ class DenseIndexBase(ABC):
         """
         return
 
-    def add_embeddings(self, embeddings: np.ndarray, serialize: bool = True) -> None:
+    def add_embeddings(self, embeddings: np.ndarray) -> None:
         """Add embeddings to the index.
+        This method will add embeddings to the index in batches and automatically perform the `serialize` method when the `index_path` is set.
 
         :param embeddings: The embeddings to add.
         :type embeddings: np.ndarray
-        :param serialize: Whether to serialize the index after adding embeddings.
-        :type serialize: bool
         :return: None
         """
         assert self.is_trained, "Index is not trained, please build the index first."
@@ -59,13 +75,21 @@ class DenseIndexBase(ABC):
         for idx in range(0, len(embeddings), self.batch_size):
             p_logger.update(step=self.batch_size, desc="Adding embeddings")
             embeds_to_add = embeddings[idx : idx + self.batch_size]
-            self._add_embeddings_batch(embeds_to_add)
-        if serialize:
+            self.add_embeddings_batch(embeds_to_add)
+        if self.index_path is not None:
             self.serialize()
         return
 
     @abstractmethod
-    def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:
+    def add_embeddings_batch(self, embeddings: np.ndarray) -> None:
+        """Add a batch of embeddings to the index.
+        This method will not serialize the index automatically.
+        Thus, you should call the `serialize` method after adding all embeddings.
+
+        :param embeddings: The embeddings to add.
+        :type embeddings: np.ndarray
+        :return: None
+        """
         return
 
     @TIME_METER("retrieve", "index")
@@ -108,8 +132,13 @@ class DenseIndexBase(ABC):
         return
 
     @abstractmethod
-    def serialize(self):
-        """Serialize the index to self.index_path."""
+    def serialize(self, index_path: str = None) -> None:
+        """Serialize the index to self.index_path.
+        If the `index_path` is given, the index will be serialized to the `index_path`.
+
+        :param index_path: The path to serialize the index. Defaults to None.
+        :type index_path: str, optional
+        """
         return
 
     @abstractmethod
@@ -125,13 +154,19 @@ class DenseIndexBase(ABC):
     @property
     @abstractmethod
     def is_trained(self) -> bool:
-        """Return True if the index is trained."""
+        """Return `True` if the index is trained."""
         return
 
     @property
     @abstractmethod
     def embedding_size(self) -> int:
         """Return the embedding size of the index."""
+        return
+
+    @property
+    @abstractmethod
+    def is_addable(self) -> bool:
+        """Return `True` if the index supports adding embeddings."""
         return
 
     @abstractmethod

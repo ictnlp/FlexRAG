@@ -113,7 +113,7 @@ def configure_attn(
     # do not configure attention for third-party models
     if (cls is None) or trust_remote_code:
         logger.warning(
-            "The attention configuration is not available for third-party models."
+            f"The attention configuration is not available for model: {arch_name}."
         )
         return {}
 

@@ -20,6 +20,9 @@ from omegaconf import MISSING, DictConfig, ListConfig, OmegaConf
 colorama.init(autoreset=True)
 
 
+__VERSION__ = "0.1.8"
+
+
 class SimpleProgressLogger:
     def __init__(self, logger: logging.Logger, total: int = None, interval: int = 100):
         self.total = total
@@ -556,3 +559,6 @@ def load_user_module(module_path: str):
     if module_name not in sys.modules:
         sys.path.insert(0, module_parent)
         importlib.import_module(module_name)
+
+
+FLEXRAG_CACHE_DIR = os.path.join(os.path.expanduser("~"), ".cache", "flexrag")

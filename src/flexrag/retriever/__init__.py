@@ -6,6 +6,8 @@ from .retriever_base import (
     EditableRetrieverConfig,
     RetrieverBase,
     RetrieverBaseConfig,
+    LocalRetriever,
+    LocalRetrieverConfig,
     RETRIEVERS,
 )
 from .typesense_retriever import TypesenseRetriever, TypesenseRetrieverConfig
@@ -32,6 +34,8 @@ __all__ = [
     "BM25SRetrieverConfig",
     "EditableRetriever",
     "EditableRetrieverConfig",
+    "LocalRetriever",
+    "LocalRetrieverConfig",
     "RetrieverBase",
     "RetrieverBaseConfig",
     "DenseRetriever",

@@ -38,7 +38,7 @@ def get_requirements() -> list[str]:
 
 
 def get_version() -> str:
-    with open(os.path.join("src", "flexrag", "__init__.py"), encoding="utf-8") as f:
+    with open(os.path.join("src", "flexrag", "utils.py"), encoding="utf-8") as f:
         file_content = f.read()
         pattern = r"{}\W*=\W*\"([^\"]+)\"".format("__VERSION__")
         (version,) = re.findall(pattern, file_content)

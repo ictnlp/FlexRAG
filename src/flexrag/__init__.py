@@ -2,9 +2,7 @@ from .retriever import RETRIEVERS
 from .assistant import ASSISTANTS
 from .ranker import RANKERS
 from .models import GENERATORS, ENCODERS
-
-
-__VERSION__ = "0.1.8"
+from .utils import __VERSION__
 
 
 __all__ = [
@@ -13,4 +11,5 @@ __all__ = [
     "RANKERS",
     "GENERATORS",
     "ENCODERS",
+    "__VERSION__",
 ]
