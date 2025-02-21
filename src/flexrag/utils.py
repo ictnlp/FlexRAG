@@ -260,7 +260,7 @@ class Register(Generic[RegistedType]):
                     token=os.environ.get("HF_TOKEN", None),
                 )
                 # download the snapshot from the HuggingFace Hub
-                if client.repo_exists(type_str):
+                if type_str.count("/") <= 1:
                     try:
                         assert client.repo_exists(type_str)
                         repo_url = client.repo_info(type_str)
@@ -307,9 +307,9 @@ class Register(Generic[RegistedType]):
         if isinstance(choice, (list, ListConfig)):
             loaded = []
             for name in choice:
-                loaded.append(load_item(name))
+                loaded.append(load_item(str(name)))
             return loaded
-        return load_item(choice)
+        return load_item(str(choice))
 
     def __len__(self) -> int:
         return len(self._items)
