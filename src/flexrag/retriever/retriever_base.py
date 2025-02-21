@@ -374,7 +374,18 @@ class LocalRetriever(EditableRetriever):
 
     .. code-block:: python
 
+        from flexrag.retriever import LocalRetriever
+
         retriever = LocalRetriever.load_from_hub("flexrag/wiki2021_atlas_bm25s")
+
+    You can also override the configuration when loading the retriever:
+
+    .. code-block:: python
+
+        from flexrag.retriever import LocalRetriever, BM25SRetrieverConfig
+
+        cfg = BM25SRetrieverConfig(top_k=20)
+        retriever = LocalRetriever.load_from_hub("flexrag/wiki2021_atlas_bm25s", retriever_config=cfg)
 
     To save a retriever to the HuggingFace Hub, you can run the following code:
 
@@ -392,13 +403,15 @@ class LocalRetriever(EditableRetriever):
         revision: str = None,
         token: str = None,
         cache_dir: str = FLEXRAG_CACHE_DIR,
+        retriever_config: LocalRetrieverConfig = None,
         **kwargs,
     ) -> "LocalRetriever":
         # check if the retriever exists
         api = HfApi(token=token)
-        repo_url = api.repo_info(repo_id)
-        if repo_url is None:
+        repo_info = api.repo_info(repo_id)
+        if repo_info is None:
             raise ValueError(f"Retriever {repo_id} not found on the HuggingFace Hub.")
+        repo_id = repo_info.id
         dir_name = os.path.join(
             cache_dir, f"{repo_id.split('/')[0]}--{repo_id.split('/')[1]}"
         )
@@ -413,7 +426,7 @@ class LocalRetriever(EditableRetriever):
             raise RuntimeError(f"Retriever {repo_id} download failed.")
 
         # load the retriever
-        return LocalRetriever.load_from_local(snapshot, **kwargs)
+        return LocalRetriever.load_from_local(snapshot, retriever_config, **kwargs)
 
     def save_to_hub(
         self,
@@ -480,23 +493,28 @@ class LocalRetriever(EditableRetriever):
         return repo_url
 
     @staticmethod
-    def load_from_local(database_path: str = None) -> "LocalRetriever":
-        # load the configuration
-        config_path = os.path.join(database_path, "config.yaml")
-        with open(config_path, "r", encoding="utf-8") as f:
-            cfg = OmegaConf.load(f)
-        cfg.database_path = database_path
-
+    def load_from_local(
+        repo_path: str = None, retriever_config: LocalRetrieverConfig = None
+    ) -> "LocalRetriever":
         # prepare the cls
-        id_path = os.path.join(database_path, "retriever.id")
+        id_path = os.path.join(repo_path, "cls.id")
         with open(id_path, "r", encoding="utf-8") as f:
             retriever_name = f.read()
         retriever_cls = RETRIEVERS[retriever_name]["item"]
         config_cls = RETRIEVERS[retriever_name]["config_class"]
 
+        # prepare the configuration
+        config_path = os.path.join(repo_path, "config.yaml")
+        with open(config_path, "r", encoding="utf-8") as f:
+            local_cfg = OmegaConf.load(f)
+        local_cfg = OmegaConf.merge(config_cls(), local_cfg)
+        if retriever_config is None:
+            cfg = local_cfg
+        else:
+            cfg = OmegaConf.merge(local_cfg, retriever_config)
+        cfg.database_path = repo_path
+
         # load the retriever
-        default_config = config_cls()
-        cfg = OmegaConf.merge(default_config, cfg)
         retriever = retriever_cls(cfg)
         return retriever
 
@@ -508,7 +526,7 @@ class LocalRetriever(EditableRetriever):
         update_config: bool = False,
     ):
         # check if the database_path is available
-        db_path = self.cfg.database_path or database_path
+        db_path = database_path or self.cfg.database_path
         if db_path is None:
             raise ValueError("The `database_path` is not specified.")
         if not os.path.exists(db_path):
@@ -539,7 +557,7 @@ class LocalRetriever(EditableRetriever):
         config_path = os.path.join(database_path, "config.yaml")
         with open(config_path, "w", encoding="utf-8") as f:
             OmegaConf.save(self.cfg, f)
-        id_path = os.path.join(database_path, "retriever.id")
+        id_path = os.path.join(database_path, "cls.id")
         with open(id_path, "w", encoding="utf-8") as f:
             f.write(self.__class__.__name__)
         return

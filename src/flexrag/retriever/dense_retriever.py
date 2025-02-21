@@ -2,16 +2,16 @@ import datetime
 import os
 import shutil
 from dataclasses import dataclass, field
-from hashlib import sha1
 from functools import cached_property
+from hashlib import sha1
 from typing import Generator, Iterable, Optional
+from uuid import uuid4
 
 import lance
 import numpy as np
 import pandas as pd
 from huggingface_hub import HfApi
 from lance.dataset import DatasetOptimizer
-from scipy.spatial.distance import cdist
 
 from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.models import ENCODERS, EncoderBase, EncoderConfig
@@ -31,15 +31,12 @@ class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
     :type query_encoder_config: EncoderConfig
     :param passage_encoder_config: Configuration for the passage encoder. Default: None.
     :type passage_encoder_config: EncoderConfig
-    :param refine_factor: Refine factor for the retrieved results. Default: 1.
-    :type refine_factor: int
     :param encode_fields: Fields to be encoded. None stands for all fields. Default: None.
     :type encode_fields: Optional[list[str]]
     """
 
     query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
-    refine_factor: int = 1
     encode_fields: Optional[list[str]] = None
 
 
@@ -57,7 +54,6 @@ class DenseRetriever(LocalRetriever):
         # set args
         self.database_path = cfg.database_path
         self.encode_fields = cfg.encode_fields
-        self.refine_factor = cfg.refine_factor
 
         # load encoder
         self.query_encoder = ENCODERS.load(cfg.query_encoder_config)
@@ -74,12 +70,9 @@ class DenseRetriever(LocalRetriever):
             # load the index
             index_path = os.path.join(self.database_path, f"index.{cfg.index_type}")
             self.index = DENSE_INDEX.load(cfg, index_path=index_path)
-            self.embeddings = None
         else:
             self.database = None
-            self.embeddings = None
             self.index = DENSE_INDEX.load(cfg, index_path=None)
-        self.distance_function = self.index.distance_function
 
         # consistency check
         if not no_check:
@@ -105,6 +98,7 @@ class DenseRetriever(LocalRetriever):
         # generate embeddings
         assert self.passage_encoder is not None, "Passage encoder is not provided."
         p_logger = SimpleProgressLogger(logger, interval=self.log_interval)
+        embeddings = []
         for batch in get_batch():
             # encode passages
             if len(self.encode_fields) > 1:
@@ -114,48 +108,40 @@ class DenseRetriever(LocalRetriever):
                 ]
             else:
                 data_to_encode = [i[self.encode_fields[0]] for i in batch]
-            embeddings = self.passage_encoder.encode(data_to_encode)
+            emb = self.passage_encoder.encode(data_to_encode)
             p_logger.update(step=self.batch_size, desc="Encoding passages")
 
             # add data to database
-            if (self.database is None) and (self.cfg.database_path is not None):
-                # create a new local database
-                for n, emb in enumerate(embeddings):
-                    batch[n]["vector"] = emb
-                data_to_add = pd.DataFrame(batch)
-                db_path = os.path.join(self.cfg.database_path, "database.lance")
-                lance.write_dataset(data_to_add, uri=db_path, mode="create")
-                self.database = lance.dataset(db_path)
-            elif isinstance(self.database, lance.LanceDataset):
-                # append data to the existing database
-                for n, emb in enumerate(embeddings):
-                    batch[n]["vector"] = emb
+            if self.cfg.database_path is not None:
+                # save the data into lance dataset
                 data_to_add = pd.DataFrame(batch)
                 db_path = os.path.join(self.cfg.database_path, "database.lance")
                 self.database = lance.write_dataset(
                     data_to_add,
                     uri=db_path,
-                    mode="append",
-                    schema=self.database.schema,
+                    mode="append" if self.database is not None else "create",
                 )
-            elif self.database is None:
-                # create a new in-memory DataFrame / ndarray
-                self.database = pd.DataFrame(batch)
-                self.embeddings = embeddings
             else:
-                # concatenate the data into in-memory DataFrame / ndarray
-                self.database = pd.concat(
-                    [self.database, pd.DataFrame(batch)], ignore_index=True
+                # save the data into memory
+                self.database = (
+                    pd.concat([self.database, pd.DataFrame(batch)], ignore_index=True)
+                    if self.database is not None
+                    else pd.DataFrame(batch)
                 )
-                self.embeddings = np.concatenate([self.embeddings, embeddings], axis=0)
 
-            # add embeddings to index
+            # add embeddings to index or save it for building index
             if self.index.is_trained and self.index.is_addable:
-                self.index.add_embeddings_batch(embeddings)
+                self.index.add_embeddings_batch(emb)
+            elif self.cfg.database_path is not None:
+                file_name = os.path.join(self.cfg.database_path, f"{uuid4()}.npy")
+                np.save(file_name, emb)
+                embeddings.append(file_name)
+            else:
+                embeddings.append(emb)
 
         if (not self.index.is_trained) or (not self.index.is_addable):
             # train index from scratch
-            self.build_index()
+            self.build_index(embeddings)
         elif self.cfg.database_path is not None:
             # serialize the index if `database_path` is provided
             self.index.serialize()
@@ -174,19 +160,11 @@ class DenseRetriever(LocalRetriever):
         emb_q = self.query_encoder.encode(query)
 
         # retrieve using vector index
-        indices, scores = self.index.search(
-            emb_q, top_k * self.refine_factor, **search_kwargs
-        )
-        if self.refine_factor > 1:
-            refined_indices, refined_scores = self.refine_index(emb_q, indices)
-            indices = refined_indices[:, :top_k]
-            scores = refined_scores[:, :top_k]
+        indices, scores = self.index.search(emb_q, top_k, **search_kwargs)
 
         # collect the retrieved data
         if isinstance(self.database, lance.LanceDataset):
-            retrieved = self.database.take(
-                indices.flatten(), columns=self.fields
-            ).to_pandas()
+            retrieved = self.database.take(indices.flatten()).to_pandas()
         else:
             retrieved = self.database.iloc[indices.flatten()]
 
@@ -213,7 +191,6 @@ class DenseRetriever(LocalRetriever):
         if self.cfg.database_path is not None:
             shutil.rmtree(self.cfg.database_path)
         self.database = None
-        self.embeddings = None
         return
 
     def __len__(self) -> int:
@@ -224,111 +201,55 @@ class DenseRetriever(LocalRetriever):
         return self.database.shape[0]
 
     @property
-    def embedding_size(self) -> int:
-        """The embedding size of the retriever."""
-        if self.query_encoder is not None:
-            return self.query_encoder.embedding_size
-        if self.passage_encoder is not None:
-            return self.passage_encoder.embedding_size
-        if self.embeddings is not None:
-            return self.embeddings.shape[1]
-        if self.database is not None:
-            return self.database.head(num_rows=1).to_pandas()["vector"][0].shape[0]
-        if hasattr(self, "index"):
-            return self.index.embedding_size
-        raise ValueError(
-            "No encoder or database is provided, embedding size can not be determined."
-        )
-
-    @property
     def fields(self) -> list[str]:
         fields: list
         if self.database is None:
             return []
         if isinstance(self.database, lance.LanceDataset):
             fields = self.database.head(num_rows=1).to_pandas().columns.to_list()
-            fields.remove("vector")
         else:
             fields = self.database.columns.to_list()
+        fields = [i for i in fields if i != self.id_field_name]
         return fields
 
-    @TIME_METER("dense_retriever", "refine-index")
-    def refine_index(
-        self,
-        query: np.ndarray,
-        indices: np.ndarray,
-    ) -> tuple[np.ndarray, np.ndarray]:
-        """Refine the retrieved indices based on the distance between the query and the retrieved embeddings.
-
-        :param query: The query embeddings with shape [bsz, emb_size].
-        :type query: np.ndarray
-        :param indices: The retrieved indices with shape [bsz, top_k * refine_factor].
-        :type indices: np.ndarray
-        :return: The refined indices and scores with shape [bsz, top_k * refine_factor].
-        :rtype: tuple[np.ndarray, np.ndarray]
-        """
-        bsz, kf = indices.shape
-        flat_indices = indices.flatten()
-        if isinstance(self.database, lance.LanceDataset):
-            embs = np.stack(
-                self.database.take(flat_indices, columns=["vector"]).to_pandas()["vector"]  # fmt: skip
-            )  # [bsz * kf, emb_size]
-        else:
-            embs = self.embeddings[flat_indices]  # [bsz * kf, emb_size]
-        query = np.expand_dims(query, 1).repeat(kf, axis=1).reshape(bsz * kf, -1)
-
-        # compute the distance between the query and the retrieved embeddings
-        match self.distance_function:
-            case "L2":
-                dis = cdist(query, embs, "euclidean")
-            case "COSINE":
-                dis = -cdist(query, embs, "cosine")
-            case "IP":
-                dis = -np.sum(query * embs, axis=1)
-            case "HAMMING":
-                dis = cdist(query, embs, "hamming")
-            case "MANHATTAN":
-                dis = cdist(query, embs, "cityblock")
-            case _:
-                raise ValueError("Unsupported distance function")
-        dis = dis.reshape(bsz, kf)
-        new_order = np.argsort(dis, axis=1)
-        new_indices = np.take_along_axis(indices, new_order, axis=1)
-        new_scores = np.take_along_axis(dis, new_order, axis=1)
-        return new_indices, new_scores
-
     @TIME_METER("dense_retriever", "build-index")
-    def build_index(self) -> None:
-        if self.embeddings is not None:
-            embeddings = self.embeddings
-        else:
+    def build_index(self, embeddings: list[np.ndarray | str]) -> None:
+        # load the embeddings
+        if isinstance(embeddings[0], str):
             logger.info("Copying embeddings to memory map")
-            embeddings = np.memmap(
+            emb_path = embeddings[0]
+            emb = np.load(emb_path)
+            emb_map = np.memmap(
                 os.path.join(self.cfg.database_path, f"_embeddings.npy"),
                 dtype=np.float32,
                 mode="w+",
-                shape=(self.database.count_rows(), self.embedding_size),
+                shape=(len(self), emb.shape[1]),
             )
             idx = 0
-            for emb_batch in self.database.to_batches(columns=["vector"]):
-                emb_batch = np.stack(emb_batch.to_pandas()["vector"])
-                embeddings[idx : idx + emb_batch.shape[0]] = emb_batch
-                idx += emb_batch.shape[0]
-                del emb_batch
+            for emb_path in embeddings:
+                emb = np.load(emb_path)
+                emb_map[idx : idx + emb.shape[0]] = emb
+                idx += emb.shape[0]
+                del emb
+                os.remove(emb_path)
+            embeddings = emb_map
+        else:
+            embeddings = np.concatenate(embeddings, axis=0)
 
+        # build the index
         logger.info("Training index.")
-        logger.warning("Training index may consume a lot of memory.")
+        logger.info("Training index may consume a lot of memory.")
         self.index.build_index(embeddings)
-        if self.embeddings is None:
+
+        # clean up the embeddings
+        if isinstance(embeddings, np.memmap):
             os.remove(os.path.join(self.cfg.database_path, f"_embeddings.npy"))
+        else:
+            del embeddings
         return
 
     def _check_consistency(self) -> None:
         assert len(self.index) == len(self), "Inconsistent index and database."
-        if self.index.is_trained:
-            assert (
-                self.index.embedding_size == self.embedding_size
-            ), "Inconsistent embedding size."
         return
 
     @cached_property
@@ -338,9 +259,6 @@ class DenseRetriever(LocalRetriever):
     def _save_to_local(self, database_path: str) -> None:
         if database_path == self.cfg.database_path:
             return
-        # merge embeddings to the database
-        self.database["vector"] = self.embeddings.tolist()
-        self.embeddings = None
         db_path = os.path.join(database_path, "database.lance")
         self.database = lance.write_dataset(self.database, uri=db_path, mode="create")
 
@@ -407,13 +325,18 @@ class DenseRetriever(LocalRetriever):
         return
 
     def _clearup_database(self) -> None:
-        if isinstance(self.database, lance.LanceDataset):
-            # compact the database
-            logger.info("Compacting the database to reduce the size & file number.")
-            optim = DatasetOptimizer(self.database)
-            optim.compact_files()
-            # clear up the database
-            self.database.cleanup_old_versions(
-                datetime.datetime.now() - self.database.versions()[-1]["timestamp"]
-            )
+        if not isinstance(self.database, lance.LanceDataset):
+            return
+        if len(self.database.versions()) <= 1:
+            return
+        # compact the database
+        # we find that the `compact_files` operation will change the order of the rows
+        # so we compact the files directly by reading and writing the data
+        logger.info("Compacting the database. This may take a while.")
+        new_data_path = os.path.join(self.cfg.database_path, "tmp.lance")
+        ori_data_path = os.path.join(self.cfg.database_path, "database.lance")
+        lance.write_dataset(self.database, uri=new_data_path, mode="create")
+        shutil.rmtree(ori_data_path)
+        shutil.move(new_data_path, ori_data_path)
+        self.database = lance.dataset(ori_data_path)
         return

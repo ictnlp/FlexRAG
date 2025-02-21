@@ -179,7 +179,9 @@ class BM25SRetriever(LocalRetriever):
     @property
     def fields(self) -> list[str]:
         if self._retriever.corpus is not None:
-            return self._retriever.corpus[0].keys()
+            fields = self._retriever.corpus[0].keys()
+            fields = [f for f in fields if f != self.id_field_name]
+            return fields
         return []
 
     @cached_property

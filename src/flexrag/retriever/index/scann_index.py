@@ -128,6 +128,7 @@ class ScaNNIndex(DenseIndexBase):
     def deserialize(self):
         assert self.index_path is not None, "Index path is not set."
         logger.info(f"Loading index from {self.index_path}.")
+        self._prepare_assets(self.index_path)
         self.index = self.scann.scann_ops_pybind.load_searcher(self.index_path)
         return self.index
 
@@ -162,3 +163,40 @@ class ScaNNIndex(DenseIndexBase):
         if isinstance(self.index, self.scann.ScannBuilder):
             return 0
         return self.index.size()
+
+    def _prepare_assets(self, index_path: str) -> None:
+        """As the `ScaNN` requires the assets table to find the index files,
+        we need to update the path in the `scann_assets.pbtxt` file.
+
+        :param index_path: The path to the index.
+        :type index_path: str
+        :return: None
+        :rtype: None
+        """
+        file_path = os.path.join(index_path, "scann_assets.pbtxt")
+        if not os.path.exists(file_path):
+            logger.error(
+                f"Asset file (scann_assets.pbtxt) not found. "
+                f"Please check the `index_path` ({index_path})."
+            )
+        new_lines = []
+        with open(os.path.join(index_path, "scann_assets.pbtxt"), "r") as f:
+            for line in f:
+                match = re.match(r"(?:\s*asset_path:\s+\")([^\"]+)(?:\")", line)
+                if match:
+                    asset_name = os.path.basename(match.group(1))
+                    new_path = os.path.join(index_path, asset_name)
+                    assert os.path.exists(
+                        new_path
+                    ), f"Asset {asset_name} not found at {new_path}"
+                    line = re.sub(
+                        r"(asset_path:\s+\")[^\"]+(\")",
+                        f"\\1{new_path}\\2",
+                        line,
+                    )
+                    new_lines.append(line)
+                else:
+                    new_lines.append(line)
+        with open(os.path.join(index_path, "scann_assets.pbtxt"), "w") as f:
+            f.writelines(new_lines)
+        return

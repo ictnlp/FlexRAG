@@ -79,7 +79,6 @@ class TestRetrievers:
                 encode_fields=["text"],
                 index_type="faiss",
                 batch_size=512,
-                refine_factor=10,
             )
             retriever = DenseRetriever(retriever_cfg)
 
