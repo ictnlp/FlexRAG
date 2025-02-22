@@ -215,7 +215,7 @@ class RetrieverBase(ABC):
         return end_time - start_time
 
 
-RETRIEVERS = Register[RetrieverBase]("retriever")
+RETRIEVERS = Register[RetrieverBase]("retriever", True)
 
 
 @dataclass

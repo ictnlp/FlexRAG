@@ -46,7 +46,7 @@ def main(config: Config):
     testset = MTEBDataset(config)
 
     # load assistant
-    retriever = RETRIEVERS.load(config, allow_load_from_repo=True)
+    retriever = RETRIEVERS.load(config)
 
     # prepare output paths
     if config.output_path is not None:

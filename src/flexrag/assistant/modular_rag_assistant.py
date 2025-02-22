@@ -55,7 +55,7 @@ class ModularAssistant(AssistantBase):
         assert self.generator is not None, "Generator is not loaded."
 
         # load retriever
-        self.retriever = RETRIEVERS.load(cfg, allow_load_from_repo=True)
+        self.retriever = RETRIEVERS.load(cfg)
 
         # load ranker
         self.reranker = RANKERS.load(cfg)
