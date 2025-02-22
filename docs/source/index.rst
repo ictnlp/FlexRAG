@@ -18,17 +18,18 @@ FlexRAG is under active development and is currently in the alpha stage. We welc
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Getting Started:
 
    getting_started/installation
    getting_started/quickstart
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Tutorial:
 
    tutorial/preparing_retriever
+   tutorial/building_assistant
    tutorial/entrypoints
    tutorial/using_register
 
