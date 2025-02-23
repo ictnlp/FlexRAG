@@ -144,7 +144,7 @@ class BM25SRetriever(LocalRetriever):
         query_tokens = bm25s.tokenize(query, stemmer=self._stemmer, show_progress=False)
         contexts, scores = self._retriever.retrieve(
             query_tokens,
-            k=search_kwargs.get("top_k", self.top_k),
+            k=search_kwargs.pop("top_k", self.top_k),
             show_progress=False,
             **search_kwargs,
         )

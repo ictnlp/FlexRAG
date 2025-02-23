@@ -164,7 +164,7 @@ class ElasticRetriever(EditableRetriever):
                             "fields": self.fields,
                         },
                     },
-                    "size": search_kwargs.get("top_k", self.top_k),
+                    "size": search_kwargs.pop("top_k", self.top_k),
                 }
             )
 

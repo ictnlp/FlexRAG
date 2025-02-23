@@ -110,7 +110,7 @@ class TypesenseRetriever(EditableRetriever):
                 "collection": self.index_name,
                 "q": q,
                 "query_by": ",".join(self.fields),
-                "per_page": search_kwargs.get("top_k", self.top_k),
+                "per_page": search_kwargs.pop("top_k", self.top_k),
                 **search_kwargs,
             }
             for q in query
