@@ -108,7 +108,7 @@ python -m flexrag.entrypoints.prepare_index \
     dense_config.database_path=$DB_PATH \
     dense_config.encode_fields='[text]' \
     dense_config.passage_encoder_config.encoder_type=hf \
-    dense_config.passage_encoder_config.hf_config.model_path='facebook/contriever' \
+    dense_config.passage_encoder_config.hf_config.model_path='facebook/contriever-msmarco' \
     dense_config.passage_encoder_config.hf_config.device_id=[0,1,2,3] \  # optional
     dense_config.index_type=faiss \
     dense_config.batch_size=2048 \
@@ -116,7 +116,7 @@ python -m flexrag.entrypoints.prepare_index \
 ```
 
 Similarly, we specify the retriever as `DenseRetriever` and use the downloaded *psgs_w100.tsv* as the corpus. We designate the `title` and `text` fields from the corpus to be stored in the database and specify the `id` field as the unique identifier for each chunk.
-In addition, we use the `facebook/contriever` model to encode the `text` field and store the encoded vectors in the database. Finally, the prepared `DenseRetriever` will be stored in the directory <path_to_database>.
+In addition, we use the `facebook/contriever-msmarco` model to encode the `text` field and store the encoded vectors in the database. Finally, the prepared `DenseRetriever` will be stored in the directory <path_to_database>.
 
 Note that we specify the `device_id` as `[0,1,2,3]` to use 4 GPUs for encoding the text field. This configuration will speed up the encoding process. If you do not have multiple GPUs, you can simply set `device_id=[0]` to use a single GPU or `device_id=[]` to use CPU.
 
@@ -133,7 +133,7 @@ cfg = DenseRetrieverConfig(
     query_encoder_config=EncoderConfig(
         encoder_type='hf',
         hf_config=HFEncoderConfig(
-            model_path='facebook/contriever',
+            model_path='facebook/contriever-msmarco',
             device_id=[0]
         )
     )
@@ -183,14 +183,14 @@ cfg = DenseRetrieverConfig(
     query_encoder_config=EncoderConfig(
         encoder_type='hf',
         hf_config=HFEncoderConfig(
-            model_path='facebook/contriever',
+            model_path='facebook/contriever-msmarco',
             device_id=[0]
         )
     ),
     passage_encoder_config=EncoderConfig(
         encoder_type='hf',
         hf_config=HFEncoderConfig(
-            model_path='facebook/contriever',
+            model_path='facebook/contriever-msmarco',
             device_id=[0]
         )
     )
@@ -202,5 +202,5 @@ retriever.save_to_hub(repo_id="<your-repo-id>", token="<your-hf-token>")
 In this code, you need to specify the `repo_id` and `token` to upload the retriever to the HuggingFace Hub. You can find the `token` in your HuggingFace [account settings](https://huggingface.co/settings/tokens). After uploading the retriever, you can share the retriever with the community by sharing the link to the HuggingFace Hub.
 
 ```{important}
-To make your shared `DenseRetriever` accessible to the community, you need to make sure the query encoder and the passage encoder are **configured** and **accessible** to the public. In this example, the `facebook/contriever` model is also hosted on the HuggingFace Hub, so users can access the model without any additional configuration. If you use a custom model, uploading your model to the HuggingFace Hub is recommended.
+To make your shared `DenseRetriever` accessible to the community, you need to make sure the query encoder and the passage encoder are **configured** and **accessible** to the public. In this example, the `facebook/contriever-msmarco` model is also hosted on the HuggingFace Hub, so users can access the model without any additional configuration. If you use a custom model, uploading your model to the HuggingFace Hub is recommended.
 ```

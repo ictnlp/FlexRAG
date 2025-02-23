@@ -57,7 +57,7 @@ python -m flexrag.entrypoints.run_assistant \
     simple_config.database_path=${DB_PATH} \
     simple_config.index_type=faiss \
     simple_config.query_encoder_config.encoder_type=hf \
-    simple_config.query_encoder_config.hf_config.model_path='facebook/contriever' \
+    simple_config.query_encoder_config.hf_config.model_path='facebook/contriever-msmarco' \
     simple_config.query_encoder_config.hf_config.device_id=[0] \
     eval_config.metrics_type=[retrieval_success_rate,generation_f1,generation_em] \
     eval_config.retrieval_success_rate_config.eval_field=text \
