@@ -26,7 +26,6 @@ The simplest way to load a predefined retriever in a RAG application is by using
 ```bash
 python -m flexrag.entrypoints.run_interactive \
     assistant_type=modular \
-    modular_config.used_fields=[title,text] \
     modular_config.retriever_type='FlexRAG/wiki2021_atlas_bm25s' \
     modular_config.response_type=original \
     modular_config.generator_type=openai \
@@ -41,8 +40,8 @@ Another way to load a predefined retriever is by importing FlexRAG as a library.
 ```python
 from flexrag.retriever import LocalRetriever
 
-retriever = LocalRetriever.load_from_hub(repo_id='FlexRAG/wiki2021_atlas_contriever')
-passages = retriever.retrieve('What is the capital of France?')
+retriever = LocalRetriever.load_from_hub(repo_id='FlexRAG/wiki2021_atlas_bm25s')
+passages = retriever.search('What is the capital of France?')
 ```
 
 ## Preparing Your Own `EditableRetriever`
@@ -125,7 +124,7 @@ Note that we specify the `device_id` as `[0,1,2,3]` to use 4 GPUs for encoding t
 After preparing the retriever, you can use it in the RAG application or other tasks. For example, you can use the `DenseRetriever` to retrieve the top 5 passages for a given query:
 
 ```python
-from flexrag.retrievers import DenseRetriever, DenseRetrieverConfig
+from flexrag.retriever import DenseRetriever, DenseRetrieverConfig
 from flexrag.models import EncoderConfig, HFEncoderConfig
 
 cfg = DenseRetrieverConfig(
@@ -140,7 +139,7 @@ cfg = DenseRetrieverConfig(
     )
 )
 retriever = DenseRetriever(cfg)
-passages = retriever.retrieve('What is the capital of France?')
+passages = retriever.search('What is the capital of France?')[0]
 print(passages)
 ```
 

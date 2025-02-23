@@ -28,7 +28,6 @@ The easiest way to run a RAG assistant is to use FlexRAG's entrypoints to start 
 ```bash
 python -m flexrag.entrypoints.run_interactive \
     assistant_type=modular \
-    modular_config.used_fields=[title,text] \
     modular_config.retriever_type='FlexRAG/wiki2021_atlas_bm25s' \
     modular_config.response_type=original \
     modular_config.generator_type=openai \
@@ -48,7 +47,7 @@ Then you can visit the GUI application at `http://localhost:7860` in your browse
 
 
 ### Running the RAG evaluation
-You can evaluate your RAG assistant on several knowledge intensive datasets with great ease. FlexRAG support dozens of knowledge intensive tasks, which can be access from [huggingface](https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets). The following command let you evaluate the `ModularAssistant` with the `BM25SRetriever` on the Natural Questions (NQ) dataset:
+You can easily evaluate your RAG assistant on a variety of knowledge-intensive tasks. The following command let you evaluate the `ModularAssistant` with the `BM25SRetriever` on the Natural Questions (NQ) dataset:
 ```bash
 OUTPUT_PATH=<path_to_output>
 DB_PATH=<path_to_database>
@@ -59,7 +58,6 @@ python -m flexrag.entrypoints.run_assistant \
     split=test \
     output_path=${OUTPUT_PATH} \
     assistant_type=modular \
-    modular_config.used_fields=[title,text] \
     modular_config.retriever_type="FlexRAG/wiki2021_atlas_bm25s" \
     modular_config.response_type=short \
     modular_config.generator_type=openai \
@@ -83,9 +81,8 @@ You can find more information in the [Developing your own RAG assistant](../tuto
 Besides running RAG assistants with FlexRAG's entrypoints, you can also import FlexRAG as a library to develop your own RAG applications. FlexRAG provides a flexible and modular API that allows you to customize your RAG application with ease. For example, you can use the following code to build a simple RAG QA system:
 
 ```python
+from flexrag.models import OpenAIGenerator, OpenAIGeneratorConfig
 from flexrag.retriever import LocalRetriever
-from flexrag.models import EncoderConfig, HFEncoderConfig
-from flexrag.generator import OpenAIGenerator, OpenAIGeneratorConfig
 
 
 def main():
@@ -95,8 +92,8 @@ def main():
     # load the generator
     generator = OpenAIGenerator(
         OpenAIGeneratorConfig(
-            model_name='gpt-4o-mini',
-            api_key='<your_openai_key>',
+            model_name="Qwen2-7B-Instruct",
+            base_url="http://10.28.0.148:8000/v1",
         )
     )
 
@@ -105,11 +102,21 @@ def main():
         query = input("Please input your question (type /bye to quit): ")
         if query == "/bye":
             break
-        contexts = retriever.retrieve(query)
-        response = generator.generate(query, contexts)
+        # retrieve the contexts
+        contexts = retriever.search(query, top_k=3)[0]
+        # construct the prompt
+        user_prompt = (
+            "Please answer the following question based on the given contexts.\n"
+            f"Question: {query}\n"
+        )
+        for i, ctx in enumerate(contexts):
+            user_prompt += f"Context {i+1}: {ctx.data['text']}\n"
+        # generate the response
+        response = generator.chat([{"role": "user", "content": user_prompt}])[0][0]
         print(response)
 
     return
+
 
 if __name__ == "__main__":
     main()
