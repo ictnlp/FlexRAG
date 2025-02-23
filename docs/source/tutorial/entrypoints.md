@@ -83,7 +83,7 @@ python -m flexrag.entrypoints.run_interactive \
     modular_config.dense_config.top_k=5 \
     modular_config.dense_config.database_path=${DB_PATH} \
     modular_config.dense_config.query_encoder_config.encoder_type=hf \
-    modular_config.dense_config.query_encoder_config.hf_config.model_path='facebook/contriever' \
+    modular_config.dense_config.query_encoder_config.hf_config.model_path='facebook/contriever-msmarco' \
     modular_config.dense_config.query_encoder_config.hf_config.device_id=[0] \
     modular_config.response_type=short \
     modular_config.generator_type=openai \
@@ -105,7 +105,7 @@ modular_config:
     query_encoder_config:
       encoder_type: hf
       hf_config:
-        model_path: facebook/contriever
+        model_path: facebook/contriever-msmarco
         device_id: [0]
     response_type: short
 ```

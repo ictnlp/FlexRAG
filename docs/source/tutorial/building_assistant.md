@@ -27,9 +27,10 @@ class SimpleAssistant(AssistantBase):
     def answer(self, question: str) -> str:
         prompt = ChatPrompt()
         context = self.retriever.search(question)[0]
-        prompt_str = ""
-        for ctx in context:
-            prompt_str += f"Question: {question}\nContext: {ctx.data['text']}"
+        prompt_str = "Please answer the following question based on the given text.\n\n"
+        prompt_str += f"Question: {question}\n\n"
+        for n, ctx in enumerate(context):
+            prompt_str += f"Context {n}: {ctx.data['text']}\n"
         prompt.update(ChatTurn(role="user", content=prompt_str))
         response = self.generator.chat([prompt])[0][0]
         prompt.update(ChatTurn(role="assistant", content=response))
