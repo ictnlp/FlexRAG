@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from typing import Any, Optional
 
 from flexrag.common_dataclass import RetrievedContext
-from flexrag.context_refine import BasicPacker, BasicPackerConfig
+from flexrag.context_refine import REFINERS, RefinerConfig
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.ranker import RANKERS, RankerConfig
@@ -17,7 +17,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.assistant.modular")
 
 @dataclass
 class ModularAssistantConfig(
-    GeneratorConfig, GenerationConfig, RetrieverConfig, RankerConfig, BasicPackerConfig
+    GeneratorConfig, GenerationConfig, RetrieverConfig, RankerConfig, RefinerConfig
 ):
     """The configuration for the modular assistant.
 
@@ -60,8 +60,8 @@ class ModularAssistant(AssistantBase):
         # load ranker
         self.reranker = RANKERS.load(cfg)
 
-        # load packer
-        self.context_packer = BasicPacker(cfg)
+        # load refiners
+        self.refiner = REFINERS.load(cfg)
 
         # load prompts
         match cfg.response_type:
@@ -100,18 +100,24 @@ class ModularAssistant(AssistantBase):
         # searching for contexts
         search_histories = []
         ctxs = self.retriever.search(query=[question])[0]
-        search_histories.append(SearchHistory(query=question, contexts=ctxs))
+        search_histories.append(
+            SearchHistory(query=f"search: {question}", contexts=ctxs)
+        )
 
         # reranking
         if self.reranker is not None:
             results = self.reranker.rank(question, ctxs)
             ctxs = results.candidates
-            search_histories.append(SearchHistory(query=question, contexts=ctxs))
+            search_histories.append(
+                SearchHistory(query=f"rerank: {question}", contexts=ctxs)
+            )
 
-        # packing
-        if len(ctxs) > 1:
-            ctxs = self.context_packer.refine(ctxs)
-            search_histories.append(SearchHistory(query=question, contexts=ctxs))
+        # refine
+        for refiner in self.refiner:
+            ctxs = refiner.refine(ctxs)
+            search_histories.append(
+                SearchHistory(query=f"refine: {question}", contexts=ctxs)
+            )
 
         return ctxs, search_histories
 

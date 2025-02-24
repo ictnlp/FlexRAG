@@ -18,7 +18,6 @@ Generators
 Local Generators
 ----------------
 
-
 .. Hugging Face Generators
 .. autoclass:: flexrag.models.HFModelConfig
     :members:

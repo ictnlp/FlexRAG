@@ -18,17 +18,18 @@ FlexRAG is under active development and is currently in the alpha stage. We welc
 
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Getting Started:
 
    getting_started/installation
    getting_started/quickstart
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 1
    :caption: Tutorial:
 
    tutorial/preparing_retriever
+   tutorial/building_assistant
    tutorial/entrypoints
    tutorial/using_register
 
@@ -37,16 +38,17 @@ FlexRAG is under active development and is currently in the alpha stage. We welc
    :caption: Reference:
 
    reference/assistant
+   reference/chunking
+   reference/common_dataclass
+   reference/refiner
+   reference/datasets
+   reference/document_parser
    reference/encoders
    reference/generators
-   reference/tokenizers
-   reference/retrievers
-   reference/rankers
    reference/metrics
    reference/prompt
-   reference/datasets
+   reference/retrievers
+   reference/rankers
+   reference/tokenizers
    reference/text_process
-   reference/chunking
-   reference/document_parser
-   reference/common_dataclass
    reference/utils

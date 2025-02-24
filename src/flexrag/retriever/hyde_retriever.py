@@ -51,6 +51,11 @@ class HydeRetrieverConfig(DenseRetrieverConfig, GeneratorConfig):
 
 @RETRIEVERS("hyde", config_class=HydeRetrieverConfig)
 class HydeRetriever(DenseRetriever):
+    """HydeRetriever is a retriever that rewrites the query before searching.
+
+    The original paper is available at https://aclanthology.org/2023.acl-long.99/.
+    """
+
     def __init__(self, cfg: HydeRetrieverConfig, no_check=False):
         super().__init__(cfg, no_check)
         generator = GENERATORS.load(cfg)

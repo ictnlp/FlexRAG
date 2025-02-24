@@ -1,6 +1,7 @@
 import sys
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Optional
 
 import PIL.Image
 import gradio as gr
@@ -24,7 +25,11 @@ AssistantConfig = ASSISTANTS.make_config()
 
 
 @dataclass
-class Config(AssistantConfig): ...
+class Config(AssistantConfig):
+    share: bool = False
+    server_name: str = "127.0.0.1"
+    server_port: int = 7860
+    auth: Optional[list[str]] = None
 
 
 cs = ConfigStore.instance()
@@ -134,7 +139,12 @@ def main(config: Config):
             outputs=[logo_pic, output_row, chatbot, msg, context_box, clear_btn],
         )
 
-    demo.launch()
+    demo.launch(
+        server_name=config.server_name,
+        server_port=config.server_port,
+        share=config.share,
+        auth=config.auth,
+    )
     return
 
 

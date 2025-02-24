@@ -38,32 +38,11 @@ For example, to load the ``BM25S`` retriever, you can use the following configur
 
 Editable Retrievers
 -------------------
-In FlexRAG, the ``EditableRetriever`` is a concept referring to a retriever that includes the ``add_passages`` and ``clean`` methods, allowing you to build the retriever using your own knowledge base.
-FlexRAG provides following editable retrievers: ``BM25SRetriever``, ``DenseRetriever``, ``ElasticRetriever``, ``TypesenseRetriever``, and ``HydeRetriever``.
-
 .. autoclass:: flexrag.retriever.EditableRetrieverConfig
     :members:
     :inherited-members:
 
 .. autoclass:: flexrag.retriever.EditableRetriever
-    :members:
-    :show-inheritance:
-
-.. BM25S Retriever
-.. autoclass:: flexrag.retriever.BM25SRetrieverConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.retriever.BM25SRetriever
-    :members:
-    :show-inheritance:
-
-.. Dense Retriever
-.. autoclass:: flexrag.retriever.DenseRetrieverConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.retriever.DenseRetriever
     :members:
     :show-inheritance:
 
@@ -82,6 +61,35 @@ FlexRAG provides following editable retrievers: ``BM25SRetriever``, ``DenseRetri
     :inherited-members:
 
 .. autoclass:: flexrag.retriever.TypesenseRetriever
+    :members:
+    :show-inheritance:
+
+
+.. LocalRetriever
+.. autoclass:: flexrag.retriever.LocalRetrieverConfig
+    :members:
+    :inherited-members:
+
+.. autoclass:: flexrag.retriever.LocalRetriever
+    :members:
+    :show-inheritance:
+
+
+.. BM25S Retriever
+.. autoclass:: flexrag.retriever.BM25SRetrieverConfig
+    :members:
+    :inherited-members:
+
+.. autoclass:: flexrag.retriever.BM25SRetriever
+    :members:
+    :show-inheritance:
+
+.. Dense Retriever
+.. autoclass:: flexrag.retriever.DenseRetrieverConfig
+    :members:
+    :inherited-members:
+
+.. autoclass:: flexrag.retriever.DenseRetriever
     :members:
     :show-inheritance:
 

@@ -14,6 +14,21 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index.annoy")
 
 @dataclass
 class AnnoyIndexConfig(DenseIndexBaseConfig):
+    """The configuration for the `AnnoyIndex`.
+
+    :param distance_function: The distance function to use. Defaults to "IP".
+        available choices are "IP", "L2", "COSINE", "HAMMING", and "MANHATTAN".
+    :type distance_function: str
+    :param n_trees: The number of trees to build the index. Defaults to -1.
+    :type n_trees: int
+    :param n_jobs: The number of jobs to build the index. Defaults to -1.
+    :type n_jobs: int
+    :param search_k: The number of neighbors to search. Defaults to -1.
+    :type search_k: int
+    :param on_disk_build: Whether to build the index on disk. Defaults to False.
+    :type on_disk_build: bool
+    """
+
     distance_function: Choices(["IP", "L2", "COSINE", "HAMMING", "MANHATTAN"]) = "IP"  # type: ignore
     n_trees: int = -1  # -1 means auto
     n_jobs: int = -1  # -1 means auto
@@ -23,7 +38,13 @@ class AnnoyIndexConfig(DenseIndexBaseConfig):
 
 @DENSE_INDEX("annoy", config_class=AnnoyIndexConfig)
 class AnnoyIndex(DenseIndexBase):
-    def __init__(self, cfg: AnnoyIndexConfig, index_path: str) -> None:
+    """AnnoyIndex is a wrapper for the `annoy <https://github.com/spotify/annoy>`_ library.
+
+    AnnoyIndex supports building index on disk, which is useful when the memory is limited.
+    However, building index on disk is slower than building index in memory.
+    """
+
+    def __init__(self, cfg: AnnoyIndexConfig, index_path: str = None) -> None:
         super().__init__(cfg, index_path)
         # check annoy
         try:
@@ -35,14 +56,14 @@ class AnnoyIndex(DenseIndexBase):
 
         # set annoy params
         self.cfg = cfg
+        if self.cfg.on_disk_build:
+            assert index_path is not None, "index_path is required for on disk build."
 
         # prepare index
-        if os.path.exists(self.index_path):
-            self.deserialize()
-        else:
-            self.index = None
-            if not os.path.exists(os.path.dirname(self.index_path)):
-                os.makedirs(os.path.dirname(self.index_path))
+        self.index = None
+        if self.index_path is not None:
+            if os.path.exists(self.index_path):
+                self.deserialize()
         return
 
     def build_index(self, embeddings: np.ndarray) -> None:
@@ -61,6 +82,7 @@ class AnnoyIndex(DenseIndexBase):
                 self.index = self.ann(embeddings.shape[1], "manhattan")
         if self.cfg.on_disk_build:
             self.index.on_disk_build(self.index_path)
+
         # add embeddings
         p_logger = SimpleProgressLogger(
             logger, total=len(embeddings), interval=self.log_interval
@@ -68,6 +90,7 @@ class AnnoyIndex(DenseIndexBase):
         for idx, embed in enumerate(embeddings):
             self.index.add_item(idx, embed)
             p_logger.update(step=1, desc="Adding embeddings")
+
         # build index
         logger.info("Building index")
         if self.n_trees == -1:
@@ -79,11 +102,12 @@ class AnnoyIndex(DenseIndexBase):
         else:
             n_trees = self.n_trees
         self.index.build(n_trees, self.cfg.n_jobs)
-        if not self.cfg.on_disk_build:
+
+        if (not self.cfg.on_disk_build) and (self.index_path is not None):
             self.serialize()
         return
 
-    def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:
+    def add_embeddings_batch(self, embeddings: np.ndarray) -> None:
         raise NotImplementedError(
             "Annoy does not support adding embeddings. Please retrain the index."
         )
@@ -113,7 +137,10 @@ class AnnoyIndex(DenseIndexBase):
         scores = np.array(scores)
         return indices, scores
 
-    def serialize(self) -> None:
+    def serialize(self, index_path: str = None) -> None:
+        if index_path is not None:
+            self.index_path = index_path
+        assert self.index_path is not None, "`index_path` is not set."
         logger.info(f"Serializing index to {self.index_path}")
         if not os.path.exists(os.path.dirname(self.index_path)):
             os.makedirs(os.path.dirname(self.index_path))
@@ -149,9 +176,10 @@ class AnnoyIndex(DenseIndexBase):
     def clean(self):
         if self.index is not None:
             self.index.unload()
-        if os.path.exists(self.index_path):
-            shutil.rmtree(self.index_path)
-            shutil.rmtree(f"{self.index_path}.meta")
+        if self.index_path is not None:
+            if os.path.exists(self.index_path):
+                shutil.rmtree(self.index_path)
+                shutil.rmtree(f"{self.index_path}.meta")
         return
 
     @property
@@ -171,6 +199,10 @@ class AnnoyIndex(DenseIndexBase):
         if self.index.get_n_trees() == 0:
             return False
         return True
+
+    @property
+    def is_addable(self) -> bool:
+        return False
 
     @property
     def n_trees(self) -> int:

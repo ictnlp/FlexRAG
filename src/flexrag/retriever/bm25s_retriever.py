@@ -5,22 +5,19 @@ from hashlib import sha1
 from typing import Iterable, Optional
 
 import bm25s
-from omegaconf import MISSING
 
 from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, SimpleProgressLogger
 
-from .retriever_base import RETRIEVERS, EditableRetriever, EditableRetrieverConfig
+from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.bm25s")
 
 
 @dataclass
-class BM25SRetrieverConfig(EditableRetrieverConfig):
+class BM25SRetrieverConfig(LocalRetrieverConfig):
     """Configuration class for BM25SRetriever.
 
-    :param database_path: Path to the database directory. Required.
-    :type database_path: str
     :param method: BM25S method. Default: "lucene".
         Available options: "atire", "bm25l", "bm25+", "lucene", "robertson".
     :type method: str
@@ -42,7 +39,6 @@ class BM25SRetrieverConfig(EditableRetrieverConfig):
     :type indexed_fields: Optional[list[str]]
     """
 
-    database_path: str = MISSING
     method: Choices(["atire", "bm25l", "bm25+", "lucene", "robertson"]) = "lucene"  # type: ignore
     idf_method: Optional[Choices(["atire", "bm25l", "bm25+", "lucene", "robertson"])] = None  # type: ignore
     backend: Choices(["numpy", "numba", "auto"]) = "auto"  # type: ignore
@@ -54,7 +50,11 @@ class BM25SRetrieverConfig(EditableRetrieverConfig):
 
 
 @RETRIEVERS("bm25s", config_class=BM25SRetrieverConfig)
-class BM25SRetriever(EditableRetriever):
+class BM25SRetriever(LocalRetriever):
+    """BM25SRetriever is a retriever that retrieves passages using the BM25 algorithm.
+    The implementation is based on the `bm25s <https://github.com/xhluca/bm25s>`_ project.
+    """
+
     name = "BM25SSearch"
 
     def __init__(self, cfg: BM25SRetrieverConfig) -> None:
@@ -72,15 +72,17 @@ class BM25SRetriever(EditableRetriever):
             self._stemmer = None
 
         # load retriever
-        self.database_path = cfg.database_path
-        if os.path.exists(self.database_path) and bool(os.listdir(self.database_path)):
+        if (
+            (cfg.database_path is not None)
+            and os.path.exists(cfg.database_path)
+            and bool(os.listdir(cfg.database_path))
+        ):
             self._retriever = bm25s.BM25.load(
-                self.database_path,
+                cfg.database_path,
                 mmap=True,
                 load_corpus=True,
             )
         else:
-            os.makedirs(self.database_path, exist_ok=True)
             self._retriever = bm25s.BM25(
                 method=cfg.method,
                 idf_method=cfg.idf_method,
@@ -95,9 +97,14 @@ class BM25SRetriever(EditableRetriever):
 
     @TIME_METER("bm25s_retriever", "add-passages")
     def add_passages(self, passages: Iterable[Context]):
-        logger.warning(
-            "bm25s Retriever does not support add passages. This function will build the index from scratch."
-        )
+        assert self._indexed_fields is not None, "`indexed_fields` is not provided."
+        if len(self) > 0:
+            logger.warning(
+                (
+                    "bm25s Retriever does not support add passages. "
+                    "This function will build the index from scratch."
+                )
+            )
         logger.info("Preparing the passages for indexing.")
 
         # prepare the passages
@@ -121,7 +128,10 @@ class BM25SRetriever(EditableRetriever):
         )
         self._retriever.index(indexed_tokens)
         self._retriever.corpus = passages_
-        self._retriever.save(self.database_path, corpus=passages_)
+
+        # update the database if `database_path` is provided
+        if self.cfg.database_path is not None:
+            self.save_to_local(self.cfg.database_path)
         return
 
     @TIME_METER("bm25s_retriever", "search")
@@ -134,7 +144,7 @@ class BM25SRetriever(EditableRetriever):
         query_tokens = bm25s.tokenize(query, stemmer=self._stemmer, show_progress=False)
         contexts, scores = self._retriever.retrieve(
             query_tokens,
-            k=search_kwargs.get("top_k", self.top_k),
+            k=search_kwargs.pop("top_k", self.top_k),
             show_progress=False,
             **search_kwargs,
         )
@@ -169,9 +179,15 @@ class BM25SRetriever(EditableRetriever):
     @property
     def fields(self) -> list[str]:
         if self._retriever.corpus is not None:
-            return self._retriever.corpus[0].keys()
+            fields = self._retriever.corpus[0].keys()
+            fields = [f for f in fields if f != self.id_field_name]
+            return fields
         return []
 
     @cached_property
     def id_field_name(self) -> str:
         return sha1("context_id".encode()).hexdigest()
+
+    def _save_to_local(self, database_path: str) -> None:
+        self._retriever.save(database_path)
+        return

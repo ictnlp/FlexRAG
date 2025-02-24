@@ -24,7 +24,13 @@ class ScaNNIndexConfig(DenseIndexBaseConfig):
 
 @DENSE_INDEX("scann", config_class=ScaNNIndexConfig)
 class ScaNNIndex(DenseIndexBase):
-    def __init__(self, cfg: ScaNNIndexConfig, index_path: str) -> None:
+    """ScaNNIndex is a wrapper for the `ScaNN <https://github.com/google-research/google-research/tree/master/scann>`_ library.
+
+    ScaNNIndex runs on CPUs with both high speed and accuracy.
+    However, it requires more memory than ``FaissIndex``.
+    """
+
+    def __init__(self, cfg: ScaNNIndexConfig, index_path: str = None) -> None:
         super().__init__(cfg, index_path)
         # check scann
         try:
@@ -37,11 +43,11 @@ class ScaNNIndex(DenseIndexBase):
         # set basic args
         self.cfg = cfg
 
-        # prepare index
-        if os.path.exists(self.index_path):
-            self.deserialize()
-        else:
-            self.index = None
+        # load the index if exists
+        self.index = None
+        if self.index_path is not None:
+            if os.path.exists(self.index_path):
+                self.deserialize()
         return
 
     def build_index(self, embeddings: np.ndarray) -> None:
@@ -57,7 +63,8 @@ class ScaNNIndex(DenseIndexBase):
             if self.cfg.index_train_num <= 0
             else self.cfg.index_train_num
         )
-        # prepare builder
+
+        # prepare the builder
         builder = (
             self.scann.scann_ops_pybind.builder(
                 embeddings,
@@ -78,13 +85,17 @@ class ScaNNIndex(DenseIndexBase):
         builder.set_n_training_threads(self.cfg.threads)
         ids = list(np.arange(len(embeddings)))
         ids = [str(i) for i in ids]
-        # build index
+
+        # build the index
         self.index = builder.build(docids=ids)
         self.index.set_num_threads(self.cfg.threads)
-        self.serialize()
+
+        # serialize the index if `index_path` is provided
+        if self.index_path is not None:
+            self.serialize()
         return
 
-    def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:
+    def add_embeddings_batch(self, embeddings: np.ndarray) -> None:
         embeddings = embeddings.astype("float32")
         assert self.is_trained, "Index should be trained first"
         ids = list(range(len(self), len(self) + len(embeddings)))
@@ -103,7 +114,10 @@ class ScaNNIndex(DenseIndexBase):
         indices = np.array([[int(i) for i in idx] for idx in indices])
         return indices, scores
 
-    def serialize(self) -> None:
+    def serialize(self, index_path: str = None) -> None:
+        if index_path is not None:
+            self.index_path = index_path
+        assert self.index_path is not None, "`index_path` is not set."
         assert self.is_trained, "Index should be trained first."
         logger.info(f"Serializing index to {self.index_path}")
         if not os.path.exists(self.index_path):
@@ -111,16 +125,19 @@ class ScaNNIndex(DenseIndexBase):
         self.index.serialize(self.index_path)
         return
 
-    def deserialize(self) -> None:
+    def deserialize(self):
+        assert self.index_path is not None, "Index path is not set."
         logger.info(f"Loading index from {self.index_path}.")
+        self._prepare_assets(self.index_path)
         self.index = self.scann.scann_ops_pybind.load_searcher(self.index_path)
-        return
+        return self.index
 
     def clean(self):
         if not self.is_trained:
             return
-        if os.path.exists(self.index_path):
-            shutil.rmtree(self.index_path)
+        if self.index_path is not None:
+            if os.path.exists(self.index_path):
+                shutil.rmtree(self.index_path)
         self.index = None
         return
 
@@ -136,9 +153,50 @@ class ScaNNIndex(DenseIndexBase):
             return False
         return not isinstance(self.index, self.scann.ScannBuilder)
 
+    @property
+    def is_addable(self) -> bool:
+        return True
+
     def __len__(self) -> int:
         if self.index is None:
             return 0
         if isinstance(self.index, self.scann.ScannBuilder):
             return 0
         return self.index.size()
+
+    def _prepare_assets(self, index_path: str) -> None:
+        """As the `ScaNN` requires the assets table to find the index files,
+        we need to update the path in the `scann_assets.pbtxt` file.
+
+        :param index_path: The path to the index.
+        :type index_path: str
+        :return: None
+        :rtype: None
+        """
+        file_path = os.path.join(index_path, "scann_assets.pbtxt")
+        if not os.path.exists(file_path):
+            logger.error(
+                f"Asset file (scann_assets.pbtxt) not found. "
+                f"Please check the `index_path` ({index_path})."
+            )
+        new_lines = []
+        with open(os.path.join(index_path, "scann_assets.pbtxt"), "r") as f:
+            for line in f:
+                match = re.match(r"(?:\s*asset_path:\s+\")([^\"]+)(?:\")", line)
+                if match:
+                    asset_name = os.path.basename(match.group(1))
+                    new_path = os.path.join(index_path, asset_name)
+                    assert os.path.exists(
+                        new_path
+                    ), f"Asset {asset_name} not found at {new_path}"
+                    line = re.sub(
+                        r"(asset_path:\s+\")[^\"]+(\")",
+                        f"\\1{new_path}\\2",
+                        line,
+                    )
+                    new_lines.append(line)
+                else:
+                    new_lines.append(line)
+        with open(os.path.join(index_path, "scann_assets.pbtxt"), "w") as f:
+            f.writelines(new_lines)
+        return

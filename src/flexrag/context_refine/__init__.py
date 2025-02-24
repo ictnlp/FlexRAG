@@ -1,4 +1,4 @@
-from .packer import BasicPacker, BasicPackerConfig
+from .arranger import ContextArranger, ContextArrangerConfig
 from .summarizer import (
     RecompExtractiveSummarizer,
     RecompExtractiveSummarizerConfig,
@@ -8,13 +8,19 @@ from .summarizer import (
 from .refiner import RefinerBase, REFINERS
 
 
+RefinerConfig = REFINERS.make_config(
+    allow_multiple=True, default=None, config_name="RefinerConfig"
+)
+
+
 __all__ = [
-    "BasicPacker",
-    "BasicPackerConfig",
+    "ContextArranger",
+    "ContextArrangerConfig",
     "RecompExtractiveSummarizer",
     "RecompExtractiveSummarizerConfig",
     "AbstractiveSummarizer",
     "AbstractiveSummarizerConfig",
     "RefinerBase",
     "REFINERS",
+    "RefinerConfig",
 ]

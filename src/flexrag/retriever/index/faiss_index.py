@@ -13,6 +13,34 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retriever.index.faiss")
 
 @dataclass
 class FaissIndexConfig(DenseIndexBaseConfig):
+    """The configuration for the `FaissIndex`.
+
+    :param index_type: The type of the index. Defaults to "auto".
+        available choices are "FLAT", "IVF", "PQ", "IVFPQ", and "auto".
+        If set to "auto", the index will be set to "IVF{n_list},PQ{embedding_size//2}x4fs".
+    :type index_type: str
+    :param n_subquantizers: The number of subquantizers. Defaults to 8.
+    :type n_subquantizers: int
+    :param n_bits: The number of bits per subquantizer. Defaults to 8.
+    :type n_bits: int
+    :param n_list: The number of cells. Defaults to 1000.
+    :type n_list: int
+    :param factory_str: The factory string to build the index. Defaults to None.
+        If set, the `index_type` will be ignored.
+    :type factory_str: Optional[str]
+    :param n_probe: The number of probes. Defaults to 32.
+    :type n_probe: int
+    :param device_id: The device id to use. Defaults to [].
+        [] means CPU. If set, the index will be accelerated with GPU.
+    :type device_id: list[int]
+    :param k_factor: The k factor for search. Defaults to 10.
+    :type k_factor: int
+    :param polysemous_ht: The polysemous hash table. Defaults to 0.
+    :type polysemous_ht: int
+    :param efSearch: The efSearch for HNSW. Defaults to 100.
+    :type efSearch: int
+    """
+
     index_type: Choices(["FLAT", "IVF", "PQ", "IVFPQ", "auto"]) = "auto"  # type: ignore
     n_subquantizers: int = 8
     n_bits: int = 8
@@ -28,6 +56,11 @@ class FaissIndexConfig(DenseIndexBaseConfig):
 
 @DENSE_INDEX("faiss", config_class=FaissIndexConfig)
 class FaissIndex(DenseIndexBase):
+    """FaissIndex is a wrapper for the `faiss <https://github.com/facebookresearch/faiss>`_ library.
+
+    FaissIndex provides a flexible and efficient way to build and search indexes with embeddings.
+    """
+
     def __init__(self, cfg: FaissIndexConfig, index_path: str) -> None:
         super().__init__(cfg, index_path)
         # check faiss
@@ -59,11 +92,11 @@ class FaissIndex(DenseIndexBase):
         self.n_bits = cfg.n_bits
         self.factory_str = cfg.factory_str
 
-        # prepare index
-        if os.path.exists(self.index_path):
-            self.index = self.deserialize()
-        else:
-            self.index = None
+        # load the index if exists
+        self.index = None
+        if self.index_path is not None:
+            if os.path.exists(self.index_path):
+                self.deserialize()
         return
 
     def build_index(self, embeddings: np.ndarray) -> None:
@@ -174,7 +207,7 @@ class FaissIndex(DenseIndexBase):
             self.index.train(selected_embeddings)
         return
 
-    def _add_embeddings_batch(self, embeddings: np.ndarray) -> None:
+    def add_embeddings_batch(self, embeddings: np.ndarray) -> None:
         embeddings = embeddings.astype("float32")
         assert self.is_trained, "Index should be trained first"
         self.index.add(embeddings)  # debug
@@ -247,7 +280,10 @@ class FaissIndex(DenseIndexBase):
         )
         return indices, scores
 
-    def serialize(self) -> None:
+    def serialize(self, index_path: str = None) -> None:
+        if index_path is not None:
+            self.index_path = index_path
+        assert self.index_path is not None, "`index_path` is not set."
         assert self.index.is_trained, "Index should be trained first."
         logger.info(f"Serializing index to {self.index_path}")
         if self.support_gpu:
@@ -258,6 +294,7 @@ class FaissIndex(DenseIndexBase):
         return
 
     def deserialize(self):
+        assert self.index_path is not None, "Index path is not set."
         logger.info(f"Loading index from {self.index_path}.")
         if (os.path.getsize(self.index_path) / (1024**3) > 10) and (
             not self.support_gpu
@@ -266,14 +303,15 @@ class FaissIndex(DenseIndexBase):
             cpu_index = self.faiss.read_index(self.index_path, self.faiss.IO_FLAG_MMAP)
         else:
             cpu_index = self.faiss.read_index(self.index_path)
-        index = self._set_index(cpu_index)
-        return index
+        self.index = self._set_index(cpu_index)
+        return self.index
 
     def clean(self):
         if self.index is None:
             return
-        if os.path.exists(self.index_path):
-            os.remove(self.index_path)
+        if self.index_path is not None:
+            if os.path.exists(self.index_path):
+                os.remove(self.index_path)
         self.index.reset()
         return
 
@@ -295,6 +333,10 @@ class FaissIndex(DenseIndexBase):
                     trained = False
             return trained
         return self.index.is_trained
+
+    @property
+    def is_addable(self) -> bool:
+        return True
 
     @property
     def is_flat(self) -> bool:

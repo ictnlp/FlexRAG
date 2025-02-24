@@ -4,6 +4,11 @@ from .index_base import DenseIndexBase, DenseIndexBaseConfig, DENSE_INDEX
 from .scann_index import ScaNNIndex, ScaNNIndexConfig
 
 
+DenseIndexConfig = DENSE_INDEX.make_config(
+    default="faiss", config_name="DenseIndexConfig"
+)
+
+
 __all__ = [
     "AnnoyIndex",
     "AnnoyIndexConfig",
@@ -14,4 +19,5 @@ __all__ = [
     "DenseIndexBase",
     "DenseIndexBaseConfig",
     "DENSE_INDEX",
+    "DenseIndexConfig",
 ]

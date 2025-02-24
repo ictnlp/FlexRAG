@@ -13,7 +13,7 @@ sys.path.insert(0, str(pathlib.Path(__file__).parents[2] / "src"))
 
 
 def get_version() -> str:
-    version_string_path = pathlib.Path(__file__).parents[2] / "src/flexrag/__init__.py"
+    version_string_path = pathlib.Path(__file__).parents[2] / "src/flexrag/utils.py"
     with open(version_string_path, encoding="utf-8") as f:
         version = re.search(r"__VERSION__ = \"(.*?)\"", f.read()).group(1)
     return version
