@@ -1,4 +1,3 @@
-import datetime
 import os
 import shutil
 from dataclasses import dataclass, field
@@ -11,7 +10,6 @@ import lance
 import numpy as np
 import pandas as pd
 from huggingface_hub import HfApi
-from lance.dataset import DatasetOptimizer
 
 from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.models import ENCODERS, EncoderBase, EncoderConfig
@@ -44,7 +42,7 @@ class DenseRetrieverConfig(LocalRetrieverConfig, DenseIndexConfig):
 class DenseRetriever(LocalRetriever):
     """DenseRetriever is a retriever that retrieves the most relevant passages based on semantic embeddings."""
 
-    name = "Dense Retrieval"
+    name = "DenseRetriever"
     index: DenseIndexBase
     query_encoder: EncoderBase
     passage_encoder: EncoderBase
