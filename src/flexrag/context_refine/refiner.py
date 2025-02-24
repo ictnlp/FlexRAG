@@ -10,4 +10,4 @@ class RefinerBase(ABC):
         return
 
 
-REFINERS = Register("refiner")
+REFINERS = Register[RefinerBase]("refiner")

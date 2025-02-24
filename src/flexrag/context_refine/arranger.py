@@ -8,13 +8,13 @@ from .refiner import REFINERS, RefinerBase
 
 
 @dataclass
-class BasicPackerConfig:
+class ContextArrangerConfig:
     order: Choices(["ascending", "descending", "side", "random"]) = "ascending"  # type: ignore
 
 
-@REFINERS("basic_packer", config_class=BasicPackerConfig)
-class BasicPacker(RefinerBase):
-    def __init__(self, config: BasicPackerConfig):
+@REFINERS("context_arranger", config_class=ContextArrangerConfig)
+class ContextArranger(RefinerBase):
+    def __init__(self, config: ContextArrangerConfig):
         self.order = config.order
         return
 
