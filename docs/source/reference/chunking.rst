@@ -5,7 +5,7 @@ This module provides a set of classes for chunking a long text into smaller chun
 
 The Chunker Interface
 ---------------------
-ChunkerBase is the base class for all chunkers. 
+`ChunkerBase` is the base class for all chunkers. 
 It provides a simple interface for chunking a text into smaller chunks. 
 The chunking process is controlled by a configuration object that is passed to the chunker's constructor.
 

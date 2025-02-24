@@ -38,16 +38,17 @@ FlexRAG is under active development and is currently in the alpha stage. We welc
    :caption: Reference:
 
    reference/assistant
+   reference/chunking
+   reference/common_dataclass
+   reference/refiner
+   reference/datasets
+   reference/document_parser
    reference/encoders
    reference/generators
-   reference/tokenizers
-   reference/retrievers
-   reference/rankers
    reference/metrics
    reference/prompt
-   reference/datasets
+   reference/retrievers
+   reference/rankers
+   reference/tokenizers
    reference/text_process
-   reference/chunking
-   reference/document_parser
-   reference/common_dataclass
    reference/utils

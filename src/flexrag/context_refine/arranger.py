@@ -9,11 +9,24 @@ from .refiner import REFINERS, RefinerBase
 
 @dataclass
 class ContextArrangerConfig:
+    """The configuration for the ``ContextArranger``.
+
+    :param order: The order to arrange the contexts. Defaults to "ascending".
+        available choices: "ascending", "descending", "side", "random".
+    :type order: str
+    """
+
     order: Choices(["ascending", "descending", "side", "random"]) = "ascending"  # type: ignore
 
 
 @REFINERS("context_arranger", config_class=ContextArrangerConfig)
 class ContextArranger(RefinerBase):
+    """The ``ContextArranger`` arranges the contexts based on the given order.
+
+    As the `lost-in-the-middle` problem encountered by the LLMs, the order of the contexts may affect the performance.
+    This refiner helps to arrange the contexts in a specific order.
+    """
+
     def __init__(self, config: ContextArrangerConfig):
         self.order = config.order
         return

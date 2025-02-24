@@ -17,65 +17,83 @@ from .refiner import REFINERS, RefinerBase
 
 @dataclass
 class AbstractiveSummarizerConfig(GeneratorConfig):
-    template: Optional[str] = (
-        None  # A Python string.Template. Supported keys: [content, query]
-    )
+    """The configuration for the ``AbstractiveSummarizer``.
+
+    :param template: The template used to form the input text for the generator. Defaults to None.
+        The template should be a Python string.Template object.
+        The supported keys for the template are: [content, query].
+    :type template: Optional[str]
+    :param chat_prompt: The chat prompt for the generator. Defaults to None.
+        Only used when the generator is a chat-based generator.
+    :type chat_prompt: Optional[ChatPrompt]
+    :param substitute: Whether to substitute the original text with the summary. Defaults to True.
+        If False, the summary will be stored in a new field named as refined_field + "_summary".
+    :type substitute: bool
+    :param concatenate_contexts: Whether to concatenate the contexts into one text. Defaults to False.
+    :type concatenate_contexts: bool
+    :param refined_field: The field to refine. Required.
+    :type refined_field: str
+
+    The ``AbstractiveSummarizer`` supports multiple styles of summarizers, including T5, RECOMP, and LLM.
+    For example, to summarize the contexts using a `T5 style summarizer <https://arxiv.org/abs/1910.10683)>`_,
+    you can run the following code:
+
+    .. code-block:: python
+
+        cfg = AbstractiveSummarizerConfig(
+            template="summarize: ${content}",
+            generator_type="hf",
+            refined_field="text",
+            hf_config=HFGeneratorConfig(
+                model_path="google-t5/t5-small",
+                model_type="seq2seq",
+            )
+        )
+        summarizer = AbstractiveSummarizer(cfg)
+
+    To summarize the contexts using a `RECOMP style summarizer <https://arxiv.org/abs/2010.04348>`_,
+    you can run the following code:
+
+    .. code-block:: python
+
+        cfg = AbstractiveSummarizerConfig(
+            template="Question: ${query}\\n Document: ${content}\\n Summary: ",
+            generator_type="hf",
+            refined_field="text",
+            hf_config=HFGeneratorConfig(
+                model_path="fangyuan/hotpotqa_abstractive_compressor",
+                model_type="seq2seq",
+            )
+        )
+        summarizer = AbstractiveSummarizer(cfg)
+
+    To summarize the contexts using a `LLM style summarizer <https://arxiv.org/abs/2203.02155>`_,
+    you can run the following code:
+
+    .. code-block:: python
+
+        cfg = AbstractiveSummarizerConfig(
+            refined_field="text",
+            template="Query: ${query}\\nText: ${content}",
+            chat_prompt=ChatPrompt(
+                system="You are a skillful summarizer. Please summarize the following text based on given query.",
+            ),
+            generator_type="openai",
+            openai_config=OpenAIGeneratorConfig(api_key=api_key, model_name="gpt-3.5-turbo")
+        )
+        summarizer = AbstractiveSummarizer(cfg)
+    """
+
+    template: Optional[str] = None
     chat_prompt: Optional[ChatPrompt] = None
-    substitute: bool = False
+    substitute: bool = True
     concatenate_contexts: bool = False
     refined_field: str = MISSING
 
 
 @REFINERS("abstractive_summarizer", config_class=AbstractiveSummarizerConfig)
 class AbstractiveSummarizer(RefinerBase):
-    """
-    # AbstractiveSummarizer
-
-    This class supports abstractive summarization using generative models.
-    For example:
-
-    ## T5 style summarization (https://arxiv.org/abs/1910.10683)
-    ```
-    cfg = AbstractiveSummarizerConfig(
-        template="summarize: ${content}",
-        generator_type="hf",
-        refined_field="text",
-        hf_config=HFGeneratorConfig(
-            model_path="google-t5/t5-small",
-            model_type="seq2seq",
-        )
-    )
-    summarizer = AbstractiveSummarizer(cfg)
-    ```
-
-    ## RECOMP style summarization (https://arxiv.org/abs/2310.04408)
-    ```
-    cfg = AbstractiveSummarizerConfig(
-        template="Question: ${query}\n Document: ${content}\n Summary: ",
-        generator_type="hf",
-        refined_field="text",
-        hf_config=HFGeneratorConfig(
-            model_path="fangyuan/hotpotqa_abstractive_compressor",
-            model_type="seq2seq",
-        )
-    )
-    summarizer = AbstractiveSummarizer(cfg)
-    ```
-
-    ## LLM style summarization (https://arxiv.org/abs/2203.02155)
-    ```
-    cfg = AbstractiveSummarizerConfig(
-        refined_field="text",
-        template="Query: ${query}\nText: ${content}",
-        chat_prompt=ChatPrompt(
-            system="You are a skillful summarizer. Please summarize the following text based on given query.",
-        ),
-        generator_type="openai",
-        openai_config=OpenAIGeneratorConfig(api_key=api_key, model_name="gpt-3.5-turbo")
-    )
-    summarizer = AbstractiveSummarizer(cfg)
-    ```
-    """
+    """The ``AbstractiveSummarizer`` summarizes the contexts using a generator."""
 
     def __init__(self, cfg: AbstractiveSummarizerConfig):
         super().__init__(cfg)
@@ -145,6 +163,33 @@ class AbstractiveSummarizer(RefinerBase):
 
 @dataclass
 class RecompExtractiveSummarizerConfig(EncoderConfig):
+    """The configuration for the ``RecompExtractiveSummarizer``.
+
+    :param preserved_sents: The number of sentences to preserve. Defaults to 5.
+    :type preserved_sents: int
+    :param concatenate_contexts: Whether to concatenate the contexts into one text. Defaults to False.
+    :type concatenate_contexts: bool
+    :param substitute: Whether to substitute the original text with the summary. Defaults to False.
+    :type substitute: bool
+    :param refined_field: The field to refine. Required.
+    :type refined_field: str
+
+    The ``RecompExtractiveSummarizer`` is motivated by the RECOMP (https://arxiv.org/abs/2310.04408).
+    For example, to load a summarizer trained on hotpotqa dataset, you can run the following code:
+
+    .. code-block:: python
+
+        cfg = RecompExtractiveSummarizerConfig(
+            encoder_type="hf",
+            hf_config=HFEncoderConfig(
+                model_path="fangyuan/hotpotqa_extractive_compressor",
+            ),
+            preserved_sents=5,
+            refined_field="text",
+        )
+        summarizer = RecompExtractiveSummarizer(cfg)
+    """
+
     preserved_sents: int = 5
     concatenate_contexts: bool = False
     substitute: bool = False
@@ -153,24 +198,7 @@ class RecompExtractiveSummarizerConfig(EncoderConfig):
 
 @REFINERS("extractive_summarizer", config_class=RecompExtractiveSummarizerConfig)
 class RecompExtractiveSummarizer(RefinerBase):
-    """
-    # ExtractiveSummarizer
-
-    This class supports RECOMP style summarization (https://arxiv.org/abs/2310.04408).
-    For example:
-
-    ```
-    cfg = RecompExtractiveSummarizerConfig(
-        encoder_type="hf",
-        hf_config=HFEncoderConfig(
-            model_path="fangyuan/hotpotqa_extractive_compressor",
-        ),
-        preserved_sents=5,
-        refined_field="text",
-    )
-    summarizer = RecompExtractiveSummarizer(cfg)
-    ```
-    """
+    """The ``ExtractiveSummarizer`` summarizes the contexts using an encoder."""
 
     def __init__(self, cfg: RecompExtractiveSummarizerConfig) -> None:
         self.model = ENCODERS.load(cfg)
