@@ -21,7 +21,7 @@ from omegaconf import MISSING, DictConfig, ListConfig, OmegaConf
 colorama.init(autoreset=True)
 
 
-__VERSION__ = "0.1.8"
+__VERSION__ = "0.1.9"
 FLEXRAG_CACHE_DIR = os.path.join(os.path.expanduser("~"), ".cache", "flexrag")
 
 

@@ -62,11 +62,6 @@ STORAGEBACKENDS = Register[StorageBackendBase]("storage_backend")
 
 
 @dataclass
-class LevelDBBackendConfig:
-    db_path: str = MISSING
-
-
-@dataclass
 class LMDBBackendConfig:
     db_path: str = MISSING
     db_size: int = 1 << 30  # 2^30 bytes = 1GB

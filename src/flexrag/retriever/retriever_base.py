@@ -38,7 +38,7 @@ if os.environ.get("DISABLE_CACHE", "False") == "True":
 else:
     cache_config = PersistentCacheConfig(
         maxsize=10000000,
-        storage_backend_type="lmdb",
+        storage_backend_type=os.environ.get("CACHE_BACKEND", "dict"),
         lmdb_config=LMDBBackendConfig(
             db_path=os.path.join(FLEXRAG_CACHE_DIR, "cache.lmdb")
         ),
