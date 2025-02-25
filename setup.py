@@ -66,6 +66,7 @@ setup(
         "flexrag": [
             "ranker/ranker_prompts/*.json",
             "assistant/assistant_prompts/*.json",
+            "entrypoints/assets/*.png",
         ],
     },
     include_package_data=True,
