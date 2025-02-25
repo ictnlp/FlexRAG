@@ -43,10 +43,10 @@ custom_css = """
     background-color: transparent;    
 }
 """
-logo_path = Path(__file__).parents[3] / "assets" / "flexrag.png"
-wide_logo_path = Path(__file__).parents[3] / "assets" / "flexrag-wide.png"
-robot_path = Path(__file__).parents[3] / "assets" / "robot.png"
-user_path = Path(__file__).parents[3] / "assets" / "user.png"
+logo_path = Path(__file__).parents[0] / "assets" / "flexrag.png"
+wide_logo_path = Path(__file__).parents[0] / "assets" / "flexrag-wide.png"
+robot_path = Path(__file__).parents[0] / "assets" / "robot.png"
+user_path = Path(__file__).parents[0] / "assets" / "user.png"
 
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
