@@ -155,7 +155,7 @@ class ScaNNIndex(DenseIndexBase):
 
     @property
     def is_addable(self) -> bool:
-        return True
+        return self.is_trained
 
     def __len__(self) -> int:
         if self.index is None:

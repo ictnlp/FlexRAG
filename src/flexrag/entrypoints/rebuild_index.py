@@ -15,10 +15,8 @@ def main(cfg: DenseRetrieverConfig):
     cfg = OmegaConf.merge(default_cfg, cfg)
 
     # rebuild index
-    retriever = DenseRetriever(
-        cfg, no_check=True
-    )  # do not check the index-retriever consistency
-    retriever.build_index()
+    retriever = DenseRetriever(cfg, no_check=True)
+    retriever.build_index(rebuild=True)
     return
 
 

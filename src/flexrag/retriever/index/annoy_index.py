@@ -189,26 +189,20 @@ class AnnoyIndex(DenseIndexBase):
         return self.index.f
 
     @property
-    def is_trained(self):
-        if not hasattr(self, "index"):
-            return False
-        if self.index is None:
-            return False
-        if self.index.get_n_items() <= 0:
-            return False
-        if self.index.get_n_trees() == 0:
-            return False
-        return True
-
-    @property
     def is_addable(self) -> bool:
         return False
 
     @property
     def n_trees(self) -> int:
-        if self.is_trained:
-            return self.index.get_n_trees()
-        return self.cfg.n_trees
+        if not hasattr(self, "index"):
+            return self.cfg.n_trees
+        if self.index is None:
+            return self.cfg.n_trees
+        if self.index.get_n_items() <= 0:
+            return self.cfg.n_trees
+        if self.index.get_n_trees() == 0:
+            return self.cfg.n_trees
+        return self.index.get_n_trees()
 
     def __len__(self) -> int:
         return self.index.get_n_items()

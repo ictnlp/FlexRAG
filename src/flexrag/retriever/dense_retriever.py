@@ -80,69 +80,43 @@ class DenseRetriever(LocalRetriever):
     @TIME_METER("dense_retriever", "add-passages")
     def add_passages(self, passages: Iterable[Context]):
 
-        def get_batch() -> Generator[list[dict[str, str]], None, None]:
+        def get_batch() -> Generator[list[pd.DataFrame], None, None]:
             batch = []
             for passage in passages:
                 if len(batch) == self.batch_size:
-                    yield batch
+                    yield pd.DataFrame(batch)
                     batch = []
                 data = passage.data.copy()
                 data[self.id_field_name] = passage.context_id
                 batch.append(data)
             if batch:
-                yield batch
+                yield pd.DataFrame(batch)
             return
 
         # generate embeddings
         assert self.passage_encoder is not None, "Passage encoder is not provided."
         p_logger = SimpleProgressLogger(logger, interval=self.log_interval)
-        embeddings = []
         for batch in get_batch():
-            # encode passages
-            if len(self.encode_fields) > 1:
-                data_to_encode = [
-                    " ".join([f"{key}:{i[key]}" for key in self.encode_fields])
-                    for i in batch
-                ]
-            else:
-                data_to_encode = [i[self.encode_fields[0]] for i in batch]
-            emb = self.passage_encoder.encode(data_to_encode)
-            p_logger.update(step=self.batch_size, desc="Encoding passages")
+            p_logger.update(step=len(batch), desc="Adding passages.")
 
             # add data to database
             if self.cfg.database_path is not None:
                 # save the data into lance dataset
-                data_to_add = pd.DataFrame(batch)
                 db_path = os.path.join(self.cfg.database_path, "database.lance")
                 self.database = lance.write_dataset(
-                    data_to_add,
+                    batch,
                     uri=db_path,
                     mode="append" if self.database is not None else "create",
                 )
             else:
                 # save the data into memory
                 self.database = (
-                    pd.concat([self.database, pd.DataFrame(batch)], ignore_index=True)
+                    pd.concat([self.database, batch], ignore_index=True)
                     if self.database is not None
-                    else pd.DataFrame(batch)
+                    else batch
                 )
 
-            # add embeddings to index or save it for building index
-            if self.index.is_trained and self.index.is_addable:
-                self.index.add_embeddings_batch(emb)
-            elif self.cfg.database_path is not None:
-                file_name = os.path.join(self.cfg.database_path, f"{uuid4()}.npy")
-                np.save(file_name, emb)
-                embeddings.append(file_name)
-            else:
-                embeddings.append(emb)
-
-        if (not self.index.is_trained) or (not self.index.is_addable):
-            # train index from scratch
-            self.build_index(embeddings)
-        elif self.cfg.database_path is not None:
-            # serialize the index if `database_path` is provided
-            self.index.serialize()
+        self.build_index()
         logger.info("Finished adding passages.")
         return
 
@@ -152,7 +126,6 @@ class DenseRetriever(LocalRetriever):
         query: list[str],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
-        assert self.index.is_trained, "Index is not trained."
         assert self.query_encoder is not None, "Query encoder is not provided."
         top_k = search_kwargs.pop("top_k", self.top_k)
         emb_q = self.query_encoder.encode(query)
@@ -211,8 +184,64 @@ class DenseRetriever(LocalRetriever):
         return fields
 
     @TIME_METER("dense_retriever", "build-index")
-    def build_index(self, embeddings: list[np.ndarray | str]) -> None:
-        # load the embeddings
+    def build_index(self, rebuild: bool = False) -> None:
+        """Build the index for the retriever."""
+
+        def prepare_text(data: pd.DataFrame) -> list[str]:
+            if len(self.encode_fields) > 1:
+                data_to_encode = [
+                    " ".join([f"{key}:{i[key]}" for key in self.encode_fields])
+                    for i in data.iloc
+                ]
+            else:
+                data_to_encode = [i[self.encode_fields[0]] for i in data.iloc]
+            return data_to_encode
+
+        def get_batch(offset: int) -> Generator[list[str], None, None]:
+            if isinstance(self.database, lance.LanceDataset):
+                for batch in self.database.to_batches(
+                    batch_size=self.batch_size, offset=offset
+                ):
+                    batch = batch.to_pandas()
+                    yield prepare_text(batch)
+            else:
+                for i in range(offset, len(self.database), self.batch_size):
+                    batch = self.database.iloc[i : i + self.batch_size]
+                    yield prepare_text(batch)
+            return
+
+        # encode the database
+        assert self.passage_encoder is not None, "Passage encoder is not provided."
+        if rebuild:
+            offset = 0
+            total = len(self.database)
+            self.index.clean()
+        elif self.index.is_addable:
+            offset = len(self.index)
+            total = len(self.database) - offset
+        else:
+            offset = 0
+            total = len(self.database)
+        p_logger = SimpleProgressLogger(logger, total=total, interval=self.log_interval)
+        embeddings = []
+        for texts in get_batch(offset):
+            emb = self.passage_encoder.encode(texts)
+            if self.index.is_addable:
+                self.index.add_embeddings_batch(emb)
+            elif self.cfg.database_path is not None:
+                file_name = os.path.join(self.cfg.database_path, f"{uuid4()}.npy")
+                np.save(file_name, emb)
+                embeddings.append(file_name)
+            else:
+                embeddings.append(emb)
+            p_logger.update(step=len(texts), desc="Encoding passages")
+
+        # exit if the embeddings is already added to the index
+        if len(embeddings) == 0:
+            self.index.serialize()
+            return
+
+        # concatenate the embeddings
         if isinstance(embeddings[0], str):
             logger.info("Copying embeddings to memory map")
             emb_path = embeddings[0]
@@ -235,6 +264,9 @@ class DenseRetriever(LocalRetriever):
             embeddings = np.concatenate(embeddings, axis=0)
 
         # build the index
+        assert embeddings.shape[0] == len(
+            self.database
+        ), "Inconsistent data and embeddings."
         logger.info("Training index.")
         logger.info("Training index may consume a lot of memory.")
         self.index.build_index(embeddings)
@@ -247,7 +279,9 @@ class DenseRetriever(LocalRetriever):
         return
 
     def _check_consistency(self) -> None:
-        assert len(self.index) == len(self), "Inconsistent index and database."
+        assert len(self.index) == len(
+            self
+        ), "Inconsistent index and database. Please rebuild the index."
         return
 
     @cached_property

@@ -68,7 +68,7 @@ class DenseIndexBase(ABC):
         :type embeddings: np.ndarray
         :return: None
         """
-        assert self.is_trained, "Index is not trained, please build the index first."
+        assert self.is_addable, "Index is not trained, please build the index first."
         p_logger = SimpleProgressLogger(
             logger, total=embeddings.shape[0], interval=self.log_interval
         )
@@ -149,12 +149,6 @@ class DenseIndexBase(ABC):
     @abstractmethod
     def clean(self) -> None:
         """Clean the index."""
-        return
-
-    @property
-    @abstractmethod
-    def is_trained(self) -> bool:
-        """Return `True` if the index is trained."""
         return
 
     @property
