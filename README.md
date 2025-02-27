@@ -5,7 +5,7 @@
 ![Language](https://img.shields.io/badge/language-python-brightgreen)
 [![Code Style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/imports-isort-blue)](https://pycqa.github.io/isort/)
-[![github license](https://img.shields.io/github/license/ictnlp/flexrag)](LICENSE)
+[![github license](https://img.shields.io/github/license/ictnlp/FlexRAG)](LICENSE)
 [![Read the Docs](https://img.shields.io/readthedocs/flexrag)](https://flexrag.readthedocs.io/en/latest/)
 [![PyPI - Version](https://img.shields.io/pypi/v/flexrag)](https://pypi.org/project/flexrag/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14593327.svg)](https://doi.org/10.5281/zenodo.14593327)

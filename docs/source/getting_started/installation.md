@@ -13,7 +13,7 @@ Alternatively, to install FlexRAG from the source, follow the steps below:
 ```bash
 pip install pybind11
 
-git clone https://github.com/ictnlp/flexrag.git
+git clone https://github.com/ictnlp/FlexRAG.git
 cd flexrag
 pip install ./
 ```

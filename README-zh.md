@@ -5,7 +5,7 @@
 ![Language](https://img.shields.io/badge/language-python-brightgreen)
 [![Code Style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/imports-isort-blue)](https://pycqa.github.io/isort/)
-[![github license](https://img.shields.io/github/license/ictnlp/flexrag)](LICENSE)
+[![github license](https://img.shields.io/github/license/ictnlp/FlexRAG)](LICENSE)
 [![Read the Docs](https://img.shields.io/readthedocs/flexrag)](https://flexrag.readthedocs.io/en/latest/)
 [![PyPI - Version](https://img.shields.io/pypi/v/flexrag)](https://pypi.org/project/flexrag/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14593327.svg)](https://doi.org/10.5281/zenodo.14593327)
@@ -64,21 +64,6 @@ FlexRAG 采用**模块化**架构设计，让您可以轻松定制和扩展框�
 # 🏷️ 许可证
 本仓库采用 **MIT License** 开源协议. 详情请参考 [LICENSE](LICENSE) 文件。
 
-
-<!-- # 🖋️ 引用
-如果您觉得 FlexRAG 对您的研究有所帮助，请引用我们的工作:
-
-```bibtex
-@software{FlexRAG,
-  author = {Zhang Zhuocheng},
-  doi = {10.5281/zenodo.14306984},
-  month = {12},
-  title = {{FlexRAG}},
-  url = {https://github.com/ictnlp/flexrag},
-  version = {0.1.0},
-  year = {2024}
-}
-``` -->
 
 # ❤️ 致谢
 下面的开源项目对本项目有所帮助:
