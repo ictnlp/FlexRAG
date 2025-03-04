@@ -45,7 +45,11 @@ class WebRetrieverBaseConfig(RetrieverBaseConfig):
 
 
 class WebRetrieverBase(RetrieverBase):
-    """The base class for the ``WebRetriever``s."""
+    """The base class for the ``WebRetriever``.
+
+    The WebRetriever is used to retrieve relevant information from the web.
+    The subclasses should implement the ``search_item`` method.
+    """
 
     def __init__(self, cfg: WebRetrieverBaseConfig):
         super().__init__(cfg)
@@ -119,7 +123,7 @@ class SimpleWebRetrieverConfig(
 
 @RETRIEVERS("simple_web", config_class=SimpleWebRetrieverConfig)
 class SimpleWebRetriever(WebRetrieverBase):
-    """SimpleWebRetriever seeks most relevant web pages using the SearchEngine and reads the content using the WebReader."""
+    """SimpleWebRetriever seeks most relevant web pages using existing search engine and reads the content using the WebReader."""
 
     def __init__(self, cfg: SimpleWebRetrieverConfig):
         super().__init__(cfg)

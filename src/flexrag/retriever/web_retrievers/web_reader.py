@@ -145,6 +145,7 @@ class JinaReaderLM(WebReaderBase):
 
     @property
     def fields(self):
+        """The ``JinaReaderLM`` will return the ``raw_content`` and ``processed_content`` fields."""
         return ["raw_content", "processed_content"]
 
     @staticmethod
@@ -251,13 +252,16 @@ class JinaReader(WebReaderBase):
 
     @property
     def fields(self):
+        """The ``JinaReader`` will return the ``processed_content`` field."""
         return ["processed_content"]
 
 
 @WEB_READERS("snippet")
 class SnippetWebReader(WebReaderBase):
     """The SnippetWebReader will return the snippet of the resource directly.
-    This is useful if the resources are retrieved by the ``SearchEngine``s and the snippets are sufficient for the LLM.
+
+    This is useful if the resources are retrieved by the ``SearchEngine``,
+    and the snippets are sufficient for the LLM to generate the response.
     """
 
     def read(self, resources: list[WebResource]) -> list[RetrievedContext]:
@@ -273,6 +277,7 @@ class SnippetWebReader(WebReaderBase):
 
     @property
     def fields(self):
+        """The ``SnippetWebReader`` will return the ``snippet`` field."""
         return ["snippet"]
 
 
@@ -307,6 +312,7 @@ class ScreenshotWebReader(WebReaderBase):
 
     @property
     def fields(self):
+        """The ``ScreenshotWebReader`` will return the ``screenshot`` field."""
         return ["screenshot"]
 
 

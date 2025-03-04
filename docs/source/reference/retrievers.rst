@@ -104,7 +104,7 @@ Editable Retrievers
 
 Dense Index
 -----------
-Dense Index is used in ``DenseRetriever`` to store and retrieve dense embeddings.
+``DenseIndex`` is used in ``DenseRetriever`` to store and retrieve dense embeddings.
 
 .. autoclass:: flexrag.retriever.index.DenseIndexBase
     :members:
@@ -122,7 +122,6 @@ Dense Index is used in ``DenseRetriever`` to store and retrieve dense embeddings
 .. autoclass:: flexrag.retriever.index.AnnoyIndex
     :members:
     :show-inheritance:
-    :exclude-members: build_index, clean, deserialize, embedding_size, is_trained, serialize
 
 
 .. Faiss Index
@@ -133,7 +132,6 @@ Dense Index is used in ``DenseRetriever`` to store and retrieve dense embeddings
 .. autoclass:: flexrag.retriever.index.FaissIndex
     :members:
     :show-inheritance:
-    :exclude-members: build_index, clean, deserialize, embedding_size, is_trained, serialize
 
 
 .. ScaNN Index
@@ -144,11 +142,10 @@ Dense Index is used in ``DenseRetriever`` to store and retrieve dense embeddings
 .. autoclass:: flexrag.retriever.index.ScaNNIndex
     :members:
     :show-inheritance:
-    :exclude-members: build_index, clean, deserialize, embedding_size, is_trained, serialize
 
 Web Retrievers
 --------------
-Web retrievers are used to retrieve data from the web. Different from the ``EditableRetriever``, web retrievers can be used without building a knowledge base, as they retrieve data using web search engines.
+``WebRetriever`` is used to retrieve data from the web. Different from the ``EditableRetriever``, web retrievers can be used without building a knowledge base, as they retrieve data using web search engines.
 
 .. autoclass:: flexrag.retriever.web_retrievers.WebRetrieverBaseConfig
     :members:
@@ -158,43 +155,19 @@ Web retrievers are used to retrieve data from the web. Different from the ``Edit
     :members:
     :inherited-members:
 
-
-.. Web Search Engines
-.. autoclass:: flexrag.retriever.BingRetrieverConfig
+.. autoclass:: flexrag.retriever.web_retrievers.WebResource
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.retriever.BingRetriever
-    :members:
-    :show-inheritance:
-    :exclude-members: search_item
+FlexRAG provides two simple web retrievers, ``SimpleWebRetriever`` and ``WikipediaRetriever``.
 
-.. autoclass:: flexrag.retriever.DuckDuckGoRetrieverConfig
+.. autoclass:: flexrag.retriever.web_retrievers.SimpleWebRetrieverConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.retriever.DuckDuckGoRetriever
+.. autoclass:: flexrag.retriever.web_retrievers.SimpleWebRetriever
     :members:
     :show-inheritance:
-    :exclude-members: search_item
-
-.. autoclass:: flexrag.retriever.GoogleRetrieverConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.retriever.GoogleRetriever
-    :members:
-    :show-inheritance:
-    :exclude-members: search_item
-
-.. autoclass:: flexrag.retriever.SerpApiRetrieverConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.retriever.SerpApiRetriever
-    :members:
-    :show-inheritance:
-    :exclude-members: search_item
 
 .. autoclass:: flexrag.retriever.WikipediaRetrieverConfig
     :members:
@@ -203,7 +176,47 @@ Web retrievers are used to retrieve data from the web. Different from the ``Edit
 .. autoclass:: flexrag.retriever.WikipediaRetriever
     :members:
     :show-inheritance:
-    :exclude-members: search, fields
+
+
+Web Seekers
+-----------
+``WebSeeker`` is used to search the resources from the web for the given query.
+The web resources could be sought by walking through a set of given web pages, by using a search engine, etc.
+FlexRAG provides several web seekers using existing search engines.
+
+
+.. Web Search Engines
+.. autoclass:: flexrag.retriever.web_retrievers.BingEngineConfig
+    :members:
+    :inherited-members:
+
+.. autoclass:: flexrag.retriever.web_retrievers.BingEngine
+    :members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.retriever.web_retrievers.DuckDuckGoEngineConfig
+    :members:
+    :inherited-members:
+
+.. autoclass:: flexrag.retriever.web_retrievers.DuckDuckGoEngine
+    :members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.retriever.web_retrievers.GoogleEngineConfig
+    :members:
+    :inherited-members:
+
+.. autoclass:: flexrag.retriever.web_retrievers.GoogleEngine
+    :members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.retriever.web_retrievers.SerpApiConfig
+    :members:
+    :inherited-members:
+
+.. autoclass:: flexrag.retriever.web_retrievers.SerpApi
+    :members:
+    :show-inheritance:
 
 
 Web Downloader
@@ -225,16 +238,14 @@ Web downloader is used to download data from the web.
 .. autoclass:: flexrag.retriever.web_retrievers.SimpleWebDownloader
     :members:
     :show-inheritance:
-    :exclude-members: download_page
 
-.. autoclass:: flexrag.retriever.web_retrievers.PuppeteerWebDownloaderConfig
+.. autoclass:: flexrag.retriever.web_retrievers.PlaywrightWebDownloaderConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.retriever.web_retrievers.PuppeteerWebDownloader
+.. autoclass:: flexrag.retriever.web_retrievers.PlaywrightWebDownloader
     :members:
     :show-inheritance:
-    :exclude-members: download_page, async_download
 
 
 Web Reader
@@ -245,10 +256,6 @@ Web reader is used to convert web data into LLM friendly format.
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.retriever.web_retrievers.WebRetrievedContext
-    :members:
-    :inherited-members:
-
 .. autoclass:: flexrag.retriever.web_retrievers.JinaReaderConfig
     :members:
     :inherited-members:
@@ -256,7 +263,6 @@ Web reader is used to convert web data into LLM friendly format.
 .. autoclass:: flexrag.retriever.web_retrievers.JinaReader
     :members:
     :show-inheritance:
-    :exclude-members: fields, read
 
 .. autoclass:: flexrag.retriever.web_retrievers.JinaReaderLMConfig
     :members:
@@ -265,12 +271,10 @@ Web reader is used to convert web data into LLM friendly format.
 .. autoclass:: flexrag.retriever.web_retrievers.JinaReaderLM
     :members:
     :show-inheritance:
-    :exclude-members: fields, read
 
 .. autoclass:: flexrag.retriever.web_retrievers.ScreenshotWebReader
     :members:
     :show-inheritance:
-    :exclude-members: fields, read
 
 .. autoclass:: flexrag.retriever.web_retrievers.ScreenshotWebReaderConfig
     :members:
@@ -279,4 +283,3 @@ Web reader is used to convert web data into LLM friendly format.
 .. autoclass:: flexrag.retriever.web_retrievers.SnippetWebReader
     :members:
     :inherited-members:
-    :exclude-members: fields, read

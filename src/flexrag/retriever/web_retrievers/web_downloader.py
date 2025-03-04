@@ -8,7 +8,6 @@ from typing import Any, Optional
 
 from httpx import Client
 from PIL import Image
-from PIL.ImageFile import ImageFile
 
 from flexrag.utils import Choices, Register
 from .utils import WebResource
