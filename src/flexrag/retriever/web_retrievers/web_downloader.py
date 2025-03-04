@@ -9,9 +9,9 @@ from typing import Any, Optional
 from httpx import Client
 from PIL import Image
 from PIL.ImageFile import ImageFile
-from tenacity import retry, stop_after_attempt, wait_fixed
 
 from flexrag.utils import Choices, Register
+from .utils import WebResource
 
 
 @dataclass
@@ -26,46 +26,49 @@ class WebDownloaderBaseConfig:
 
 
 class WebDownloaderBase(ABC):
-    """The base class for the web downloaders."""
+    """The base class for the ``WebDownloader``."""
 
     def __init__(self, cfg: WebDownloaderBaseConfig) -> None:
         self.allow_parallel = cfg.allow_parallel
         return
 
-    def download(self, urls: str | list[str]) -> list[Any]:
-        """Download the web pages.
+    def download(self, resources: WebResource | list[WebResource]) -> list[WebResource]:
+        """Download the web resources.
 
-        :param urls: The urls to download.
-        :type urls: str | list[str]
-        :return: The downloaded web pages.
-        :rtype: list[Any]
+        :param resources: The resources to download.
+        :type resources: WebResource | list[WebResource]
+        :return: The downloaded web resources.
+        :rtype: list[WebResource]
         """
-        if isinstance(urls, str):
-            urls = [urls]
+        if not isinstance(resources, list):
+            resources = [resources]
         if self.allow_parallel:
             with ThreadPoolExecutor() as executor:
-                results = list(executor.map(self.download_page, urls))
+                results = list(executor.map(self.download_item, resources))
         else:
-            results = [self.download_page(url) for url in urls]
+            results = [self.download_item(url) for url in resources]
         return results
 
-    async def async_download(self, urls: str | list[str]) -> Any:
-        """Download the web pages asynchronously."""
-        if isinstance(urls, str):
-            urls = [urls]
+    async def async_download(self, resources: WebResource | list[WebResource]) -> Any:
+        """Download the web resources asynchronously."""
+        if isinstance(resources, str):
+            resources = [resources]
         results = await asyncio.gather(
-            *[asyncio.to_thread(partial(self.download_page, url=url)) for url in urls]
+            *[
+                asyncio.to_thread(partial(self.download_item, url=url))
+                for url in resources
+            ]
         )
         return results
 
     @abstractmethod
-    def download_page(self, url: str) -> Any:
-        """Download the web page.
+    def download_item(self, resource: WebResource) -> Any:
+        """Download the resource.
 
-        :param url: The url to download.
-        :type url: str
-        :return: The downloaded web pages.
-        :rtype: Any
+        :param resource: The web resource to download.
+        :type resource: WebResource
+        :return: The downloaded web resource.
+        :rtype: WebResource
         """
         return
 
@@ -81,21 +84,12 @@ class SimpleWebDownloaderConfig(WebDownloaderBaseConfig):
     :type proxy: Optional[str]
     :param timeout: The timeout for the requests. Default is 3.0.
     :type timeout: float
-    :param max_retries: The maximum number of retries. Default is 3.
-    :type max_retries: int
-    :param retry_delay: The delay between retries. Default is 0.5.
-    :type retry_delay: float
-    :param skip_bad_response: Whether to skip bad responses. Default is True.
-    :type skip_bad_response: bool
     :param headers: The headers to use. Default is None.
     :type headers: Optional[dict]
     """
 
     proxy: Optional[str] = None
     timeout: float = 3.0
-    max_retries: int = 3
-    retry_delay: float = 0.5
-    skip_bad_response: bool = True
     headers: Optional[dict] = None
 
 
@@ -111,104 +105,168 @@ class SimpleWebDownloader(WebDownloaderBase):
             proxies=cfg.proxy,
             timeout=cfg.timeout,
         )
-
-        # setting retry parameters
-        self.skip_bad_response = cfg.skip_bad_response
-        self.max_retries = cfg.max_retries
-        self.retry_delay = cfg.retry_delay
         return
 
-    def download_page(self, url: str) -> str:
-        @retry(
-            stop=stop_after_attempt(self.max_retries),
-            wait=wait_fixed(self.retry_delay),
-            retry_error_callback=lambda _: None if self.skip_bad_response else None,
-        )
-        def download_page(url):
-            response = self.client.get(url)
-            response.raise_for_status()
-            return response.text
-
-        return download_page(url)
+    def download_item(self, resource: WebResource) -> str:
+        response = self.client.get(resource.url)
+        response.raise_for_status()
+        resource.data = response.text
+        return resource
 
 
 @dataclass
-class PuppeteerWebDownloaderConfig(WebDownloaderBaseConfig):
-    """The configuration for the ``PuppeteerWebDownloader``.
+class PlaywrightWebDownloaderConfig(WebDownloaderBaseConfig):
+    """The configuration for the ``PlaywrightWebDownloader``.
 
-    :param return_format: The return format.
-        Available options are "screenshot" and "html". Default is "html".
-    :type return_format: str
     :param headless: Whether to run the browser in headless mode. Default is True.
     :type headless: bool
-    :param device: The device to emulate. Default is None.
-    :type device: Optional[str]
-    :param page_width: The width of the emulate device. Default is 1280.
-    :type page_width: int
-    :param page_height: The height of the emulate device. Default is 1024.
-    :type page_height: int
+    :param device: The device to emulate. Default is `Desktop Chrome`.
+    :type device: str
+    :param page_width: The width of the emulate device. Default is None.
+    :type page_width: Optional[int]
+    :param page_height: The height of the emulate device. Default is None.
+    :type page_height: Optional[int]
+    :param return_screenshot: Whether to return the screenshot. Default is False.
+    :type return_screenshot: bool
     """
 
-    return_format: Choices(["screenshot", "html"]) = "html"  # type: ignore
     headless: bool = True
-    device: Optional[str] = None
-    page_width: int = 1280
-    page_height: int = 1024
+    browser: Choices(["chromium", "firefox", "webkit", "msedge"]) = "chromium"  # type: ignore
+    device: str = "Desktop Chrome"
+    page_width: Optional[int] = None
+    page_height: Optional[int] = None
+    return_screenshot: bool = False
 
 
-@WEB_DOWNLOADERS("puppeteer", config_class=PuppeteerWebDownloaderConfig)
-class PuppeteerWebDownloader(WebDownloaderBase):
-    """Download the web content using puppeteer."""
+@WEB_DOWNLOADERS("playwright", config_class=PlaywrightWebDownloaderConfig)
+class PlaywrightWebDownloader(WebDownloaderBase):
+    """Download the web resources using playwright."""
 
-    def __init__(self, cfg: PuppeteerWebDownloaderConfig) -> None:
+    def __init__(self, cfg: PlaywrightWebDownloaderConfig) -> None:
         super().__init__(cfg)
-        # prepare the browser
-        from pyppeteer import launch
-
+        # load the playwright
         try:
-            self.event_loop = asyncio.get_running_loop()
-            self.browser = asyncio.create_task(launch(headless=cfg.headless))
-        except RuntimeError:
-            self.event_loop = asyncio.get_event_loop()
-            self.browser = self.event_loop.run_until_complete(
-                launch(headless=cfg.headless)
+            from playwright.async_api import async_playwright
+            from playwright.sync_api import sync_playwright
+
+            self.async_playwright = async_playwright
+            self.sync_playwright = sync_playwright
+        except ImportError:
+            raise ImportError(
+                "Please install playwright using `pip install pytest-playwright`."
+                "Then, execute `playwright install`."
             )
 
-        # setting the arguments
-        self.return_format = cfg.return_format
+        # set the arguments
+        self.headless = cfg.headless
+        self.browser = cfg.browser
         self.device = cfg.device
         self.page_width = cfg.page_width
         self.page_height = cfg.page_height
+        self.return_screenshot = cfg.return_screenshot
         return
 
-    def download_page(self, url: str) -> ImageFile | str:
-        return self.event_loop.run_until_complete(self.async_download_page(url))
+    def download(self, resources: WebResource | list[WebResource]) -> WebResource:
+        if not isinstance(resources, list):
+            resources = [resources]
+        with self.sync_playwright() as p:
+            # launch the browser
+            match self.browser:
+                case "chromium":
+                    browser = p.chromium.launch(headless=self.headless)
+                case "firefox":
+                    browser = p.firefox.launch(headless=self.headless)
+                case "webkit":
+                    browser = p.webkit.launch(headless=self.headless)
+                case "msedge":
+                    browser = p.chromium.launch(headless=self.headless)
+                case _:
+                    raise ValueError(f"Browser {self.browser} is not supported.")
 
-    async def async_download_page(self, url: str) -> ImageFile | str:
-        if isinstance(self.browser, asyncio.Task):
-            self.browser = await self.browser
-        page = await self.browser.newPage()
-        if self.device is not None:
-            await page.emulate(self.device)
-        if self.page_width is not None and self.page_height is not None:
-            await page.setViewport(
-                {"width": self.page_width, "height": self.page_height}
-            )
-        await page.goto(url)
-        if self.return_format == "html":
-            content = await page.content()
-        elif self.return_format == "screenshot":
-            content = await page.screenshot(
-                type="png", fullPage=True, encoding="binary"
-            )
-            content = Image.open(io.BytesIO(content))
-        else:
-            raise ValueError(f"Unsupported return format: {self.return_format}")
-        await page.close()
-        return content
+            # set the browser context
+            ctx_param = p.devices[self.device]
+            if self.page_height is not None:
+                ctx_param["viewport"]["height"] = self.page_height
+            if self.page_width is not None:
+                ctx_param["viewport"]["width"] = self.page_width
+            context = browser.new_context(**ctx_param)
 
-    async def async_download(self, urls: str | list[str]) -> list[str | ImageFile]:
-        return await asyncio.gather(*[self.async_download_page(url) for url in urls])
+            # download the resources
+            if not self.allow_parallel:
+                page = context.new_page()
+                for r in resources:
+                    page.goto(r.url)
+                    if self.return_screenshot:
+                        img_bytes = page.screenshot(full_page=True)
+                        r.data = Image.open(io.BytesIO(img_bytes))
+                    else:
+                        r.data = page.content()
+                page.close()
+            else:
+
+                def get_content(r: WebResource):
+                    page = context.new_page()
+                    page.goto(r.url)
+                    if self.return_screenshot:
+                        img_bytes = page.screenshot(full_page=True)
+                        r.data = Image.open(io.BytesIO(img_bytes))
+                    else:
+                        r.data = page.content()
+                    page.close()
+                    return r
+
+                with ThreadPoolExecutor() as executor:
+                    resources = list(executor.map(get_content, resources))
+
+            # close the browser
+            browser.close()
+        return resources
+
+    async def async_download(self, resources):
+        if not isinstance(resources, list):
+            resources = [resources]
+        async with self.async_playwright() as p:
+            # launch the browser
+            match self.browser:
+                case "chromium":
+                    browser = await p.chromium.launch(headless=self.headless)
+                case "firefox":
+                    browser = await p.firefox.launch(headless=self.headless)
+                case "webkit":
+                    browser = await p.webkit.launch(headless=self.headless)
+                case "msedge":
+                    browser = await p.chromium.launch(headless=self.headless)
+                case _:
+                    raise ValueError(f"Browser {self.browser} is not supported.")
+
+            # set the browser context
+            ctx_param = p.devices[self.device]
+            if self.page_height is not None:
+                ctx_param["viewport"]["height"] = self.page_height
+            if self.page_width is not None:
+                ctx_param["viewport"]["width"] = self.page_width
+            context = await browser.new_context(**ctx_param)
+
+            # download the resources
+            async def get_content(r: WebResource):
+                page = await context.new_page()
+                await page.goto(r.url)
+                if self.return_screenshot:
+                    img_bytes = await page.screenshot(full_page=True)
+                    r.data = Image.open(io.BytesIO(img_bytes))
+                else:
+                    r.data = await page.content()
+                await page.close()
+                return r
+
+            resources = await asyncio.gather(*[get_content(r) for r in resources])
+
+            # close the browser
+            await browser.close()
+        return resources
+
+    def download_item(self, resource: WebResource) -> WebResource:
+        return self.download(resource)
 
 
-WebDownloaderConfig = WEB_DOWNLOADERS.make_config()
+WebDownloaderConfig = WEB_DOWNLOADERS.make_config(config_name="WebDownloaderConfig")

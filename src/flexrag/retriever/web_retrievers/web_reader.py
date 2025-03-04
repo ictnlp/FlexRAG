@@ -14,50 +14,25 @@ from flexrag.utils import Register
 
 from .web_downloader import (
     WEB_DOWNLOADERS,
-    PuppeteerWebDownloader,
-    PuppeteerWebDownloaderConfig,
+    PlaywrightWebDownloader,
+    PlaywrightWebDownloaderConfig,
     WebDownloaderConfig,
 )
-
-
-@dataclass
-class WebRetrievedContext:
-    """The context retrieved from the web.
-
-    :param engine: The search engine used to retrieve the context.
-    :type engine: str
-    :param query: The query used to retrieve the context.
-    :type query: str
-    :param url: The URL of the context.
-    :type url: str
-    :param title: The title of the context. Default is None.
-    :type title: Optional[str]
-    :param snippet: The snippet of the context. Default is None.
-    :type snippet: Optional[str]
-    :param raw_content: The raw content of the context. Default is None.
-    :type raw_content: Optional[dict]
-    """
-
-    engine: str = MISSING
-    query: str = MISSING
-    url: str = MISSING
-    title: Optional[str] = None
-    snippet: Optional[str] = None
-    raw_content: Optional[dict] = None
+from .utils import WebResource
 
 
 class WebReaderBase(ABC):
-    """The base class for the web readers."""
+    """The base class for the ``WebReader``.
+    The WebReader is used to parse the web resources into a format that can be fed into the LLM.
+    """
 
     @abstractmethod
-    def read(
-        self, retrieved_contexts: list[WebRetrievedContext]
-    ) -> list[RetrievedContext]:
+    def read(self, resources: list[WebResource]) -> list[RetrievedContext]:
         """
         Parse the retrieved contexts into LLM readable format.
 
-        :param retrieved_contexts: Contexts retrieved by the WebRetriever.
-        :type retrieved_contexts: list[WebRetrievedContext]
+        :param resources: Resources sought from the web.
+        :type resources: list[WebResource]
         :return: Contexts that can be fed into the LLM.
         :rtype: list[RetrievedContext]
         """
@@ -95,7 +70,7 @@ class JinaReaderLMConfig(GeneratorConfig, WebDownloaderConfig, GenerationConfig)
 
 @WEB_READERS("jina_readerlm", config_class=JinaReaderLMConfig)
 class JinaReaderLM(WebReaderBase):
-    """The JinaReaderLM reads the web pages using the Jina ReaderLM model."""
+    """The JinaReaderLM downloads and parses the HTML content using the Jina ReaderLM model."""
 
     # Patterns
     SCRIPT_PATTERN = r"<[ ]*script.*?\/[ ]*script[ ]*>"
@@ -119,16 +94,14 @@ class JinaReaderLM(WebReaderBase):
             self.template = "{text}"
         return
 
-    def read(
-        self, retrieved_contexts: list[WebRetrievedContext]
-    ) -> list[RetrievedContext]:
-        urls = [rc.url for rc in retrieved_contexts]
-        web_pages_ = self.downloader.download(urls)
+    def read(self, resources: list[WebResource]) -> list[RetrievedContext]:
+        resources = self.downloader.download(resources)
 
         # Pre-clean the HTML content
         web_pages = []
         if self.cfg.pre_clean_html:
-            for page in web_pages_:
+            for r in resources:
+                page = r.data
                 if page is not None:
                     web_pages.append(
                         JinaReaderLM.clean_html(
@@ -157,12 +130,12 @@ class JinaReaderLM(WebReaderBase):
         texts = self.reader.chat(prompts, generation_config=self.cfg)
         texts = [t[0] for t in texts]
         contexts = []
-        for p, ctx in zip(web_pages, retrieved_contexts):
+        for p, ctx in zip(web_pages, resources):
             if p is None:
                 continue
             contexts.append(
                 RetrievedContext(
-                    retriever=ctx.engine,
+                    retriever="web",
                     query=ctx.query,
                     data={"raw_content": p, "processed_content": texts.pop(0)},
                     source=ctx.url,
@@ -250,7 +223,7 @@ class JinaReaderConfig:
 
 @WEB_READERS("jina_reader", config_class=JinaReaderConfig)
 class JinaReader(WebReaderBase):
-    """The JinaReader reads the web pages using the Jina Reader API."""
+    """The JinaReader parse the web pages using the Jina Reader API."""
 
     def __init__(self, cfg: JinaReaderConfig):
         self.client = httpx.Client(
@@ -261,16 +234,14 @@ class JinaReader(WebReaderBase):
         )
         return
 
-    def read(
-        self, retrieved_contexts: list[WebRetrievedContext]
-    ) -> list[RetrievedContext]:
-        responses = [self.client.get(f"/{rc.url}") for rc in retrieved_contexts]
+    def read(self, resources: list[WebResource]) -> list[RetrievedContext]:
+        responses = [self.client.get(f"/{rc.url}") for rc in resources]
         contexts = []
-        for rc, response in zip(retrieved_contexts, responses):
+        for rc, response in zip(resources, responses):
             if response.status_code == 200:
                 contexts.append(
                     RetrievedContext(
-                        retriever=rc.engine,
+                        retriever="web",
                         query=rc.query,
                         data={"processed_content": response.text},
                         source=rc.url,
@@ -285,22 +256,19 @@ class JinaReader(WebReaderBase):
 
 @WEB_READERS("snippet")
 class SnippetWebReader(WebReaderBase):
-    """The SnippetWebReader will return the snippet of the web page directly.
-    This is useful if the web pages are retrieved by the SearchEngines and the snippets are sufficient.
+    """The SnippetWebReader will return the snippet of the resource directly.
+    This is useful if the resources are retrieved by the ``SearchEngine``s and the snippets are sufficient for the LLM.
     """
 
-    def read(
-        self, retrieved_contexts: list[WebRetrievedContext]
-    ) -> list[RetrievedContext]:
+    def read(self, resources: list[WebResource]) -> list[RetrievedContext]:
         return [
             RetrievedContext(
-                retriever=rc.engine,
+                retriever="web",
                 query=rc.query,
-                data={"snippet": rc.snippet},
+                data={"snippet": rc.metadata.get("snippet", "")},
                 source=rc.url,
             )
-            for rc in retrieved_contexts
-            if rc.snippet is not None
+            for rc in resources
         ]
 
     @property
@@ -309,10 +277,10 @@ class SnippetWebReader(WebReaderBase):
 
 
 @dataclass
-class ScreenshotWebReaderConfig(PuppeteerWebDownloaderConfig):
+class ScreenshotWebReaderConfig(PlaywrightWebDownloaderConfig):
     """The configuration for the ``ScreenshotWebReader``."""
 
-    ...
+    return_screenshot: bool = True
 
 
 @WEB_READERS("screenshot", config_class=ScreenshotWebReaderConfig)
@@ -321,23 +289,20 @@ class ScreenshotWebReader(WebReaderBase):
 
     def __init__(self, cfg: ScreenshotWebReaderConfig):
         super().__init__()
-        assert cfg.return_format == "screenshot"
-        self.downloader = PuppeteerWebDownloader(cfg)
+        assert cfg.return_screenshot == True, "`return_screenshot` must be True"
+        self.downloader = PlaywrightWebDownloader(cfg)
         return
 
-    def read(
-        self, retrieved_contexts: list[WebRetrievedContext]
-    ) -> list[RetrievedContext]:
-        urls = [rc.url for rc in retrieved_contexts]
-        screenshots = self.downloader.download(urls)
+    def read(self, resources: list[WebResource]) -> list[RetrievedContext]:
+        resources = self.downloader.download(resources)
         return [
             RetrievedContext(
-                retriever=rc.engine,
-                query=rc.query,
-                data={"screenshot": screenshot},
-                source=rc.url,
+                retriever="web",
+                query=r.query,
+                data={"screenshot": r.data},
+                source=r.url,
             )
-            for rc, screenshot in zip(retrieved_contexts, screenshots)
+            for r in resources
         ]
 
     @property
@@ -345,4 +310,4 @@ class ScreenshotWebReader(WebReaderBase):
         return ["screenshot"]
 
 
-WebReaderConfig = WEB_READERS.make_config(default="snippet")
+WebReaderConfig = WEB_READERS.make_config(config_name="WebReaderConfig")
