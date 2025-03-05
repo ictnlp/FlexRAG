@@ -1,3 +1,4 @@
+import copyreg
 import importlib
 import json
 import logging
@@ -6,7 +7,7 @@ import sys
 import threading
 from contextlib import contextmanager
 from dataclasses import field, make_dataclass
-from enum import Enum
+from enum import StrEnum
 from functools import partial
 from multiprocessing import Manager
 from time import perf_counter
@@ -16,7 +17,6 @@ import colorama
 import numpy as np
 from huggingface_hub import HfApi
 from omegaconf import MISSING, DictConfig, ListConfig, OmegaConf
-
 
 colorama.init(autoreset=True)
 
@@ -347,25 +347,15 @@ def set_env_var(key, value):
             os.environ[key] = original_value
 
 
-class StrEnum(Enum):
-    def __eq__(self, other: str):
-        return self.value == other
-
-    def __str__(self):
-        return self.value
-
-    def __hash__(self):
-        return hash(self.value)
-
-    def __repr__(self):
-        return self.value
-
-    def __pickle__(self):
-        return self.value
+def _enum_as_str(obj: StrEnum):
+    """A helper function for pickle to serialize the StrEnum."""
+    return (str, (obj.value,))
 
 
 def Choices(choices: Iterable[str]):
-    return StrEnum("Choices", {c: c for c in choices})
+    dynamic_enum = StrEnum("Choices", {c: c for c in choices})
+    copyreg.pickle(dynamic_enum, _enum_as_str)
+    return dynamic_enum
 
 
 # Monkey Patching the JSONEncoder to handle StrEnum
