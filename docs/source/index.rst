@@ -32,6 +32,7 @@ FlexRAG is under active development and is currently in the alpha stage. We welc
    tutorial/building_assistant
    tutorial/entrypoints
    tutorial/using_register
+   tutorial/preparing_web_retriever
 
 .. toctree::
    :maxdepth: 1

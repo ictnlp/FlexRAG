@@ -2,8 +2,8 @@ Prompt
 ======
 This module provides two classes namely `ChatPrompt` and `ChatTemplate`. The `ChatPrompt` is used to store the system prompt, chat history, and demonstrations used to interact with the `Generator`. The `ChatTemplate` is used to convert the `ChatPrompt` into a string or a list of tokens that can be used by the model.
 
-Prompt
-------
+Chat Prompt
+-----------
 
 .. autoclass:: flexrag.prompt.ChatTurn
     :members:

@@ -2,7 +2,7 @@
 FlexRAG provides several entrypoints to run the RAG application. Each entrypoint has a default configuration structure that can be used to customize the workflow. This tutorial provides an overview of the FlexRAG entrypoints and how to customize the workflow using configuration management.
 
 ## Provided Entrypoints
-### prepare_index
+### Preparing the Retriever Index
 This entrypoint is used to prepare the retriever index. You can use this entrypoint by running `python -m flexrag.entrypoints.prepare_index`.
 The defination of the configuration structure for the `prepare_index` entrypoint is as follows:
 
@@ -13,7 +13,7 @@ The defination of the configuration structure for the `prepare_index` entrypoint
     :show-inheritance:
 ```
 
-### rebuild_index
+### Rebuilding the Retriever Index
 This entrypoint is used to rebuild the index for the `DenseRetriever`. You can use this entrypoint by running `python -m flexrag.entrypoints.rebuid_index`.
 The defination of the configuration structure for the `rebuid_index` entrypoint is as follows:
 
@@ -24,7 +24,7 @@ The defination of the configuration structure for the `rebuid_index` entrypoint 
     :show-inheritance:
 ```
 
-### run_assistant
+### Evaluating the Assistant
 This entrypoint is used to evaluate the assistant on a given dataset. You can use this entrypoint by running `python -m flexrag.entrypoints.run_assistant`.
 The defination of the configuration structure for the `run_assistant` entrypoint is as follows:
 
@@ -35,7 +35,7 @@ The defination of the configuration structure for the `run_assistant` entrypoint
     :show-inheritance:
 ```
 
-### run_interactive
+### Running GUI Application
 This entrypoint is used to run the assistant using the built-in Gradio GUI interface. You can use this entrypoint by running `python -m flexrag.entrypoints.run_interactive`.
 The defination of the configuration structure for the `run_interactive` entrypoint is as follows:
 
@@ -46,7 +46,7 @@ The defination of the configuration structure for the `run_interactive` entrypoi
     :show-inheritance:
 ```
 
-### cache
+### Cache Management
 This entrypoint is used to manage the cache for the retrievers. You can use this entrypoint by running `python -m flexrag.entrypoints.cache`.
 The defination of the configuration structure for the `cache` entrypoint is as follows:
 
@@ -57,7 +57,7 @@ The defination of the configuration structure for the `cache` entrypoint is as f
     :show-inheritance:
 ```
 
-### evaluate
+### Evaluating the Generated Responses
 This entrypoint is used to evaluate the generated responses. You can use this entrypoint by running `python -m flexrag.entrypoints.evaluate`.
 The defination of the configuration structure for the `evaluate` entrypoint is as follows:
 

@@ -36,8 +36,8 @@ For example, to load the ``BM25S`` retriever, you can use the following configur
     )
     retriever = RETRIEVERS.load(config)
 
-Editable Retrievers
--------------------
+Editable Retriever
+------------------
 .. autoclass:: flexrag.retriever.EditableRetrieverConfig
     :members:
     :inherited-members:
@@ -143,8 +143,8 @@ Dense Index
     :members:
     :show-inheritance:
 
-Web Retrievers
---------------
+Web Retriever
+-------------
 ``WebRetriever`` is used to retrieve data from the web. Different from the ``EditableRetriever``, web retrievers can be used without building a knowledge base, as they retrieve data using web search engines.
 
 .. autoclass:: flexrag.retriever.web_retrievers.WebRetrieverBaseConfig
@@ -178,11 +178,54 @@ FlexRAG provides two simple web retrievers, ``SimpleWebRetriever`` and ``Wikiped
     :show-inheritance:
 
 
-Web Seekers
------------
+Web Seeker
+----------
 ``WebSeeker`` is used to search the resources from the web for the given query.
 The web resources could be sought by walking through a set of given web pages, by using a search engine, etc.
 FlexRAG provides several web seekers using existing search engines.
+
+.. Base Web Seeker
+.. autoclass:: flexrag.retriever.web_retrievers.WebSeekerBase
+    :members:
+    :inherited-members:
+
+.. General Configuration
+.. autoclass:: flexrag.retriever.web_retrievers.WebSeekerConfig
+    :members:
+    :inherited-members:
+
+WebSeekerConfig is the general configuration for all registered WebSeekers.
+You can load any WebSeekers by specifying the ``web_seeker_type`` in the configuration.
+For example, to load the ``DuckDuckGoEngine``, you can use the following configuration:
+
+.. code-block:: python
+
+    from flexrag.retriever.web_retrievers import WebSeekerConfig, WEB_SEEKERS
+
+    config = WebSeekerConfig(
+        web_seeker_type='ddg',
+    )
+    seeker = WEB_SEEKERS.load(config)
+
+
+.. General Configuration
+.. autoclass:: flexrag.retriever.web_retrievers.SearchEngineConfig
+    :members:
+    :inherited-members:
+
+SearchEngine is a type of WebSeeker that searches for web resources by leveraging existing search engines.
+SearchEngineConfig is the general configuration for all registered SearchEngines.
+You can load any SearchEngines by specifying the ``search_engine_type`` in the configuration.
+For example, to load the ``DuckDuckGoEngine``, you can use the following configuration:
+
+.. code-block:: python
+
+    from flexrag.retriever.web_retrievers import SearchEngineConfig, SEARCH_ENGINES
+
+    config = SearchEngineConfig(
+        search_engine_type='ddg',
+    )
+    seeker = SEARCH_ENGINES.load(config)
 
 
 .. Web Search Engines
@@ -255,6 +298,24 @@ Web reader is used to convert web data into LLM friendly format.
 .. autoclass:: flexrag.retriever.web_retrievers.WebReaderBase
     :members:
     :inherited-members:
+
+.. autoclass:: flexrag.retriever.web_retrievers.WebReaderConfig
+    :members:
+    :inherited-members:
+
+WebReaderConfig is the general configuration for all registered WebReaders.
+You can load any WebReader by specifying the ``web_reader_type`` in the configuration.
+For example, to load the ``JinaReader``, you can use the following configuration:
+
+.. code-block:: python
+
+    from flexrag.retriever.web_retrievers import WebReaderConfig, WEB_READERS
+
+    config = WebReaderConfig(
+        web_reader_type='jina_reader',
+    )
+    seeker = WEB_READERS.load(config)
+
 
 .. autoclass:: flexrag.retriever.web_retrievers.JinaReaderConfig
     :members:

@@ -32,6 +32,7 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.autodoc",
     "sphinx.ext.viewcode",
+    "sphinx.ext.autosectionlabel",
     "sphinx_copybutton",
     "myst_parser",
 ]
@@ -61,3 +62,6 @@ autodoc_mock_imports = [
 # -- Options for copybutton --------------------------------------------------
 copybutton_prompt_text = r">>> |\.\.\. "
 copybutton_prompt_is_regexp = True
+
+# -- Options for autosectionlabel --------------------------------------------
+autosectionlabel_prefix_document = False

@@ -39,6 +39,7 @@ from .web_seeker import (
     SerpApi,
     SerpApiConfig,
     WebSeekerBase,
+    SearchEngineConfig,
     WebSeekerConfig,
 )
 from .wikipedia_retriever import WikipediaRetriever, WikipediaRetrieverConfig
@@ -78,6 +79,7 @@ __all__ = [
     "SerpApi",
     "SerpApiConfig",
     "WebSeekerBase",
+    "SearchEngineConfig",
     "WebSeekerConfig",
     "WikipediaRetriever",
     "WikipediaRetrieverConfig",
