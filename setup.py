@@ -77,7 +77,7 @@ setup(
         "annoy": ["annoy>1.17.0"],
         "llamacpp": ["llama_cpp_python>=0.2.84"],
         "minference": ["minference>=0.1.5"],
-        "web": ["duckduckgo_search", "serpapi", "pyppeteer"],
+        "web": ["duckduckgo_search", "serpapi", "pytest-playwright"],
         "docs": ["docling", "markitdown"],
         "all": [
             "llama_cpp_python>=0.2.84",

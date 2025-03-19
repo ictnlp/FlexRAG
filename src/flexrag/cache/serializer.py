@@ -11,10 +11,24 @@ class SerializerBase(ABC):
 
     @abstractmethod
     def serialize(self, obj: Any) -> bytes:
+        """Serialize the object into bytes.
+
+        :param obj: The object to serialize.
+        :type obj: Any
+        :return: The serialized object.
+        :rtype: bytes
+        """
         return
 
     @abstractmethod
     def deserialize(self, data: bytes) -> Any:
+        """Deserialize the bytes into an object.
+
+        :param data: The serialized object.
+        :type data: bytes
+        :return: The deserialized object.
+        :rtype: Any
+        """
         return
 
 
@@ -23,6 +37,8 @@ SERIALIZERS = Register[SerializerBase]("serializer")
 
 @SERIALIZERS("pickle")
 class PickleSerializer(SerializerBase):
+    """A serializer that uses the pickle module."""
+
     def serialize(self, obj: Any) -> bytes:
         return pickle.dumps(obj)
 
@@ -32,6 +48,8 @@ class PickleSerializer(SerializerBase):
 
 @SERIALIZERS("cloudpickle")
 class CloudPickleSerializer(SerializerBase):
+    """A serializer that uses the cloudpickle module."""
+
     def __init__(self):
         try:
             import cloudpickle
@@ -52,6 +70,8 @@ class CloudPickleSerializer(SerializerBase):
 
 @SERIALIZERS("json")
 class JsonSerializer(SerializerBase):
+    """A serializer that uses the json module."""
+
     def serialize(self, obj: Any) -> bytes:
         return json.dumps(obj).encode("utf-8")
 
@@ -61,6 +81,8 @@ class JsonSerializer(SerializerBase):
 
 @SERIALIZERS("msgpack")
 class MsgpackSerializer(SerializerBase):
+    """A serializer that uses the msgpack module."""
+
     def __init__(self) -> None:
         try:
             import msgpack
@@ -77,4 +99,4 @@ class MsgpackSerializer(SerializerBase):
         return self.msgpack.unpackb(data, raw=False)
 
 
-SerializerConfig = SERIALIZERS.make_config(default="json")
+SerializerConfig = SERIALIZERS.make_config(default="pickle")
