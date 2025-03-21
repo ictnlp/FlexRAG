@@ -1,0 +1,185 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/reference/assistant.rst:2 e17f3045af884aa7ad46dc0f93b68d04
+msgid "Assistant"
+msgstr ""
+
+#: ../../source/reference/assistant.rst:4 be556a2887c64c3aa0637fd924b6f381
+msgid ""
+"The ``Assistant`` class serves as an abstraction for Retrieval-Augmented "
+"Generation (RAG) behavior. It takes the user's query as input and returns"
+" an appropriate response. This class provides a flexible interface for "
+"defining how the assistant handles queries, including whether a retrieval"
+" step is required, how the retrieval should be conducted, and how the "
+"assistant generates the response based on the retrieved information."
+msgstr ""
+
+#: ../../source/reference/assistant.rst:7 3b8cb7f241144d53b0b9e0de9dd7b117
+msgid "The Assistant Interface"
+msgstr ""
+
+#: ../../source/reference/assistant.rst:8 95741b0ee1d44bec99a06858ec670cd7
+msgid ""
+"``AssistantBase`` is the base class for all assistants. It provides a "
+"simple interface for answering a user query. The answering process is "
+"controlled by a configuration object that is passed to the assistant's "
+"constructor."
+msgstr ""
+
+#: 0d29b39fa96041c58a154b42e7df9a12
+#: flexrag.assistant.assistant.AssistantBase.answer:1 of
+msgid "Answer the given question."
+msgstr ""
+
+#: ../../source/reference/assistant.rst 19c2beda2b004b0e93480e2d556f850d
+#: d59fad102a3046a690dbe1673be1c243 f4e1971f6521467c9507a129697ebb34
+msgid "Parameters"
+msgstr ""
+
+#: 9f0b2d32d1f744ec878807aa705724a1
+#: flexrag.assistant.assistant.AssistantBase.answer:3 of
+msgid "The question to answer."
+msgstr ""
+
+#: ../../source/reference/assistant.rst 3486327480e346fea1968b68513ed9fb
+msgid "Returns"
+msgstr ""
+
+#: 19356d0ca5744851a08d15e38391b399
+#: flexrag.assistant.assistant.AssistantBase.answer:5 of
+msgid ""
+"A tuple containing the following elements: - The response to the "
+"question. - The contexts used to answer the question. - The metadata of "
+"the assistant."
+msgstr ""
+
+#: ../../source/reference/assistant.rst 5ff4b50d21434746b1c045a54cec5af4
+msgid "Return type"
+msgstr ""
+
+#: ../../source/reference/assistant.rst:15 4cedb25e3b424b0fa51ac60924355ae8
+msgid "FlexRAG Assistants"
+msgstr ""
+
+#: ../../source/reference/assistant.rst:16 90937ab234874f59a1198624159b1403
+msgid ""
+"FlexRAG provides several assistant implementations that can be used out "
+"of the box. These implementations are designed to be flexible and "
+"extensible, allowing users to customize the assistant's behavior by "
+"providing their own retrieval and generation components."
+msgstr ""
+
+#: 7436893f0d2747e9a7888703a42ca65f
+#: flexrag.assistant.basic_assistant.BasicAssistantConfig:1 of
+msgid ""
+"Bases: :py:class:`~types.GeneratorConfig`, "
+":py:class:`~flexrag.models.model_base.GenerationConfig`"
+msgstr ""
+
+#: ee3776f0a1244f5281058141fbea3509
+#: flexrag.assistant.basic_assistant.BasicAssistantConfig:1 of
+msgid "The configuration for the basic assistant."
+msgstr ""
+
+#: 2180b158b3564cbaa00ca04ea1d52a7c
+#: flexrag.assistant.basic_assistant.BasicAssistantConfig:3 of
+msgid "The path to the prompt file. Defaults to None."
+msgstr ""
+
+#: ae1be8a5de3b4260aea2289effbef9ff
+#: flexrag.assistant.basic_assistant.BasicAssistantConfig:5 of
+msgid ""
+"Whether to save the chat history for multi-turn conversation. Defaults to"
+" False."
+msgstr ""
+
+#: 75f169d46c804aa9b6bdccf63fcf7ef0 bd3ea406d23641229cd7b3d50c690d19
+#: flexrag.assistant.basic_assistant.BasicAssistant:1
+#: flexrag.assistant.modular_rag_assistant.ModularAssistant:1 of
+msgid "Bases: :py:class:`~flexrag.assistant.assistant.AssistantBase`"
+msgstr ""
+
+#: fff98f1712a946e3aaff453aae75cb88
+#: flexrag.assistant.basic_assistant.BasicAssistant:1 of
+msgid "A basic assistant that generates response without retrieval."
+msgstr ""
+
+#: 510719e20094448fb7e764a9b52c868c
+#: flexrag.assistant.modular_rag_assistant.ModularAssistantConfig:1 of
+msgid ""
+"Bases: :py:class:`~types.GeneratorConfig`, "
+":py:class:`~flexrag.models.model_base.GenerationConfig`, "
+":py:class:`~types.RetrieverConfig`, :py:class:`~types.RankerConfig`, "
+":py:class:`~types.RefinerConfig`"
+msgstr ""
+
+#: 7db23dc224434959a01efa964236a952
+#: flexrag.assistant.modular_rag_assistant.ModularAssistantConfig:1 of
+msgid "The configuration for the modular assistant."
+msgstr ""
+
+#: fd921dd4505d4e318c8b88cf66d85660
+#: flexrag.assistant.modular_rag_assistant.ModularAssistantConfig:3 of
+msgid ""
+"The type of response to generate. Defaults to \"short\". Available "
+"options are: \"short\", \"long\", \"original\", \"custom\"."
+msgstr ""
+
+#: 07be9ae5c7c243619c50a7fd3a399a93
+#: flexrag.assistant.modular_rag_assistant.ModularAssistantConfig:6 of
+msgid "The path to the prompt file for response with context. Defaults to None."
+msgstr ""
+
+#: c2e5e34ff7ad47e493eb4edab21e4a71
+#: flexrag.assistant.modular_rag_assistant.ModularAssistantConfig:8 of
+msgid ""
+"The path to the prompt file for response without context. Defaults to "
+"None."
+msgstr ""
+
+#: 8d81e845c1cb421b996a03f5e09cdfb5
+#: flexrag.assistant.modular_rag_assistant.ModularAssistantConfig:10 of
+msgid "The fields to use in the context. Defaults to []."
+msgstr ""
+
+#: 72cec84035304a2b8ee25113f4bda6cb
+#: flexrag.assistant.modular_rag_assistant.ModularAssistant:1 of
+msgid ""
+"The modular RAG assistant that supports retrieval, reranking, and "
+"generation."
+msgstr ""
+
+#: a0c94d78182e48d182baca37b6036585
+#: flexrag.assistant.chatqa_assistant.ChatQAAssistant:1 of
+msgid ""
+"Bases: "
+":py:class:`~flexrag.assistant.modular_rag_assistant.ModularAssistant`"
+msgstr ""
+
+#: fde8f4d6e3104ffd802e9917edab00e4
+#: flexrag.assistant.chatqa_assistant.ChatQAAssistant:1 of
+msgid ""
+"The Modular assistant that employs the ChatQA model for response "
+"generation."
+msgstr ""
+

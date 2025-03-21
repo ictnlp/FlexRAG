@@ -1,0 +1,206 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/getting_started/installation.md:1
+#: 166ce635614f4f2fab5b541c8c79de45
+msgid "Installation"
+msgstr "安装"
+
+#: ../../source/getting_started/installation.md:2
+#: 94d34f9ff04d493f817d7ddbbaab9242
+msgid ""
+"FlexRAG is a Python package that can be installed via `pip` or from "
+"source."
+msgstr "FlexRAG 可以使用 `pip` 进行二进制安装或直接通过源码安装。"
+
+#: ../../source/getting_started/installation.md:4
+#: c8c061c09b5c4abe9180239d29c84827
+msgid "Installation via `pip`"
+msgstr "使用 `pip` 安装"
+
+#: ../../source/getting_started/installation.md:5
+#: a4f104445b204b9189ded6f53692a6c5
+msgid "To install FlexRAG via pip, run the following command:"
+msgstr "您可以运行下面的命令来使用 `pip` 安装 FlexRAG："
+
+#: ../../source/getting_started/installation.md:11
+#: b31fbccdf1d44ca8be3ca4ed2c3c05b4
+msgid "Installation from source"
+msgstr "通过源码安装"
+
+#: ../../source/getting_started/installation.md:12
+#: 328645d6e92e412d95b6f39f67b36883
+msgid "Alternatively, to install FlexRAG from the source, follow the steps below:"
+msgstr "或者，您也可以运行下面的命令来通过源码安装 FlexRAG："
+
+#: ../../source/getting_started/installation.md:20
+#: d5b70427e61749378eeea5abcd36f295
+msgid "You can also install the FlexRAG in editable mode with the `-e` flag."
+msgstr "您也可以在安装时添加 `-e` 选项来进行*可编辑的安装*。"
+
+#: ../../source/getting_started/installation.md:22
+#: 3350fd19f6f04de38458ac1eddd235c1
+msgid "Installation flags"
+msgstr "安装标识"
+
+#: ../../source/getting_started/installation.md:23
+#: dea5f18127a74579886d92ea77df9b91
+msgid ""
+"FlexRAG can be installed with additional flags to enable specific "
+"features. The following flags are available:"
+msgstr "在使用 pip 安装 FlexRAG 时，可以使用不同的标识来支持不同的特性，具体请参考下表："
+
+#: ../../source/getting_started/installation.md
+#: 7bcebfd7da0241b28d7a923ced6bdcc9
+msgid "Flag"
+msgstr "标识"
+
+#: ../../source/getting_started/installation.md
+#: b8a552305d6f4536a39e8a63506a0c3e
+msgid "pip install command"
+msgstr "pip 安装命令"
+
+#: ../../source/getting_started/installation.md
+#: 0166474f976448369082c7cc2de69d91
+msgid "Description"
+msgstr "描述"
+
+#: ../../source/getting_started/installation.md
+#: fabeb13aa7de4de481fe5e83fb3a588b
+msgid "scann"
+msgstr "scann"
+
+#: ../../source/getting_started/installation.md
+#: 846fceea94324c11bf76ba21c0799cee
+msgid "pip install flexrag[scann]"
+msgstr "pip install flexrag[scann]"
+
+#: ../../source/getting_started/installation.md
+#: 34f380c4cc0440bc8812804114da1e2d
+msgid "Install FlexRAG with the ScaNN index."
+msgstr "将 FlexRAG 与 ScaNN 索引一起安装。"
+
+#: ../../source/getting_started/installation.md
+#: accc63db110a4a0c9310f91538b3cdbf
+msgid "annoy"
+msgstr "annoy"
+
+#: ../../source/getting_started/installation.md
+#: 7c3e891ef1db4de7b4ea4d439a6a95dd
+msgid "pip install flexrag[annoy]"
+msgstr "pip install flexrag[annoy]"
+
+#: ../../source/getting_started/installation.md
+#: 8ca4cf55491a4c16b4b4d64708165c64
+msgid "Install FlexRAG with the Annoy index."
+msgstr "将 FlexRAG 与 Annoy 索引一起安装。"
+
+#: ../../source/getting_started/installation.md
+#: 88d261aa977348cebd44989bbaec947c
+msgid "llamacpp"
+msgstr "llamacpp"
+
+#: ../../source/getting_started/installation.md
+#: 7ffbcd008841420c800185167ec6ad57
+msgid "pip install flexrag[llamacpp]"
+msgstr "pip install flexrag[llamacpp]"
+
+#: ../../source/getting_started/installation.md
+#: 496b57dbd27e4b1aa369d86355f655ab
+msgid "Install FlexRAG with the LlamaCpp Generator."
+msgstr "将 FlexRAG 与 LlamaCpp 生成器一起安装。"
+
+#: ../../source/getting_started/installation.md
+#: cd0ea4520cc746698bd5f35970db0f1e
+msgid "minference"
+msgstr "minference"
+
+#: ../../source/getting_started/installation.md
+#: 5459afb06a974969a62f08d1aa6820e3
+msgid "pip install flexrag[minference]"
+msgstr "pip install flexrag[minference]"
+
+#: ../../source/getting_started/installation.md
+#: 1b94ccf8cc4d49cfbcd6713b719934c9
+msgid "Install FlexRAG with the Minference."
+msgstr "将 FlexRAG 与 Minference 一起安装。"
+
+#: ../../source/getting_started/installation.md
+#: 44443a2fa011406595581d4692665865
+msgid "web"
+msgstr "web"
+
+#: ../../source/getting_started/installation.md
+#: e307b4d80ada4077a9f1ef3ff33afaa5
+msgid "pip install flexrag[web]"
+msgstr "pip install flexrag[web]"
+
+#: ../../source/getting_started/installation.md
+#: 76bf59139ed249c6bc008043e902dc86
+msgid "Install FlexRAG with the Web Retrievers."
+msgstr "将 FlexRAG 与内置的多种网络检索器一起安装。"
+
+#: ../../source/getting_started/installation.md
+#: 39305a1307c24677a5e21c184026cc77
+msgid "docs"
+msgstr "docs"
+
+#: ../../source/getting_started/installation.md
+#: f194fc0c7f784cf183f5a9165b03e27c
+msgid "pip install flexrag[docs]"
+msgstr "pip install flexrag[docs]"
+
+#: ../../source/getting_started/installation.md
+#: 1eadd20e5e29436a8575187dcb84c608
+msgid "Install FlexRAG with the Document Parser."
+msgstr "将 FlexRAG 与各种文档解析器一起安装。"
+
+#: ../../source/getting_started/installation.md
+#: e32713874bfb42e9b0e1064e160e747b
+msgid "all"
+msgstr "all"
+
+#: ../../source/getting_started/installation.md
+#: 75e2630325554662a3377176924506be
+msgid "pip install flexrag[all]"
+msgstr "pip install flexrag[all]"
+
+#: ../../source/getting_started/installation.md
+#: 535a3fccf7954a1288455aac11d9558a
+msgid "Install FlexRAG with most features."
+msgstr "安装 FlexRAG 所支持的多数特性。"
+
+#: ../../source/getting_started/installation.md
+#: 4dfb319853f24a74a103515f6616773b
+msgid "dev"
+msgstr "dev"
+
+#: ../../source/getting_started/installation.md
+#: 72faf785dfd9491bb3a9d0a9e3860278
+msgid "pip install flexrag[dev]"
+msgstr "pip install flexrag[dev]"
+
+#: ../../source/getting_started/installation.md
+#: 31331d8da47549c693567b37a410ad09
+msgid "Install FlexRAG with the libraries for development."
+msgstr "将开发 FlexRAG 所需的依赖项一起安装。"
+

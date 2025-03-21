@@ -1,0 +1,85 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/reference/prompt.rst:2 66bc65f470714a2ebb8ce73e6ecb1663
+msgid "Prompt"
+msgstr ""
+
+#: ../../source/reference/prompt.rst:3 b05bc7889b6c43ec853dab6ac39faaa4
+msgid ""
+"This module provides two classes namely `ChatPrompt` and `ChatTemplate`. "
+"The `ChatPrompt` is used to store the system prompt, chat history, and "
+"demonstrations used to interact with the `Generator`. The `ChatTemplate` "
+"is used to convert the `ChatPrompt` into a string or a list of tokens "
+"that can be used by the model."
+msgstr ""
+
+#: ../../source/reference/prompt.rst:6 d7ec38b189c844d5a8aaa543cc9d5f8d
+msgid "Chat Prompt"
+msgstr ""
+
+#: 2962809d7ac14f2c97c440883b21f7e7
+#: flexrag.prompt.prompt_base.MultiModelChatPrompt:1 of
+msgid ""
+"This class shares almost all the methods with ChatPrompt. However, the "
+"Generics in Python does not support calling the TypeVar's classmethod. So"
+" we have to duplicate the code here."
+msgstr ""
+
+#: ../../source/reference/prompt.rst:26 ffdd017ff3be4a70af01cec9c4c4f828
+msgid "Template"
+msgstr ""
+
+#: d8172e9b7fd64f8193b875942ef3e901 flexrag.prompt.template.HFTemplate:1 of
+msgid "Bases: :py:class:`~flexrag.prompt.template.ChatTemplate`"
+msgstr ""
+
+#: a83d04b2aa2c49579f0ada3e332eae0a flexrag.prompt.template.load_template:1 of
+msgid ""
+"Load ChatTemplate for different models. If model_name is not provided, "
+"the default template in the Tokenizer will be used."
+msgstr ""
+
+#: ../../source/reference/prompt.rst ce3e83f32e27441680ec2e04227fc204
+msgid "Parameters"
+msgstr ""
+
+#: ebcd3a792ddd4b6c8b3d4002fa1b81d0 flexrag.prompt.template.load_template:3 of
+msgid "The tokenizer used to encode the prompt."
+msgstr ""
+
+#: 8462d283d9a148fbba18869b2486d3ea flexrag.prompt.template.load_template:4 of
+msgid "The name of the model. Default is None."
+msgstr ""
+
+#: ../../source/reference/prompt.rst e763f1c2a17245aea63e6c059e72dcb9
+msgid "Returns"
+msgstr ""
+
+#: ebce22c7ffb54b5294101bc34713bc15 flexrag.prompt.template.load_template:7 of
+msgid "The loaded ChatTemplate"
+msgstr ""
+
+#: ../../source/reference/prompt.rst b225b7df4078422ca91df70a3c4b0fc6
+msgid "Return type"
+msgstr ""
+

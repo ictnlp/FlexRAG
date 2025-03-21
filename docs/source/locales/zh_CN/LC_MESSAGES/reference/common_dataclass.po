@@ -1,0 +1,107 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/reference/common_dataclass.rst:2
+#: a19baf5fcc2c4dd6ab490be232845b4a
+msgid "Common Dataclass"
+msgstr ""
+
+#: ../../source/reference/common_dataclass.rst:3
+#: 1c2ff1e4446e4df8934f948945708ba4
+msgid ""
+"This module provides several pre-defined dataclasses that are commonly "
+"used in the project."
+msgstr ""
+
+#: 6f7d2329532f44668bc7396446318953 bb1caf9a3761461ca518abb0f868280c
+#: flexrag.common_dataclass.Context:1
+#: flexrag.common_dataclass.RetrievedContext:1 of
+msgid "The dataclass for retrieved context."
+msgstr ""
+
+#: ../../source/reference/common_dataclass.rst 3a6ac042dba747e79cf02646da47ed08
+#: 451a02ea6b084d1dbefe5b42ce700e75 a7299aa836b54388a9c3b5bf05a10e7e
+#: d06c09ba34ae4c8f97186e56162c3cfd
+msgid "Parameters"
+msgstr ""
+
+#: c8ba7a884918444abca911a60c350250 flexrag.common_dataclass.Context:3 of
+msgid "The unique identifier of the context. Default: None."
+msgstr ""
+
+#: 0f42874e10a549d1a8c7e53515818e70 flexrag.common_dataclass.Context:5 of
+msgid "The context data. Default: {}."
+msgstr ""
+
+#: c75ed32b080545568c648a9a94a76f22 flexrag.common_dataclass.Context:7 of
+msgid "The source of the retrieved data. Default: None."
+msgstr ""
+
+#: 3098971d8305433ab2eae75a0481dd28 flexrag.common_dataclass.Context:9 of
+msgid "The metadata of the context. Default: {}."
+msgstr ""
+
+#: a25525af6c5547eea661cf145a3d3e7b flexrag.common_dataclass.RetrievedContext:3
+#: of
+msgid "The name of the retriever. Required."
+msgstr ""
+
+#: e6b598a94438440c8ea864c936636baf flexrag.common_dataclass.RetrievedContext:5
+#: of
+msgid "The query for retrieval. Required."
+msgstr ""
+
+#: f027bec0202942e895b6849aed67ecd3 flexrag.common_dataclass.RetrievedContext:7
+#: of
+msgid "The relevance score of the retrieved data. Default: 0.0."
+msgstr ""
+
+#: 6e64ac7b12d64287878456cf58eb4802 flexrag.common_dataclass.RAGEvalData:1 of
+msgid "The dataclass for RAG evaluation data."
+msgstr ""
+
+#: 45774b4d2e7747b48630e143844e4ee8 bc41b1dfd24148a9aeafbe7f9323332c
+#: flexrag.common_dataclass.IREvalData:3 flexrag.common_dataclass.RAGEvalData:3
+#: of
+msgid "The question for evaluation. Required."
+msgstr ""
+
+#: 5ed64fae32744097b1a22a1b48b42283 61a97b8a7bb343079faf21e67c2597c2
+#: flexrag.common_dataclass.IREvalData:5 flexrag.common_dataclass.RAGEvalData:5
+#: of
+msgid "The contexts related to the question. Default: None."
+msgstr ""
+
+#: 253237efa5e14e83838d4dd43f4524eb flexrag.common_dataclass.RAGEvalData:7 of
+msgid "The golden answers for the question. Default: None."
+msgstr ""
+
+#: 74f3665080794970b5d8e6431f9db399 f96337eee3a84a29ae2511771a095513
+#: flexrag.common_dataclass.IREvalData:7 flexrag.common_dataclass.RAGEvalData:9
+#: of
+msgid "The metadata of the evaluation data. Default: {}."
+msgstr ""
+
+#: 8665df545a604c22a992a078e3a45e94 flexrag.common_dataclass.IREvalData:1 of
+msgid "The dataclass for Information Retrieval evaluation data."
+msgstr ""
+

@@ -1,0 +1,61 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/index.rst:20
+msgid "Getting Started:"
+msgstr "入门："
+
+#: ../../source/index.rst:27
+msgid "Tutorial:"
+msgstr "教程："
+
+#: ../../source/index.rst:37
+msgid "Reference:"
+msgstr "API参考文档："
+
+#: ../../source/index.rst:3 7c9126597a0243a98075201feb63ca2b
+msgid "FlexRAG"
+msgstr "FlexRAG"
+
+#: ../../source/index.rst:10 81c8fed819e048fa98707fe708823331
+msgid "Welecome to FlexRAG Documentation"
+msgstr "欢迎访问 FlexRAG 文档"
+
+#: ../../source/index.rst:12 57651bfc4e6d48d4a560b6e549aeaa43
+msgid ""
+"FlexRAG is a flexible and high-performance framework designed for "
+"Retrieval-Augmented Generation (RAG) tasks, offering support for "
+"multimodal data, seamless configuration management, and out-of-the-box "
+"performance for both research and prototyping."
+msgstr ""
+"FlexRAG 是一个灵活的高性能检索增强生成 (RAG) 框架，"
+"支持多模态数据以及无缝的配置管理，为研究和原型系统设计提供开箱即用的支持。"
+
+#: ../../source/index.rst:14 16b1494f6a1a445ab1d16249c70baf57
+msgid ""
+"FlexRAG is under active development and is currently in the alpha stage. "
+"We welcome contributions from the community and are open to feedback and "
+"suggestions."
+msgstr ""
+"FlexRAG 目前正处于活跃开发的 alpha 阶段。"
+"我们非常欢迎来自于社区的贡献、反馈或建议。"
+

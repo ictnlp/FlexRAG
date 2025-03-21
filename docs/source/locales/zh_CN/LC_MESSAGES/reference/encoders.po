@@ -1,0 +1,348 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/reference/encoders.rst:2 3ec756c60ea04aebb806dc75c8e842cb
+msgid "Encoders"
+msgstr ""
+
+#: 16df4f343aac4a6c9bb75f2b7931cf98
+#: flexrag.models.model_base.EncoderBase.async_encode:1 of
+msgid "The async version of encode."
+msgstr ""
+
+#: 8ed2db28e0cb434c815d1729117c4a45
+#: flexrag.models.model_base.EncoderBase.encode:1 of
+msgid "encode the given texts into embeddings."
+msgstr ""
+
+#: ../../source/reference/encoders.rst 331be013bdb14773ae35281bc8241187
+#: 4382087b0be346129d36f778b322952e b5f16c66e2c343a1995350ec50618b7f
+#: b68b3b804eac4580b985f6e9d8f095f0 d9233dccf2764460ac0edb31c2b3f23d
+#: e47c7ca5b140446485aa13728a8c4924 f7572a0447384a49a6e9847ffafba4ab
+#: fde85304a1344b1d9ef4697ca15119ec ff20b665935b44ddae6d3d4358b8e453
+msgid "Parameters"
+msgstr ""
+
+#: cd97395bd70f40eaa5e068120deb7c1d
+#: flexrag.models.model_base.EncoderBase.encode:3 of
+msgid "A batch of texts."
+msgstr ""
+
+#: ../../source/reference/encoders.rst cd2ab380dd47441a96df0b1a4900e8cc
+msgid "Returns"
+msgstr ""
+
+#: c5b7c41d2a5d4ecf83ebc81bdb222710
+#: flexrag.models.model_base.EncoderBase.encode:5 of
+msgid "A batch of embeddings."
+msgstr ""
+
+#: ../../source/reference/encoders.rst 0c4761a21d784870a900c3a451d8a6af
+msgid "Return type"
+msgstr ""
+
+#: e019b3708b53490e8865fe2bc0cce1f0 of types.EncoderConfig:1
+msgid "Configuration class for encoder (name: EncoderConfig, default: None)."
+msgstr ""
+
+#: 007ee95ffa1c4eb48db85eaacae03f2a of types.EncoderConfig:3
+msgid "The encoder type to use."
+msgstr ""
+
+#: 03de352ae591428aaeb32d3c9bde902d of types.EncoderConfig:5
+msgid "The config for CohereEncoder."
+msgstr ""
+
+#: 4696e855e2ad490f997ca033cfdc74ac of types.EncoderConfig:7
+msgid "The config for HFEncoder."
+msgstr ""
+
+#: 3daea537085f4a3a966a4ab4d6cf3acf of types.EncoderConfig:9
+msgid "The config for HFClipEncoder."
+msgstr ""
+
+#: 32608316d75547cdbff9c360a0d6f6a1 of types.EncoderConfig:11
+msgid "The config for JinaEncoder."
+msgstr ""
+
+#: 79fad1bcd5c9449a8df78457833a278a of types.EncoderConfig:13
+msgid "The config for OllamaEncoder."
+msgstr ""
+
+#: 0ff8c7195ef743b59da72ed34e676650 of types.EncoderConfig:15
+msgid "The config for OpenAIEncoder."
+msgstr ""
+
+#: b600f63925354de889644cd2eaa37644 of types.EncoderConfig:17
+msgid "The config for SentenceTransformerEncoder."
+msgstr ""
+
+#: ../../source/reference/encoders.rst:14 f40f51c5aacc4026836488b076720d72
+msgid "Local Encoders"
+msgstr ""
+
+#: 29da2b110773463b90be9f813812b73c flexrag.models.hf_model.HFEncoderConfig:1
+#: of
+msgid "Configuration for HFEncoder."
+msgstr ""
+
+#: 138870bf5ee24da485885f8829d1fdca f575c21a14b64ccea2d73243dc5cf9e7
+#: flexrag.models.hf_model.HFClipEncoderConfig:3
+#: flexrag.models.hf_model.HFEncoderConfig:3 of
+msgid "The maximum length of the input sequence. Default is 512."
+msgstr ""
+
+#: a31bd8ae1e794f9081be1a1fb672c71e flexrag.models.hf_model.HFEncoderConfig:5
+#: of
+msgid ""
+"The method to get the embedding. Default is \"mean\". Available choices "
+"are \"cls\", \"mean\"."
+msgstr ""
+
+#: 0726ce6a9e404e2e97eaf4702d605997 57b140b47e5f49809a799a54f1f7a75d
+#: flexrag.models.hf_model.HFClipEncoderConfig:5
+#: flexrag.models.hf_model.HFEncoderConfig:7 of
+msgid "Whether to normalize the embedding. Default is False."
+msgstr ""
+
+#: 130faedb52e74d80aa0d3c5d3e785122 flexrag.models.hf_model.HFEncoderConfig:9
+#: of
+msgid "The prefix to use. Default is \"\"."
+msgstr ""
+
+#: 592dfc1574e247c9b2b3a78ac449dcd8 flexrag.models.hf_model.HFEncoderConfig:11
+#: of
+msgid "The task to use. Default is \"\"."
+msgstr ""
+
+#: 01c7b437b55a4995bbf2e1dd2f5195a1 1e3a78cbff074e1096b27f89959c51af
+#: 36317cdfa3aa444696d954db36832b13 cb1ae5c872044a588d289f21c9f4ce59
+#: ddfeb1853aad4de4a917cb4214e17aa6 e0a08dc4316c4ebfb5f6b1786473e5ad
+#: ee1e1cfc0ba743dba43d73adc1e115eb flexrag.models.cohere_model.CohereEncoder:1
+#: flexrag.models.hf_model.HFClipEncoder:1 flexrag.models.hf_model.HFEncoder:1
+#: flexrag.models.jina_model.JinaEncoder:1
+#: flexrag.models.ollama_model.OllamaEncoder:1
+#: flexrag.models.openai_model.OpenAIEncoder:1
+#: flexrag.models.sentence_transformers_model.SentenceTransformerEncoder:1 of
+msgid "Bases: :py:class:`~flexrag.models.model_base.EncoderBase`"
+msgstr ""
+
+#: c4cabea76d40495186aec17ca4360712
+#: flexrag.models.hf_model.HFClipEncoderConfig:1 of
+msgid "Configuration for HFClipEncoder."
+msgstr ""
+
+#: ceb257c951484437ae3e2a4d585788b0
+#: flexrag.models.hf_model.HFClipEncoderConfig:7 of
+msgid "Whether to convert the image to RGB. Default is False."
+msgstr ""
+
+#: 93c8a1332d51467e8814cad9abdcaba1
+#: flexrag.models.ollama_model.OllamaEncoderConfig:1 of
+msgid "Configuration for the OllamaEncoder."
+msgstr ""
+
+#: 09793d2326b146b9be04c4c872f4ecae
+#: flexrag.models.ollama_model.OllamaEncoderConfig:3 of
+msgid "The name of the model to use. Required."
+msgstr ""
+
+#: 9a92275c89d04a0fb2997bbc08c40c00
+#: flexrag.models.ollama_model.OllamaEncoderConfig:5 of
+msgid "The base URL of the Ollama server. Required."
+msgstr ""
+
+#: ca2e01ad03ba4743982a58002d5e7c70
+#: flexrag.models.ollama_model.OllamaEncoderConfig:7 of
+msgid "The prompt to use. Default is None."
+msgstr ""
+
+#: bdd9d2cfdfb64a519234fee15a1934d6
+#: flexrag.models.ollama_model.OllamaEncoderConfig:9 of
+msgid "Whether to show verbose logs. Default is False."
+msgstr ""
+
+#: 5c7804bf01db439181b7b6002a9046e6
+#: flexrag.models.ollama_model.OllamaEncoderConfig:11 of
+msgid "The size of the embeddings. Default is 768."
+msgstr ""
+
+#: 73f7bfc2f79d4bb9952373a2cfbb969e
+#: flexrag.models.ollama_model.OllamaEncoderConfig:13 of
+msgid "Whether to allow parallel generation. Default is True."
+msgstr ""
+
+#: 8e65c4f601d24e83af3bda211859bd9a
+#: flexrag.models.sentence_transformers_model.SentenceTransformerEncoderConfig:1
+#: of
+msgid "Configuration for SentenceTransformerEncoder."
+msgstr ""
+
+#: 89a73c0c18774c069c1bbb668a0673d7
+#: flexrag.models.sentence_transformers_model.SentenceTransformerEncoderConfig:3
+#: of
+msgid "The path to the model. Required."
+msgstr ""
+
+#: 321c700317594926bfabfb2e984d8894
+#: flexrag.models.sentence_transformers_model.SentenceTransformerEncoderConfig:5
+#: of
+msgid "The device id to use. [] for CPU. Defaults to []."
+msgstr ""
+
+#: 5acd3bc9277342e89377cf4fddacd49c
+#: flexrag.models.sentence_transformers_model.SentenceTransformerEncoderConfig:7
+#: of
+msgid "Whether to trust remote code. Defaults to False."
+msgstr ""
+
+#: f500530eb3da458ab7f51b01ce878185
+#: flexrag.models.sentence_transformers_model.SentenceTransformerEncoderConfig:9
+#: of
+msgid "The task to use. Defaults to None."
+msgstr ""
+
+#: a53ccdb0485c4016b53b06eadf1fe559
+#: flexrag.models.sentence_transformers_model.SentenceTransformerEncoderConfig:11
+#: of
+msgid "The prompt name to use. Defaults to None."
+msgstr ""
+
+#: 95b3226c61b54539bba880a832ffdd47
+#: flexrag.models.sentence_transformers_model.SentenceTransformerEncoderConfig:13
+#: of
+msgid "The prompt to use. Defaults to None."
+msgstr ""
+
+#: 932fbc73e9e44e93b4baa6d2903a36e6
+#: flexrag.models.sentence_transformers_model.SentenceTransformerEncoderConfig:15
+#: of
+msgid "The prompt dictionary to use. Defaults to None."
+msgstr ""
+
+#: cc40ac5ae44d46b7bf9dbd2c308068f4
+#: flexrag.models.sentence_transformers_model.SentenceTransformerEncoderConfig:17
+#: of
+msgid "Whether to normalize embeddings. Defaults to False."
+msgstr ""
+
+#: 5aec1ee6450c4aa48baaf80d68b40825
+#: flexrag.models.sentence_transformers_model.SentenceTransformerEncoderConfig:19
+#: of
+msgid "Additional keyword arguments for loading the model. Defaults to {}."
+msgstr ""
+
+#: ../../source/reference/encoders.rst:61 a4ddbe3873b14ae5871a39e169170e29
+msgid "Oneline Encoders"
+msgstr ""
+
+#: 5ea582aa6cff498dae67c4b3db601589
+#: flexrag.models.cohere_model.CohereEncoderConfig:1 of
+msgid "Configuration for CohereEncoder."
+msgstr ""
+
+#: 9b15dd0c8e8846be9212a019adfe7d42
+#: flexrag.models.cohere_model.CohereEncoderConfig:3 of
+msgid "The model to use. Default is \"embed-multilingual-v3.0\"."
+msgstr ""
+
+#: 57943974d8724d759335d0aa97f9c0e9
+#: flexrag.models.cohere_model.CohereEncoderConfig:5 of
+msgid ""
+"Specifies the type of input passed to the model. Required for embedding "
+"models v3 and higher. Default is \"search_document\". Available options "
+"are \"search_document\", \"search_query\", \"classification\", "
+"\"clustering\", \"image\"."
+msgstr ""
+
+#: e45fade1a5e54ca7ae06e6cb64a7ae00
+#: flexrag.models.cohere_model.CohereEncoderConfig:7 of
+msgid "The base URL of the API. Default is None."
+msgstr ""
+
+#: 70464f7f9a1941c2994519f830836b7a
+#: flexrag.models.cohere_model.CohereEncoderConfig:9 of
+msgid ""
+"The API key to use. Default is os.environ.get(\"COHERE_API_KEY\", "
+"MISSING)."
+msgstr ""
+
+#: 2dc1ae348e1740a29c603d7844925a22
+#: flexrag.models.cohere_model.CohereEncoderConfig:11 of
+msgid "The proxy to use. Default is None."
+msgstr ""
+
+#: 7e8ce5f9a06f4c6e844568b1e79e26b0
+#: flexrag.models.jina_model.JinaEncoderConfig:1 of
+msgid "Configuration for JinaEncoder."
+msgstr ""
+
+#: 71c4ea55945d4efebaf19e99dd88e8e6
+#: flexrag.models.jina_model.JinaEncoderConfig:3 of
+msgid "The model to use. Default is \"jina-embeddings-v3\"."
+msgstr ""
+
+#: 493c7fe526084b2b942fd90bcc0edc35
+#: flexrag.models.jina_model.JinaEncoderConfig:5 of
+msgid ""
+"The base URL of the Jina embeddings API. Default is "
+"\"https://api.jina.ai/v1/embeddings\"."
+msgstr ""
+
+#: dc209e1bdfdf4e8c88e7ff131b3bf612
+#: flexrag.models.jina_model.JinaEncoderConfig:7 of
+msgid "The API key for the Jina embeddings API."
+msgstr ""
+
+#: 4582fecba7514ec8bbc7dc60bf12aac7
+#: flexrag.models.jina_model.JinaEncoderConfig:9 of
+msgid "The dimension of the embeddings. Default is 1024."
+msgstr ""
+
+#: 5c22483ffc984ea982381c401dd7e303
+#: flexrag.models.jina_model.JinaEncoderConfig:11 of
+msgid ""
+"The task for the embeddings. Default is None. Available options are "
+"\"retrieval.query\", \"retrieval.passage\", \"separation\", "
+"\"classification\", and \"text-matching\"."
+msgstr ""
+
+#: fccbff682312422586c0db2ccb54d07d
+#: flexrag.models.jina_model.JinaEncoderConfig:13 of
+msgid "The proxy to use. Defaults to None."
+msgstr ""
+
+#: 7d14ab8b98b341e7bcafe602b64cc7cb
+#: flexrag.models.openai_model.OpenAIEncoderConfig:1 of
+msgid "Bases: :py:class:`~flexrag.models.openai_model.OpenAIConfig`"
+msgstr ""
+
+#: dbdb9d8f4f2944f4a8f4fe4853ae7e74
+#: flexrag.models.openai_model.OpenAIEncoderConfig:1 of
+msgid "Configuration for OpenAI Encoder."
+msgstr ""
+
+#: 501826a0f2744d0da1a2869cf4a8ed6f
+#: flexrag.models.openai_model.OpenAIEncoderConfig:3 of
+msgid "Whether the model is hosted on Azure. Default is False."
+msgstr ""
+

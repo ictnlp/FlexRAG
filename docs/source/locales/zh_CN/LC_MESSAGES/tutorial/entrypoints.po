@@ -1,0 +1,285 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/tutorial/entrypoints.md:1 2bd21f7b480f40d5a03b631699f824b7
+msgid "FlexRAG Entrypoints"
+msgstr "FlexRAG 入口点"
+
+#: ../../source/tutorial/entrypoints.md:2 aa5e403fb1ca43e0af2db8bea9d00467
+msgid ""
+"FlexRAG provides several entrypoints to run the RAG application. Each "
+"entrypoint has a default configuration structure that can be used to "
+"customize the workflow. This tutorial provides an overview of the FlexRAG"
+" entrypoints and how to customize the workflow using configuration "
+"management."
+msgstr ""
+"FlexRAG 入口点指一系列由 FlexRAG 提供的可通过命令行启动的程序。"
+"这些程序可以帮助您构建索引、评估 RAG 助手、管理检索缓存、启动GUI应用程序等。"
+"每个入口点均可以通过命令行或配置文件的方式传入参数。"
+"本教程将向您展示如何使用这些入口点并利用参数定制您的工作流程。"
+
+#: ../../source/tutorial/entrypoints.md:4 8ccf0618f426483e9cfe9e4bd4805aff
+msgid "Provided Entrypoints"
+msgstr "FlexRAG 内置入口点"
+
+#: ../../source/tutorial/entrypoints.md:5 56ab767305b6474cb83d5d8b3dc6085a
+msgid "Preparing the Retriever Index"
+msgstr "构建索引"
+
+#: ../../source/tutorial/entrypoints.md:6 6b790b45a48741d797133190eb590df2
+msgid ""
+"This entrypoint is used to prepare the retriever index. You can use this "
+"entrypoint by running `python -m flexrag.entrypoints.prepare_index`. The "
+"defination of the configuration structure for the `prepare_index` "
+"entrypoint is as follows:"
+msgstr ""
+"这个入口点被用于构建检索器索引。"
+"您可以通过 `python -m flexrag.entrypoints.prepare_index` 来使用这个入口点。"
+"该入口点的配置结构如下所示："
+
+#: cd92b073eea14c8aae50028f7531e3fe flexrag.entrypoints.prepare_index.Config:1
+#: of
+msgid "Bases: :py:class:`~flexrag.datasets.rag_dataset.RAGCorpusDatasetConfig`"
+msgstr ""
+
+#: ../../source/tutorial/entrypoints.md:16 a8020a7b9fa947178fc447e1d42b5dba
+msgid "Rebuilding the Retriever Index"
+msgstr "重构索引"
+
+#: ../../source/tutorial/entrypoints.md:17 c5c3585719a243cbb64a8544724cef32
+msgid ""
+"This entrypoint is used to rebuild the index for the `DenseRetriever`. "
+"You can use this entrypoint by running `python -m "
+"flexrag.entrypoints.rebuid_index`. The defination of the configuration "
+"structure for the `rebuid_index` entrypoint is as follows:"
+msgstr ""
+"该入口点可用于重构稠密检索器 `DenseRetriever` 的索引，"
+"您可以通过 `python -m flexrag.entrypoints.rebuid_index` 来运行这个入口点。"
+"该入口点的配置结构如下所示："
+
+#: fab62afd8f664a1a96efc5174bf1e523
+#: flexrag.retriever.dense_retriever.DenseRetrieverConfig:1 of
+msgid ""
+"Bases: "
+":py:class:`~flexrag.retriever.retriever_base.LocalRetrieverConfig`, "
+":py:class:`~types.DenseIndexConfig`"
+msgstr ""
+
+#: bcba5513164c45dfaf774d654115e75b
+#: flexrag.retriever.dense_retriever.DenseRetrieverConfig:1 of
+msgid "Configuration class for DenseRetriever."
+msgstr "稠密检索器的配置结构。"
+
+#: ../../source/tutorial/entrypoints.md af013ccd6fa148b0a04f567abb8c0cee
+msgid "Parameters"
+msgstr "参数"
+
+#: 6d6ba786ea5e4e1fb5a766afc7c3fa9e
+#: flexrag.retriever.dense_retriever.DenseRetrieverConfig:3 of
+msgid "Configuration for the query encoder. Default: None."
+msgstr "查询编码器的配置结构，默认为：None。"
+
+#: f126dee98aca4915bc5f89c2e66508d7
+#: flexrag.retriever.dense_retriever.DenseRetrieverConfig:5 of
+msgid "Configuration for the passage encoder. Default: None."
+msgstr "文档编码器的配置结构，默认为：None。"
+
+#: 68cdd1e0140d472b98495463c43f4a9e
+#: flexrag.retriever.dense_retriever.DenseRetrieverConfig:7 of
+msgid "Fields to be encoded. None stands for all fields. Default: None."
+msgstr "知识条目中需要被编码的字段，默认为：None。"
+
+#: ../../source/tutorial/entrypoints.md:27 55754dcb07ba4125861899e0b850ba1d
+msgid "Evaluating the Assistant"
+msgstr "评估 RAG 助手"
+
+#: ../../source/tutorial/entrypoints.md:28 e007891373264bd28418112c558b7a48
+msgid ""
+"This entrypoint is used to evaluate the assistant on a given dataset. You"
+" can use this entrypoint by running `python -m "
+"flexrag.entrypoints.run_assistant`. The defination of the configuration "
+"structure for the `run_assistant` entrypoint is as follows:"
+msgstr "该入口点可用于评估您的 RAG 助手，"
+"您可以通过执行 `python -m flexrag.entrypoints.run_assistant` 来运行该入口点。"
+"该入口点的配置结构如下所示："
+
+#: 4ea4c3d57362454dbde3b4a93de8586c flexrag.entrypoints.run_assistant.Config:1
+#: of
+msgid ""
+"Bases: :py:class:`~types.assistant_config`, "
+":py:class:`~flexrag.datasets.rag_dataset.RAGEvalDatasetConfig`"
+msgstr ""
+
+#: ../../source/tutorial/entrypoints.md:38 f2c0d67b8a6b4f08a643e3f4a720777a
+msgid "Running GUI Application"
+msgstr "通过图形界面运行 RAG 助手"
+
+#: ../../source/tutorial/entrypoints.md:39 4b0f489fee0e49f7bbaa86d63a68ef92
+msgid ""
+"This entrypoint is used to run the assistant using the built-in Gradio "
+"GUI interface. You can use this entrypoint by running `python -m "
+"flexrag.entrypoints.run_interactive`. The defination of the configuration"
+" structure for the `run_interactive` entrypoint is as follows:"
+msgstr ""
+"FlexRAG 提供了一个简易的图形界面来帮助您展示或调试您的 RAG 助手，"
+"该图形界面由 Gradio 编写，"
+"您可以通过执行 `python -m flexrag.entrypoints.run_interactive` 来运行该入口点。"
+"该入口点的配置结构如下所示："
+
+#: 67b06c12b98f4285ba083c5bdb789074
+#: flexrag.entrypoints.run_interactive.Config:1 of
+msgid "Bases: :py:class:`~types.assistant_config`"
+msgstr ""
+
+#: ../../source/tutorial/entrypoints.md:49 3b1e33af68e1422db27e0ce69cfc94cb
+msgid "Cache Management"
+msgstr "缓存管理"
+
+#: ../../source/tutorial/entrypoints.md:50 83ae528d45cb4a639d8d053fc4c2044b
+msgid ""
+"This entrypoint is used to manage the cache for the retrievers. You can "
+"use this entrypoint by running `python -m flexrag.entrypoints.cache`. The"
+" defination of the configuration structure for the `cache` entrypoint is "
+"as follows:"
+msgstr ""
+"在 FlexRAG 内置的检索器中均应用了缓存功能，用于减少检索相同查询时的开销。"
+"这个入口点就可以用于管理已经被持久化的缓存。"
+"您可以执行 `python -m flexrag.entrypoints.cache` 来运行该入口点。"
+"该入口点的配置结构如下所示："
+
+#: 913890691d7448158b211fccabaaafc2 flexrag.entrypoints.cache.Config:1 of
+msgid "Bases: :py:class:`object`"
+msgstr ""
+
+#: ../../source/tutorial/entrypoints.md:60 ef2e36683b0941f3880f9b43b3b9d80f
+msgid "Evaluating the Generated Responses"
+msgstr "评估已生成结果"
+
+#: ../../source/tutorial/entrypoints.md:61 418f536f507041d58da248ff6fcbe865
+msgid ""
+"This entrypoint is used to evaluate the generated responses. You can use "
+"this entrypoint by running `python -m flexrag.entrypoints.evaluate`. The "
+"defination of the configuration structure for the `evaluate` entrypoint "
+"is as follows:"
+msgstr ""
+"某些情况下，您可能已经拥有了 RAG 助手的生成结果，此时您希望评估这些生成结果，"
+"这时您就可以使用这个入口点来对 RAG 助手的生成结果进行评估。"
+"您可以通过 `python -m flexrag.entrypoints.evaluate` 这一命令来运行该入口点。"
+"该入口点的配置结构如下所示："
+
+#: b87f599b9287428d8402d77909c16351 flexrag.entrypoints.evaluate.Config:1 of
+msgid ""
+"Bases: :py:class:`~flexrag.metrics.evaluator.EvaluatorConfig`, "
+":py:class:`~flexrag.datasets.line_delimited_dataset.LineDelimitedDatasetConfig`"
+msgstr ""
+
+#: ../../source/tutorial/entrypoints.md:72 d406fbd95d0a4e6688fd261d5c942be9
+msgid "Configuration Management"
+msgstr "配置管理"
+
+#: ../../source/tutorial/entrypoints.md:74 deeec4814fff4f598c3665ff4059e090
+msgid ""
+"Leveraging python `dataclass` and [hydra-"
+"core](https://github.com/facebookresearch/hydra), FlexRAG simplifies "
+"configuration management, making it easier to handle complex setups and "
+"customize your workflow."
+msgstr ""
+"FlexRAG 使用 `dataclass` 和 [hydra-core](https://github.com/facebookresearch/hydra) 进行配置管理，"
+"这使得 RAG 流水线中复杂的配置变得非常清晰。"
+"同时您既可以通过命令行，也可以通过配置文件来向 FlexRAG 入口点传入相关参数。"
+"本节将会向您展示如何使用这两种参数向 FlexRAG 入口点传递参数。"
+
+#: ../../source/tutorial/entrypoints.md:76 d39fe1f2930e46f3a3e18b5a5d697acc
+msgid "Passing Configuration via Command Line"
+msgstr "通过命令行传入参数"
+
+#: ../../source/tutorial/entrypoints.md:77 c8eca86e6edc4971bb12868d83b21827
+msgid ""
+"Configurations can be passed via the command line using the "
+"`<config_key>=<config_value>` format. For example, you can run the "
+"following command to set the configuration for a *modular assistant* with"
+" a *dense retriever* and an *OpenAI generator*:"
+msgstr ""
+"配置信息可以通过在命令行中使用 `<config_key>=<config_value>` 的格式来传入。"
+"教程中大多数的例子都使用了这样的方式，该方式的优势是简单和直接。"
+"举例来说，您可以通过下面的命令来指定 FlexRAG 通过图形界面运行一个 *模块化助手*，"
+"同时指定该助手使用 *稠密检索器* 和 *OpenAI 生成器*。"
+
+#: ../../source/tutorial/entrypoints.md:95 99ed448eecca491a8dac158777cdc0b2
+msgid "Passing Configuration via Configuration File"
+msgstr "通过配置文件传入参数"
+
+#: ../../source/tutorial/entrypoints.md:96 5a1bf6f2f68c400eadd5b3ff9607346f
+msgid ""
+"Configurations can also be passed via a `YAML` file. For example, you can"
+" create a `config.yaml` file with the following content:"
+msgstr ""
+"配置信息也可以通过 `YAML` 文件进行传入，这种方式会使得您的配置更容易管理。"
+"举例来说，您可以创建一个名为 `config.yaml` 的文件，并在文件中写入下述内容："
+
+#: ../../source/tutorial/entrypoints.md:113 4c258211ac67435282ec13faae94183d
+msgid "Then, you can run the following command to use the configuration file:"
+msgstr ""
+"随后您就可以通过运行下面的命令来将这个配置文件中的配置传入 FlexRAG 入口点程序中。"
+
+#: ../../source/tutorial/entrypoints.md:120 ac7a78f5a8034ac59d7457df5000f3f5
+msgid ""
+"For more detailed usage, we recommend you to go through the [Hydra "
+"documentation](https://hydra.cc/docs/intro/) to get a better "
+"understanding of the concepts and features."
+msgstr ""
+"您可以访问 [Hydra 文档](https://hydra.cc/docs/intro/)以获取更多有关如何传递配置信息的方式。"
+
+#: ../../source/tutorial/entrypoints.md:125 fca05ebb07b545b48776bc33d71f04db
+msgid "Defining Your Own Configuration"
+msgstr "定义您自己的配置结构"
+
+#: ../../source/tutorial/entrypoints.md:126 b29abdbc24654aacbff49adc421c56fd
+msgid ""
+"You can define your own configuration structure by creating a new "
+"`dataclass`. For example, you can define a new configuration structure "
+"for a custom assistant as follows:"
+msgstr ""
+"您在构建您自己的应用程序时，也可以通过定义新的 `dataclass` 来创建配置结构。"
+"举例来说，您可以定义如下 `dataclass` 来为您的 RAG 助手创建配置结构："
+
+#: ../../source/tutorial/entrypoints.md:142 64d01a096b574ae594fc43a4292acdbb
+msgid "Supported Environment Variables"
+msgstr ""
+
+#: ../../source/tutorial/entrypoints.md:143 ccf6501a92d54a518dae69966367340c
+msgid ""
+"FlexRAG supports several environment variables that can be used to "
+"customize the workflow. The following are the supported environment "
+"variables:"
+msgstr ""
+
+#: ../../source/tutorial/entrypoints.md:145 cf56132d287f44dba50bce2cd9e58978
+msgid "`DISABLE_CACHE`: Set this variable to `False` to disable caching."
+msgstr ""
+
+#: ../../source/tutorial/entrypoints.md:146 3e49465bd26b4f0495d54b1b8677cd5f
+msgid ""
+"`USER_MODULE`: Set this variable to the path of the user module to load "
+"custom modules."
+msgstr ""
+

@@ -1,0 +1,272 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/reference/utils.rst:2 66809c389d544167ae81b1fa2c1376e9
+msgid "Utils"
+msgstr ""
+
+#: ../../source/reference/utils.rst:3 06f9e98d259d4de5a3df51e106b71e52
+msgid ""
+"This module contains useful functions that are used throughout the "
+"codebase."
+msgstr ""
+
+#: ../../source/reference/utils.rst:6 7a611ef1a1ed43f2a14820a652ad3076
+msgid "Cache"
+msgstr ""
+
+#: ffb1c9317e4844fca4c06c1068907842
+#: flexrag.cache.serializer.CloudPickleSerializer:1 of
+msgid "A serializer that uses the cloudpickle module."
+msgstr ""
+
+#: 85c9616cd5d94588925abe3cc55bca70 8d91b63fa2fe4a3d988f1b154160dd00
+#: a32193a9f0dc4bfcbd38ff2e61c522e5 dca87240c1e543a6be10afc4a16b25a3
+#: e003001e03354933b25f8c1a1707134e
+#: flexrag.cache.serializer.CloudPickleSerializer.deserialize:1
+#: flexrag.cache.serializer.JsonSerializer.deserialize:1
+#: flexrag.cache.serializer.MsgpackSerializer.deserialize:1
+#: flexrag.cache.serializer.PickleSerializer.deserialize:1
+#: flexrag.cache.serializer.SerializerBase.deserialize:1 of
+msgid "Deserialize the bytes into an object."
+msgstr ""
+
+#: ../../source/reference/utils.rst 0747557a0c834e9cb8238d1e1ccb0302
+#: 11edcd3cb0d0498199822c011cc08f5e 281b049c27ca41ffb6812414bcb97cfb
+#: 4c77a51b96104d5cb5890f85ade3e57d 723465a5237a47249f33b6380dca2a3d
+#: 72819ba064584374b85dfadfd955f769 781e284020d6417c918ddddc9730c576
+#: 8ccf040f664a4f9692771595c6ff80a7 b9a1746913a840b58bd4606d032ed855
+#: be55a012f276481babe3a90d4cc665a0 bf880759aeab4cc8a8208461ae772579
+#: dc270092ef8f45b6bb1153cb16f86be7 df338b4bcb8e43bc846081b093155f59
+#: df3f110f6795458a94148a4385e7941f
+msgid "Parameters"
+msgstr ""
+
+#: 1ea4731314d9423bba2d4963ca8beb7e 3213c92f5f124ca0b49a8878b55d4ba8
+#: 3860b140e69344cdb8b1492f296c87db 5404fb960d634c5c972d9fe3ab51b0e4
+#: 5eced418b3b9432abf4abe33ba59676b 683e85b0060f4f81af41ef17a54a4a84
+#: 786179c4b4fb442284dd9c4077416bfd a55f3a4dcd9342a6be6e1a25686932e7
+#: e2e217d5b7114a4893de4fd47d830c34 fe0e5f02786943d6aabd360267f73510
+#: flexrag.cache.serializer.CloudPickleSerializer.deserialize:3
+#: flexrag.cache.serializer.CloudPickleSerializer.serialize:5
+#: flexrag.cache.serializer.JsonSerializer.deserialize:3
+#: flexrag.cache.serializer.JsonSerializer.serialize:5
+#: flexrag.cache.serializer.MsgpackSerializer.deserialize:3
+#: flexrag.cache.serializer.MsgpackSerializer.serialize:5
+#: flexrag.cache.serializer.PickleSerializer.deserialize:3
+#: flexrag.cache.serializer.PickleSerializer.serialize:5
+#: flexrag.cache.serializer.SerializerBase.deserialize:3
+#: flexrag.cache.serializer.SerializerBase.serialize:5 of
+msgid "The serialized object."
+msgstr ""
+
+#: ../../source/reference/utils.rst 01f173520862412c814f64b914ba2a4a
+#: 0bc54c06733a46498908f0224a52bdd9 30a522f23f404cb5ac0ed911496fe2fa
+#: 32e98de15d5c47d59fec81208c9ef4d8 339643dde58e4226848f43c1c0807838
+#: 3f60bccaf91b4427a4b79e660708a042 4ac5a0e1d37640a481da07357c309ccd
+#: 6f4571735a1c4500bb78d1e6dab3ac92 7467dc8d4e8d44118ff62dca7196d50d
+#: baec8f6dbe2545efb7ef7094d85f1b36 bf5b4af6ab9d49b984dea10d6b69af45
+#: d37612025aa3417cbb638750b8372086 d400d9cc18f94f039791c985c0bddba2
+#: e199d6b78f854bb3a41dde50406c7925
+msgid "Returns"
+msgstr ""
+
+#: 05acf35556b9407c883b41e9283ad277 15afb1576e864f1ba32020e87da92784
+#: 43e75b938c514c4695708a95c7ce1249 4555306f6d8f42a494bf660a827eab7f
+#: 5f4199a7512b4749919290299ee6b4e7
+#: flexrag.cache.serializer.CloudPickleSerializer.deserialize:5
+#: flexrag.cache.serializer.JsonSerializer.deserialize:5
+#: flexrag.cache.serializer.MsgpackSerializer.deserialize:5
+#: flexrag.cache.serializer.PickleSerializer.deserialize:5
+#: flexrag.cache.serializer.SerializerBase.deserialize:5 of
+msgid "The deserialized object."
+msgstr ""
+
+#: ../../source/reference/utils.rst 17df643e807a4a0da6f426a9346717e9
+#: 2b966e0298c6422b95de8c4c530939be 3a61689e0e734584896afc6c49ebddec
+#: 3c0c41e381bb4ea8b7f01e111f41b142 40cfc866336e47139a775ab61d728681
+#: 483f9efe995a4c77a4e220c8ccff8dd6 677642efd67e4c159ab63c752c3cb4dd
+#: 7fa7d87f0daf4a5299fa945d8bc06542 ad9675a137f34967a62768ec6497e1b1
+#: b139110c4be04fcabbdf3c1b51be01ae b7793d12089741beaa07b7d4d1322773
+#: c5b549e5868d48eb81d68b3b3aeddd4e d5ebb34b72bd4fbca7e6f8d9106edb76
+#: dbf67f7ad38e471ea73bd0cf7358f1d7
+msgid "Return type"
+msgstr ""
+
+#: 45cee84a702046deadf8c100dbc633b9 59029f74dae84afaa10757703ae3e757
+#: 91d024366d6d4397971a900e64fec24b a0849f83d2024eca87c4c4af58ab07d6
+#: d0937a1128504adb992ffeae467cc816
+#: flexrag.cache.serializer.CloudPickleSerializer.serialize:1
+#: flexrag.cache.serializer.JsonSerializer.serialize:1
+#: flexrag.cache.serializer.MsgpackSerializer.serialize:1
+#: flexrag.cache.serializer.PickleSerializer.serialize:1
+#: flexrag.cache.serializer.SerializerBase.serialize:1 of
+msgid "Serialize the object into bytes."
+msgstr ""
+
+#: 0a24e5bedd824caea69fc555c1550b80 7c3fdf0020174dd78bae20d335b52ecd
+#: ad65d55748b644ac894222cabd07c355 ba77047e8d7a45a986498ab2a3b2165e
+#: dbb4fa4b310d4ac6851290c16783dcc9
+#: flexrag.cache.serializer.CloudPickleSerializer.serialize:3
+#: flexrag.cache.serializer.JsonSerializer.serialize:3
+#: flexrag.cache.serializer.MsgpackSerializer.serialize:3
+#: flexrag.cache.serializer.PickleSerializer.serialize:3
+#: flexrag.cache.serializer.SerializerBase.serialize:3 of
+msgid "The object to serialize."
+msgstr ""
+
+#: 29e7e83e066349b68ee93fca2e299014 7de92dbd3e474c82b7bc3de5d0d88e40
+#: 8ae40c56a9be406ea97e9b8c135f68f9 c109fbb59afa407d99ca346f75113f63
+#: fe193f1f494f4b1d9b0509ebc8efc5a7
+#: flexrag.cache.persistent_cache.FIFOPersistentCache.popitem:1
+#: flexrag.cache.persistent_cache.LFUPersistentCache.popitem:1
+#: flexrag.cache.persistent_cache.LRUPersistentCache.popitem:1
+#: flexrag.cache.persistent_cache.PersistentCacheBase.popitem:1
+#: flexrag.cache.persistent_cache.RandomPersistentCache.popitem:1 of
+msgid "as a 2-tuple; but raise KeyError if D is empty."
+msgstr ""
+
+#: 9311b5a4c6c4416fb753e0950b9704ab flexrag.cache.serializer.JsonSerializer:1
+#: of
+msgid "A serializer that uses the json module."
+msgstr ""
+
+#: 31133444fa5d48f8a823368a294b2ccc
+#: flexrag.cache.serializer.MsgpackSerializer:1 of
+msgid "A serializer that uses the msgpack module."
+msgstr ""
+
+#: fa424569bc314e0393ffa192570b674b
+#: flexrag.cache.persistent_cache.PersistentCacheBase.hash_key:1 of
+msgid "Hash the key."
+msgstr ""
+
+#: 92918129035140d18e1dd15a9062f652 flexrag.cache.serializer.PickleSerializer:1
+#: of
+msgid "A serializer that uses the pickle module."
+msgstr ""
+
+#: fe9035d312c34ca0bc50b91603dfca10 flexrag.cache.serializer.SerializerBase:1
+#: of
+msgid "A simple interface for serializing and deserializing python objects."
+msgstr ""
+
+#: 0e3926b2e08b4e70b38d0c0dbb9db6c0 flexrag.cache.backends.StorageBackendBase:1
+#: of
+msgid ""
+"The Binary Storage Backend For ``PersistentCache``. The backend should "
+"provide interfaces like ``MutableMapping``. Thus, The following methods "
+"should be implemented:"
+msgstr ""
+
+#: eadb62fb92844196a2a165f86625700c
+#: flexrag.cache.backends.StorageBackendBase:16 of
+msgid "The following methods will be implemented automatically:"
+msgstr ""
+
+#: ../../source/reference/utils.rst:11 96e45a5859c44350ae0d90cfb9ed8ed5
+msgid "Other Utils"
+msgstr ""
+
+#: 6176c60ce4784401bddb859aad143a78 flexrag.utils.Register.get:1 of
+msgid "Get the item dict by name."
+msgstr ""
+
+#: 1624417c513e42faad6a5ef80a08514a 2f6ac796f61c4f98b3830b25143761db
+#: flexrag.utils.Register.get:3 flexrag.utils.Register.get_item:3 of
+msgid "The name of the item."
+msgstr ""
+
+#: b719aa68bfc44616a2b98e85c45d558d flexrag.utils.Register.get:5 of
+msgid "The default value to return, defaults to None."
+msgstr ""
+
+#: 50751f7e6a454bba951b9ec280628e27 flexrag.utils.Register.get:7 of
+msgid ""
+"The item dict containing the item, main_name, short_names, and "
+"config_class."
+msgstr ""
+
+#: ccee395218dd499c876330b6188ce42b flexrag.utils.Register.get_item:1 of
+msgid "Get the item by name."
+msgstr ""
+
+#: 47d829d1295c484d9c72ee6fd2d893df flexrag.utils.Register.get_item:5 of
+msgid "The item."
+msgstr ""
+
+#: ecfcbff464324e49826a26f137fa7b0b flexrag.utils.Register.load:1 of
+msgid "Load the item(s) from the generated config."
+msgstr ""
+
+#: 80b7862781cc47eebc1f7991a568bdfc flexrag.utils.Register.load:3 of
+msgid "The config generated by `make_config` method."
+msgstr ""
+
+#: 65d318e69f1745a8be0e05c913c13f93 flexrag.utils.Register.load:5 of
+msgid "The additional arguments to pass to the item(s)."
+msgstr ""
+
+#: ../../source/reference/utils.rst 4f78dd897d504aff952b5dccf61eb247
+msgid "Raises"
+msgstr ""
+
+#: 24110128f98e45429379ccdb1b3920c9 flexrag.utils.Register.load:7 of
+msgid "If the item type is invalid."
+msgstr ""
+
+#: 68736699b56d47ada89e94e9a822ac95 flexrag.utils.Register.load:8 of
+msgid "The loaded item(s)."
+msgstr ""
+
+#: c15c489b5f2a47c1bcf62759cb60b066 flexrag.utils.Register.mainnames:1 of
+msgid "Get the main names of the registered items."
+msgstr ""
+
+#: 4d449ab47d8947769d6111a8af25fc7e flexrag.utils.Register.make_config:1 of
+msgid "Make a config class for the registered items."
+msgstr ""
+
+#: 2ec37c8949ea44e1bc4cd4ef2ffff0ee flexrag.utils.Register.make_config:3 of
+msgid "Whether to allow multiple items to be selected, defaults to False."
+msgstr ""
+
+#: b05a383705a7468480b725d2c0c613cb flexrag.utils.Register.make_config:5 of
+msgid "The default item to select, defaults to MISSING(???)."
+msgstr ""
+
+#: 8b0c56e959314612b58b69c52d1b1b0d flexrag.utils.Register.make_config:7 of
+msgid "The name of the config class, defaults to None."
+msgstr ""
+
+#: a79b1566495e45bdb42c3cc70e5a8840 flexrag.utils.Register.make_config:9 of
+msgid "The config class."
+msgstr ""
+
+#: 288f8aeee47a4e0aa21cdc13edd8fd87 flexrag.utils.Register.names:1 of
+msgid "Get the names of the registered items."
+msgstr ""
+
+#: 5cd8600d02944944b7bc17b1084a9b22 flexrag.utils.Register.shortnames:1 of
+msgid "Get the short names of the registered items."
+msgstr ""
+
