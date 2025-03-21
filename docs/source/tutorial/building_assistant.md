@@ -2,7 +2,7 @@
 FlexRAG provides a flexible and modularized framework for building RAG assistants. You can build your own RAG assistant by defining your own `Assistant` class and registering it with the `ASSISTANTS` decorator.
 
 ## Define the Assistant Class
-To build your own RAG assistant, you can create a new Python file and import the necessary FlexRAG modules. Here is an example of how to build a RAG assistant:
+To build your RAG assistant, you can create a Python script file and import the necessary FlexRAG modules. Below is an example of how to construct a RAG assistant. In this example, we define a RAG assistant named `SimpleAssistant` by inheriting from the `AssistantBase` class. This assistant includes a dense retriever (`DenseRetriever`) and a generator (`OpenAIGenerator`). Whenever a user asks a question, `SimpleAssistant` uses `DenseRetriever` to retrieve relevant documents from the database, then concatenates these documents into the prompt and utilizes `OpenAIGenerator` to generate the final response.
 
 ```python
 from dataclasses import dataclass
@@ -39,9 +39,9 @@ class SimpleAssistant(AssistantBase):
 
 
 ### Running your own RAG Application
-After defining the `SimpleAssistant` class and registering it with the `ASSISTANTS` decorator, you can your assistant with any FlexRAG's entrypoints by adding the `user_module=<your_module_path>` argument to the command. 
+After defining the `SimpleAssistant` class and registering it with the `ASSISTANTS` decorator, you can evaluate your assistant using FlexRAG's entrypoints by adding the `user_module=<your_module_path>` argument to the command.
 
-For example, you can evaluate your assistant on the Natural Questions dataset using the following command:
+For example, you can evaluate your assistant on the *Natural Questions* dataset using the following command:
 
 ```bash
 DB_PATH=<path_to_database>

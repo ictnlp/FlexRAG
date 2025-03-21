@@ -1,7 +1,5 @@
 # Preparing the Retriever
-Retriever is one of the most important component in the RAG pipeline. It retrieves the top-k relevant contexts from the knowledge base for a given query. In this tutorial, we will show you how to load the retriever from the HuggingFace Hub or prepare your own retriever.
-
-In FlexRAG, there are three types of retrievers: `WebRetriever`, `EditableRetriever`, and `LocalRetriever`. The relationship between these retrievers is shown in the following figure:
+Retriever is one of the most important component in the RAG pipeline. It retrieves the top-k relevant contexts from the knowledge base for a given query. In FlexRAG, there are three types of retrievers: `WebRetriever`, `EditableRetriever`, and `LocalRetriever`. The relationship between these retrievers is shown in the following figure:
 
 ```{eval-rst}
 .. image:: ../../../assets/Retrievers.png
@@ -15,10 +13,15 @@ The difference between these retrievers is as follows:
 - `EditableRetriever`: This retriever retrieves information from a knowledge base and allows easy customization through the `add_passages` method, offering great flexibility in building a tailored knowledge repository.
 - `LocalRetriever`: A variant of the `EditableRetriever`, the `LocalRetriever` stores its knowledge base locally, making it easy to load from local storage or the Hugging Face Hub. It offers the best reproducibility.
 
-## Loading the predefined `LocalRetriever`
-In [quickstart](../getting_started/quickstart.md), we provide several examples that employ the predefined `LocalRetriever`. FlexRAG provides several predefined retrievers, which can be accessed from the [HuggingFace Hub](https://huggingface.co/collections/ICTNLP/flexrag-retrievers-67b5373b70123669108a2e59).
+In this tutorial, we will show you how to load the retriever from the HuggingFace Hub or prepare your own retriever.
 
+## Loading the predefined `LocalRetriever` from HuggingFace Hub
 FlexRAG implement two built-in `LocalRetriever`s, including the `DenseRetriever` which employs the semantic similarity between the query and the context to retrieve the top-k relevant contexts, and the `BM25SRetriever` which uses the BM25 algorithm to retrieve the top-k relevant contexts. In this tutorial, we will show you how to load any predefined retriever from the HuggingFace Hub.
+
+```{eval-rst}
+.. note::
+    In [quickstart](../getting_started/quickstart.md), we provide several examples that employ the predefined `LocalRetriever`. FlexRAG provides several predefined retrievers, which can be accessed from the [HuggingFace Hub](https://huggingface.co/collections/ICTNLP/flexrag-retrievers-67b5373b70123669108a2e59).
+```
 
 ### Loading the `LocalRetriever` using FlexRAG's entrypoints
 The simplest way to load a predefined retriever in a RAG application is by using FlexRAG's entry points. To load the `BM25SRetriever` built on the *wiki2021_atlas* dataset in the GUI application, simply run the following command:
@@ -34,6 +37,8 @@ python -m flexrag.entrypoints.run_interactive \
     modular_config.do_sample=False
 ```
 
+In the command above, we specify the retriever to be loaded by setting `modular_config.retriever_type='FlexRAG/wiki2021_atlas_bm25s'`. FlexRAG will automatically download this retriever from the HuggingFace Hub and utilize it within the current entrypoint program.
+
 ### Loading the `LocalRetriever` in your own code
 Another way to load a predefined retriever is by importing FlexRAG as a library. For example, to load the `DenseRetriever` built on the *wiki2021_atlas* dataset in your own code, you can run the following code:
 
@@ -44,11 +49,13 @@ retriever = LocalRetriever.load_from_hub(repo_id='FlexRAG/wiki2021_atlas_bm25s')
 passages = retriever.search('What is the capital of France?')
 ```
 
+In this code snippet, we utilize the `LocalRetriever.load_from_hub` function to download and load the retriever from the HuggingFace Hub.
+
 ## Preparing Your Own `EditableRetriever`
 FlexRAG provides several `EditableRetriever` retrievers, including `DenseRetriever`, `BM25SRetriever`, `ElasticRetriever` and `TypesenseRetriever`. In this section, we will show you how to build your own retriever for the RAG application.
 
-### Downloading the Corpus
-Before preparing your retriever, you need to prepare the corpus. In this example, we will use the Wikipedia corpus provided by the [DPR project](https://github.com/facebookresearch/DPR). You can download the corpus by running the following command:
+### Preparing the knowledge base
+Before preparing your retriever, you need to prepare the knowledge base. In this example, we will use the Wikipedia knowledge base provided by the [DPR project](https://github.com/facebookresearch/DPR). You can download the knowledge base by running the following command:
 
 ```bash
 # Download the corpus
@@ -57,7 +64,7 @@ wget https://dl.fbaipublicfiles.com/dpr/wikipedia_split/psgs_w100.tsv.gz
 gzip -d psgs_w100.tsv.gz
 ```
 
-You can also use your own corpus. The corpus could be a single file or a directory containing multiple files. The allowed file formats are `.tsv`, `.csv`, `.jsonl`. The corpus should contain one *chunk* per line. Each *chunk* should have at least one field that contains the information of the chunk. In this case, the Wikipedia corpus provides three fields: `id`, `title`, and `text`, where the `text` field contains the text of the chunk, `title` contains the title of the corresponding Wikipedia page, and `id` contains the unique identifier of the chunk. You can check the first line of the corpus by running the following command:
+You may also utilize your own knowledge base. FlexRAG supports knowledge bases saved in *line-delimited file formats* (such as *.csv, *.jsonl, or *.tsv), where each line represents a piece of knowledge, and each piece can contain multiple fields (such as id, text, etc.). You can store your knowledge base across multiple files or within a single file. In this case, the Wikipedia knowledge base provides three fields: `id`, `title`, and `text`, where the `text` field contains a text chunk of the Wikipedia page, `title` contains the title of the corresponding Wikipedia page, and `id` contains the unique identifier of the knowledge piece. You can check the first line of the knowledge base by running the following command:
 
 ```bash
 head -n 5 psgs_w100.tsv
@@ -73,7 +80,7 @@ id      text    title
 ```
 
 ### Preparing the Sparse Retriever
-After downloading the corpus, you need to build the index for the retriever. For example, if you want to employ the `BM25SRetriever`, you can simply run the following command to build the index:
+After preparing the knowledge base, you can proceed to build the index for it. This section will demonstrate how to construct a sparse index using the BM25 algorithm. In FlexRAG, the `BM25SRetriever` is a sparse retriever based on the BM25 algorithm. You can execute the following command to build the sparse index for it:
 
 ```bash
 CORPUS_PATH='[psgs_w100.tsv]'
@@ -90,10 +97,14 @@ python -m flexrag.entrypoints.prepare_index \
     reinit=True
 ```
 
-In this command, we specify the retriever as `BM25S` and use the downloaded *psgs_w100.tsv* as the corpus. We designate the `title` and `text` fields from the corpus to be stored in the database and create index for the information saved in these two fields. We specify the `id` field as the unique identifier for each chunk (if you do not specify an id field or if the corpus does not include an id field, FlexRAG will automatically assign sequential numbers to each chunk as unique identifiers). Finally, the prepared BM25S retriever will be stored in the directory <path_to_database>.
+In this script, we specify the use of the `BM25SRetriever` with the command-line parameter `retriever_type=bm25s`, and set the input file as *psgs_w100.tsv* using the parameter `file_paths=[psgs_w100.tsv]`. Next, the `saving_fields=$CORPUS_FIELDS` parameter is specified to read the `title` and `text` fields from the knowledge base, and the `bm25s_config.indexed_fields=$CORPUS_FIELDS` parameter is used to build an index based on the `title` and `text` fields. Meanwhile, the parameter `id_field='id'` specifies that the `id` field in the knowledge base serves as the unique identifier for each piece of knowledge (this parameter is optional). Finally, the parameter `bm25s_config.database_path=$DB_PATH` indicates that the prepared retriever will be stored at the `<path_to_database>` location.
 
 ### Preparing the Dense Retriever
-You can also employ the `DenseRetriever` as your retriever. To build the index for the `DenseRetriever`, you can run the following command:
+You can also build a dense retriever by specifying `retriever_type=dense` when constructing the retriever. A dense retriever finds the most relevant documents by computing the semantic similarity between a query and the documents being searched. The query and documents are encoded by a query encoder and a document encoder, respectively, to obtain their corresponding dense vectors.  
+
+To further improve retrieval efficiency, a vector index needs to be built for the dense vectors. Therefore, when constructing the retriever, you need to specify the appropriate document encoder and the relevant parameters for building the vector index.  
+
+You can run the following command to build a dense retriever using Wikipedia as the knowledge base:
 
 ```bash
 CORPUS_PATH='psgs_w100.tsv'
@@ -115,8 +126,14 @@ python -m flexrag.entrypoints.prepare_index \
     reinit=True
 ```
 
-Similarly, we specify the retriever as `DenseRetriever` and use the downloaded *psgs_w100.tsv* as the corpus. We designate the `title` and `text` fields from the corpus to be stored in the database and specify the `id` field as the unique identifier for each chunk.
-In addition, we use the `facebook/contriever-msmarco` model to encode the `text` field and store the encoded vectors in the database. Finally, the prepared `DenseRetriever` will be stored in the directory <path_to_database>.
+In this command, we specify the use of a dense retriever with the parameter retriever_type=dense and designate Wikipedia as the knowledge base using `file_paths=[$CORPUS_PATH]`. Similar to before, we specify saving the `title` and `text` fields while using the `id` field as the unique identifier for each piece of knowledge.
+
+The key difference here is that we explicitly define multiple parameters under `dense_config` in the command-line arguments. These parameters instruct FlexRAG on how to configure the dense retriever. Specifically:
+- `dense_config.database_path=$DB_PATH` sets the path where the retriever will be stored.
+- `dense_config.encode_fields='[text]'` specifies that the text field will be encoded into semantic vectors and indexed.
+- `dense_config.passage_encoder_config.encoder_type=hf` indicates that we are using an encoder from Hugging Face.
+- `dense_config.passage_encoder_config.hf_config.model_path='facebook/contriever-msmarco'` explicitly defines `facebook/contriever-msmarco` as the encoder to be used.
+- Finally, `dense_config.index_type=faiss` specifies that Faiss will be used to build the vector index.
 
 ```{note}
 In the above script, we specify the `device_id` as `[0,1,2,3]` to use 4 GPUs for encoding the text field. This configuration will speed up the encoding process. If you do not have multiple GPUs, you can simply set `device_id=[0]` to use a single GPU or `device_id=[]` to use CPU.

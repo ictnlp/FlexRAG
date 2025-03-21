@@ -1,5 +1,5 @@
 # Using Registers
-FlexRAG provides a `Register` class to manage the registration of different components. The `Register` class can be instantiated to register components such as `Generator`, `Encoder`, `Retriever`, `Ranker`, `Metrics`, `Processor` and `Assistant`. This tutorial will guide you through the process of using the `Register` class to register and retrieve components.
+The `Register` class is an important component in the FlexRAG that integrates configuration files and loads various RAG components. The registrar can gather multiple components of the same type and generate a unified configuration structure to help you configure and use these components. This tutorial will show you how to use the registrar in FlexRAG.
 
 ## Using FlexRAG Registers
 FlexRAG provides a set of predefined registers for different components. These registers can be used to register and retrieve components of the respective type. The following registers are available in FlexRAG:
@@ -19,7 +19,7 @@ FlexRAG provides a set of predefined registers for different components. These r
 - WEB_READERS
 
 ```{note}
-If you are going to develop your project by modifying the FlexRAG source code or using FlexRAG as a library, all the predefined registers are available. However, if you are going to use FlexRAG's `run_assistant` or `run_interactive` entrypoints, **only** the `ASSISTANTS` register is available by default.
+If you wish to develop your project by modifying the FlexRAG source code, all registrars can be used as decorators to register new components. However, if you use the `run_assistant` or `run_interactive` entrypoints of FlexRAG, **only** the `ASSISTANTS` registrar can be used to register new components.
 ```
 
 ### Registering a New Component
@@ -41,11 +41,9 @@ class MyAssistant(AssistantBase):
         return "MyAssistant: " + question
 ```
 
-The register takes the following arguments:
-*shortnames: str
-    The shortnames of the component. The first shortname will be used as the default shortname.
-config_class: Optional[Type]
-    The configuration class for the component. If not provided, the component will not have a configuration.
+The register takes the following arguments, namely `shortnames` and `config_class`. 
+- The `shortnames` argument is a list of shortnames of the component, which serve as simplified names for the component, making it easier to reference when loading. 
+- The `config_class` argument is the configuration class for the component. This parameter is optional—if not provided, the component will not use any configuration.
 
 ### Generating the Configuration
 After registering the component, you can generate the configuration `dataclass` for all the registered components using the `make_config` function. For example, to generate the configuration for all the registered `Assistant` components, you can use the `make_config` function as shown below:
@@ -70,8 +68,8 @@ class AssistantConfig:
     ...  
 ```
 
-```{note}
-This step will be automatically done if you are using the `run_assistant` or `run_interactive` entrypoints.
+```{tip}
+In the FlexRAG entrypoints, many configurations are generated in this way. This allows us to flexibly modify the components and their configurations in the workflow through configuration files.
 ```
 
 ### Loading the Component
@@ -80,10 +78,6 @@ To load the component using the configuration, you can use the `load` function o
 ```python
 AssistantConfig.assistant_type = "my_assistant"
 my_assistant = ASSISTANTS.load(AssistantConfig)
-```
-
-```{note}
-This step will be automatically done if you are using the `run_assistant` or `run_interactive` entrypoints.
 ```
 
 ## Defining a New Register
