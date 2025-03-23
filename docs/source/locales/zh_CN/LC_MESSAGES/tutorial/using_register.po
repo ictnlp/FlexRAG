@@ -102,7 +102,6 @@ msgid "WEB_READERS"
 msgstr ""
 
 #: ../../source/tutorial/using_register.md:22 1bcafb9a0765476aa7f8756f927bdea2
-#, fuzzy
 msgid ""
 "If you wish to develop your project by modifying the FlexRAG source code,"
 " all registrars can be used as decorators to register new components. "

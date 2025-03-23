@@ -27,7 +27,6 @@ msgstr "高级教程：从互联网上获取相关信息"
 
 #: ../../source/tutorial/preparing_web_retriever.md:2
 #: 477a9069155044d4aae8aa298d083e9f
-#, fuzzy
 msgid ""
 "`WebRetriever` is a special type of retriever that is used to retrieve "
 "resource from the web. The resource could be retrieved by using existing "
@@ -101,7 +100,6 @@ msgstr "使用搜索引擎获取最相关片段"
 
 #: ../../source/tutorial/preparing_web_retriever.md:22
 #: 768d2a38142e4ad192550bb451518825
-#, fuzzy
 msgid ""
 "Most web search engines provide a snippet of the webpage in the search "
 "result. This snippet is usually a short description of the webpage that "
@@ -163,7 +161,6 @@ msgstr ""
 
 #: ../../source/tutorial/preparing_web_retriever.md:62
 #: 5737d4503f3f473d901eb023449005be
-#, fuzzy
 msgid ""
 "FlexRAG also provides other `WebReader`s, such as the "
 "`ScreenshotWebReader`, which captures webpage screenshots, and the "
@@ -217,7 +214,6 @@ msgstr "定义您自己的网络检索器"
 
 #: ../../source/tutorial/preparing_web_retriever.md:88
 #: db9ba005486b4d36a16549c78744888a
-#, fuzzy
 msgid ""
 "If you want to build your own `WebRetriever`, you can inherit the "
 "`WebRetriever` class and implement the `search` method. Of course, you "

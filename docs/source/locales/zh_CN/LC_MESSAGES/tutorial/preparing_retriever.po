@@ -27,7 +27,6 @@ msgstr "准备检索器"
 
 #: ../../source/tutorial/preparing_retriever.md:2
 #: b589bed6bada4497b5561001ada4557e
-#, fuzzy
 msgid ""
 "Retriever is one of the most important component in the RAG pipeline. It "
 "retrieves the top-k relevant contexts from the knowledge base for a given"
@@ -77,7 +76,6 @@ msgstr "本地检索器：可编辑检索器的一种，其知识库被保存在
 
 #: ../../source/tutorial/preparing_retriever.md:16
 #: b3988aa26aa14607a422d0ce35bf3ecf
-#, fuzzy
 msgid ""
 "In this tutorial, we will show you how to load the retriever from the "
 "HuggingFace Hub or prepare your own retriever."
@@ -85,7 +83,6 @@ msgstr "在本教程中，我们将会向您展示如何从 HuggingFace Hub 中�
 
 #: ../../source/tutorial/preparing_retriever.md:18
 #: 31bb6360561c443a940c46a39debd0b9
-#, fuzzy
 msgid "Loading the predefined `LocalRetriever` from HuggingFace Hub"
 msgstr "通过 HuggingFace Hub 加载本地检索器 `LocalRetriever`"
 
@@ -105,7 +102,6 @@ msgstr ""
 
 #: ../../source/tutorial/preparing_retriever.md:23
 #: 69923fea280741bcbfdf317e7ae827f5
-#, fuzzy
 msgid ""
 "In [quickstart](../getting_started/quickstart1.md), we provide several "
 "examples that employ the predefined `LocalRetriever`. FlexRAG provides "
@@ -188,13 +184,11 @@ msgstr ""
 
 #: ../../source/tutorial/preparing_retriever.md:57
 #: 4cff0fac195b4de09881fa39d438b127
-#, fuzzy
 msgid "Preparing the knowledge base"
 msgstr "准备检索器"
 
 #: ../../source/tutorial/preparing_retriever.md:58
 #: 5412625552024e708efe0cd2f39acd99
-#, fuzzy
 msgid ""
 "Before preparing your retriever, you need to prepare the knowledge base. "
 "In this example, we will use the Wikipedia knowledge base provided by the"

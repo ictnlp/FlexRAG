@@ -68,7 +68,6 @@ msgstr "运行您的 RAG 应用"
 
 #: ../../source/tutorial/building_assistant.md:42
 #: 450ad66743cd4d03878590f3dfe2226a
-#, fuzzy
 msgid ""
 "After defining the `SimpleAssistant` class and registering it with the "
 "`ASSISTANTS` decorator, you can evaluate your assistant using FlexRAG's "
@@ -80,7 +79,6 @@ msgstr ""
 
 #: ../../source/tutorial/building_assistant.md:44
 #: 8ad9f5f1105345af91d17dfdec1ef675
-#, fuzzy
 msgid ""
 "For example, you can evaluate your assistant on the *Natural Questions* "
 "dataset using the following command:"

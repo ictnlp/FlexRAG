@@ -59,7 +59,6 @@ msgstr "或者，您也可以运行下面的命令来通过源码安装 FlexRAG�
 
 #: ../../source/getting_started/installation.md:25
 #: 94307c25d21e4beca3d3f682aaf3aaac
-#, fuzzy
 msgid "You can also install the FlexRAG in *editable* mode with the `-e` flag."
 msgstr "您也可以在安装时添加 `-e` 选项来进行*可编辑的安装*。"
 

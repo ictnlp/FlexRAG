@@ -29,7 +29,6 @@ msgid "Tutorial:"
 msgstr "教程："
 
 #: ../../source/index.rst:38
-#, fuzzy
 msgid "API Reference Manual:"
 msgstr "API参考文档："
 
@@ -42,7 +41,6 @@ msgid "Welecome to FlexRAG Documentation"
 msgstr "欢迎访问 FlexRAG 文档"
 
 #: ../../source/index.rst:12 b4207c647a4c4d958f442e2faacf2e33
-#, fuzzy
 msgid ""
 "FlexRAG is a highly reproducible, easy-to-use, and high-performance RAG "
 "framework designed for both research and application scenarios. It "
