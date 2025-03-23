@@ -1,0 +1,40 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-21 20:53+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/getting_started/quickstart2.md:1
+#: 24f56c005d924c62801a30eefe48f5d7
+msgid "Quickstart: Building your own RAG application"
+msgstr "快速入门：构建您自己的 RAG 应用"
+
+#: ../../source/getting_started/quickstart2.md:2
+#: e3b83077d47f4da4bcee4584d9354d13
+msgid ""
+"Besides using RAG assistant, you can also import FlexRAG as a library to "
+"develop your own RAG applications. FlexRAG provides a flexible and "
+"modular API that allows you to customize your RAG application with ease. "
+"For example, you can use the following code to build a simple command "
+"line RAG QA system:"
+msgstr ""
+"除去使用 RAG 助手这一概念，您也可以将 FlexRAG 作为库来开发您的 RAG 应用。"
+"FlexRAG 提供了一个灵活且模块化的 API 来帮助您构建 RAG 应用。"
+"下面的代码向您展示了如何构建一个简单的命令行检索式 QA 系统："
+

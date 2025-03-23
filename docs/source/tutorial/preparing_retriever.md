@@ -20,7 +20,7 @@ FlexRAG implement two built-in `LocalRetriever`s, including the `DenseRetriever`
 
 ```{eval-rst}
 .. note::
-    In [quickstart](../getting_started/quickstart.md), we provide several examples that employ the predefined `LocalRetriever`. FlexRAG provides several predefined retrievers, which can be accessed from the [HuggingFace Hub](https://huggingface.co/collections/ICTNLP/flexrag-retrievers-67b5373b70123669108a2e59).
+    In [quickstart](../getting_started/quickstart1.md), we provide several examples that employ the predefined `LocalRetriever`. FlexRAG provides several predefined retrievers, which can be accessed from the [HuggingFace Hub](https://huggingface.co/collections/ICTNLP/flexrag-retrievers-67b5373b70123669108a2e59).
 ```
 
 ### Loading the `LocalRetriever` using FlexRAG's entrypoints

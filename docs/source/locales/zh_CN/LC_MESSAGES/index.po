@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"POT-Creation-Date: 2025-03-21 21:28+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -24,38 +24,52 @@ msgstr ""
 msgid "Getting Started:"
 msgstr "入门："
 
-#: ../../source/index.rst:27
+#: ../../source/index.rst:28
 msgid "Tutorial:"
 msgstr "教程："
 
-#: ../../source/index.rst:37
-msgid "Reference:"
+#: ../../source/index.rst:38
+#, fuzzy
+msgid "API Reference Manual:"
 msgstr "API参考文档："
 
-#: ../../source/index.rst:3 7c9126597a0243a98075201feb63ca2b
+#: ../../source/index.rst:3 fbc038f2887343f5bc41aaf72daed968
 msgid "FlexRAG"
 msgstr "FlexRAG"
 
-#: ../../source/index.rst:10 81c8fed819e048fa98707fe708823331
+#: ../../source/index.rst:10 a1d49cab3c784cc6889f514452e1860e
 msgid "Welecome to FlexRAG Documentation"
 msgstr "欢迎访问 FlexRAG 文档"
 
-#: ../../source/index.rst:12 57651bfc4e6d48d4a560b6e549aeaa43
+#: ../../source/index.rst:12 b4207c647a4c4d958f442e2faacf2e33
+#, fuzzy
 msgid ""
-"FlexRAG is a flexible and high-performance framework designed for "
-"Retrieval-Augmented Generation (RAG) tasks, offering support for "
-"multimodal data, seamless configuration management, and out-of-the-box "
-"performance for both research and prototyping."
+"FlexRAG is a highly reproducible, easy-to-use, and high-performance RAG "
+"framework designed for both research and application scenarios. It "
+"supports **text**, **multimodal**, and **web-based** RAG, providing a "
+"**complete RAG pipelin**e and evaluation process. With built-in "
+"**asynchronous** processing and **persistent caching**, it ensures "
+"efficiency and scalability. Easily load retrievers from Hugging Face and "
+"quickly build powerful RAG solutions out of the box."
 msgstr ""
-"FlexRAG 是一个灵活的高性能检索增强生成 (RAG) 框架，"
-"支持多模态数据以及无缝的配置管理，为研究和原型系统设计提供开箱即用的支持。"
+"FlexRAG 是一个高可复现、易上手、性能优越的 RAG 框架，专为科研与应用场景设计。它支持**文本**、**多模态**、**网络** "
+"RAG，提供完整的 RAG 流水线与评估流程，开箱即用，同时具备高效的**异步处理**与**持久化缓存**能力。通过 Hugging Face "
+"轻松加载 Retriever，助力快速搭建强大的 RAG 解决方案。"
 
-#: ../../source/index.rst:14 16b1494f6a1a445ab1d16249c70baf57
+#: ../../source/index.rst:14 d1e78cb11b234e839a468233798d7d4c
 msgid ""
 "FlexRAG is under active development and is currently in the alpha stage. "
 "We welcome contributions from the community and are open to feedback and "
 "suggestions."
-msgstr ""
-"FlexRAG 目前正处于活跃开发的 alpha 阶段。"
-"我们非常欢迎来自于社区的贡献、反馈或建议。"
+msgstr "FlexRAG 目前正处于活跃开发的 alpha 阶段。我们非常欢迎来自于社区的贡献、反馈或建议。"
+
+#~ msgid ""
+#~ "FlexRAG is a flexible and high-"
+#~ "performance framework designed for "
+#~ "Retrieval-Augmented Generation (RAG) tasks, "
+#~ "offering support for multimodal data, "
+#~ "seamless configuration management, and out-"
+#~ "of-the-box performance for both "
+#~ "research and prototyping."
+#~ msgstr "FlexRAG 是一个灵活的高性能检索增强生成 (RAG) 框架，支持多模态数据以及无缝的配置管理，为研究和原型系统设计提供开箱即用的支持。"
 
