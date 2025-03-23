@@ -50,7 +50,7 @@ msgid ""
 "efficiency and scalability. Easily load retrievers from Hugging Face and "
 "quickly build powerful RAG solutions out of the box."
 msgstr ""
-"FlexRAG 是一个高可复现、易上手、性能优越的 RAG 框架，专为科研与应用场景设计。它支持**文本**、**多模态**、**网络** "
+"FlexRAG 是一个高可复现、易上手、性能优越的 RAG 框架，专为科研与应用场景设计。它支持**文本**、**多模态**以及**网络** "
 "RAG，提供完整的 RAG 流水线与评估流程，开箱即用，同时具备高效的**异步处理**与**持久化缓存**能力。通过 Hugging Face "
 "轻松加载 Retriever，助力快速搭建强大的 RAG 解决方案。"
 

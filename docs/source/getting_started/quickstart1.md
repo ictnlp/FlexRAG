@@ -47,7 +47,7 @@ Then you can visit the GUI application at `http://localhost:7860` in your browse
 
 ```{eval-rst}
 .. note::
-    In this example, we employ the pre-built BM25 retriever based on the Wikipedia knowledge base. You can also use other retrievers provided by FlexRAG or build your own retriever. For more information, please refer to the :any:`Preparing the Retriever` section.
+    In this example, we employ the pre-built BM25 retriever based on the Wikipedia knowledge base. You can also use other retrievers provided by FlexRAG or build your own retriever. For more information, please refer to the [Preparing the Retriever](../tutorial/preparing_retriever.md) section.
 ```
 
 ## Evaluating the RAG assistant

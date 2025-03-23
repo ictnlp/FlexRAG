@@ -109,7 +109,7 @@ msgid ""
 "[HuggingFace Hub](https://huggingface.co/collections/ICTNLP/flexrag-"
 "retrievers-67b5373b70123669108a2e59)."
 msgstr ""
-"在[快速入门](../getting_started/quickstart1.md)一节中，我们提供了一些使用本地检索器的示例。FlexRAG "
+"在[快速入门：部署和评估您的 RAG 助手](../getting_started/quickstart1.md)一节中，我们提供了一些使用本地检索器的示例。FlexRAG "
 "官方中提供了多个预先定义好的本地检索器，这些检索器可以通过访问 [HuggingFace "
 "Hub](https://huggingface.co/collections/ICTNLP/flexrag-retrievers-"
 "67b5373b70123669108a2e59) 来查看。"
@@ -185,7 +185,7 @@ msgstr ""
 #: ../../source/tutorial/preparing_retriever.md:57
 #: 4cff0fac195b4de09881fa39d438b127
 msgid "Preparing the knowledge base"
-msgstr "准备检索器"
+msgstr "准备知识库"
 
 #: ../../source/tutorial/preparing_retriever.md:58
 #: 5412625552024e708efe0cd2f39acd99
