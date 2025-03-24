@@ -49,7 +49,7 @@ FlexRAG 是一个具备高可复现性、易上手且性能优越的检索增强
 pip install flexrag
 ```
 
-访问我们的[文档](https://flexrag.readthedocs.io/en/latest/)以了解更多信息。
+访问我们的[文档](https://flexrag.readthedocs.io/zh-cn/latest/)以了解更多信息。
 - [安装](https://flexrag.readthedocs.io/en/latest/getting_started/installation.html)
 - [快速入门](https://flexrag.readthedocs.io/en/latest/getting_started/quickstart.html)
 - [命令行入口](https://flexrag.readthedocs.io/en/latest/tutorial/entrypoints.html)
