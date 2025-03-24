@@ -6,13 +6,14 @@
 [![Code Style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/imports-isort-blue)](https://pycqa.github.io/isort/)
 [![github license](https://img.shields.io/github/license/ictnlp/FlexRAG)](LICENSE)
-[![Read the Docs](https://img.shields.io/readthedocs/flexrag)](https://flexrag.readthedocs.io/en/latest/)
+[![Read the Docs](https://img.shields.io/badge/docs-English-green)](https://flexrag.readthedocs.io/en/latest/)
+[![Read the Docs](https://img.shields.io/badge/docs-Chinese-yellow)](https://flexrag.readthedocs.io/zh-cn/latest/)
 [![PyPI - Version](https://img.shields.io/pypi/v/flexrag)](https://pypi.org/project/flexrag/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14593327.svg)](https://doi.org/10.5281/zenodo.14593327)
 
 \[ [English](README.md) | [中文](README-zh.md) \]
 
-FlexRAG 是一个灵活的高性能框架，专为检索增强生成 (RAG) 任务而设计。FlexRAG 支持多模态数据，提供统一的配置管理及开箱即用的检索系统，为科研和原型设计提供充分支持。
+FlexRAG 是一个具备高可复现性、易上手且性能优越的检索增强生成（Retrieval Augmented Generation, RAG）框架，专为科研与原型开发而设计。它支持**文本**、**多模态**以及**网络** RAG，提供完整的 RAG 流水线与评估流程，开箱即用，同时具备高效的**异步处理**与**持久化缓存**能力，助力快速搭建强大的 RAG 解决方案。
 
 # 📖 目录
 - [📖 目录](#-目录)
@@ -26,15 +27,16 @@ FlexRAG 是一个灵活的高性能框架，专为检索增强生成 (RAG) 任�
 
 
 # ✨ 框架特色
-- **多模态RAG**: FlexRAG 不仅限于基于文本的检索增强生成 (RAG)。它还支持多模态 RAG，为不同数据类型开辟了广泛的应用可能性。
-- **多数据类型**: FlexRAG 支持多种数据格式，包括文本（例如 CSV、JSONL）、图像、文档、Web 快照等，让您可以灵活地处理各种数据源。
-- **统一的配置管理**: 利用 python `dataclass` 和 [hydra-core](https://github.com/facebookresearch/hydra), FlexRAG 统一了配置管理，让 RAG 流程的配置变得更加简单。
-- **开箱即用**: 通过精心优化的默认配置，FlexRAG 在默认配置下就有良好的性能，简化您的开发流程。
-- **高性能**: 利用持久化缓存和异步函数，FlexRAG 显著提高了 RAG 流程的性能。
-- **科研及开发友好**: 支持多种开发方式。此外，FlexRAG 提供了一个伴生仓库，[flexrag_examples](https://github.com/ictnlp/flexrag_examples)，来帮助您复现各类RAG算法。
-- **轻量化**: FlexRAG 采用最少的开销设计，高效且易于集成到您的项目中。
+- 🎯**高可复现性**：FlexRAG 附带了伴生仓库 [flexrag_examples](https://github.com/ictnlp/flexrag_examples)，为各类 RAG 算法提供详尽的复现案例；同时，在 HuggingFace Hub 上统一提供的检索器，确保您在相同环境下轻松复现实验结果。
+- ✅**低上手难度**：一键下载并加载 HuggingFace Hub 上的检索器，免除了繁琐的构建流程；此外，FlexRAG 对默认配置进行了精心优化，使您在默认参数下就能获得出色性能，从而简化开发流程。
+- 🌍**多样化应用场景**：FlexRAG 不仅适用于文本 RAG，还支持多模态及网络 RAG，为不同数据类型提供了广泛的应用可能。
+- 🧪**科研优先**：为各类 RAG 任务提供统一评估流程，助您在不同数据集上轻松测试；同时，提供官方基准测试方便对比和查阅。
+- ⚡**卓越性能**：利用持久化缓存和异步函数，助力高性能 RAG 开发。
+- 🔄**全流程支持**：从文档信息提取、切分到检索与生成，再到生成质量评估，FlexRAG 完备支持 RAG 全生命周期的各个环节。
+- 🛠️**模块化灵活设计**：采用轻量级模块化架构，FlexRAG 支持多种开发模式，助您快速构建专属 RAG 解决方案。
 
 # 📢 最新消息
+- **2025-03-24**: 中文文档上线啦！请访问 [文档](https://flexrag.readthedocs.io/zh-cn/latest/) 查看。
 - **2025-02-25**: FlexRAG 的 LocalRetriever 现在支持从 [HuggingFace Hub](https://huggingface.co/collections/ICTNLP/flexrag-retrievers-67b5373b70123669108a2e59) 上加载啦！
 - **2025-01-22**: 新的命令行入口 `run_retriever` 以及大量新的信息检索指标（如 `RetrievalMAP` ）现已上线，请阅读[文档](https://flexrag.readthedocs.io/en/latest/)以获取更多信息。
 - **2025-01-08**: FlexRAG 现已支持 Windows 系统，您可以直接通过 `pip install flexrag` 来安装。

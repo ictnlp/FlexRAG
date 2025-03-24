@@ -6,13 +6,16 @@
 [![Code Style](https://img.shields.io/badge/code%20style-black-black)](https://github.com/psf/black)
 [![Imports: isort](https://img.shields.io/badge/imports-isort-blue)](https://pycqa.github.io/isort/)
 [![github license](https://img.shields.io/github/license/ictnlp/FlexRAG)](LICENSE)
-[![Read the Docs](https://img.shields.io/readthedocs/flexrag)](https://flexrag.readthedocs.io/en/latest/)
+[![Read the Docs](https://img.shields.io/badge/docs-English-green)](https://flexrag.readthedocs.io/en/latest/)
+[![Read the Docs](https://img.shields.io/badge/docs-Chinese-yellow)](https://flexrag.readthedocs.io/zh-cn/latest/)
 [![PyPI - Version](https://img.shields.io/pypi/v/flexrag)](https://pypi.org/project/flexrag/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14593327.svg)](https://doi.org/10.5281/zenodo.14593327)
 
+<p align="center">
 \[ [English](README.md) | [中文](README-zh.md) \]
+</p>
 
-FlexRAG is a flexible and high-performance framework designed for Retrieval-Augmented Generation (RAG) tasks, offering support for multimodal data, seamless configuration management, and out-of-the-box performance for both research and prototyping.
+FlexRAG is a highly reproducible, easy-to-use, and high-performance RAG framework designed for both research and application scenarios. It supports **text**, **multimodal**, and **web-based** RAG, providing a **complete RAG pipeline and evaluation process**. With built-in **asynchronous** processing and **persistent caching**, it ensures efficiency and scalability. Easily load retrievers from Hugging Face and quickly build powerful RAG solutions out of the box.
 
 https://github.com/user-attachments/assets/4dfc0ec9-686b-40e2-b1f0-daa2b918e093
 
@@ -28,15 +31,16 @@ https://github.com/user-attachments/assets/4dfc0ec9-686b-40e2-b1f0-daa2b918e093
 
 
 # ✨ Key Features
-- **Multimodal RAG Support**: FlexRAG isn't limited to just text-based Retrieval-Augmented Generation (RAG). It also supports multimodal RAG, opening up a wide range of application possibilities across different media types.
-- **Diverse Data Types**: FlexRAG enables seamless integration of multiple data formats, including text (e.g., CSV, JSONL), images, documents, web snapshots, and more, giving you flexibility in working with varied data sources.
-- **Unified Configuration Management**: Leveraging python `dataclass` and [hydra-core](https://github.com/facebookresearch/hydra), FlexRAG simplifies configuration management, making it easier to handle complex setups and customize your workflow.
-- **Out-of-the-Box**: With carefully optimized default configurations, FlexRAG delivers solid performance without the need for extensive parameter tuning.
-- **High Performance**: Built with persistent cache system and asynchronous methods to significantly improve speed and reduce latency in RAG workflows.
-- **Research & Development Friendly**: Supports multiple development modes and includes a companion repository, [flexrag_examples](https://github.com/ictnlp/flexrag_examples), to help you reproduce various RAG algorithms with ease.
-- **Lightweight**: Designed with minimal overhead, FlexRAG is efficient and easy to integrate into your project.
+- 🎯 **High Reproducibility**: FlexRAG comes with a companion repository, [flexrag_examples](https://github.com/ictnlp/flexrag_examples), providing comprehensive reproduction cases for various RAG algorithms. Additionally, unified retrievers available on the HuggingFace Hub ensure easy replication of experimental results under the same environment.  
+- ✅ **Low Learning Curve**: Download and load retrievers from the HuggingFace Hub with a single command, eliminating complex setup processes. Moreover, FlexRAG offers carefully optimized default configurations, allowing you to achieve excellent performance right out of the box and streamlining the development process.  
+- 🌍 **Diverse Application Scenarios**: FlexRAG supports not only text-based RAG but also multimodal and network-based RAG, enabling broad applications across different data types.  
+- 🧪 **Research-Oriented**: Provides a unified evaluation process for various RAG tasks, making it easy to test across different datasets. Official benchmark tests are also available for convenient comparison and reference.  
+- ⚡ **Superior Performance**: Leverages persistent caching and asynchronous functions to enhance high-performance RAG development.  
+- 🔄 **End-to-End Support**: From document information extraction and segmentation to retrieval, generation, and evaluation of output quality, FlexRAG fully supports every stage of the RAG lifecycle.  
+- 🛠️ **Modular & Flexible Design**: With a lightweight modular architecture, FlexRAG accommodates multiple development modes, helping you quickly build customized RAG solutions.  
 
 # 📢 News
+- **2025-03-24**: The Chinese documentation is now available! Please visit the [documentation](https://flexrag.readthedocs.io/zh-cn/latest/) for more details.
 - **2025-2-25**: FlexRAG's LocalRetriever now supports loading from the [HuggingFace Hub](https://huggingface.co/collections/ICTNLP/flexrag-retrievers-67b5373b70123669108a2e59).
 - **2025-01-22**: A new entrypoint `run_retriever` and four new information retrieval metrics (e.g., `RetrievalMAP`) are now available. Check out the [documentation](https://flexrag.readthedocs.io/en/latest/) for more details.
 - **2025-01-08**: We provide Windows wheels for FlexRAG. You can install FlexRAG via pip on Windows now.
