@@ -9,8 +9,7 @@
 [![Read the Docs](https://img.shields.io/badge/docs-English-green)](https://flexrag.readthedocs.io/en/latest/)
 [![Read the Docs](https://img.shields.io/badge/docs-Chinese-yellow)](https://flexrag.readthedocs.io/zh-cn/latest/)
 [![PyPI - Version](https://img.shields.io/pypi/v/flexrag)](https://pypi.org/project/flexrag/)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14593327.svg)](https://doi.org/10.5281/zenodo.14593327)
-
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14306983.svg)](https://doi.org/10.5281/zenodo.14306983)
 \[ [English](README.md) | [中文](README-zh.md) \]
 
 FlexRAG is a highly reproducible, easy-to-use, and high-performance RAG framework designed for both research and application scenarios. It supports **text**, **multimodal**, and **web-based** RAG, providing a **complete RAG pipeline and evaluation process**. With built-in **asynchronous** processing and **persistent caching**, it ensures efficiency and scalability. Easily load retrievers from Hugging Face and quickly build powerful RAG solutions out of the box.
@@ -25,6 +24,7 @@ https://github.com/user-attachments/assets/4dfc0ec9-686b-40e2-b1f0-daa2b918e093
 - [🏗️ Architecture](#️-architecture)
 - [📊 Benchmarks](#-benchmarks)
 - [🏷️ License](#️-license)
+- [🖋️ Citation](#️-citation)
 - [❤️ Acknowledgements](#️-acknowledgements)
 
 
@@ -68,6 +68,19 @@ We have conducted extensive benchmarks using the FlexRAG framework. For more det
 
 # 🏷️ License
 This repository is licensed under the **MIT License**. See the [LICENSE](LICENSE) file for details.
+
+# 🖋️ Citation
+If you use FlexRAG in your research, please cite our project:
+```bibtex
+@software{Zhang_FlexRAG_2025,
+author = {Zhang, Zhuocheng and Feng, Yang and Zhang, Min},
+doi = {10.5281/zenodo.14593327},
+month = jan,
+title = {{FlexRAG}},
+url = {https://github.com/ictnlp/FlexRAG},
+year = {2025}
+}
+```
 
 # ❤️ Acknowledgements
 This project benefits from the following open-source projects:

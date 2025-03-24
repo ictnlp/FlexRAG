@@ -9,6 +9,5 @@ authors:
   - family-names: "Zhang"
     given-names: "Min"
 title: "FlexRAG"
-doi: 10.5281/zenodo.14593327
-date-released: 2025-1-4
+doi: 10.5281/zenodo.14306983
 url: "https://github.com/ictnlp/FlexRAG"

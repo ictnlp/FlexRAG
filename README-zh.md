@@ -9,7 +9,7 @@
 [![Read the Docs](https://img.shields.io/badge/docs-English-green)](https://flexrag.readthedocs.io/en/latest/)
 [![Read the Docs](https://img.shields.io/badge/docs-Chinese-yellow)](https://flexrag.readthedocs.io/zh-cn/latest/)
 [![PyPI - Version](https://img.shields.io/pypi/v/flexrag)](https://pypi.org/project/flexrag/)
-[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14593327.svg)](https://doi.org/10.5281/zenodo.14593327)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14306983.svg)](https://doi.org/10.5281/zenodo.14306983)
 
 \[ [English](README.md) | [中文](README-zh.md) \]
 
@@ -23,6 +23,7 @@ FlexRAG 是一个具备高可复现性、易上手且性能优越的检索增强
 - [🏗️ FlexRAG 架构](#️-flexrag-架构)
 - [📊 基准测试](#-基准测试)
 - [🏷️ 许可证](#️-许可证)
+- [🖋️ 引用](#️-引用)
 - [❤️ 致谢](#️-致谢)
 
 
@@ -65,6 +66,19 @@ FlexRAG 采用**模块化**架构设计，让您可以轻松定制和扩展框�
 
 # 🏷️ 许可证
 本仓库采用 **MIT License** 开源协议. 详情请参考 [LICENSE](LICENSE) 文件。
+
+# 🖋️ 引用
+如果您在研究中使用了 FlexRAG，请引用我们的项目：
+```bibtex
+@software{Zhang_FlexRAG_2025,
+author = {Zhang, Zhuocheng and Feng, Yang and Zhang, Min},
+doi = {10.5281/zenodo.14593327},
+month = jan,
+title = {{FlexRAG}},
+url = {https://github.com/ictnlp/FlexRAG},
+year = {2025}
+}
+```
 
 
 # ❤️ 致谢
