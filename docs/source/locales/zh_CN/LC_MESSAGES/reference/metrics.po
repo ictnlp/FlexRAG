@@ -1,0 +1,348 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/reference/metrics.rst:2 c1a6261607f041e1be36d56546e49dca
+msgid "Metrics"
+msgstr ""
+
+#: ../../source/reference/metrics.rst:4 567a6f5d4bdc4934bb52b1762d0ed117
+msgid ""
+"This module contains functions for evaluating the performance of a RAG "
+"assistant or a retriever."
+msgstr ""
+
+#: 02b8e1f1693141798ca15d7d1e675bd0 9e04d81425864782abb72509e06488c2
+#: flexrag.metrics.metrics_base.MetricsBase.compute:1
+#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:1 of
+msgid "Compute the metric value."
+msgstr ""
+
+#: ../../source/reference/metrics.rst 01d0b5dede6c4af6ba2b689e45e5347b
+#: 40623c7145cc4c338db61a4637db0984 4279875dff224d82bb4061d5509f015a
+#: 4d0c0c33c3024898b3aeb469b01c7ff9 7cd6b20c54194211adf82fb7d6051150
+#: 8786a9233664402db8c6d8b4949efcba a2a7e5101e624cfaa47ced7a6a4103c8
+#: af85ff4dc2274df49aeade851668e2c7 ff3f7fb3bab74c3eb78c5dce137c7e8a
+#: ff5c4aab08484d2a9f549d618723e24b
+msgid "Parameters"
+msgstr ""
+
+#: 6f1efff610e2402eb79c3ade9360e78c 9c23df18fcfa4852a85575123423fe73
+#: c013be46c2c649ddb79fe7e213e40909
+#: flexrag.metrics.evaluator.Evaluator.evaluate:3
+#: flexrag.metrics.metrics_base.MetricsBase.compute:3
+#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:3 of
+msgid "A list of questions. Defaults to None."
+msgstr ""
+
+#: 0ae7841fa660438c8ea91b4873bc7114 4bfed0b9175e47b1a27a911e440577f8
+#: ef2d0140cb1c4965bbdaa0c90196be8d
+#: flexrag.metrics.evaluator.Evaluator.evaluate:4
+#: flexrag.metrics.metrics_base.MetricsBase.compute:4
+#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:4 of
+msgid "A list of responses. Defaults to None."
+msgstr ""
+
+#: 3780ed4b97394c02a8a6bc717c0beba3 593a6e5cff6440498d5839b1d8b25a66
+#: 970e18f630a743619bee3c166386715d
+#: flexrag.metrics.evaluator.Evaluator.evaluate:5
+#: flexrag.metrics.metrics_base.MetricsBase.compute:5
+#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:5 of
+msgid "A list of golden responses. Defaults to None."
+msgstr ""
+
+#: 20bbea01f2f94193b24ff292e2b53c63 6fd8d2d4873f4b5eb8651d4207584da5
+#: febb48d761504f9ea58f8d3871e67f4f
+#: flexrag.metrics.evaluator.Evaluator.evaluate:6
+#: flexrag.metrics.metrics_base.MetricsBase.compute:6
+#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:6 of
+msgid "A list of retrieved contexts. Defaults to None."
+msgstr ""
+
+#: 22938292ebc94c32b625537037faf5cb de4d5e6637294a4b93f7c4b0fc0c14e1
+#: eefded9108d24b3681bde2dd3eac68f0
+#: flexrag.metrics.evaluator.Evaluator.evaluate:7
+#: flexrag.metrics.metrics_base.MetricsBase.compute:7
+#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:7 of
+msgid "A list of golden contexts. Defaults to None."
+msgstr ""
+
+#: ../../source/reference/metrics.rst da3b91d2f38b49b1b37bd8ac70fcf6a9
+#: e84e7b4091cb44f78d7fe99bb0f21c2f f211af23ac0943d1b0d23e3ccaed0798
+msgid "Returns"
+msgstr ""
+
+#: 1d7d41f89fb240b9846b7d2cb8b8ecfe 2cbe8b60dc43469a9787e7494850b415
+#: flexrag.metrics.metrics_base.MetricsBase.compute:13
+#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:13 of
+msgid "The metric scores and the metadata of the metric."
+msgstr ""
+
+#: ../../source/reference/metrics.rst 39e70e0ae7c4497c91a637482fea42aa
+#: 7722384458204320ad12ff4edfed4c77 aaf5c3d7236c4a3a8cb494847fc322ad
+msgid "Return type"
+msgstr ""
+
+#: ../../source/reference/metrics.rst:12 1024aae7056e4e5faa07c33472d5c920
+msgid "Helper Class"
+msgstr ""
+
+#: ../../source/reference/metrics.rst:13 dbf950312a794a3c82e1f22b318cfa79
+msgid ""
+"The RAGEvaluator takes a list of metrics and evaluates the performance of"
+" a RAG assistant or a retriever."
+msgstr ""
+
+#: 716fdd0a7d784d23bd8cc5280ec892c8 flexrag.metrics.evaluator.Evaluator:1 of
+msgid "Bases: :py:class:`object`"
+msgstr ""
+
+#: 8aea888aa98d46b5be660bf6a043b490
+#: flexrag.metrics.evaluator.Evaluator.evaluate:1 of
+msgid "Evaluate the generated responses against the ground truth responses."
+msgstr ""
+
+#: acf9658a760544cfa03b46d25c86a1e8
+#: flexrag.metrics.evaluator.Evaluator.evaluate:8 of
+msgid "Whether to log the evaluation results. Defaults to True."
+msgstr ""
+
+#: be12dfdced1b44898255673acd0cb5d1
+#: flexrag.metrics.evaluator.Evaluator.evaluate:15 of
+msgid "The evaluation results and the evaluation details."
+msgstr ""
+
+#: ../../source/reference/metrics.rst:25 a128c7a3031a4c2f8859bbc212f74431
+msgid "RAG Generation Metrics"
+msgstr ""
+
+#: 83a850e1370942a6b80b7c53546acd97
+#: flexrag.metrics.generation_metrics.BLEUConfig:1 of
+msgid ""
+"Configuration for ``BLEU`` metric. The computation of BLEU score is based"
+" on `sacrebleu <https://github.com/mjpost/sacrebleu>`_."
+msgstr ""
+
+#: ec519c74b9134d818251879a17f8db4f
+#: flexrag.metrics.generation_metrics.BLEUConfig:4 of
+msgid ""
+"The tokenizer to use. Defaults to sacrebleu.BLEU.TOKENIZER_DEFAULT. "
+"Available choices: Please refer to sacrebleu.BLEU.TOKENIZERS."
+msgstr ""
+
+#: 51aca05dfc93464dbdbd09ce168610ae 53234296b7dd4d38b8e9bc8d7f4b915d
+#: 5fe13de7e17a4a94923e4a3fbbeab01e 7edd159a54f1489bbf6c1a450610f7b3
+#: 8a77b11e028e4f9fbb8cee9e6e9b75bc 96fb55eea8ac4a0e87b037283d1c0698
+#: bc7d62e1f9bc4096b3f69fba49886767 dc003c27f2dc4082a70946bea8d8efbe
+#: flexrag.metrics.generation_metrics.BLEU:1
+#: flexrag.metrics.generation_metrics.Rouge:1
+#: flexrag.metrics.generation_metrics.chrF:1
+#: flexrag.metrics.retrieval_metrics.RetrievalMAP:1
+#: flexrag.metrics.retrieval_metrics.RetrievalNDCG:1
+#: flexrag.metrics.retrieval_metrics.RetrievalPrecision:1
+#: flexrag.metrics.retrieval_metrics.RetrievalRecall:1
+#: flexrag.metrics.retrieval_metrics.SuccessRate:1 of
+msgid "Bases: :py:class:`~flexrag.metrics.metrics_base.MetricsBase`"
+msgstr ""
+
+#: 851b0c77d1b046a0a5341cc3c722fa72 flexrag.metrics.generation_metrics.BLEU:1
+#: of
+msgid "The BLEU metric."
+msgstr ""
+
+#: 018c1422bc06426ab4ae63e50cc01cb6 flexrag.metrics.generation_metrics.Rouge:1
+#: of
+msgid ""
+"The Rouge metric. The computation of Rouge score is based on `rouge "
+"<https://github.com/pltrdy/rouge>`_. This metric will return the average "
+"of the Rouge-1, Rouge-2, and Rouge-L F1 scores."
+msgstr ""
+
+#: 585d797a95b64be4ac7d694f36c0d0b9
+#: flexrag.metrics.generation_metrics.chrFConfig:1 of
+msgid ""
+"Configuration for ``chrF`` metric. The computation of chrF score is based"
+" on `sacrebleu <https://github.com/mjpost/sacrebleu>`_."
+msgstr ""
+
+#: 44ab26ba34dd40599442b7a3dac07680
+#: flexrag.metrics.generation_metrics.chrFConfig:4 of
+msgid "The beta value for the F-score. Defaults to 1.0."
+msgstr ""
+
+#: ee9de21fd6f54b439651d921202571ff
+#: flexrag.metrics.generation_metrics.chrFConfig:6 of
+msgid "The order of characters. Defaults to sacrebleu.CHRF.CHAR_ORDER."
+msgstr ""
+
+#: 736868766fe54854b5ed0bc7c5f3a989
+#: flexrag.metrics.generation_metrics.chrFConfig:8 of
+msgid "The order of words. Defaults to sacrebleu.CHRF.WORD_ORDER."
+msgstr ""
+
+#: a0c819d1a791470f9cf00b9b2fa6881a flexrag.metrics.generation_metrics.chrF:1
+#: of
+msgid "The chrF metric."
+msgstr ""
+
+#: 0f2fb79cd314443cac4f24eae9461df1 48e91d9633f4456cb824f1333b8b5384
+#: 49945e515e604cd1b8ad9c4cf004051c ab6c525b398b4f2190486852b4f5c6eb
+#: b49c4a19d8d0493e815c13f18f2f94f4 flexrag.metrics.matching_metrics.Accuracy:1
+#: flexrag.metrics.matching_metrics.ExactMatch:1
+#: flexrag.metrics.matching_metrics.F1:1
+#: flexrag.metrics.matching_metrics.Precision:1
+#: flexrag.metrics.matching_metrics.Recall:1 of
+msgid "Bases: :py:class:`~flexrag.metrics.matching_metrics.MatchingMetrics`"
+msgstr ""
+
+#: 2402806e41a84ab599941ebd2def87ed flexrag.metrics.matching_metrics.F1:1 of
+msgid ""
+"F1 metric computes the F1 score of the predicted response against the "
+"golden responses."
+msgstr ""
+
+#: 94e77c0bddca493ba205bfcecf6ac4a2 flexrag.metrics.matching_metrics.Accuracy:1
+#: of
+msgid ""
+"Accuracy metric computes if any of the golden responses is in the "
+"predicted response."
+msgstr ""
+
+#: 8698c85f0d2e46a89354f63ec7c1f537
+#: flexrag.metrics.matching_metrics.ExactMatch:1 of
+msgid ""
+"ExactMatch metric computes if any of the golden responses is exactly the "
+"same as the predicted response."
+msgstr ""
+
+#: 2283a6833519435a9b2381b6c1fe4f08
+#: flexrag.metrics.matching_metrics.Precision:1 of
+msgid ""
+"Precision metric computes the precision of the predicted response against"
+" the golden responses."
+msgstr ""
+
+#: f4edca971172400ab31e8ca7256d9e7c flexrag.metrics.matching_metrics.Recall:1
+#: of
+msgid ""
+"Recall metric computes the recall of the predicted response against the "
+"golden responses."
+msgstr ""
+
+#: ../../source/reference/metrics.rst:70 afe8251009224dae98a06ca923cff9d8
+msgid "Information Retrieval Metrics"
+msgstr ""
+
+#: b0ee08d70a9b495e8758d5f2660673d3
+#: flexrag.metrics.retrieval_metrics.SuccessRateConfig:1 of
+msgid ""
+"Configuration for ``SuccessRate`` metric. This metric computes whether "
+"the retrieved contexts contain any of the golden responses."
+msgstr ""
+
+#: 754968adb6884f54963b17a037b4978e
+#: flexrag.metrics.retrieval_metrics.SuccessRateConfig:4 of
+msgid ""
+"The field to evaluate. Defaults to None. If None, only strings are "
+"supported as the `retrieved_contexts`."
+msgstr ""
+
+#: 342e06effd7041988341be2fbe7abae5
+#: flexrag.metrics.retrieval_metrics.SuccessRateConfig:7 of
+msgid ""
+"The preprocessing pipeline for the context. Defaults to "
+"TextProcessPipelineConfig."
+msgstr ""
+
+#: 7426ea9aa8014912859df6d546cbe971
+#: flexrag.metrics.retrieval_metrics.SuccessRate:1 of
+msgid ""
+"The SuccessRate metric computes whether the retrieved contexts contain "
+"any of the golden responses."
+msgstr ""
+
+#: a339685ed6e34ff7806a95245482eeb8
+#: flexrag.metrics.retrieval_metrics.RetrievalRecallConfig:1 of
+msgid ""
+"Configuration for ``RetrievalRecall`` metric. This metric computes the "
+"recall of the retrieved contexts. The computation is based on "
+"`pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_."
+msgstr ""
+
+#: 347fb22f072b4a7ab0af0049e712fbf6 4e91ae3195e5478085fa93f7dc5f68ae
+#: 89680298678441ce9e70abd73d387e58 a16351128aac43948dbf6e215682f0df
+#: flexrag.metrics.retrieval_metrics.RetrievalMAPConfig:5
+#: flexrag.metrics.retrieval_metrics.RetrievalNDCGConfig:5
+#: flexrag.metrics.retrieval_metrics.RetrievalPrecisionConfig:5
+#: flexrag.metrics.retrieval_metrics.RetrievalRecallConfig:5 of
+msgid "The k values for evaluation. Defaults to [1, 5, 10]."
+msgstr ""
+
+#: da43e10621ff4227adc1700a83ab9aeb
+#: flexrag.metrics.retrieval_metrics.RetrievalRecall:1 of
+msgid "The RetrievalRecall metric computes the recall of the retrieved contexts."
+msgstr ""
+
+#: 9d0058da9c3345deaed0a1f136bd717a
+#: flexrag.metrics.retrieval_metrics.RetrievalPrecisionConfig:1 of
+msgid ""
+"Configuration for ``RetrievalPrecision`` metric. This metric computes the"
+" precision of the retrieved contexts. The computation is based on "
+"`pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_."
+msgstr ""
+
+#: 17ef0bce90c9444e91d1a445f1758fc1
+#: flexrag.metrics.retrieval_metrics.RetrievalPrecision:1 of
+msgid ""
+"The RetrievalPrecision metric computes the precision of the retrieved "
+"contexts."
+msgstr ""
+
+#: 1b070e109bfe4b07980b2d62e6193745
+#: flexrag.metrics.retrieval_metrics.RetrievalMAPConfig:1 of
+msgid ""
+"Configuration for ``RetrievalMAP`` metric. This metric computes the MAP "
+"of the retrieved contexts. The computation is based on `pytrec_eval "
+"<https://github.com/cvangysel/pytrec_eval>`_."
+msgstr ""
+
+#: a661628e50e64975983c35581782eb0a
+#: flexrag.metrics.retrieval_metrics.RetrievalMAP:1 of
+msgid ""
+"The RetrievalMAP metric computes the Mean Average Precision (MAP) of the "
+"retrieved contexts."
+msgstr ""
+
+#: e7b8e7776d444a4f9cfca9e924336e46
+#: flexrag.metrics.retrieval_metrics.RetrievalNDCGConfig:1 of
+msgid ""
+"Configuration for ``RetrievalNDCG`` metric. This metric computes the nDCG"
+" of the retrieved contexts. The computation is based on `pytrec_eval "
+"<https://github.com/cvangysel/pytrec_eval>`_."
+msgstr ""
+
+#: 381387df1a2b4df982681b8abb6ed2aa
+#: flexrag.metrics.retrieval_metrics.RetrievalNDCG:1 of
+msgid ""
+"The RetrievalNDCG metric computes the Normalized Discounted Cumulative "
+"Gain (nDCG) of the retrieved contexts."
+msgstr ""
+

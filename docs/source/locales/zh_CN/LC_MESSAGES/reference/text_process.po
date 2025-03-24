@@ -1,0 +1,98 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/reference/text_process.rst:2 bcafd7856e7f47549f7854330be2a356
+msgid "Text Processing"
+msgstr ""
+
+#: ../../source/reference/text_process.rst:3 6e070e6188914335a88aba4c0859e75a
+msgid ""
+"This module provides a set of classes and functions for preprocessing and"
+" filtering texts, including normalization, length filtering, etc."
+msgstr ""
+
+#: 917b95e3e8e944ac92ed02d7b0e4398d
+#: flexrag.text_process.processor.Processor.__call__:1 of
+msgid ""
+"Process the input text. If the processor has been filtered, the reserved "
+"flag of the input TextUnit will be set to False."
+msgstr ""
+
+#: ../../source/reference/text_process.rst c66af0aa305d4d899831600d8aae2abf
+#: cdc6caf16dfc4972add779030801799b
+msgid "Parameters"
+msgstr ""
+
+#: 941f41a569eb4a1990b87bfd5dc43b79
+#: flexrag.text_process.processor.Processor.__call__:4 of
+msgid "The input text to process."
+msgstr ""
+
+#: ../../source/reference/text_process.rst 89a47ae85377414db31cd68e160a560d
+msgid "Returns"
+msgstr ""
+
+#: 3bd6f2ef3122417894a12434795eb3fc
+#: flexrag.text_process.processor.Processor.__call__:6 of
+msgid "The processed text."
+msgstr ""
+
+#: ../../source/reference/text_process.rst 282fe9bb2d4d43f89d1e2121f3485155
+msgid "Return type"
+msgstr ""
+
+#: 9e8d7b2691e24a01bb225cbe77a1f7d1 of types.TextProcessPipelineConfig:1
+msgid ""
+"Configuration class for processor (name: TextProcessPipelineConfig, "
+"default: ???)."
+msgstr ""
+
+#: bb2876a2f865424b924c65545a9c6cc2 of types.TextProcessPipelineConfig:3
+msgid "The processor type to use."
+msgstr ""
+
+#: 8cfe929bef594bcdba3e43eea71b21df of types.TextProcessPipelineConfig:5
+msgid "The config for LengthFilter."
+msgstr ""
+
+#: 51df3dd1e06b4c9183e6c122db090a16 of types.TextProcessPipelineConfig:7
+msgid "The config for TokenNormalizer."
+msgstr ""
+
+#: 59d68c7cf96342119bbff9cb855ba3ed of types.TextProcessPipelineConfig:9
+msgid "The config for Truncator."
+msgstr ""
+
+#: 14b63f7efb154a029c233a74a1b7aedf 2c1227cc8ac74dbf8e00e1779f917223
+#: 3c75a8b2130941a3a996d9257f580ec3 4b23451799734d3c8259b93dc1fc695f
+#: 833fd71b2baa41cd89a4ff8bda7db581 89c0c8b6f0f044f49b519e08069613ba
+#: e4a8cc0a00ce498d81029cd80bd400c8
+#: flexrag.text_process.basic_filters.ExactDeduplicate:1
+#: flexrag.text_process.basic_processors.AnswerSimplifier:1
+#: flexrag.text_process.basic_processors.ChineseSimplifier:1
+#: flexrag.text_process.basic_processors.Lowercase:1
+#: flexrag.text_process.basic_processors.TokenNormalizer:1
+#: flexrag.text_process.basic_processors.Truncator:1
+#: flexrag.text_process.basic_processors.Unifier:1 of
+msgid "Bases: :py:class:`~flexrag.text_process.processor.Processor`"
+msgstr ""
+

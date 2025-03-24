@@ -9,7 +9,7 @@
 Welecome to FlexRAG Documentation
 =================================
 
-FlexRAG is a flexible and high-performance framework designed for Retrieval-Augmented Generation (RAG) tasks, offering support for multimodal data, seamless configuration management, and out-of-the-box performance for both research and prototyping.
+FlexRAG is a highly reproducible, easy-to-use, and high-performance RAG framework designed for both research and application scenarios. It supports **text**, **multimodal**, and **web-based** RAG, providing a **complete RAG pipelin**e and evaluation process. With built-in **asynchronous** processing and **persistent caching**, it ensures efficiency and scalability. Easily load retrievers from Hugging Face and quickly build powerful RAG solutions out of the box.
 
 FlexRAG is under active development and is currently in the alpha stage. We welcome contributions from the community and are open to feedback and suggestions.
 
@@ -22,7 +22,8 @@ FlexRAG is under active development and is currently in the alpha stage. We welc
    :caption: Getting Started:
 
    getting_started/installation
-   getting_started/quickstart
+   getting_started/quickstart1
+   getting_started/quickstart2
 
 .. toctree::
    :maxdepth: 1
@@ -36,7 +37,7 @@ FlexRAG is under active development and is currently in the alpha stage. We welc
 
 .. toctree::
    :maxdepth: 1
-   :caption: Reference:
+   :caption: API Reference Manual:
 
    reference/assistant
    reference/chunking

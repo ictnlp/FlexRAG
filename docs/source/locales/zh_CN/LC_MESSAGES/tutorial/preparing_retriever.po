@@ -1,0 +1,555 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-23 17:26+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/tutorial/preparing_retriever.md:1
+#: 8aee3ba6a5314cc387e5ff920d4bef4a
+msgid "Preparing the Retriever"
+msgstr "准备检索器"
+
+#: ../../source/tutorial/preparing_retriever.md:2
+#: b589bed6bada4497b5561001ada4557e
+msgid ""
+"Retriever is one of the most important component in the RAG pipeline. It "
+"retrieves the top-k relevant contexts from the knowledge base for a given"
+" query. In FlexRAG, there are three types of retrievers: `WebRetriever`, "
+"`EditableRetriever`, and `LocalRetriever`. The relationship between these"
+" retrievers is shown in the following figure:"
+msgstr ""
+"检索器是 RAG 系统中最重要的组件之一，它负责从知识库中检索出和用户查询最相关的 k 篇文档。在 FlexRAG "
+"中，有三种类型的检索器，分别是网络检索器 `WebRetriever` 、 可编辑的检索器 `EditableRetriever` 以及本地检索器"
+" `LocalRetriever`。这三种检索器之间的关系如下图所示："
+
+#: ../../source/tutorial/preparing_retriever.md:5
+#: 4e8027c418974e48a4e22605d4e0cf13
+msgid "Retrievers"
+msgstr "检索器"
+
+#: ../../source/tutorial/preparing_retriever.md:11
+#: b26f6ee5618a4f64a8ba2fa9eb42887a
+msgid "The difference between these retrievers is as follows:"
+msgstr "FlexRAG 中三种类型检索器的区别如下："
+
+#: ../../source/tutorial/preparing_retriever.md:12
+#: 93845beda53842788f0961996f5dc1dc
+msgid ""
+"`WebRetriever`: A retriever that helps fetching contexts from the web, "
+"making it ideal for building personal RAG applications with good "
+"timeliness."
+msgstr "网络检索器：通过访问互联网来获取相关文档，适合构建个人 RAG 应用且具有较好地时效性。"
+
+#: ../../source/tutorial/preparing_retriever.md:13
+#: 72fc633396974f5ab552f7352dd23174
+msgid ""
+"`EditableRetriever`: This retriever retrieves information from a "
+"knowledge base and allows easy customization through the `add_passages` "
+"method, offering great flexibility in building a tailored knowledge "
+"repository."
+msgstr "可编辑检索器：可以通过 `add_passages` 方法轻松在您专属的知识库上构建索引。"
+
+#: ../../source/tutorial/preparing_retriever.md:14
+#: 31e487d086dc441bbe724d60b79c750f
+msgid ""
+"`LocalRetriever`: A variant of the `EditableRetriever`, the "
+"`LocalRetriever` stores its knowledge base locally, making it easy to "
+"load from local storage or the Hugging Face Hub. It offers the best "
+"reproducibility."
+msgstr "本地检索器：可编辑检索器的一种，其知识库被保存在本地，因此可以方便地通过 HuggingFace Hub 进行保存和传播。"
+
+#: ../../source/tutorial/preparing_retriever.md:16
+#: b3988aa26aa14607a422d0ce35bf3ecf
+msgid ""
+"In this tutorial, we will show you how to load the retriever from the "
+"HuggingFace Hub or prepare your own retriever."
+msgstr "在本教程中，我们将会向您展示如何从 HuggingFace Hub 中载入检索器或构建您自己的检索器。"
+
+#: ../../source/tutorial/preparing_retriever.md:18
+#: 31bb6360561c443a940c46a39debd0b9
+msgid "Loading the predefined `LocalRetriever` from HuggingFace Hub"
+msgstr "通过 HuggingFace Hub 加载本地检索器 `LocalRetriever`"
+
+#: ../../source/tutorial/preparing_retriever.md:19
+#: 4fa4c311db944badbd4925e6c2d44fdd
+msgid ""
+"FlexRAG implement two built-in `LocalRetriever`s, including the "
+"`DenseRetriever` which employs the semantic similarity between the query "
+"and the context to retrieve the top-k relevant contexts, and the "
+"`BM25SRetriever` which uses the BM25 algorithm to retrieve the top-k "
+"relevant contexts. In this tutorial, we will show you how to load any "
+"predefined retriever from the HuggingFace Hub."
+msgstr ""
+"FlexRAG 实现了两种类型的本地检索器，分别是稠密检索器 `DenseRetriever` 和 稀疏检索器 "
+"`BM25SRetriever`。其中稠密检索器通过计算用户查询和知识库种文档之间的语义相似度来检索相关文档，而稀疏检索器则通过使用 BM25 "
+"算法来检索相关文档。本教程将展示如何从 HuggingFace 种载入预先准备好的本地检索器。"
+
+#: ../../source/tutorial/preparing_retriever.md:23
+#: 69923fea280741bcbfdf317e7ae827f5
+msgid ""
+"In [quickstart](../getting_started/quickstart1.md), we provide several "
+"examples that employ the predefined `LocalRetriever`. FlexRAG provides "
+"several predefined retrievers, which can be accessed from the "
+"[HuggingFace Hub](https://huggingface.co/collections/ICTNLP/flexrag-"
+"retrievers-67b5373b70123669108a2e59)."
+msgstr ""
+"在[快速入门：部署和评估您的 RAG 助手](../getting_started/quickstart1.md)一节中，我们提供了一些使用本地检索器的示例。FlexRAG "
+"官方中提供了多个预先定义好的本地检索器，这些检索器可以通过访问 [HuggingFace "
+"Hub](https://huggingface.co/collections/ICTNLP/flexrag-retrievers-"
+"67b5373b70123669108a2e59) 来查看。"
+
+#: ../../source/tutorial/preparing_retriever.md:26
+#: 4dcfd5c5c80c4c538460a6089c23903f
+msgid "Loading the `LocalRetriever` using FlexRAG's entrypoints"
+msgstr "在使用 FlexRAG 的入口点时加载本地检索器"
+
+#: ../../source/tutorial/preparing_retriever.md:27
+#: 6e1df603b4634f7cab2c7f76aa0f91d5
+msgid ""
+"The simplest way to load a predefined retriever in a RAG application is "
+"by using FlexRAG's entry points. To load the `BM25SRetriever` built on "
+"the *wiki2021_atlas* dataset in the GUI application, simply run the "
+"following command:"
+msgstr ""
+"在 RAG 应用中使用本地检索器最简单的方式就是直接运行 FlexRAG 的入口点。举例来说，您可以通过运行下面的命令来运行一个 RAG GUI "
+"应用，该应用载入了一个构建在维基百科知识库上的BM25检索器。"
+
+#: ../../source/tutorial/preparing_retriever.md:40
+#: a86a44024ed0422a969b1b8ca88c7597
+msgid ""
+"In the command above, we specify the retriever to be loaded by setting "
+"`modular_config.retriever_type='FlexRAG/wiki2021_atlas_bm25s'`. FlexRAG "
+"will automatically download this retriever from the HuggingFace Hub and "
+"utilize it within the current entrypoint program."
+msgstr ""
+"在上面的命令中，我们通过 "
+"modular_config.retriever_type='FlexRAG/wiki2021_atlas_bm25s'` "
+"这一参数指定了检索器。FlexRAG 会自动从 HuggingFace Hub 上下载这个检索器并应用到您的任务中。"
+
+#: ../../source/tutorial/preparing_retriever.md:42
+#: 196424b54f1d46cdb9f038da8bbfd267
+msgid "Loading the `LocalRetriever` in your own code"
+msgstr "在您自己的程序中载入本地检索器"
+
+#: ../../source/tutorial/preparing_retriever.md:43
+#: 71303725c4be4135ac022f2b881b680f
+msgid ""
+"Another way to load a predefined retriever is by importing FlexRAG as a "
+"library. For example, to load the `DenseRetriever` built on the "
+"*wiki2021_atlas* dataset in your own code, you can run the following "
+"code:"
+msgstr ""
+"另一个使用 FlexRAG 检索器的方式是直接在您的代码中导入 "
+"FlexRAG。举例来说，您可以通过下面的代码导入一个构建在维基百科知识库上的稠密检索器："
+
+#: ../../source/tutorial/preparing_retriever.md:52
+#: 3155810cb5ec461ca0cb04a304c29e7f
+msgid ""
+"In this code snippet, we utilize the `LocalRetriever.load_from_hub` "
+"function to download and load the retriever from the HuggingFace Hub."
+msgstr "在这段代码中，我们使用 `LocalRetriever.load_from_hub` 这一方法来从 HuggingFace Hub 上载入检索器。"
+
+#: ../../source/tutorial/preparing_retriever.md:54
+#: 66c49e2c4829408a947cccdfc9d86bf5
+msgid "Preparing Your Own `EditableRetriever`"
+msgstr "准备构建您自己的*可编辑检索器*"
+
+#: ../../source/tutorial/preparing_retriever.md:55
+#: 0884f83df9854cf1b597b37568ef3745
+msgid ""
+"FlexRAG provides several `EditableRetriever` retrievers, including "
+"`DenseRetriever`, `BM25SRetriever`, `ElasticRetriever` and "
+"`TypesenseRetriever`. In this section, we will show you how to build your"
+" own retriever for the RAG application."
+msgstr ""
+"FlexRAG 提供了多种可编辑的检索器，包括稠密检索器 `DenseRetriever`、BM25检索器 `BM25SRetriever`、 "
+"ElasticSearch 检索器 `ElasticRetriever` 以及 Typesense 检索器 "
+"`TypesenseRetriever`。在本小节中，我们将向您展示如何使用您自己的知识库构建相应的检索器。"
+
+#: ../../source/tutorial/preparing_retriever.md:57
+#: 4cff0fac195b4de09881fa39d438b127
+msgid "Preparing the knowledge base"
+msgstr "准备知识库"
+
+#: ../../source/tutorial/preparing_retriever.md:58
+#: 5412625552024e708efe0cd2f39acd99
+msgid ""
+"Before preparing your retriever, you need to prepare the knowledge base. "
+"In this example, we will use the Wikipedia knowledge base provided by the"
+" [DPR project](https://github.com/facebookresearch/DPR). You can download"
+" the knowledge base by running the following command:"
+msgstr ""
+"在构建检索器之前，您需要准备好您的知识库。在这个例子中，我们使用了 "
+"[DPR](https://github.com/facebookresearch/DPR) "
+"项目构建的维基百科知识库。您可以通过下面的命令下载该知识库："
+
+#: ../../source/tutorial/preparing_retriever.md:67
+#: 40c3b7a473b74737a02459a6839847ef
+msgid ""
+"You may also utilize your own knowledge base. FlexRAG supports knowledge "
+"bases saved in *line-delimited file formats* (such as *.csv, *.jsonl, or "
+"*.tsv), where each line represents a piece of knowledge, and each piece "
+"can contain multiple fields (such as id, text, etc.). You can store your "
+"knowledge base across multiple files or within a single file. In this "
+"case, the Wikipedia knowledge base provides three fields: `id`, `title`, "
+"and `text`, where the `text` field contains a text chunk of the Wikipedia"
+" page, `title` contains the title of the corresponding Wikipedia page, "
+"and `id` contains the unique identifier of the knowledge piece. You can "
+"check the first line of the knowledge base by running the following "
+"command:"
+msgstr ""
+"您也许希望使用您自己构建的知识库，FlexRAG 支持以*行分割文件*格式保存的知识库（如 csv、jsonl 或 "
+"tsv）。这些文件中，每一行代表一个知识片段，每个知识片段包含多个字段（如 "
+"text、id等）。您可以将您的知识库保存在一个或多个文件中。在这个示例中，维基百科知识库共有三个字段： `id`、`title` 以及 "
+"`text`。其中 `text` 字段保存了维基百科页面的文本片段，`title` 字段保存了当前页面的标题，`id` "
+"字段则作为每个知识片段的唯一标识符。您可以通过下面的命令来查看知识库的前五行："
+
+#: ../../source/tutorial/preparing_retriever.md:73
+#: 72d150910271471b9c047df3de7f4982
+msgid "The output should be like this:"
+msgstr "该命令的输出应该如下所示："
+
+#: ../../source/tutorial/preparing_retriever.md:82
+#: 618434f35d284e3bae18b43c1ad8ec8f
+msgid "Preparing the Sparse Retriever"
+msgstr "构建稀疏检索器"
+
+#: ../../source/tutorial/preparing_retriever.md:83
+#: a361576728b34041be376a69f573499e
+msgid ""
+"After preparing the knowledge base, you can proceed to build the index "
+"for it. This section will demonstrate how to construct a sparse index "
+"using the BM25 algorithm. In FlexRAG, the `BM25SRetriever` is a sparse "
+"retriever based on the BM25 algorithm. You can execute the following "
+"command to build the sparse index for it:"
+msgstr ""
+"在完成知识库构建后，您就可以为您的知识库构建索引了。这一小节将会向您展示如何使用 *BM25* 算法来构建稀疏索引。在 FlexRAG "
+"中，`BM25SRetriever` 是一个基于 BM25 算法的稀疏检索器，您可以运行下面的命令来为其构建稀疏索引："
+
+#: ../../source/tutorial/preparing_retriever.md:100
+#: c3e0bbc75d8947c4bd8fae4c08bc7d82
+msgid ""
+"In this script, we specify the use of the `BM25SRetriever` with the "
+"command-line parameter `retriever_type=bm25s`, and set the input file as "
+"*psgs_w100.tsv* using the parameter `file_paths=[psgs_w100.tsv]`. Next, "
+"the `saving_fields=$CORPUS_FIELDS` parameter is specified to read the "
+"`title` and `text` fields from the knowledge base, and the "
+"`bm25s_config.indexed_fields=$CORPUS_FIELDS` parameter is used to build "
+"an index based on the `title` and `text` fields. Meanwhile, the parameter"
+" `id_field='id'` specifies that the `id` field in the knowledge base "
+"serves as the unique identifier for each piece of knowledge (this "
+"parameter is optional). Finally, the parameter "
+"`bm25s_config.database_path=$DB_PATH` indicates that the prepared "
+"retriever will be stored at the `<path_to_database>` location."
+msgstr ""
+"在这段命令中，我们通过 `retriever_type=bm25s` 这一命令行参数指定了使用 `BM25SRetriever` 检索器，通过参数"
+" `file_paths=[psgs_w100.tsv]` 指定了 FlexRAG 读取 `[psgs_w100.tsv]` "
+"下的知识库。随后，又在参数 `saving_fields=$CORPUS_FIELDS` 中指定了读取知识库中的 `title` 和 `text`"
+" 字段，并使用参数 `bm25s_config.indexed_fields=$CORPUS_FIELDS` 指定以 `title` 和 "
+"`text` 字段建立索引。同时，`id_field='id'` 这一参数指定了将知识库中的 `id` "
+"字段作为每条知识的唯一标识符（这一参数是可选的）。最后，`bm25s_config.database_path=$DB_PATH` "
+"这一参数指出了准备好的检索器将被存储于 `<path_to_database>` 路径下。"
+
+#: ../../source/tutorial/preparing_retriever.md:102
+#: 88d6df642e9c49ca9dc22e74035137cc
+msgid "Preparing the Dense Retriever"
+msgstr "构建稠密检索器"
+
+#: ../../source/tutorial/preparing_retriever.md:103
+#: 847b7bd0fa934809a286082c7ea00f05
+msgid ""
+"You can also build a dense retriever by specifying `retriever_type=dense`"
+" when constructing the retriever. A dense retriever finds the most "
+"relevant documents by computing the semantic similarity between a query "
+"and the documents being searched. The query and documents are encoded by "
+"a query encoder and a document encoder, respectively, to obtain their "
+"corresponding dense vectors."
+msgstr ""
+"您也可以通过在构建检索器时指定 `retriever_type=dense` "
+"来构建稠密检索器。稠密检索器通过计算查询和被查询文档之间的语义相似性来寻找最相关文档，其中查询和被查询文档分别被*查询编码器*和*文档编码器*编码，并得到相应的稠密向量。"
+
+#: ../../source/tutorial/preparing_retriever.md:105
+#: 301425deb61a4e80bfb9a1fc5319b248
+msgid ""
+"To further improve retrieval efficiency, a vector index needs to be built"
+" for the dense vectors. Therefore, when constructing the retriever, you "
+"need to specify the appropriate document encoder and the relevant "
+"parameters for building the vector index."
+msgstr "为了进一步提高检索效率，还需要为稠密向量构建相应的向量索引。因此在构建检索器时，您需要指定相应*文档编码器*以及构建向量索引的相关参数。"
+
+#: ../../source/tutorial/preparing_retriever.md:107
+#: b21d277e4df1445aa480a0cfc9abbd0a
+msgid ""
+"You can run the following command to build a dense retriever using "
+"Wikipedia as the knowledge base:"
+msgstr "您可以运行下面的命令来以维基百科为知识库构建一个稠密检索器："
+
+#: ../../source/tutorial/preparing_retriever.md:129
+#: d89aa3f6a2d2481eb7b6aca956d699a1
+msgid ""
+"In this command, we specify the use of a dense retriever with the "
+"parameter retriever_type=dense and designate Wikipedia as the knowledge "
+"base using `file_paths=[$CORPUS_PATH]`. Similar to before, we specify "
+"saving the `title` and `text` fields while using the `id` field as the "
+"unique identifier for each piece of knowledge."
+msgstr ""
+"在这条命令中，我们通过参数 `retriever_type=dense` 指定了使用稠密检索器，并通过参数 "
+"`file_paths=[$CORPUS_PATH]` 指定了使用维基百科作为知识库。和之前类似，我们依然指定了保存 `title` 和 "
+"`text` 这两个字段，并以 `id` 这个字段作为每条知识的唯一标识符。"
+
+#: ../../source/tutorial/preparing_retriever.md:131
+#: aca85e9b32234fc8a27680bf16704eb0
+msgid ""
+"The key difference here is that we explicitly define multiple parameters "
+"under `dense_config` in the command-line arguments. These parameters "
+"instruct FlexRAG on how to configure the dense retriever. Specifically:"
+msgstr ""
+"不一样的是，这里我们在命令行参数中指定了大量的 `dense_config` 中的参数，这些参数告诉 FlexRAG "
+"我们将如何配置这个稠密检索器。具体来说："
+
+#: ../../source/tutorial/preparing_retriever.md:132
+#: c402435a41f14e78a58b70852973cd08
+msgid ""
+"`dense_config.database_path=$DB_PATH` sets the path where the retriever "
+"will be stored."
+msgstr "`dense_config.database_path=$DB_PATH` 指定了我们保存检索器的路径。"
+
+#: ../../source/tutorial/preparing_retriever.md:133
+#: f9045fb144a640da9a1db24a75a1eb27
+msgid ""
+"`dense_config.encode_fields='[text]'` specifies that the text field will "
+"be encoded into semantic vectors and indexed."
+msgstr "`dense_config.encode_fields='[text]'` 指定我们将为 `text` 字段进行语义向量编码并构建索引。"
+
+#: ../../source/tutorial/preparing_retriever.md:134
+#: be9fb69bc5cb471b812815e67128a8f2
+msgid ""
+"`dense_config.passage_encoder_config.encoder_type=hf` indicates that we "
+"are using an encoder from Hugging Face."
+msgstr ""
+"`dense_config.passage_encoder_config.encoder_type=hf` 指明我们将使用 HuggingFace"
+" 上的编码器。"
+
+#: ../../source/tutorial/preparing_retriever.md:135
+#: 45441953c7094f2d85f80c81145f2cc6
+msgid ""
+"`dense_config.passage_encoder_config.hf_config.model_path='facebook"
+"/contriever-msmarco'` explicitly defines `facebook/contriever-msmarco` as"
+" the encoder to be used."
+msgstr ""
+"`dense_config.passage_encoder_config.hf_config.model_path='facebook"
+"/contriever-msmarco'` 明确了我们将使用 `facebook/contriever-msmarco` 这一编码器来进行编码。"
+
+#: ../../source/tutorial/preparing_retriever.md:136
+#: a8d05c961eb44b0cb533b37cc1d852c4
+msgid ""
+"Finally, `dense_config.index_type=faiss` specifies that Faiss will be "
+"used to build the vector index."
+msgstr "最后，`dense_config.index_type=faiss` 这一参数指定了我们使用 Faiss 来构建向量索引。"
+
+#: ../../source/tutorial/preparing_retriever.md:139
+#: dfd94ac05cae42f0af3d3ae6be2ba24e
+msgid ""
+"In the above script, we specify the `device_id` as `[0,1,2,3]` to use 4 "
+"GPUs for encoding the text field. This configuration will speed up the "
+"encoding process. If you do not have multiple GPUs, you can simply set "
+"`device_id=[0]` to use a single GPU or `device_id=[]` to use CPU."
+msgstr ""
+"在上面的脚本中，我们将 `device_id` 这一参数指定为 `[0,1,2,3]`，这将指定使用编号为 0,1,2,3 的四块 GPU "
+"来进行编码任务，FlexRAG 将自动应用数据并行来加速编码过程。如果您仅有一块 GPU，您可以将编号修改为 `[0]` 来使用该 "
+"GPU，如果您想使用 CPU 进行编码，您可以将编码修改为 `[]` 来使用CPU。"
+
+#: ../../source/tutorial/preparing_retriever.md:142
+#: 9e3425d0c2a647c792f43567ce3e4e24
+msgid "Using the Retriever"
+msgstr "使用您的检索器"
+
+#: ../../source/tutorial/preparing_retriever.md:143
+#: fd30a7cc5ed941a0b89a8749b385aee7
+msgid ""
+"After preparing the retriever, you can use it in the RAG application or "
+"other tasks. For example, you can use the `DenseRetriever` to retrieve "
+"the top 5 passages for a given query:"
+msgstr "在完成检索器的准备后，您就可以在您的 RAG 应用或任务中使用这个检索器了。举例来说，您可以使用稠密检索器来为您的每个查询检索最相关的5个相关文档："
+
+#: ../../source/tutorial/preparing_retriever.md:165
+#: a583bd1988f24814914088be3d8ba06e
+msgid ""
+"You can also evaluate your retriever using FlexRAG's predefined "
+"`ASSISTANT` in any RAG tasks. For example, to evaluate the "
+"`BM25SRetriever` on the test set of the *Natural Questions* dataset, you "
+"can run the following script:"
+msgstr ""
+"您也可以在 FlexRAG 内置的 RAG 助手中使用您的检索器。举例来说，您可以在模块化 RAG 助手 `ModularAssistant` "
+"中使用您刚刚构建的稀疏检索器，并在 *Natural Questions* 数据集上评估这个 RAG 助手："
+
+#: ../../source/tutorial/preparing_retriever.md:192
+#: 5ce8565421eb4331a26e3af11fa81eab
+msgid "Uploading the Retriever to the HuggingFace Hub"
+msgstr "将您的检索器上传到 HuggingFace Hub"
+
+#: ../../source/tutorial/preparing_retriever.md:193
+#: 169f58931358461fbfd4ba22c2762beb
+msgid ""
+"To share your retriever with the community, you can upload it to the "
+"HuggingFace Hub. For example, to upload the `DenseRetriever` to the "
+"HuggingFace Hub, you can run the following code:"
+msgstr "您可以通过将检索器上传到 HuggingFace Hub 上来与社区分享您的检索器。举例来说，您可以使用下面的代码来上传您刚刚构建的稠密检索器："
+
+#: ../../source/tutorial/preparing_retriever.md:221
+#: 8d2d8492be654824a7d5d879243bd1e3
+msgid ""
+"In this code, you need to specify the `repo_id` and `token` to upload the"
+" retriever to the HuggingFace Hub. You can find the `token` in your "
+"HuggingFace [account settings](https://huggingface.co/settings/tokens). "
+"After uploading the retriever, you can share the retriever with the "
+"community by sharing the link to the HuggingFace Hub."
+msgstr ""
+"在这段代码中，您需要指定 `repo_id` 和 `token` 这两个参数来将检索器上传到相应的仓库中。您可以在 HuggingFace "
+"[账户设置](https://huggingface.co/settings/tokens)中获取您的token。在完成上传后，您就可以通过 "
+"HuggingFace Hub 的仓库链接来分享您的检索器了。"
+
+#: ../../source/tutorial/preparing_retriever.md:224
+#: 0325e17ff82041ac8699ea1f6bd646f5
+msgid ""
+"To make your shared `DenseRetriever` accessible to the community, you "
+"need to make sure the query encoder and the passage encoder are "
+"**configured** and **accessible** to the public. In this example, the "
+"`facebook/contriever-msmarco` model is hosted on the HuggingFace Hub, so "
+"users can access the model without any additional configuration. If you "
+"use a custom model, uploading your model to the HuggingFace Hub is "
+"recommended."
+msgstr ""
+"为了确保您分享的稠密检索器能够被使用，您需要确保您的配置中的*查询编码器*和*文档编码器*均**已配置**且**可被公开访问**。在上面的例子中，我们将*查询编码器*和*文档编码器*均设置为"
+" `facebook/contriever-msmarco` 该编码器是 HuggingFace Hub "
+"上已有的编码器，因此可以被访问。如果您使用了独有的模型作为编码器，推荐您将编码器一并上传到 HuggingFace Hub 上。"
+
+#~ msgid "Downloading the Corpus"
+#~ msgstr "准备知识库"
+
+#~ msgid ""
+#~ "You can also use your own corpus."
+#~ " The corpus could be a single "
+#~ "file or a directory containing multiple"
+#~ " files. The allowed file formats are"
+#~ " `.tsv`, `.csv`, `.jsonl`. The corpus "
+#~ "should contain one *chunk* per line. "
+#~ "Each *chunk* should have at least "
+#~ "one field that contains the information"
+#~ " of the chunk. In this case, "
+#~ "the Wikipedia corpus provides three "
+#~ "fields: `id`, `title`, and `text`, where"
+#~ " the `text` field contains the text"
+#~ " of the chunk, `title` contains the"
+#~ " title of the corresponding Wikipedia "
+#~ "page, and `id` contains the unique "
+#~ "identifier of the chunk. You can "
+#~ "check the first line of the corpus"
+#~ " by running the following command:"
+#~ msgstr ""
+#~ "当然，您也可以使用您自己的知识库。 FlexRAG 支持以*行分割文件*形式保存的知识库（如 "
+#~ "`*.csv`、`*.jsonl` 或 `*.tsv`），其中每行为一条知识，每条知识中可以包含多个字段（如 "
+#~ "`id`、`text` "
+#~ "等）。您可以将自己的知识库保存在多个文件或单个文件中。在本示例中所使用的维基百科知识库包含三个字段，分别是 "
+#~ "`id`、`title` 和 `text`。其中 `text` "
+#~ "中保存了维基百科页面中的文本块，`title` 中保存了该文本块对应维基百科页面的标题，`id` "
+#~ "则是每个文本块的唯一描述符。您可以通过运行下述命令来查看该知识库的前5行："
+
+#~ msgid ""
+#~ "After downloading the corpus, you need"
+#~ " to build the index for the "
+#~ "retriever. For example, if you want "
+#~ "to employ the `BM25SRetriever`, you can"
+#~ " simply run the following command to"
+#~ " build the index:"
+#~ msgstr ""
+#~ "在准备好知识库后，您就可以开始为您的知识库构建索引了。这一小节将会向您展示如何使用 *BM25* "
+#~ "算法来构建稀疏索引。在 FlexRAG 中，`BM25SRetriever` 是一个基于 "
+#~ "BM25 算法的稀疏检索器，您可以运行下面的命令来为其构建稀疏索引："
+
+#~ msgid ""
+#~ "In this command, we specify the "
+#~ "retriever as `BM25S` and use the "
+#~ "downloaded *psgs_w100.tsv* as the corpus. "
+#~ "We designate the `title` and `text` "
+#~ "fields from the corpus to be "
+#~ "stored in the database and create "
+#~ "index for the information saved in "
+#~ "these two fields. We specify the "
+#~ "`id` field as the unique identifier "
+#~ "for each chunk (if you do not "
+#~ "specify an id field or if the "
+#~ "corpus does not include an id "
+#~ "field, FlexRAG will automatically assign "
+#~ "sequential numbers to each chunk as "
+#~ "unique identifiers). Finally, the prepared "
+#~ "BM25S retriever will be stored in "
+#~ "the directory <path_to_database>."
+#~ msgstr ""
+#~ "在这段命令中，我们通过 `retriever_type=bm25s` 这一命令行参数指定了使用 "
+#~ "`BM25SRetriever` 检索器，通过参数 `file_paths=$CORPUS_PATH` "
+#~ "指定了 FlexRAG 读取 `$CORPUS_PATH` 下的知识库。随后，又在参数"
+#~ " `saving_fields=$CORPUS_FIELDS` 中指定了读取知识库中的 `title` "
+#~ "和 `text` 字段，并使用参数 "
+#~ "`bm25s_config.indexed_fields=$CORPUS_FIELDS` 指定以 `title`"
+#~ " 和 `text` 字段建立索引。同时，`id_field='id'` 这一参数指定了将知识库中的"
+#~ " `id` "
+#~ "字段作为每条知识的唯一标识符（这一参数是可选的）。最后，`bm25s_config.database_path=$DB_PATH` "
+#~ "这一参数指出了准备好的检索器将被存储于 `<path_to_database>` 路径下。"
+
+#~ msgid ""
+#~ "You can also employ the `DenseRetriever`"
+#~ " as your retriever. To build the "
+#~ "index for the `DenseRetriever`, you can"
+#~ " run the following command:"
+#~ msgstr ""
+#~ "您也可以通过在构建检索器时指定 `retriever_type=dense` "
+#~ "来构建稠密检索器。稠密检索器通过计算查询和被查询文档之间的语义相似性来寻找最相关文档，其中查询和被查询文档分别被*查询编码器*和*文档编码器*编码，并得到相应的稠密向量。为了进一步提高检索效率，还需要为稠密向量构建相应的向量索引。因此在构建检索器时，您需要指定相应*文档编码器*以及构建向量索引的相关参数。您可以运行下面的命令来以维基百科为知识库构建一个稠密检索器："
+
+#~ msgid ""
+#~ "Similarly, we specify the retriever as"
+#~ " `DenseRetriever` and use the downloaded"
+#~ " *psgs_w100.tsv* as the corpus. We "
+#~ "designate the `title` and `text` fields"
+#~ " from the corpus to be stored "
+#~ "in the database and specify the "
+#~ "`id` field as the unique identifier "
+#~ "for each chunk. In addition, we "
+#~ "use the `facebook/contriever-msmarco` model"
+#~ " to encode the `text` field and "
+#~ "store the encoded vectors in the "
+#~ "database. Finally, the prepared "
+#~ "`DenseRetriever` will be stored in the"
+#~ " directory <path_to_database>."
+#~ msgstr ""
+#~ "在这条命令中，我们通过参数 `retriever_type=dense` 指定了使用稠密检索器，并通过参数 "
+#~ "`file_paths=[$CORPUS_PATH]` 指定了使用维基百科作为知识库。和之前类似，我们依然指定了保存 "
+#~ "`title` 和 `text` 这两个字段，并以 `id` "
+#~ "这个字段作为每条知识的唯一标识符。不一样的是，这里我们在命令行参数中指定了大量的 `dense_config` "
+#~ "中的参数，这些参数告诉 FlexRAG 我们将如何配置这个稠密检索器。具体来说，我们通过 "
+#~ "`dense_config.database_path=$DB_PATH` 指定了我们保存检索器的路径，通过 "
+#~ "`dense_config.encode_fields='[text]'` 指定我们将为 `text` "
+#~ "字段进行语义向量编码并构建索引，通过 "
+#~ "`dense_config.passage_encoder_config.encoder_type=hf` 指明我们将使用"
+#~ " HuggingFace 上的编码器，同时通过 "
+#~ "`dense_config.passage_encoder_config.hf_config.model_path='facebook"
+#~ "/contriever-msmarco'` 明确了我们将使用 `facebook/contriever-"
+#~ "msmarco` 这一编码器来进行编码。最后，`dense_config.index_type=faiss` "
+#~ "这一参数指定了我们使用 faiss 来构建向量索引。"
+

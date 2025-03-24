@@ -1,5 +1,5 @@
 # Advance: Acquiring Information from the Web
-`WebRetriever` is a special type of retriever that is used to retrieve resource from the web. The resource could be retrieved by using existing search engines (ie. Google, Bing, etc.) or by directly accessing the website.
+`WebRetriever` is a special type of retriever that is used to retrieve resource from the web. The resource could be retrieved by using existing search engines (ie. Google, Bing, etc.) or by accessing the website like a human.
 With internet access, WebRetriever has significant advantages in both the timeliness of retrieval and the breadth of information it can access, making it particularly suitable for building personal agents.
 
 In this tutorial, we will show you how to load / build the `WebRetriever` for your project.
@@ -20,7 +20,7 @@ In this tutorial, we will show you how to use the `SimpleWebRetriever` to retrie
 
 ### Retrieving the Snippet Using the Existing Search Engine
 Most web search engines provide a snippet of the webpage in the search result. This snippet is usually a short description of the webpage that can be used to understand the content of the webpage.
-For example, to retrieve the snippet of the top 5 webpages using *DuckDuckGo*, you can use the following code:
+In FlexRAG, you can use the following code to load a web retriever, which will search for the five most relevant web pages for your query and return the corresponding snippets.
 ```python
 from flexrag.retriever import SimpleWebRetriever, SimpleWebRetrieverConfig
 
@@ -59,11 +59,11 @@ ctxs = retriever.search("Who is Bruce Wayne?")[0]
 
 In the code above, we used the `JinaReader`, a service provided by Jina AI that can extract information from the HTML webpage, to extract information from the HTML webpage. You can get the API key from the [Jina AI website](https://jina.ai/).
 
-FlexRAG also provides other `WebReader`s that can extract information from the HTML webpage. For more details, please refer to the {any}`WebReaderConfig`'s documentation.
+FlexRAG also provides other `WebReader`s, such as the `ScreenshotWebReader`, which captures webpage screenshots, and the `JinaReaderLM`, which uses a local model. For more details, please refer to the {any}`WebReaderConfig`'s documentation.
 
 ### Retrieving the Screenshots of the Web Page
-Since modern VLMs can effectively process images, even webpage screenshots can be used as input. FlexRAG includes a specialized `WebReader` that captures webpage screenshots for processing.
-For example, to capture the screenshot of the top 5 webpages using *DuckDuckGo*, you can use the following code:
+With the significant advancements in Visual Large Models (VLMs) for processing image information, even complex images like webpage screenshots can now be handled effectively. As a result, FlexRAG provides a unique web reader that converts web pages into screenshots. The following code demonstrates how to use `ScreenshotWebReader` to convert web pages retrieved by *DuckDuckGo* into screenshots.
+
 ```python
 from flexrag.retriever import SimpleWebRetriever, SimpleWebRetrieverConfig
 from flexrag.retriever.web_retrievers import JinaReaderConfig
@@ -85,7 +85,7 @@ After running the code above, you will get the screenshot of the top 5 webpages.
 ```
 
 ## Building Your Own WebRetriever
-If you want to build your own `WebRetriever`, you can inherit the `WebRetriever` class and implement the `search` method.
+If you want to build your own `WebRetriever`, you can inherit the `WebRetriever` class and implement the `search` method. Of course, you can also define your own web retriever using the various web access tools provided by FlexRAG.
 
 ### FlexRAG's WebRetriever utilities
 FlexRAG provides several utilities to help you build your own `WebRetriever`:

@@ -1,0 +1,467 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/reference/generators.rst:2 5165ba23d5934698bb16dcd9b89cea7d
+msgid "Generators"
+msgstr ""
+
+#: 7466dc0b59d84646ba0f94ebdb3a14d5 d44e730cb18d4833adff64e9c2e6ab12
+#: flexrag.models.model_base.GeneratorBase.async_chat:1
+#: flexrag.models.model_base.VLMGeneratorBase.async_chat:1 of
+msgid "The async version of chat."
+msgstr ""
+
+#: c4b9a17f4b0a464dba1a1a8768e0bbdc d906710a8baf4f6a9f3bd2ba27aad2b0
+#: flexrag.models.model_base.GeneratorBase.async_generate:1
+#: flexrag.models.model_base.VLMGeneratorBase.async_generate:1 of
+msgid "The async version of generate."
+msgstr ""
+
+#: 29a96d4baafd4c5f8b9cf29a7f770089 d88875ab872b46c49251802e89eb60ed
+#: flexrag.models.model_base.GeneratorBase.chat:1
+#: flexrag.models.model_base.VLMGeneratorBase.chat:1 of
+msgid "chat with the model using model templates."
+msgstr ""
+
+#: ../../source/reference/generators.rst 39e9a45c346146d896ae1d9259fd62bc
+#: 41d0348ed18841d094c99ccec065c122 4e929568a77e44e097fae47b85d5411c
+#: 4fe376244a1649e6b5a0902d716d91d9 5014f142e7dc4f9298e945013a562ca1
+#: 66eef08257cf4497a9d1840c95f4f17c 80a8bfea232c4934843257aa07b98319
+#: 87846b703e6d479d9fb8af8c26cf822a 8937556884e94d51a3ffc6189c0bc281
+#: 8f24aaf0dc694919ab9f397719e1462d 90cf6f598f914ce781dc6ee20cdec64a
+#: ae51fcdca4f0496b8fee3103ae14c1e0 b2cf355a90134ff3b2bcd108fe313748
+#: dcd51b153615480f9ec3524631a27d60 f1c5440a40a341baa6d860f2e34a1827
+msgid "Parameters"
+msgstr ""
+
+#: cc01ca247548405c8b24e444de01125f
+#: flexrag.models.model_base.GeneratorBase.chat:3 of
+msgid "A batch of ChatPrompts."
+msgstr ""
+
+#: 73b2d473cc5340d4973e5cb6544635d9 7700ba5aaf9446eeafbba7274383cbe8
+#: b3abb8d75820435e92513898c7d9ea06 cf8fb58ceb7d4de38188598ba66b40ff
+#: flexrag.models.model_base.GeneratorBase.chat:5
+#: flexrag.models.model_base.GeneratorBase.generate:5
+#: flexrag.models.model_base.VLMGeneratorBase.chat:5
+#: flexrag.models.model_base.VLMGeneratorBase.generate:5 of
+msgid "GenerationConfig. Defaults to GenerationConfig()."
+msgstr ""
+
+#: ../../source/reference/generators.rst 4d5dd3c58e1d41c7a0d4b152340c602e
+#: 54d9b004e58b416cadbfc90f47cc89b5 670d9991d9c046a5b7dd64b3260304ff
+#: 7e6adfa8ef744d4aa3d68c567f9d0563
+msgid "Returns"
+msgstr ""
+
+#: 8a9ad2fd012542aca2d642d8ef5c0d1e 8ba800571cce430d80f43baeac69a49c
+#: flexrag.models.model_base.GeneratorBase.chat:7
+#: flexrag.models.model_base.VLMGeneratorBase.chat:7 of
+msgid "A batch of chat responses."
+msgstr ""
+
+#: ../../source/reference/generators.rst 30c55910c04a4953bb8577ef7422bace
+#: 48b63cffdbd74c0f84de79709cf760b7 5a10a7bd491c4c13a95458745e858dca
+#: a018d0dbb2ee4ccbbe80ce5153b501fc
+msgid "Return type"
+msgstr ""
+
+#: 5c95556d32b14443852a429fbf242443 914738ce65d04fb189dd7ca2017e9afb
+#: flexrag.models.model_base.GeneratorBase.generate:1
+#: flexrag.models.model_base.VLMGeneratorBase.generate:1 of
+msgid "generate text with the model using the given prefixes."
+msgstr ""
+
+#: 118276f19830460cad909f268524fb75 7bf9e13a3fc34ad88fd47767fd2457a9
+#: flexrag.models.model_base.GeneratorBase.generate:3
+#: flexrag.models.model_base.VLMGeneratorBase.generate:3 of
+msgid "A batch of prefixes."
+msgstr ""
+
+#: 1957cc0bc056436cabb345a2a2c3f4c6 21464755d7c64779a8da457709998ec6
+#: flexrag.models.model_base.GeneratorBase.generate:7
+#: flexrag.models.model_base.VLMGeneratorBase.generate:9 of
+msgid "A batch of generated text."
+msgstr ""
+
+#: 9b07be33d74d407a9c576691dd48cb3e
+#: flexrag.models.model_base.GenerationConfig:1 of
+msgid "Configuration for text generation."
+msgstr ""
+
+#: 2ef70655dcf4410093440faea1ea1f4b
+#: flexrag.models.model_base.GenerationConfig:3 of
+msgid "Whether to use sampling for generation. Defaults to True."
+msgstr ""
+
+#: 46187edd991841b2a19746f9267f5f42
+#: flexrag.models.model_base.GenerationConfig:5 of
+msgid "The number of samples to generate. Defaults to 1."
+msgstr ""
+
+#: 784575571de849a088fe3c8cae5d66ba
+#: flexrag.models.model_base.GenerationConfig:7 of
+msgid "The temperature of the sampling distribution. Defaults to 1.0."
+msgstr ""
+
+#: 4df12f9429c642619b8116ab1a388fe1
+#: flexrag.models.model_base.GenerationConfig:9 of
+msgid "The maximum number of tokens to generate. Defaults to 512."
+msgstr ""
+
+#: 68e5001c711b4204809dad5dbf675e08
+#: flexrag.models.model_base.GenerationConfig:11 of
+msgid "The cumulative probability for nucleus sampling. Defaults to 0.9."
+msgstr ""
+
+#: d718d112f9ae4a2e89cf05adfa9f2615
+#: flexrag.models.model_base.GenerationConfig:13 of
+msgid "The number of tokens to consider for top-k sampling. Defaults to 50."
+msgstr ""
+
+#: da8f4cd624c7467da07bbf642a75ae5a
+#: flexrag.models.model_base.GenerationConfig:15 of
+msgid "The token id for the end of sentence token. Defaults to None."
+msgstr ""
+
+#: 833fc49b81944ce1ab45200c3b352250
+#: flexrag.models.model_base.GenerationConfig:17 of
+msgid "A list of strings to stop generation. Defaults to []."
+msgstr ""
+
+#: 89159f5bd7864bad840b3d7533cb862f of types.GeneratorConfig:1
+msgid "Configuration class for generator (name: GeneratorConfig, default: ???)."
+msgstr ""
+
+#: 77b7777611d24b7a9eadf1cc3548892d of types.GeneratorConfig:3
+msgid "The generator type to use."
+msgstr ""
+
+#: 4eef40fb7f8a49fdaaaf66e69199d829 of types.GeneratorConfig:5
+msgid "The config for AnthropicGenerator."
+msgstr ""
+
+#: 8fed1f0e5b144f7c9b9e6b26aadcd13a of types.GeneratorConfig:7
+msgid "The config for HFGenerator."
+msgstr ""
+
+#: 3776dfa9b4b24166a582737eeb1b6425 of types.GeneratorConfig:9
+msgid "The config for HFVLMGenerator."
+msgstr ""
+
+#: 5170f20e76c44475bce645c20d1c7ac9 of types.GeneratorConfig:11
+msgid "The config for LlamacppGenerator."
+msgstr ""
+
+#: 78042a27c5474b29ae9bb1e75cd572f5 of types.GeneratorConfig:13
+msgid "The config for OllamaGenerator."
+msgstr ""
+
+#: 04eb63cc9eda47eab4b8f938be91ed35 of types.GeneratorConfig:15
+msgid "The config for OpenAIGenerator."
+msgstr ""
+
+#: f3e7ff415a7e44d39840c036b28c14b9 of types.GeneratorConfig:17
+msgid "The config for VLLMGenerator."
+msgstr ""
+
+#: ../../source/reference/generators.rst:19 cb41340136dd41698df13e564489ae22
+msgid "Local Generators"
+msgstr ""
+
+#: c0ee98d592d448c8ae30ac2c06a2f8cf flexrag.models.hf_model.HFModelConfig:1 of
+msgid ""
+"The Base Configuration for Huggingface Models, including `HFGenerator`, "
+"`HFVLMGenerator`, `HFEncoder` and `HFClipEncoder`."
+msgstr ""
+
+#: 79ce8a1c509c44979e32ac01118523a3 flexrag.models.hf_model.HFModelConfig:4 of
+msgid "The path to the model. Required."
+msgstr ""
+
+#: dd75abe0d4df4c4787a9746797179693 flexrag.models.hf_model.HFModelConfig:6 of
+msgid ""
+"The path to the tokenizer. None for the same as model_path. Default is "
+"None."
+msgstr ""
+
+#: 0fd448c9de9640ca9e7a6b59264ec134 flexrag.models.hf_model.HFModelConfig:8 of
+msgid "Whether to trust remote code. Default is False."
+msgstr ""
+
+#: 2ef35f12c0114881b0ccced62d031d8f flexrag.models.hf_model.HFModelConfig:10 of
+msgid "The device id to use. [] for using CPU. Default is []."
+msgstr ""
+
+#: c8c83b2ad6984c0ca48c5049fcffb370 flexrag.models.hf_model.HFModelConfig:12 of
+msgid ""
+"The dtype to load the model. Default is \"auto\". Available choices are "
+"\"bfloat16\", \"bf16\", \"float32\", \"fp32\", \"float16\", \"fp16\", "
+"\"half\", \"8bit\", \"4bit\", \"auto\","
+msgstr ""
+
+#: 5123dcbf946f428e80d57a8ccca63ab8 724e851e1e56455dafc9c7e32964ba14
+#: flexrag.models.hf_model.HFGeneratorConfig:1
+#: flexrag.models.hf_model.HFVLMGeneratorConfig:1 of
+msgid "Bases: :py:class:`~flexrag.models.hf_model.HFModelConfig`"
+msgstr ""
+
+#: ca34a757d6b64837922375fd743750c6 flexrag.models.hf_model.HFGeneratorConfig:1
+#: of
+msgid "Configuration for HFGenerator."
+msgstr ""
+
+#: 7a6f6e0667584869bfa45a0b6ffb8310 8dc97e6cfc044b90a8627bf56df6bc42
+#: flexrag.models.hf_model.HFGeneratorConfig:3
+#: flexrag.models.hf_model.HFVLMGeneratorConfig:3 of
+msgid "Whether to use pipeline parallel. Default is False."
+msgstr ""
+
+#: ced166dc3e0d476b9220daf78df9944d flexrag.models.hf_model.HFGeneratorConfig:5
+#: of
+msgid "Whether to use minference for long sequence inference. Default is False."
+msgstr ""
+
+#: 96ed8eabe59049a4b99e408cca46969c flexrag.models.hf_model.HFGeneratorConfig:7
+#: of
+msgid ""
+"The type of the model. Default is \"causal_lm\". Available choices are "
+"\"causal_lm\", \"seq2seq\"."
+msgstr ""
+
+#: 3c5d11f9a34e46f28897f2ab0e08328c 4feb25b742fe4abcb2b4e5b9baab0626
+#: 66c467dbb9e84405840989410743b720 7f8f945dd4e5465193a84ea2701ba7a4
+#: aa81047851d84fbfa3544b6142b46515 b3b25826c57f4b018a2c21b8b1f08871
+#: e695fb7639e545f7bff80322a62aa61a
+#: flexrag.models.anthropic_model.AnthropicGenerator:1
+#: flexrag.models.hf_model.HFGenerator:1
+#: flexrag.models.llamacpp_model.LlamacppGenerator:1
+#: flexrag.models.model_base.VLMGeneratorBase:1
+#: flexrag.models.ollama_model.OllamaGenerator:1
+#: flexrag.models.openai_model.OpenAIGenerator:1
+#: flexrag.models.vllm_model.VLLMGenerator:1 of
+msgid "Bases: :py:class:`~flexrag.models.model_base.GeneratorBase`"
+msgstr ""
+
+#: 01e97b340e974412a471d989aa6d71ea
+#: flexrag.models.llamacpp_model.LlamacppGeneratorConfig:1 of
+msgid "Configuration for LlamacppGenerator."
+msgstr ""
+
+#: 96ef4d0ac2dc4f65b10ec73a971dcf51
+#: flexrag.models.llamacpp_model.LlamacppGeneratorConfig:3 of
+msgid "The path to the model."
+msgstr ""
+
+#: 4d64f39bb6c047c88134f85d8ea9d4f1
+#: flexrag.models.llamacpp_model.LlamacppGeneratorConfig:5 of
+msgid "Whether to use GPU. Default is False."
+msgstr ""
+
+#: 44a2c90c43bb4fe9ab79eb25aff45472
+#: flexrag.models.llamacpp_model.LlamacppGeneratorConfig:7 of
+msgid "Whether to output verbose logs. Default is False."
+msgstr ""
+
+#: dfdbc02fae944562968995a7dfdfaf58
+#: flexrag.models.ollama_model.OllamaGeneratorConfig:1 of
+msgid "Configuration for the OllamaGenerator."
+msgstr ""
+
+#: 95d49024a3414770b841eb977e5000d6
+#: flexrag.models.ollama_model.OllamaGeneratorConfig:3 of
+msgid "The name of the model to use. Required."
+msgstr ""
+
+#: 352af1917e94489b8ab27bcb9b8d53ba
+#: flexrag.models.ollama_model.OllamaGeneratorConfig:5 of
+msgid "The base URL of the Ollama server. Required."
+msgstr ""
+
+#: 05eb789fbaa54958913a056370c06f28 5301594baaa842ce93fd2342d3169ab5
+#: flexrag.models.ollama_model.OllamaGeneratorConfig:7
+#: flexrag.models.openai_model.OpenAIConfig:13 of
+msgid "Whether to show verbose logs. Default is False."
+msgstr ""
+
+#: fd662119ac7f4c38a81ae8b56d95d087
+#: flexrag.models.ollama_model.OllamaGeneratorConfig:9 of
+msgid "The number of context tokens to use. Default is 4096."
+msgstr ""
+
+#: 22f64d3e2e5f41739cbc739e243e4a6b aacc35a7ad344775b939050864007b12
+#: flexrag.models.ollama_model.OllamaGeneratorConfig:11
+#: flexrag.models.openai_model.OpenAIGeneratorConfig:3 of
+msgid "Whether to allow parallel generation. Default is True."
+msgstr ""
+
+#: 4228e6fa2b9d4047be06f043e4a55754
+#: flexrag.models.vllm_model.VLLMGeneratorConfig:1 of
+msgid "Configuration for VLLMGenerator."
+msgstr ""
+
+#: b81012c38b9941f189a7d683bd474515
+#: flexrag.models.vllm_model.VLLMGeneratorConfig:3 of
+msgid "Path to the model. Required."
+msgstr ""
+
+#: 96632baf7aed49d8b92049fa55d52f67
+#: flexrag.models.vllm_model.VLLMGeneratorConfig:5 of
+msgid "Fraction of GPU memory to use. Default to 0.85."
+msgstr ""
+
+#: 242366f2e48f4ceeafc7488fe3fc87ac
+#: flexrag.models.vllm_model.VLLMGeneratorConfig:7 of
+msgid "Maximum length of the model. Defaults to 16384."
+msgstr ""
+
+#: 42596e497bdc4bda81c4b0da00873b65
+#: flexrag.models.vllm_model.VLLMGeneratorConfig:9 of
+msgid "The number of tensor parallel. Defaults to 1."
+msgstr ""
+
+#: cc6414b91f984c53935c3b21c187af34
+#: flexrag.models.vllm_model.VLLMGeneratorConfig:11 of
+msgid ""
+"The dtype to load the model. Defaults to \"auto\". Available options are "
+"\"auto\", \"float32\", \"float16\", \"bfloat16\"."
+msgstr ""
+
+#: c65d4ad801864cfd91a123cb43793450
+#: flexrag.models.vllm_model.VLLMGeneratorConfig:13 of
+msgid "Whether to use minference for Long Sequence Inference. Defaults to False."
+msgstr ""
+
+#: ../../source/reference/generators.rst:70 f46f2993b4554f3b903a48990a7b8102
+msgid "Online Generators"
+msgstr ""
+
+#: ba97bc25c5554113ab3b8c49a9b571b4
+#: flexrag.models.anthropic_model.AnthropicGeneratorConfig:1 of
+msgid "Configuration for AnthropicGenerator."
+msgstr ""
+
+#: 8e047b4d9b144ce4bc08af7f95640aa8
+#: flexrag.models.anthropic_model.AnthropicGeneratorConfig:3 of
+msgid "The name of the model. Required."
+msgstr ""
+
+#: efea7377afee4fa4b8593d21e0840760
+#: flexrag.models.anthropic_model.AnthropicGeneratorConfig:5 of
+msgid "The base url of the API. Defaults to None."
+msgstr ""
+
+#: f39ee0f200ad4cd18431950e12c7243f
+#: flexrag.models.anthropic_model.AnthropicGeneratorConfig:7 of
+msgid "The API key. Defaults to os.environ.get(\"ANTHROPIC_API_KEY\", \"EMPTY\")."
+msgstr ""
+
+#: d6f71471215d40a5b2b347eb80e96ec1
+#: flexrag.models.anthropic_model.AnthropicGeneratorConfig:9 of
+msgid "Whether to output verbose logs. Defaults to False."
+msgstr ""
+
+#: 6e8f90f6a2ba47259aaf74c198a86d90
+#: flexrag.models.anthropic_model.AnthropicGeneratorConfig:11 of
+msgid "The proxy to use. Defaults to None."
+msgstr ""
+
+#: cd045d624a8a4327b0f17cafc06f9b45
+#: flexrag.models.anthropic_model.AnthropicGeneratorConfig:13 of
+msgid "Whether to allow parallel generation. Defaults to True."
+msgstr ""
+
+#: 6b83a79bd472495d80f6fdc5d3fed8d4 flexrag.models.openai_model.OpenAIConfig:1
+#: of
+msgid "Bases: :py:class:`object`"
+msgstr ""
+
+#: a5c1fbf13d0545138cf2dc564bd09d59 flexrag.models.openai_model.OpenAIConfig:1
+#: of
+msgid "The Base Configuration for OpenAI Client."
+msgstr ""
+
+#: b603e45ea2994f49b20752a44f8e3c70 flexrag.models.openai_model.OpenAIConfig:3
+#: of
+msgid "Whether the model is hosted on Azure. Default is False."
+msgstr ""
+
+#: daf2092fd1364c8390999b0a6be4c382 flexrag.models.openai_model.OpenAIConfig:5
+#: of
+msgid "The name of the model to use."
+msgstr ""
+
+#: 1283ff23ac9848adb501dd423d32faa6 flexrag.models.openai_model.OpenAIConfig:7
+#: of
+msgid "The base URL of the OpenAI API. Default is None."
+msgstr ""
+
+#: 54d62de49c2a4e28816f72fbfd27a216 flexrag.models.openai_model.OpenAIConfig:9
+#: of
+msgid ""
+"The API key for OpenAI. Default is os.environ.get(\"OPENAI_API_KEY\", "
+"\"EMPTY\")."
+msgstr ""
+
+#: 940c4143f20349a6b1442bd92b10b992 flexrag.models.openai_model.OpenAIConfig:11
+#: of
+msgid "The API version to use. Default is \"2024-07-01-preview\"."
+msgstr ""
+
+#: bc0e2c1d6a61485cac62d2dfa5b3322b flexrag.models.openai_model.OpenAIConfig:15
+#: of
+msgid "The proxy to use for the HTTP client. Default is None."
+msgstr ""
+
+#: c44ab3e9a9aa4f83bc6f618a1be3120b
+#: flexrag.models.openai_model.OpenAIGeneratorConfig:1 of
+msgid "Bases: :py:class:`~flexrag.models.openai_model.OpenAIConfig`"
+msgstr ""
+
+#: c02e8e2d225743d78e85996477bd5c12
+#: flexrag.models.openai_model.OpenAIGeneratorConfig:1 of
+msgid "Configuration for OpenAI Generator."
+msgstr ""
+
+#: ../../source/reference/generators.rst:99 aabe377ae95e49f99158e142c2d59ce2
+msgid "Visual Language Model Generators"
+msgstr ""
+
+#: cae2ceaefc244ad79b9094d1be5f545f
+#: flexrag.models.model_base.VLMGeneratorBase.chat:3 of
+msgid "A batch of MultiModelChatPrompts."
+msgstr ""
+
+#: fa469da59f1b4f9297b421abcea58813
+#: flexrag.models.model_base.VLMGeneratorBase.generate:4 of
+msgid "A batch of images."
+msgstr ""
+
+#: 1ef09ba47a4a46ecafcb4da3032b1a24
+#: flexrag.models.hf_model.HFVLMGeneratorConfig:1 of
+msgid "Configuration for HFVLMGenerator."
+msgstr ""
+
+#: 9d90d29e998c4032a2860407976f75bf flexrag.models.hf_model.HFVLMGenerator:1 of
+msgid "Bases: :py:class:`~flexrag.models.model_base.VLMGeneratorBase`"
+msgstr ""
+

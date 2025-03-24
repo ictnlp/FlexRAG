@@ -1,0 +1,429 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/reference/rankers.rst:2 c0309dc3780140aa9b74c8dbf024baa6
+msgid "Rankers"
+msgstr ""
+
+#: ../../source/reference/rankers.rst:4 0f57e57e58364073a5a29bfb46210713
+msgid ""
+"The ranker is the component that determines the order of the results "
+"returned by the retriever. FlexRAG provides several rankers that can be "
+"used to sort the results based on various criteria."
+msgstr ""
+
+#: 11ff79bb6f4a4e1e8e5d5ba9d7cc11bf flexrag.ranker.ranker.RankerBaseConfig:1 of
+msgid "The configuration for the ranker."
+msgstr ""
+
+#: ../../source/reference/rankers.rst 05009b11737945939b9b7dea7bfc5d4c
+#: 05db44e25e9842d8a9ba357d17501a7e 337eeafb06d24faab073b12be8327761
+#: 5373fe1bbe694679aeff1140ff8f3de8 60a644f98f9d489d80cefcdeb9f0ba7d
+#: 655e9407ff374f37b2f97055ea34a9f6 69085a5afc594549a951c569577252c9
+#: 6fdedbcb35194f329f3a66c62261ddcd abf15bb435004e399044ffed0d53869b
+#: ad0b4ac3ad904313a0be1ddf076384a9 c43bfb2315fd47a88777ae0457ce0b73
+#: d2b3ae07bb1f4bb39b02af58a12e1e6d
+msgid "Parameters"
+msgstr ""
+
+#: 06ce0787f1704c41beb1eeca08e52e31 flexrag.ranker.ranker.RankerBaseConfig:3 of
+msgid ""
+"the number of candidates to reserve. If it is less than 0, all candidates"
+" will be reserved. Default is -1."
+msgstr ""
+
+#: c796b6ce1ebb4004abce07905bb97771 flexrag.ranker.ranker.RankerBaseConfig:6 of
+msgid ""
+"the field name of the ranking field in the retrieved context. If it is "
+"None, the ranker will only accept a list of strings as candidates."
+msgstr ""
+
+#: c24c6c672d5e4e0abaaee84329e4a0d3
+#: flexrag.ranker.ranker.RankerBase.async_rank:1 of
+msgid "The asynchronous version of `rank`."
+msgstr ""
+
+#: 16966065a92a47ba9505743bc326b28c flexrag.ranker.ranker.RankerBase.rank:1 of
+msgid "Rank the candidates based on the query."
+msgstr ""
+
+#: 96005f083b5344ae8ea7c43b4148a315 flexrag.ranker.ranker.RankerBase.rank:3 of
+msgid "query string."
+msgstr ""
+
+#: 22a7af66bf3c441e89df70c4deaf4f57 flexrag.ranker.ranker.RankerBase.rank:4 of
+msgid "list of candidate strings."
+msgstr ""
+
+#: ../../source/reference/rankers.rst 030cee108d994aa3a23dd188d33f86fa
+msgid "Returns"
+msgstr ""
+
+#: c268cb8418dc47409aa0ac2ca863cc3e flexrag.ranker.ranker.RankerBase.rank:7 of
+msgid "indices and scores of the ranked candidates."
+msgstr ""
+
+#: ../../source/reference/rankers.rst ef10ca8b5af64528b66cc2aa902d9e89
+msgid "Return type"
+msgstr ""
+
+#: 0f047b05c0c3404d837a5dd655385808 flexrag.ranker.ranker.RankingResult:1 of
+msgid "The result of ranking."
+msgstr ""
+
+#: 9509353aa8d74616a63b727575f2e419 flexrag.ranker.ranker.RankingResult:3 of
+msgid "the query string. Required."
+msgstr ""
+
+#: 6362801afadf418182326efa9cc56725 flexrag.ranker.ranker.RankingResult:5 of
+msgid ""
+"the ranked candidates. The results are sorted in descending order by "
+"relevance. Required."
+msgstr ""
+
+#: 4c359704a1cc4248b69d6c42a0d2a444 flexrag.ranker.ranker.RankingResult:8 of
+msgid "the scores of the ranked candidates. Optional."
+msgstr ""
+
+#: 6136c53f336c4d02b524cd4bca5ee011 of types.RankerConfig:1
+msgid "Configuration class for ranker (name: RankerConfig, default: None)."
+msgstr ""
+
+#: 7009c1f8127f421a85bd54e56bc2c4fd of types.RankerConfig:3
+msgid "The ranker type to use."
+msgstr ""
+
+#: b073b7af68934d03b1ea9e5d5ddfacf8 of types.RankerConfig:5
+msgid "The config for CohereRanker."
+msgstr ""
+
+#: 2e30be070fab46d79acc3af914d4918f of types.RankerConfig:7
+msgid "The config for RankGPTRanker."
+msgstr ""
+
+#: adb25854ba604ac1b7f840572c962e5b of types.RankerConfig:9
+msgid "The config for HFCrossEncoderRanker."
+msgstr ""
+
+#: 5c5da55c8ded45e090090161da9c7e7c of types.RankerConfig:11
+msgid "The config for HFSeq2SeqRanker."
+msgstr ""
+
+#: 5e73d214d6d8441c8347dc7ee381487f of types.RankerConfig:13
+msgid "The config for HFColBertRanker."
+msgstr ""
+
+#: 8658ebccf8cb422d83153cf284bcc1a1 of types.RankerConfig:15
+msgid "The config for JinaRanker."
+msgstr ""
+
+#: 83e2b38e1c924358a2d67117e4c9ed4a of types.RankerConfig:17
+msgid "The config for MixedbreadRanker."
+msgstr ""
+
+#: f1df0816aee04d578b8f837629031bbf of types.RankerConfig:19
+msgid "The config for VoyageRanker."
+msgstr ""
+
+#: ../../source/reference/rankers.rst:24 83919a572e434702aa5899d4f9934f59
+msgid "Local Ranker"
+msgstr ""
+
+#: 38c23284d2ea47cc8d2e80640a9508d8 52f59943d89b4e978f3d4d73258df763
+#: f6b941c8eb614da08c0a1bc8c414affd
+#: flexrag.ranker.hf_ranker.HFColBertRankerConfig:1
+#: flexrag.ranker.hf_ranker.HFCrossEncoderRankerConfig:1
+#: flexrag.ranker.hf_ranker.HFSeq2SeqRankerConfig:1 of
+msgid ""
+"Bases: :py:class:`~flexrag.ranker.ranker.RankerBaseConfig`, "
+":py:class:`~flexrag.models.hf_model.HFModelConfig`"
+msgstr ""
+
+#: 6189e30243774265ad6f36e594e16742
+#: flexrag.ranker.hf_ranker.HFCrossEncoderRankerConfig:1 of
+msgid "The configuration for the HuggingFace Cross Encoder ranker."
+msgstr ""
+
+#: 0c458f1915df4bf7acbab47317048f2d 9c90a81fc35c4100b1b12d9e2ed35c7e
+#: e92b375401cd43d6a8664a1a8a588bf1
+#: flexrag.ranker.hf_ranker.HFColBertRankerConfig:7
+#: flexrag.ranker.hf_ranker.HFCrossEncoderRankerConfig:3
+#: flexrag.ranker.hf_ranker.HFSeq2SeqRankerConfig:3 of
+msgid "the maximum length for the input encoding. Default is 512."
+msgstr ""
+
+#: 288f6f54956d4d8b98abec0398d212a0 46e9de5e65384dfbb9fd3a0a5fe6c135
+#: 4a7a0c617b774d36851c2eed2561c233 66ce6e8804314642844414c0be6b0710
+#: 9478200fd43b475cb503378e8afd2f66 bfdb880bb1834c4e998568d9efbc2e75
+#: c7599645ab0f4f13bec654bc96040f7c e15c8fd6c996480e982752554ae84299
+#: flexrag.ranker.cohere_ranker.CohereRanker:1
+#: flexrag.ranker.gpt_ranker.RankGPTRanker:1
+#: flexrag.ranker.hf_ranker.HFColBertRanker:1
+#: flexrag.ranker.hf_ranker.HFCrossEncoderRanker:1
+#: flexrag.ranker.hf_ranker.HFSeq2SeqRanker:1
+#: flexrag.ranker.jina_ranker.JinaRanker:1
+#: flexrag.ranker.mixedbread_ranker.MixedbreadRanker:1
+#: flexrag.ranker.voyage_ranker.VoyageRanker:1 of
+msgid "Bases: :py:class:`~flexrag.ranker.ranker.RankerBase`"
+msgstr ""
+
+#: 8eba8d6c6e644a7e86c3bef77b2cd375
+#: flexrag.ranker.hf_ranker.HFCrossEncoderRanker:1 of
+msgid ""
+"HFCrossEncoderRanker: The ranker based on the HuggingFace Cross Encoder "
+"model."
+msgstr ""
+
+#: 6a38096354dd4d79b19a113c5ad57e7b
+#: flexrag.ranker.hf_ranker.HFSeq2SeqRankerConfig:1 of
+msgid "The configuration for the HuggingFace Sequence-to-Sequence ranker."
+msgstr ""
+
+#: c75f9c4907da4c0bb21ab43d6d551333
+#: flexrag.ranker.hf_ranker.HFSeq2SeqRankerConfig:5 of
+msgid ""
+"the input template for the seq2seq model. Default is \"Query: {query} "
+"Document: {candidate} Relevant:\"."
+msgstr ""
+
+#: 4d4c17ad1d3f4dc3a18f11a41ee9c83c
+#: flexrag.ranker.hf_ranker.HFSeq2SeqRankerConfig:8 of
+msgid "the positive token for the seq2seq model. Default is \"▁true\"."
+msgstr ""
+
+#: 8758508bf0954172b65f614ab44178a2
+#: flexrag.ranker.hf_ranker.HFSeq2SeqRankerConfig:10 of
+msgid "the negative token for the seq2seq model. Default is \"▁false\"."
+msgstr ""
+
+#: cf5c127dfd754f86a64bb4bad3e73bbc flexrag.ranker.hf_ranker.HFSeq2SeqRanker:1
+#: of
+msgid ""
+"HFSeq2SeqRanker: The ranker based on the HuggingFace Sequence-to-Sequence"
+" model."
+msgstr ""
+
+#: 72cfb54102ba4f4b833d538451b0656b
+#: flexrag.ranker.hf_ranker.HFColBertRankerConfig:1 of
+msgid "The configuration for the HuggingFace ColBERT ranker."
+msgstr ""
+
+#: f9dde5ca37034a0eadc0a45321bf9a6c
+#: flexrag.ranker.hf_ranker.HFColBertRankerConfig:3 of
+msgid "the base model type for the ColBERT model. Default is \"bert\"."
+msgstr ""
+
+#: 940c9558227b4ec9847590d6a4b197b4
+#: flexrag.ranker.hf_ranker.HFColBertRankerConfig:5 of
+msgid "the output dimension for the ColBERT model. Default is 128."
+msgstr ""
+
+#: 20ceee0118094349945c3f012fb38256
+#: flexrag.ranker.hf_ranker.HFColBertRankerConfig:9 of
+msgid "the query token for the ColBERT model. Default is \"[unused0]\"."
+msgstr ""
+
+#: 7e4031b087e941cfb4c0892aabd68483
+#: flexrag.ranker.hf_ranker.HFColBertRankerConfig:11 of
+msgid "the document token for the ColBERT model. Default is \"[unused1]\"."
+msgstr ""
+
+#: 1feb047115ae442fb73eb0d135ea4dd1
+#: flexrag.ranker.hf_ranker.HFColBertRankerConfig:13 of
+msgid "whether to normalize the embeddings. Default is True."
+msgstr ""
+
+#: fcac67ab41e44e489550c4ed1771f18d flexrag.ranker.hf_ranker.HFColBertRanker:1
+#: of
+msgid ""
+"HFColBertRanker: The ranker based on the HuggingFace ColBERT model. Code "
+"adapted from "
+"https://github.com/hotchpotch/JQaRA/blob/main/evaluator/reranker/colbert_reranker.py"
+msgstr ""
+
+#: 807e09da36d147ea9fb742e5338b2c59
+#: flexrag.ranker.gpt_ranker.RankGPTRankerConfig:1 of
+msgid ""
+"Bases: :py:class:`~flexrag.ranker.ranker.RankerBaseConfig`, "
+":py:class:`~types.GeneratorConfig`"
+msgstr ""
+
+#: 1c1de17c6cfb419aa3458b1501933902
+#: flexrag.ranker.gpt_ranker.RankGPTRankerConfig:1 of
+msgid "The configuration for the RankGPT ranker."
+msgstr ""
+
+#: 696e45cdcd844d0eb206586687cedc1e
+#: flexrag.ranker.gpt_ranker.RankGPTRankerConfig:3 of
+msgid "the step size for the slide window ranking. Default is 10."
+msgstr ""
+
+#: 2824c84de0344634a93374a4fa262eb0
+#: flexrag.ranker.gpt_ranker.RankGPTRankerConfig:5 of
+msgid "the window size for the slide window ranking. Default is 20."
+msgstr ""
+
+#: 4f4e34e48f0846f59b62add65c4e0c14
+#: flexrag.ranker.gpt_ranker.RankGPTRankerConfig:7 of
+msgid "the maximum chunk size for the slide window ranking. Default is 300."
+msgstr ""
+
+#: 6bc1ae5467fd447a99329fbaf1ad0c17 flexrag.ranker.gpt_ranker.RankGPTRanker:1
+#: of
+msgid ""
+"RankGPTRanker: Rank the candidates based on the query using the Large "
+"Language model. Code was adapted from the original implementation from "
+"https://github.com/sunnweiwei/RankGPT"
+msgstr ""
+
+#: ../../source/reference/rankers.rst:70 65c11e098e82445ca3b300bd7418500a
+msgid "Oneline Ranker"
+msgstr ""
+
+#: 46bdacc68f6f49f98edc1f3490600f48 584dac53add74a3d825ecf7a502f4497
+#: 88a02ac121b74d4e9a3b40a222288f03 df8418965ec240beb31b3b48b18020dc
+#: flexrag.ranker.cohere_ranker.CohereRankerConfig:1
+#: flexrag.ranker.jina_ranker.JinaRankerConfig:1
+#: flexrag.ranker.mixedbread_ranker.MixedbreadRankerConfig:1
+#: flexrag.ranker.voyage_ranker.VoyageRankerConfig:1 of
+msgid "Bases: :py:class:`~flexrag.ranker.ranker.RankerBaseConfig`"
+msgstr ""
+
+#: a1ef3a8c40ca4d498c1a707a77d75c5b
+#: flexrag.ranker.cohere_ranker.CohereRankerConfig:1 of
+msgid "The configuration for the Cohere ranker."
+msgstr ""
+
+#: b8b5661ed2024a08927c36a1d6253308
+#: flexrag.ranker.cohere_ranker.CohereRankerConfig:3 of
+msgid "the model name of the ranker. Default is \"rerank-multilingual-v3.0\"."
+msgstr ""
+
+#: 321bbeec87ed4a6ab72fbf6080706847
+#: flexrag.ranker.cohere_ranker.CohereRankerConfig:5 of
+msgid "the base URL of the Cohere ranker. Default is None."
+msgstr ""
+
+#: d19bfdd349fb40d2b28339a25d2dee97
+#: flexrag.ranker.cohere_ranker.CohereRankerConfig:7 of
+msgid "the API key for the Cohere ranker. Required."
+msgstr ""
+
+#: 6adf5a54dc0c48278277587f7ced154f 788d0931166140649c4e54051d2c623d
+#: flexrag.ranker.cohere_ranker.CohereRankerConfig:9
+#: flexrag.ranker.mixedbread_ranker.MixedbreadRankerConfig:9 of
+msgid "the proxy for the request. Default is None."
+msgstr ""
+
+#: ad2af24347b4455f8b9fcd2de215a396 flexrag.ranker.cohere_ranker.CohereRanker:1
+#: of
+msgid "CohereRanker: The ranker based on the Cohere API."
+msgstr ""
+
+#: 75ad02af25c9458db87b5e2b70686485
+#: flexrag.ranker.jina_ranker.JinaRankerConfig:1 of
+msgid "The configuration for the Jina ranker."
+msgstr ""
+
+#: 5da5657bc30b4867ae2e16e41396dee3
+#: flexrag.ranker.jina_ranker.JinaRankerConfig:3 of
+msgid ""
+"the model name of the ranker. Default is \"jina-reranker-v2-base-"
+"multilingual\"."
+msgstr ""
+
+#: 322ee67d2cff41aabd34125d13142eed
+#: flexrag.ranker.jina_ranker.JinaRankerConfig:5 of
+msgid ""
+"the base URL of the Jina ranker. Default is "
+"\"https://api.jina.ai/v1/rerank\"."
+msgstr ""
+
+#: b599989a92414398bf9074148ba2ad83
+#: flexrag.ranker.jina_ranker.JinaRankerConfig:7 of
+msgid "the API key for the Jina ranker. Required."
+msgstr ""
+
+#: f217a8b5c9234bff888e66717798f52a
+#: flexrag.ranker.jina_ranker.JinaRankerConfig:9 of
+msgid "The proxy to use. Defaults to None."
+msgstr ""
+
+#: 403023cf4c974d4eaeca11f1315a5c82 flexrag.ranker.jina_ranker.JinaRanker:1 of
+msgid "JinaRanker: The ranker based on the Jina API."
+msgstr ""
+
+#: 324d56126c7c421296ec291cdb859b30
+#: flexrag.ranker.mixedbread_ranker.MixedbreadRankerConfig:1 of
+msgid "The configuration for the Mixedbread ranker."
+msgstr ""
+
+#: 852a8c8fde7d45108a5b268d7f797fdb
+#: flexrag.ranker.mixedbread_ranker.MixedbreadRankerConfig:3 of
+msgid "the model name of the ranker. Default is \"mxbai-rerank-large-v1\"."
+msgstr ""
+
+#: 70828a9513e34d55b228be7c35c1fe33
+#: flexrag.ranker.mixedbread_ranker.MixedbreadRankerConfig:5 of
+msgid "the API key for the Mixedbread ranker. Required."
+msgstr ""
+
+#: 435b1bf734f748509177592d08d2cd22
+#: flexrag.ranker.mixedbread_ranker.MixedbreadRankerConfig:7 of
+msgid "the base URL of the Mixedbread ranker. Default is None."
+msgstr ""
+
+#: d17711a3d3ef4aaba2bb830976a0b2fc
+#: flexrag.ranker.mixedbread_ranker.MixedbreadRanker:1 of
+msgid "MixedbreadRanker: The ranker based on the Mixedbread API."
+msgstr ""
+
+#: 89bfbc4a53c34022a7cf845d44683b81
+#: flexrag.ranker.voyage_ranker.VoyageRankerConfig:1 of
+msgid "The configuration for the Voyage ranker."
+msgstr ""
+
+#: d2dbea19880a49db96b7d1f3ec99e299
+#: flexrag.ranker.voyage_ranker.VoyageRankerConfig:3 of
+msgid "the model name of the ranker. Default is \"rerank-2\"."
+msgstr ""
+
+#: 844f32418b714759bdf7e679921fa578
+#: flexrag.ranker.voyage_ranker.VoyageRankerConfig:5 of
+msgid "the API key for the Voyage ranker. Required."
+msgstr ""
+
+#: 5d86d8c461a746489fea268af3ce3e9e
+#: flexrag.ranker.voyage_ranker.VoyageRankerConfig:7 of
+msgid "the timeout for the request. Default is 3.0."
+msgstr ""
+
+#: 2db40dd57c04410ab40d269f170a0aec
+#: flexrag.ranker.voyage_ranker.VoyageRankerConfig:9 of
+msgid "the maximum number of retries. Default is 3."
+msgstr ""
+
+#: 13f9741bfa294ecf835c5727e84bc16c flexrag.ranker.voyage_ranker.VoyageRanker:1
+#: of
+msgid "VoyageRanker: The ranker based on the Voyage API."
+msgstr ""
+

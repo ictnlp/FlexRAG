@@ -1,0 +1,256 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-21 20:53+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/tutorial/using_register.md:1 4c766d897e474a0ea6397122090806f2
+msgid "Using Registers"
+msgstr "高级教程：使用注册器"
+
+#: ../../source/tutorial/using_register.md:2 8d70cd6a9bf44083994aaaca8ba30220
+msgid ""
+"The `Register` class is an important component in the FlexRAG that "
+"integrates configuration files and loads various RAG components. The "
+"registrar can gather multiple components of the same type and generate a "
+"unified configuration structure to help you configure and use these "
+"components. This tutorial will show you how to use the registrar in "
+"FlexRAG."
+msgstr ""
+"注册器 `Register` 是 FlexRAG 框架中整合配置文件，加载各个 "
+"RAG "
+"组件的一个重要模块。注册器可以将多个同类型的组件收集到一起，并生成统一的配置结构帮助您配置和使用这些组件。本教程将会向您展示如何使用 "
+"FlexRAG 中的注册器。"
+
+#: ../../source/tutorial/using_register.md:4 094efb3d88cd452393514c490bba8066
+msgid "Using FlexRAG Registers"
+msgstr "使用 FlexRAG 内置的注册器"
+
+#: ../../source/tutorial/using_register.md:5 79280a1e69454dc8b0232b2745ef968d
+msgid ""
+"FlexRAG provides a set of predefined registers for different components. "
+"These registers can be used to register and retrieve components of the "
+"respective type. The following registers are available in FlexRAG:"
+msgstr "FlexRAG 中提供了一组事先定义好的注册器，这些注册器被用于注册各类 RAG 系统组件。下面的列表展示了 FlexRAG 中内置的注册器。"
+
+#: ../../source/tutorial/using_register.md:7 45bd20359a3541b7bd25e0b3aad7256c
+msgid "ASSISTANTS"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:8 d379af269e9d48f48ac49b1b9edd4ecc
+msgid "REFINERS"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:9 f9627ec6162e4f53b4b6fff0679d5606
+msgid "CHUNKERS"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:10 9a7deda6d4774b5f8cda2c011ce79cfa
+msgid "DOCUMENTPARSERS"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:11 0caa3ab69ef04c369f334517ca68d40a
+msgid "PROCESSORS"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:12 9f86671f095944adb36eb61f96c84178
+msgid "METRICS"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:13 7e1b0099dceb4263a89e91df9140a413
+msgid "GENERATORS"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:14 ac3b48e870404d80924e44574151a3ba
+msgid "ENCODERS"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:15 93c863e6b7d24464aa226f55f149c226
+msgid "RANKERS"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:16 8ef1e055b1cc4d52afecb3a2c3f763da
+msgid "DENSE_INDEX"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:17 fded249c54054b27b83e5755262601cf
+msgid "RETRIEVERS"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:18 031efbf509f64dacaf84ef9a1b526cbb
+msgid "WEB_DOWNLOADERS"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:19 81a2ae2f92204520a69da40e0ffff9a3
+msgid "WEB_READERS"
+msgstr ""
+
+#: ../../source/tutorial/using_register.md:22 1bcafb9a0765476aa7f8756f927bdea2
+msgid ""
+"If you wish to develop your project by modifying the FlexRAG source code,"
+" all registrars can be used as decorators to register new components. "
+"However, if you use the `run_assistant` or `run_interactive` entrypoints "
+"of FlexRAG, **only** the `ASSISTANTS` registrar can be used to register "
+"new components."
+msgstr ""
+"如果您希望通过修改 FlexRAG 源码来开发您的项目，所有的注册器都可以被当作装饰器来注册您新增的组件。然而如果您使用 FlexRAG 的 "
+"`run_assistant` 或 `run_interactive` 入口点，那么仅有 `ASSISTANTS` 注册器可用于注册新的组件。"
+
+#: ../../source/tutorial/using_register.md:25 61feb3e065394300b54bc4bb699704c4
+msgid "Registering a New Component"
+msgstr "注册新的组件"
+
+#: ../../source/tutorial/using_register.md:26 b6b29cbf31cc43bf9c56e6086a297c8f
+msgid ""
+"To register a new component, simply decorate the component class with the"
+" corresponding register. For example, to register a new `Assistant` "
+"component, you can use the `ASSISTANTS` register as shown below:"
+msgstr ""
+"您可以通过使用注册器来装饰您的组件从而将您的组件注册到已有的注册器中。举例来说，您可以通过下面的代码来将您的 RAG 助手注册到 "
+"`ASSISTANTS` 注册器中："
+
+#: ../../source/tutorial/using_register.md:44 14a13f92d4b743efa203447aae2763c4
+msgid ""
+"The register takes the following arguments, namely `shortnames` and "
+"`config_class`."
+msgstr ""
+"注册器在注册新组件时可以接受两个参数，分别是 `shortnames` 和 "
+"`condig_class`。"
+
+#: ../../source/tutorial/using_register.md:45 e55d6ac3359f4acf93c8b12421d3b541
+msgid ""
+"The `shortnames` argument is a list of shortnames of the component, which"
+" serve as simplified names for the component, making it easier to "
+"reference when loading."
+msgstr ""
+"`shortnames` 可以接受一个字符串列表，用于作为当前组件的简化名称，方便您在加载时使用。所有简化名称中的第一个将被作为这个组件的默认名称。"
+
+#: ../../source/tutorial/using_register.md:46 289fd8ac1ae44a6da08317e8d73cee9a
+msgid ""
+"The `config_class` argument is the configuration class for the component."
+" This parameter is optional—if not provided, the component will not use "
+"any configuration."
+msgstr ""
+"`config_class` 则接受一个 `dataclass` 类，用于作为当前组件的配置结构。`config_class` 这个参数是可选的，如果您没有提供，那么这个组件将不使用配置。"
+
+#: ../../source/tutorial/using_register.md:48 a5c46eeb35ec42279fdfdf1da53de6fc
+msgid "Generating the Configuration"
+msgstr "生成配置结构"
+
+#: ../../source/tutorial/using_register.md:49 c5a54e39a2974b19b18c2837ea9950ee
+msgid ""
+"After registering the component, you can generate the configuration "
+"`dataclass` for all the registered components using the `make_config` "
+"function. For example, to generate the configuration for all the "
+"registered `Assistant` components, you can use the `make_config` function"
+" as shown below:"
+msgstr ""
+"在注册组件后，您就可以通过 `make_config` "
+"方法为所有组件生成一个公用的配置结构。该配置结构可被用于加载任意一个组件并向其传递配置信息。举例来说，您通过如下代码来为所有已注册的 RAG "
+"助手生成一个配置文件："
+
+#: ../../source/tutorial/using_register.md:55 780a1dad1c3945ba9d472e2a41ad6ff1
+msgid "The generated `AssistantConfig` class will have the following structure:"
+msgstr "新生成的配置结构将如下所示："
+
+#: ../../source/tutorial/using_register.md:72 7ee1b0706077497b94f9445172cba8bc
+msgid ""
+"In the FlexRAG entrypoints, many configurations are generated in this "
+"way. This allows us to flexibly modify the components and their "
+"configurations in the workflow through configuration files."
+msgstr ""
+"在 FlexRAG 内置的入口点程序中，许多配置文件都是使用这样的方式生成的。这将使得您能够非常灵活地通过配置文件来改变工作流程中的组件及其配置。"
+
+#: ../../source/tutorial/using_register.md:75 81dcca02e1b34e2d85cc3045422a942a
+msgid "Loading the Component"
+msgstr "加载组件"
+
+#: ../../source/tutorial/using_register.md:76 dadabf8286254bf09ee37d7bd5ec1ece
+msgid ""
+"To load the component using the configuration, you can use the `load` "
+"function of the register. For example, to load the `MyAssistant` "
+"component using the configuration, you can use the `load` function as "
+"shown below:"
+msgstr "您也可以通过注册器的 `load` 方法来加载任意以注册的组件。举例来说，您可以通过下面的代码来加载 `MyAssistant` 这一组件："
+
+#: ../../source/tutorial/using_register.md:83 6d77edcee27543c7aabd5e9ab77a6373
+msgid "Defining a New Register"
+msgstr "定义新的注册器"
+
+#: ../../source/tutorial/using_register.md:84 505b456f2fa142b9876011bb0a9becb7
+msgid ""
+"The `Register` class can be extended to define a new register for a "
+"specific component. For example, to define a new register for a "
+"`Searcher` component, you can simply create a new instance of the "
+"`Register` class as shown below:"
+msgstr ""
+"您也可以定义新的注册来注册您全新的组件。举例来说，如果您想定义一些类型为 Searcher "
+"的组件，您就可以使用下面的代码来定义一个新的注册器来注册这些组件："
+
+#: ../../source/tutorial/using_register.md:92 ac869878454842f1a8378c1669bce575
+msgid "Utilizing Type Hints"
+msgstr "利用类型提示"
+
+#: ../../source/tutorial/using_register.md:93 3e3b9e9aee1847b691d8ff340ac97847
+msgid ""
+"As the `Register` class is a generic class, you can utilize type hints to"
+" specify the type of the component that the register is managing. For "
+"example, to define a register for a `Searcher` component, you can specify"
+" the type hint as follows:"
+msgstr "注册器是一个泛型类，因此您可以通过类型实例化来优化类型提示。比如，您在定义 Searcher 这一类组件时，可以使用如下方式来创建注册器："
+
+#~ msgid ""
+#~ "FlexRAG provides a `Register` class to"
+#~ " manage the registration of different "
+#~ "components. The `Register` class can be"
+#~ " instantiated to register components such"
+#~ " as `Generator`, `Encoder`, `Retriever`, "
+#~ "`Ranker`, `Metrics`, `Processor` and "
+#~ "`Assistant`. This tutorial will guide "
+#~ "you through the process of using "
+#~ "the `Register` class to register and "
+#~ "retrieve components."
+#~ msgstr ""
+#~ "注册器 `Register` 是 FlexRAG 框架中整合配置文件，加载各个 "
+#~ "RAG "
+#~ "组件的一个重要模块。注册器可以将多个同类型的组件收集到一起，并生成统一的配置结构帮助您配置和使用这些组件。本教程将会向您展示如何使用 "
+#~ "FlexRAG 中的注册器。"
+
+#~ msgid ""
+#~ "The register takes the following "
+#~ "arguments: *shortnames: str     The shortnames"
+#~ " of the component. The first "
+#~ "shortname will be used as the "
+#~ "default shortname. config_class: Optional[Type]"
+#~ "     The configuration class for the "
+#~ "component. If not provided, the "
+#~ "component will not have a configuration."
+#~ msgstr ""
+#~ "注册器在注册新组件时可以接受两个参数，分别是 `*shortnames` 和 "
+#~ "`condig_class`。其中 `shortnames` "
+#~ "可以接受一个字符串列表，用于作为当前组件的简化名称，方便您在加载时使用。所有简化名称中的第一个将被作为这个组件的默认名称。而 "
+#~ "`config_class` 则接受一个 `dataclass` "
+#~ "类，用于作为当前组件的配置结构。`config_class` 这个参数是可选的，如果您没有提供，那么这个组件将不使用配置。"
+
+#~ msgid ""
+#~ "This step will be automatically done "
+#~ "if you are using the `run_assistant` "
+#~ "or `run_interactive` entrypoints."
+#~ msgstr "在 FlexRAG 的入口点程序中，那么很多配置结构都是这样生成的，这将使得您能够非常灵活地通过配置文件来改变工作流程中的组件及其配置。"
+

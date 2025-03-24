@@ -1,0 +1,231 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/reference/refiner.rst:2 bc88cd76d32e407d96fa07f82f58412d
+msgid "Context Refiner"
+msgstr ""
+
+#: ../../source/reference/refiner.rst:3 9e38ba5e018a42b49a022f2f9827b01f
+msgid ""
+"The context refiner is responsible for refining the contexts retrieved by"
+" the retriever. It can be used to rearrange the contexts, summarize them,"
+" or extract the most relevant information from them."
+msgstr ""
+
+#: ../../source/reference/refiner.rst:7 82725d8302024793bd089ff1036702d7
+msgid "The Context Refiner Interface"
+msgstr ""
+
+#: ../../source/reference/refiner.rst:8 7f81e031ec264f59b8c316dd43b791ac
+msgid ""
+"The `RefinerBase` is the base class for all refiners. It provides the "
+"basic interface for refining the contexts retrieved by the retriever."
+msgstr ""
+
+#: 4a78b3f6091c44b7a1d65b78932dc705
+#: flexrag.context_refine.refiner.RefinerBase:1 of
+msgid ""
+"The base class for context refiners. The subclasses should implement the "
+"``refine`` method."
+msgstr ""
+
+#: 4a8e822992054e5b8dc23e4145007e44 97622388cba44854a5d29464ed317b76
+#: a2f8a4362fa94e258c8052599b8d7031 d3c091b0e86847bdb35f6d032ca9c180
+#: flexrag.context_refine.refiner.RefinerBase.refine:1
+#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:1 of
+msgid "Refine the contexts."
+msgstr ""
+
+#: ../../source/reference/refiner.rst 093acd4d94e44ffab52e60b6b229763d
+#: 28094c93539e4de68135622871e9e1e9 43651498def44151bff5cc0dce3d4216
+#: a7b0a7ef65c9497ca0887a09fdf3568c b3e52f8ea32b4df1a11e4fe21d30d1a0
+#: ba96b62b24f7443bbcaf367a94bb2afb bb9c996a6d304a1da3a83e138aa2fd07
+msgid "Parameters"
+msgstr ""
+
+#: 5949e04361b146b1b26410cda5a1b226 9408a41779e44ad5b6c4a80d3cab1b73
+#: d35893162c914619883fc61a5b460d38 d698c4de00d546049824a4576026ab74
+#: flexrag.context_refine.refiner.RefinerBase.refine:3
+#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:3 of
+msgid "The retrieved contexts to refine."
+msgstr ""
+
+#: ../../source/reference/refiner.rst 146039e5fee14918bb09fcdb08ba1509
+#: 3bc1b7a3a28c407a9141b56f84acfbe9 428bd8a15d2f498b81e9dd8b5464575a
+#: d48c025f1b6d4aacbfadcdf275fc18de
+msgid "Returns"
+msgstr ""
+
+#: 104fc989a574492bb90bf1183094571a 65ed0d0bbb5547958c6e4b30b9544ed0
+#: a4c0250352064b7faf565ec4a2e86d9a f90e1a24e5b8442aa32f280a3d9ee9f4
+#: flexrag.context_refine.refiner.RefinerBase.refine:5
+#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:5 of
+msgid "The refined contexts."
+msgstr ""
+
+#: ../../source/reference/refiner.rst 31d52543fe07489e809edba76d2f0564
+#: 746cc42ef61e4a8794dcca08ab3f5e1a 8f2124e1ae644faf9b021aa42c7c822f
+#: bbfd064d13f74885a20126cd0597781b
+msgid "Return type"
+msgstr ""
+
+#: ../../source/reference/refiner.rst:16 f166a33678cd4bcab8756fc55d2f1b58
+msgid "Refiners"
+msgstr ""
+
+#: ../../source/reference/refiner.rst:17 23b7729c9b7245ef8948094fa9a7c502
+msgid ""
+"FlexRAG provides several refiners that can be used to refine the contexts"
+" retrieved by the retriever."
+msgstr ""
+
+#: 4eafd8aa2123453c8d074019202b0c8e
+#: flexrag.context_refine.arranger.ContextArrangerConfig:1 of
+msgid "The configuration for the ``ContextArranger``."
+msgstr ""
+
+#: d5dcf88e1813488695c0e549e90246c7
+#: flexrag.context_refine.arranger.ContextArrangerConfig:3 of
+msgid ""
+"The order to arrange the contexts. Defaults to \"ascending\". available "
+"choices: \"ascending\", \"descending\", \"side\", \"random\"."
+msgstr ""
+
+#: 0562bb59705e4b34bca1b61a9c602b40 4c5e0eb2a8cc4491845388211657169d
+#: 6f19d7124828429487bcf5f0c823af9e
+#: flexrag.context_refine.arranger.ContextArranger:1
+#: flexrag.context_refine.summarizer.AbstractiveSummarizer:1
+#: flexrag.context_refine.summarizer.RecompExtractiveSummarizer:1 of
+msgid "Bases: :py:class:`~flexrag.context_refine.refiner.RefinerBase`"
+msgstr ""
+
+#: 0788bb4a874e43c2aeb82e0fa33d0226
+#: flexrag.context_refine.arranger.ContextArranger:1 of
+msgid "The ``ContextArranger`` arranges the contexts based on the given order."
+msgstr ""
+
+#: 85953624dfdc4b8492c5ee850c0d5974
+#: flexrag.context_refine.arranger.ContextArranger:3 of
+msgid ""
+"As the `lost-in-the-middle` problem encountered by the LLMs, the order of"
+" the contexts may affect the performance. This refiner helps to arrange "
+"the contexts in a specific order."
+msgstr ""
+
+#: 3636ea47a3394d59b97ae6ce231751e7
+#: flexrag.context_refine.summarizer.AbstractiveSummarizerConfig:1 of
+msgid "The configuration for the ``AbstractiveSummarizer``."
+msgstr ""
+
+#: 0401766e160e4d839169067afde459ea
+#: flexrag.context_refine.summarizer.AbstractiveSummarizerConfig:3 of
+msgid ""
+"The template used to form the input text for the generator. Defaults to "
+"None. The template should be a Python string.Template object. The "
+"supported keys for the template are: [content, query]."
+msgstr ""
+
+#: 1f3a21b98b984809a740a972ccaf4893
+#: flexrag.context_refine.summarizer.AbstractiveSummarizerConfig:7 of
+msgid ""
+"The chat prompt for the generator. Defaults to None. Only used when the "
+"generator is a chat-based generator."
+msgstr ""
+
+#: 375359dd4108468c97caee09aa86e5ce
+#: flexrag.context_refine.summarizer.AbstractiveSummarizerConfig:10 of
+msgid ""
+"Whether to substitute the original text with the summary. Defaults to "
+"True. If False, the summary will be stored in a new field named as "
+"refined_field + \"_summary\"."
+msgstr ""
+
+#: 42dbf294bd564506b9fb3f362755f905 e1b3f31a3e9049b0ad8997a6a59b56f1
+#: flexrag.context_refine.summarizer.AbstractiveSummarizerConfig:13
+#: flexrag.context_refine.summarizer.RecompExtractiveSummarizerConfig:5 of
+msgid "Whether to concatenate the contexts into one text. Defaults to False."
+msgstr ""
+
+#: 8231040507e64c92a4f8dd7244915d89 be4841257e794cd8b28b6d664103c235
+#: flexrag.context_refine.summarizer.AbstractiveSummarizerConfig:15
+#: flexrag.context_refine.summarizer.RecompExtractiveSummarizerConfig:9 of
+msgid "The field to refine. Required."
+msgstr ""
+
+#: 931c7e45c89d44cfbe91d46c0eee6a0f
+#: flexrag.context_refine.summarizer.AbstractiveSummarizerConfig:18 of
+msgid ""
+"The ``AbstractiveSummarizer`` supports multiple styles of summarizers, "
+"including T5, RECOMP, and LLM. For example, to summarize the contexts "
+"using a `T5 style summarizer <https://arxiv.org/abs/1910.10683)>`_, you "
+"can run the following code:"
+msgstr ""
+
+#: cce0208cc9ae476c9735a2a8680106e4
+#: flexrag.context_refine.summarizer.AbstractiveSummarizerConfig:35 of
+msgid ""
+"To summarize the contexts using a `RECOMP style summarizer "
+"<https://arxiv.org/abs/2010.04348>`_, you can run the following code:"
+msgstr ""
+
+#: 279eb203145a43faab26c0c9368da246
+#: flexrag.context_refine.summarizer.AbstractiveSummarizerConfig:51 of
+msgid ""
+"To summarize the contexts using a `LLM style summarizer "
+"<https://arxiv.org/abs/2203.02155>`_, you can run the following code:"
+msgstr ""
+
+#: ae0db06af3fd47e5b343819d4fab464f
+#: flexrag.context_refine.summarizer.AbstractiveSummarizer:1 of
+msgid "The ``AbstractiveSummarizer`` summarizes the contexts using a generator."
+msgstr ""
+
+#: 3a34edff84c24c84b39bea903aed57f7
+#: flexrag.context_refine.summarizer.RecompExtractiveSummarizerConfig:1 of
+msgid "The configuration for the ``RecompExtractiveSummarizer``."
+msgstr ""
+
+#: 5161f4a393f84decbe740214f91a2b7a
+#: flexrag.context_refine.summarizer.RecompExtractiveSummarizerConfig:3 of
+msgid "The number of sentences to preserve. Defaults to 5."
+msgstr ""
+
+#: 446d3fad4e874f6686b47d2087e736fe
+#: flexrag.context_refine.summarizer.RecompExtractiveSummarizerConfig:7 of
+msgid ""
+"Whether to substitute the original text with the summary. Defaults to "
+"False."
+msgstr ""
+
+#: 7e95f218aec84f2795707ed31332afd4
+#: flexrag.context_refine.summarizer.RecompExtractiveSummarizerConfig:12 of
+msgid ""
+"The ``RecompExtractiveSummarizer`` is motivated by the RECOMP "
+"(https://arxiv.org/abs/2310.04408). For example, to load a summarizer "
+"trained on hotpotqa dataset, you can run the following code:"
+msgstr ""
+
+#: 0b697a7df43049058f930621c4cd851b
+#: flexrag.context_refine.summarizer.RecompExtractiveSummarizer:1 of
+msgid "The ``ExtractiveSummarizer`` summarizes the contexts using an encoder."
+msgstr ""
+

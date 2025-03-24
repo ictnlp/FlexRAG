@@ -1,7 +1,9 @@
 # FlexRAG Entrypoints
-FlexRAG provides several entrypoints to run the RAG application. Each entrypoint has a default configuration structure that can be used to customize the workflow. This tutorial provides an overview of the FlexRAG entrypoints and how to customize the workflow using configuration management.
+FlexRAG entrypoints refer to a series of command-line executable programs provided by FlexRAG. These programs can help you build indexes, evaluate RAG assistants, manage retrieval caches, launch GUI applications, and more. Each entry point allows parameters to be passed either via the command line or through a configuration file. This tutorial will guide you on how to use these entrypoints and customize your workflow with parameters.
 
 ## Provided Entrypoints
+In this section, we will introduce all FlexRAG entrypoints and their corresponding configuration structures.
+
 ### Preparing the Retriever Index
 This entrypoint is used to prepare the retriever index. You can use this entrypoint by running `python -m flexrag.entrypoints.prepare_index`.
 The defination of the configuration structure for the `prepare_index` entrypoint is as follows:
@@ -57,6 +59,10 @@ The defination of the configuration structure for the `cache` entrypoint is as f
     :show-inheritance:
 ```
 
+```{tip}
+If you wish to disable the Cache during retrieval, you can set the environment variable by `export DISABLE_CACHE=True`.
+```
+
 ### Evaluating the Generated Responses
 This entrypoint is used to evaluate the generated responses. You can use this entrypoint by running `python -m flexrag.entrypoints.evaluate`.
 The defination of the configuration structure for the `evaluate` entrypoint is as follows:
@@ -70,8 +76,7 @@ The defination of the configuration structure for the `evaluate` entrypoint is a
 
 
 ## Configuration Management
-
-Leveraging python `dataclass` and [hydra-core](https://github.com/facebookresearch/hydra), FlexRAG simplifies configuration management, making it easier to handle complex setups and customize your workflow.
+FlexRAG employs `dataclass` and [hydra-core](https://github.com/facebookresearch/hydra) for configuration management, which brings remarkable clarity to the complex configurations within the RAG pipeline. Moreover, you can pass parameters to the FlexRAG's entrypoints either via the command line or through configuration files. This section will illustrate how to utilize both methods to convey parameters to the FlexRAG entry point.
 
 ### Passing Configuration via Command Line
 Configurations can be passed via the command line using the `<config_key>=<config_value>` format. For example, you can run the following command to set the configuration for a *modular assistant* with a *dense retriever* and an *OpenAI generator*:
@@ -138,9 +143,3 @@ class CustomAssistantConfig(DenseRetrieverConfig, OpenAIGeneratorConfig):
     prompt_path: str = MISSING
 
 ```
-
-## Supported Environment Variables
-FlexRAG supports several environment variables that can be used to customize the workflow. The following are the supported environment variables:
-
-- `DISABLE_CACHE`: Set this variable to `False` to disable caching.
-- `USER_MODULE`: Set this variable to the path of the user module to load custom modules.

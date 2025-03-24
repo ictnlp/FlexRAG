@@ -1,6 +1,11 @@
 # Installation
 FlexRAG is a Python package that can be installed via `pip` or from source.
 
+```{eval-rst}
+.. important::
+    FlexRAG requires Python 3.11 or later.
+```
+
 ## Installation via `pip`
 To install FlexRAG via pip, run the following command:
 
@@ -17,7 +22,7 @@ git clone https://github.com/ictnlp/FlexRAG.git
 cd flexrag
 pip install ./
 ```
-You can also install the FlexRAG in editable mode with the `-e` flag.
+You can also install the FlexRAG in *editable* mode with the `-e` flag.
 
 ## Installation flags
 FlexRAG can be installed with additional flags to enable specific features. The following flags are available:

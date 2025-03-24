@@ -65,3 +65,9 @@ copybutton_prompt_is_regexp = True
 
 # -- Options for autosectionlabel --------------------------------------------
 autosectionlabel_prefix_document = False
+
+# -- Options for multi-language -------------------------------------------------
+language = "en"
+locale_dirs = ["./locales/"]
+gettext_compact = False
+gettext_uuid = True

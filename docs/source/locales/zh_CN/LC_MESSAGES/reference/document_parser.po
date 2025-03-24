@@ -1,0 +1,74 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/reference/document_parser.rst:2
+#: f5192c1f7fdb435c93337dc462ddfea2
+msgid "Document Parser"
+msgstr ""
+
+#: ../../source/reference/document_parser.rst:3
+#: a800ad80627a4cc197c8f82929ee88a3
+msgid ""
+"This module provides a set of classes and functions for parsing a "
+"formated document (such as PDF, Word, etc.) into a structured format."
+msgstr ""
+
+#: 9054257c79d94d72b8201d4dd3b6aed3
+#: flexrag.document_parser.document_parser_base.Document:1 of
+msgid "A document parsed by a DocumentParser."
+msgstr ""
+
+#: 48bb0cf6c9fb48a89550231171ea40bb
+#: flexrag.document_parser.document_parser_base.DocumentParserBase.parse:1 of
+msgid "Parse the document at the given path."
+msgstr ""
+
+#: ../../source/reference/document_parser.rst 054f7ec99e0c4dbc94b396574d62f3ee
+msgid "Parameters"
+msgstr ""
+
+#: 3fb9e3c019b84636b78dbf15fa78adcb
+#: flexrag.document_parser.document_parser_base.DocumentParserBase.parse:3 of
+msgid "The path to the document to parse."
+msgstr ""
+
+#: ../../source/reference/document_parser.rst 13ada7ac5c144e8e859b78bd0b28273a
+msgid "Returns"
+msgstr ""
+
+#: 6b907db4872841a6bfa98da0f6f6d29e
+#: flexrag.document_parser.document_parser_base.DocumentParserBase.parse:5 of
+msgid "The parsed document."
+msgstr ""
+
+#: ../../source/reference/document_parser.rst 91a749f7d3d44ff08e7cfee65cc270e3
+msgid "Return type"
+msgstr ""
+
+#: 88cffbd67e54483e930e18ef9389d0f4 d65e8fd3edb54480a8172de2bc088151
+#: flexrag.document_parser.docling_parser.DoclingParser:1
+#: flexrag.document_parser.markitdown_parser.MarkItDownParser:1 of
+msgid ""
+"Bases: "
+":py:class:`~flexrag.document_parser.document_parser_base.DocumentParserBase`"
+msgstr ""
+
