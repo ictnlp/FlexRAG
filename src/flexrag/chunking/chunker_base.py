@@ -1,6 +1,25 @@
 from abc import ABC, abstractmethod
+from dataclasses import dataclass
+from typing import Optional
 
 from flexrag.utils import Register
+
+
+@dataclass
+class Chunk:
+    """The dataclass for a chunk of text.
+
+    :param text: The text of the chunk.
+    :type text: str
+    :param start: The start index of the chunk in the original text.
+    :type start: Optional[int]
+    :param end: The end index of the chunk in the original text.
+    :type end: Optional[int]
+    """
+
+    text: str
+    start: Optional[int] = None
+    end: Optional[int] = None
 
 
 class ChunkerBase(ABC):
@@ -10,13 +29,13 @@ class ChunkerBase(ABC):
     """
 
     @abstractmethod
-    def chunk(self, text: str) -> list[str]:
+    def chunk(self, text: str) -> list[Chunk]:
         """Chunk the given text into smaller chunks.
 
         :param text: The text to chunk.
         :type text: str
         :return: The chunks of the text.
-        :rtype: list[str]
+        :rtype: list[Chunk]
         """
         return
 

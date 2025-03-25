@@ -59,7 +59,9 @@ class NLTKSentenceSplitter(SentenceSplitterBase):
         return
 
     def split(self, text: str) -> list[str]:
-        return self.splitter(text)
+        texts = [t + " " for t in self.splitter(text)]
+        texts[-1] = texts[-1][:-1]
+        return texts
 
     @property
     def reversible(self) -> bool:
@@ -154,5 +156,5 @@ class SpacySentenceSplitter(SentenceSplitterBase):
 
 
 SentenceSplitterConfig = SENTENCE_SPLITTERS.make_config(
-    default="nltk_splitter", config_name="SentenceSplitterConfig"
+    default="regex", config_name="SentenceSplitterConfig"
 )
