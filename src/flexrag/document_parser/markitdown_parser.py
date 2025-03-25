@@ -15,5 +15,5 @@ class MarkItDownParser(DocumentParserBase):
         return
 
     def parse(self, path: str) -> Document:
-        content = self.parser.convert(path).text_content
-        return Document(source_file_path=path, text=content)
+        doc = self.parser.convert(path)
+        return Document(source_file_path=path, text=doc.text_content, title=doc.title)
