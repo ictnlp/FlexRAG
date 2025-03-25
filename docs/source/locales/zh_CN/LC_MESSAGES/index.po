@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-21 21:28+0800\n"
+"POT-Creation-Date: 2025-03-25 10:28+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -20,46 +20,46 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.16.0\n"
 
-#: ../../source/index.rst:20
+#: ../../source/index.rst:21
 msgid "Getting Started:"
 msgstr "入门："
 
-#: ../../source/index.rst:28
+#: ../../source/index.rst:29
 msgid "Tutorial:"
 msgstr "教程："
 
-#: ../../source/index.rst:38
+#: ../../source/index.rst:39
 msgid "API Reference Manual:"
 msgstr "API参考文档："
 
-#: ../../source/index.rst:3 fbc038f2887343f5bc41aaf72daed968
+#: ../../source/index.rst:3 036d9484788041d39f31231b7144b122
 msgid "FlexRAG"
 msgstr "FlexRAG"
 
-#: ../../source/index.rst:10 a1d49cab3c784cc6889f514452e1860e
+#: ../../source/index.rst:10 1fd4801699a34995aa1755e9f089e498
 msgid "Welecome to FlexRAG Documentation"
 msgstr "欢迎访问 FlexRAG 文档"
 
-#: ../../source/index.rst:12 b4207c647a4c4d958f442e2faacf2e33
+#: ../../source/index.rst:12 cd90c2b11e6f411fafdc5d885e302d25
 msgid ""
 "FlexRAG is a highly reproducible, easy-to-use, and high-performance RAG "
 "framework designed for both research and application scenarios. It "
 "supports **text**, **multimodal**, and **web-based** RAG, providing a "
-"**complete RAG pipelin**e and evaluation process. With built-in "
+"**complete RAG pipeline and evaluation process**. With built-in "
 "**asynchronous** processing and **persistent caching**, it ensures "
 "efficiency and scalability. Easily load retrievers from Hugging Face and "
 "quickly build powerful RAG solutions out of the box."
 msgstr ""
-"FlexRAG 是一个高可复现、易上手、性能优越的 RAG 框架，专为科研与应用场景设计。它支持**文本**、**多模态**以及**网络** "
-"RAG，提供完整的 RAG 流水线与评估流程，开箱即用，同时具备高效的**异步处理**与**持久化缓存**能力。通过 Hugging Face "
+"FlexRAG 是一个高可复现、易上手、性能优越的 RAG 框架，专为科研与应用场景设计。它支持 **文本、多模态以及网络 "
+"RAG** ，提供 **完整的 RAG 流水线与评估流程** ，开箱即用，同时具备高效的 **异步处理与持久化缓存** 能力。通过 Hugging Face "
 "轻松加载 Retriever，助力快速搭建强大的 RAG 解决方案。"
 
-#: ../../source/index.rst:14 d1e78cb11b234e839a468233798d7d4c
+#: ../../source/index.rst:15 3152a79ea0b34b70b433632a7280d1b1
 msgid ""
-"FlexRAG is under active development and is currently in the alpha stage. "
-"We welcome contributions from the community and are open to feedback and "
-"suggestions."
-msgstr "FlexRAG 目前正处于活跃开发的 alpha 阶段。我们非常欢迎来自于社区的贡献、反馈或建议。"
+"FlexRAG is under active development and is currently in the **alpha** "
+"stage. We welcome contributions from the community and are open to "
+"feedback and suggestions."
+msgstr "FlexRAG 目前正处于活跃开发的 **alpha** 阶段。我们非常欢迎来自于社区的贡献、反馈或建议。"
 
 #~ msgid ""
 #~ "FlexRAG is a flexible and high-"
