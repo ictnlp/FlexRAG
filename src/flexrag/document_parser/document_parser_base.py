@@ -12,6 +12,7 @@ class Document:
     """A document parsed by a DocumentParser."""
 
     source_file_path: str
+    title: Optional[str] = None
     text: Optional[str] = None
     screenshots: list[Image] = field(default_factory=list)
     images: list[Image] = field(default_factory=list)

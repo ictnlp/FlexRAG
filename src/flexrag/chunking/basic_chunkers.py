@@ -1,18 +1,17 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
-from flexrag.utils import LOGGER_MANAGER
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
+from flexrag.utils import LOGGER_MANAGER
 
-from .chunker_base import ChunkerBase, CHUNKERS
+from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 from .sentence_splitter import (
-    SENTENCE_SPLITTERS,
-    SentenceSplitterConfig,
-    RegexSplitterConfig,
-    RegexSplitter,
     PREDEFINED_SPLIT_PATTERNS,
+    SENTENCE_SPLITTERS,
+    RegexSplitter,
+    RegexSplitterConfig,
+    SentenceSplitterConfig,
 )
-
 
 logger = LOGGER_MANAGER.get_logger("flexrag.chunking.basic_chunkers")
 
@@ -40,7 +39,7 @@ class CharChunkerConfig:
     overlap: int = 0
 
 
-@CHUNKERS("char", config_class=CharChunkerConfig)
+@CHUNKERS("char_chunker", config_class=CharChunkerConfig)
 class CharChunker(ChunkerBase):
     """CharChunker splits text into chunks with fixed length of characters."""
 
@@ -49,10 +48,16 @@ class CharChunker(ChunkerBase):
         self.overlap = cfg.overlap
         return
 
-    def chunk(self, text: str) -> list[str]:
+    def chunk(self, text: str) -> list[Chunk]:
         chunks = []
         for i in range(0, len(text), self.chunk_size - self.overlap):
-            chunks.append(text[i : i + self.chunk_size])
+            chunks.append(
+                Chunk(
+                    text=text[i : i + self.chunk_size],
+                    start=1,
+                    end=min(len(text), i + self.chunk_size),
+                )
+            )
         return chunks
 
 
@@ -88,7 +93,7 @@ class TokenChunkerConfig(TokenizerConfig):
     overlap: int = 0
 
 
-@CHUNKERS("token", config_class=TokenChunkerConfig)
+@CHUNKERS("token_chunker", config_class=TokenChunkerConfig)
 class TokenChunker(ChunkerBase):
     """TokenChunker splits text into chunks with fixed number of tokens."""
 
@@ -103,11 +108,23 @@ class TokenChunker(ChunkerBase):
             )
         return
 
-    def chunk(self, text: str) -> list[str]:
+    def chunk(self, text: str) -> list[Chunk]:
         tokens = self.tokenizer.tokenize(text)
         chunks = []
+        current_index = 0
         for i in range(0, len(tokens), self.chunk_size - self.overlap):
-            chunks.append(self.tokenizer.detokenize(tokens[i : i + self.chunk_size]))
+            text = self.tokenizer.detokenize(tokens[i : i + self.chunk_size])
+            chunks.append(
+                Chunk(
+                    text=text,
+                    start=current_index,
+                    end=current_index + len(text),
+                )
+            )
+            overlap_text = self.tokenizer.detokenize(
+                tokens[i + self.chunk_size - self.overlap : i + self.chunk_size]
+            )
+            current_index += len(text) - len(overlap_text)
         return chunks
 
 
@@ -153,7 +170,7 @@ class RecursiveChunkerConfig(TokenizerConfig):
     )
 
 
-@CHUNKERS("recursive", config_class=RecursiveChunkerConfig)
+@CHUNKERS("recursive_chunker", config_class=RecursiveChunkerConfig)
 class RecursiveChunker(ChunkerBase):
     """RecursiveChunker splits text into chunks recursively using the specified seperators.
 
@@ -177,8 +194,20 @@ class RecursiveChunker(ChunkerBase):
             )
         return
 
-    def chunk(self, text: str) -> list[str]:
-        return self._recursive_chunk(text, 0)
+    def chunk(self, text: str) -> list[Chunk]:
+        texts = self._recursive_chunk(text, 0)
+        chunks = []
+        current_index = 0
+        for text in texts:
+            chunks.append(
+                Chunk(
+                    text=text,
+                    start=current_index,
+                    end=current_index + len(text),
+                )
+            )
+            current_index += len(text)
+        return chunks
 
     def _recursive_chunk(self, text: str, level: int) -> list[str]:
         if level == len(self.splitter):
@@ -244,7 +273,7 @@ class SentenceChunkerConfig(TokenizerConfig, SentenceSplitterConfig):
     overlap: int = 0
 
 
-@CHUNKERS("sentence", config_class=SentenceChunkerConfig)
+@CHUNKERS("sentence_chunker", config_class=SentenceChunkerConfig)
 class SentenceChunker(ChunkerBase):
     """SentenceChunker first splits text into sentences using the specified sentence splitter,
     then merges the sentences into chunks based on the specified constraints.
@@ -272,7 +301,7 @@ class SentenceChunker(ChunkerBase):
         self.long_sentence_counter = 0
         return
 
-    def chunk(self, text: str) -> list[str]:
+    def chunk(self, text: str) -> list[Chunk]:
         sentences = self.splitter.split(text)
         if self.max_tokens != float("inf"):
             token_counts = [len(self.tokenizer.tokenize(s)) for s in sentences]
@@ -283,6 +312,7 @@ class SentenceChunker(ChunkerBase):
         chunks = []
         start_pointer = 0
         end_pointer = 0
+        start_index = 0
         while end_pointer < len(sentences):
             while end_pointer < len(sentences) and (
                 ((end_pointer - start_pointer) < self.max_sents)
@@ -304,7 +334,17 @@ class SentenceChunker(ChunkerBase):
                         "There are 100 sentences have more than `max_tokens` tokens or `max_chars` characters. "
                         "Please check the configuration of SentenceChunker."
                     )
-            chunks.append("".join(sentences[start_pointer:end_pointer]))
-            start_pointer = max(end_pointer - self.overlap, start_pointer + 1)
+            text = "".join(sentences[start_pointer:end_pointer])
+            chunks.append(
+                Chunk(
+                    text=text,
+                    start=start_index if self.splitter.reversible else None,
+                    end=start_index + len(text) if self.splitter.reversible else None,
+                )
+            )
+            new_start = max(end_pointer - self.overlap, start_pointer + 1)
+            overlap_length = len("".join(sentences[new_start:end_pointer]))
+            start_index += len(text) - overlap_length
+            start_pointer = new_start
             end_pointer = start_pointer
         return chunks

@@ -78,14 +78,3 @@ This module provides a set of classes and functions for loading and processing d
     :members:
     :inherited-members:
     :show-inheritance:
-
-.. Document Datasets
-.. autoclass:: flexrag.datasets.DocumentDatasetConfig
-    :members:
-    :inherited-members:
-    :show-inheritance:
-
-.. autoclass:: flexrag.datasets.DocumentDataset
-    :members:
-    :inherited-members:
-    :show-inheritance:

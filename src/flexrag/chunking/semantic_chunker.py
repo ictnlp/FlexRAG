@@ -5,11 +5,10 @@ import numpy as np
 
 from flexrag.models import ENCODERS, EncoderConfig
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
-from flexrag.utils import Choices, LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, Choices
 
-from .chunker_base import CHUNKERS, ChunkerBase
+from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 from .sentence_splitter import SENTENCE_SPLITTERS, SentenceSplitterConfig
-
 
 logger = LOGGER_MANAGER.get_logger("flexrag.chunking.semantic_chunker")
 
@@ -78,7 +77,7 @@ class SemanticChunkerConfig(SentenceSplitterConfig, EncoderConfig, TokenizerConf
     similarity_function: Choices(["L2", "IP", "COS"]) = "COS"  # type: ignore
 
 
-@CHUNKERS("semantic", config_class=SemanticChunkerConfig)
+@CHUNKERS("semantic_chunker", config_class=SemanticChunkerConfig)
 class SemanticChunker(ChunkerBase):
     """SemanticChunker splits text into sentences and then groups them into chunks based on semantic similarity.
     This chunker is inspired by the Greg Kamradt's wonderful notebook:
@@ -109,11 +108,11 @@ class SemanticChunker(ChunkerBase):
         self.tokenizer = TOKENIZERS.load(cfg)
         return
 
-    def chunk(self, text: str) -> list[str]:
+    def chunk(self, text: str) -> list[Chunk]:
         # split the text into sentences
         sentences = self._split_sentences(text)
         if len(sentences) == 1:
-            return sentences
+            return [Chunk(text, 0, len(text))]
 
         # combine the sentences to calculate the embeddings
         combined_sentences = []
@@ -165,14 +164,14 @@ class SemanticChunker(ChunkerBase):
             max_tokens = max(len(self.tokenizer.tokenize(sent)) for sent in sentences)
             if max_tokens == self.max_tokens:
                 chunks = sentences
-                return chunks
+                return self._form_chunks(chunks)
             elif max_tokens > self.max_tokens:
                 logger.warning(
                     f"The maximum number of tokens in a sentence is {max_tokens}, "
                     f"which is greater than the specified max_tokens {self.max_tokens}."
                 )
                 chunks = sentences
-                return chunks
+                return self._form_chunks(chunks)
 
             # try to find the threshold that best fits the max_tokens
             thresholds = np.sort(similarity)
@@ -202,7 +201,7 @@ class SemanticChunker(ChunkerBase):
             else:
                 threshold = thresholds[mid_pointer] + 1e-6
             chunks = self._group_sentences(sentences, similarity, threshold)
-        return chunks
+        return self._form_chunks(chunks)
 
     def _group_sentences(
         self, sentences: list[str], similarity: np.ndarray, threshold: float
@@ -241,3 +240,20 @@ class SemanticChunker(ChunkerBase):
                 )
             new_sents.extend(splitted_sents)
         return new_sents
+
+    def _form_chunks(self, texts: list[str]) -> list[Chunk]:
+        chunks = []
+        current_index = 0
+        for text in texts:
+            if self.splitter.reversible:
+                chunks.append(
+                    Chunk(
+                        text=text,
+                        start=current_index,
+                        end=current_index + len(text),
+                    )
+                )
+                current_index += len(text)
+            else:
+                chunks.append(Chunk(text=text))
+        return chunks

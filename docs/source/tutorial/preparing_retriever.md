@@ -54,7 +54,11 @@ In this code snippet, we utilize the `LocalRetriever.load_from_hub` function to 
 ## Preparing Your Own `EditableRetriever`
 FlexRAG provides several `EditableRetriever` retrievers, including `DenseRetriever`, `BM25SRetriever`, `ElasticRetriever` and `TypesenseRetriever`. In this section, we will show you how to build your own retriever for the RAG application.
 
-### Preparing the knowledge base
+### Downloading the Knowledge Base
+```{eval-rst}
+You can check the [Preparing the Knowledge Base](./preparing_corpus.md) documentation for how to prepare the knowledge base.
+```
+
 Before preparing your retriever, you need to prepare the knowledge base. In this example, we will use the Wikipedia knowledge base provided by the [DPR project](https://github.com/facebookresearch/DPR). You can download the knowledge base by running the following command:
 
 ```bash

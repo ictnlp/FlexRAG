@@ -1,0 +1,171 @@
+# SOME DESCRIPTIVE TITLE.
+# Copyright (C) 2025, ZhuochengZhang
+# This file is distributed under the same license as the FlexRAG
+# Documentation package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2025.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: FlexRAG Documentation \n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-03-27 11:35+0800\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: zh_CN\n"
+"Language-Team: zh_CN <LL@li.org>\n"
+"Plural-Forms: nplurals=1; plural=0;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.16.0\n"
+
+#: ../../source/tutorial/preparing_corpus.md:1 29e2eda761874afb9fd9b9cce0f5ca07
+msgid "Preparing the Knowledge Base"
+msgstr "构建知识库"
+
+#: ../../source/tutorial/preparing_corpus.md:2 7efd36cde83641f39028360b2757b0ee
+msgid ""
+"In the real world, various types of knowledge are typically stored in "
+"documents such as PDFs, Word files, and PPTs. However, this semi-"
+"structured data cannot be parsed by large language models (LLMs) and is "
+"not suitable for building a knowledge base. Therefore, we need to convert"
+" it into structured text data beforehand. In this tutorial, we will use a"
+" simple example to demonstrate how to convert a batch of PDF files into "
+"structured data."
+msgstr ""
+"在现实世界中，各类知识通常是保存在文件中的（如 PDF、Word、PPT "
+"等）。然而这种半结构化数据无法被大模型解析也不适合构建知识库，因此我们需要事先将其转化为结构化的文本数据。在这个教程中，我们将使用一个简单的示例来展示如何将一批 PDF 文件转化为结构化数据。"
+
+#: ../../source/tutorial/preparing_corpus.md:5 48a6f8cf335b4d20aa38fb4647ebf013
+msgid "If you already have structured data, you can skip this tutorial."
+msgstr "如果您已经拥有结构化数据，您可以跳过这个教程。"
+
+#: ../../source/tutorial/preparing_corpus.md:8 9175b119ac934e1f8fb0ea1ffb712f02
+msgid "Parse Files using FlexRAG's Command-Line Tool"
+msgstr "使用 FlexRAG 内置的命令行工具来解析文档"
+
+#: ../../source/tutorial/preparing_corpus.md:9 810876ef469649fb8a3f03d75b6f3ce5
+msgid ""
+"FlexRAG provides a command-line tool `prepare_corpus` to help users parse"
+" various files into structured data. In this tutorial, we will use a "
+"paper from Arxiv as an example to demonstrate how to parse a PDF file "
+"using the built-in command-line tool of FlexRAG."
+msgstr ""
+"FlexRAG 提供了一个命令行工具 `prepare_corpus` 来帮助用户将各类文件解析为结构化数据。本教程将以一篇 Arxiv "
+"上的论文为例，展示如何使用 FlexRAG 内置的命令行工具来解析 PDF 文件。"
+
+#: ../../source/tutorial/preparing_corpus.md:11
+#: cbfa8e08329b4280857d9b67bcf76425
+msgid "Run the following command to download a paper from Arxiv:"
+msgstr "首先使用以下命令从 Arxiv 上下载一篇论文："
+
+#: ../../source/tutorial/preparing_corpus.md:17
+#: 60310f80e9ff4223808413e5306bb934
+msgid ""
+"You can then run the following command to parse this paper into "
+"structured knowledge base data:"
+msgstr "随后，您可以运行下面的命令将这篇论文解析为结构化的知识库数据："
+
+#: ../../source/tutorial/preparing_corpus.md:30
+#: c79f6fd31ade4a298949a92e6058208f
+msgid "In this command, we specify the following parameters:"
+msgstr "在这段命令中，我们指定了以下参数："
+
+#: ../../source/tutorial/preparing_corpus.md:31
+#: 2124d332ae8b4fb2ada770d449c05767
+msgid ""
+"`document_paths`：a list of file paths to be parsed. Here we only parse "
+"one paper;"
+msgstr "`document_paths`：待解析的文件路径列表，这里我们仅解析了一篇论文；"
+
+#: ../../source/tutorial/preparing_corpus.md:32
+#: 226c8e5ec39d4572a66ba744d6a4eda7
+msgid ""
+"`output_path`：the output path of the parsed results. The path should end "
+"with `.jsonl`, `.csv`, or `.tsv`;"
+msgstr "`output_path`：解析结果的输出路径，该路径应当以 `.jsonl`，`.csv` 或 `.tsv` 结尾；"
+
+#: ../../source/tutorial/preparing_corpus.md:33
+#: 2487a37792e1449fa222af93299ddfae
+msgid ""
+"`document_parser_type`：the type of document parser. Here we use "
+"`markitdown`;"
+msgstr "文档解析器的类型，这里我们使用了 `markitdown`；"
+
+#: ../../source/tutorial/preparing_corpus.md:34
+#: ea718228638442d0803bb7c7a993af14
+msgid "`chunker_type`：the type of text chunker. Here we use `sentence_chunker`;"
+msgstr "文本切分器的类型，这里我们使用了 `sentence_chunker`；"
+
+#: ../../source/tutorial/preparing_corpus.md:35
+#: 95e34b4623c9412d893b253c8d773a42
+msgid ""
+"`sentence_chunker_config.max_tokens`：the maximum length of the text "
+"chunker. Here we set it to 512;"
+msgstr "文本切分器的最大长度，这里我们设置为 512；"
+
+#: ../../source/tutorial/preparing_corpus.md:36
+#: dd2a5683cc4b4039aad98e2da691ffe5
+msgid ""
+"`sentence_chunker_config.tokenizer_type`：the type of tokenizer used by "
+"the text chunker. Here we use `tiktoken`, which is provided by OpenAI;"
+msgstr "文本切分器使用的分词器类型，这里我们使用了 OpenAI 的 `tiktoken`；"
+
+#: ../../source/tutorial/preparing_corpus.md:37
+#: b8da9b22620c45d58fb9326005be7bbd
+msgid ""
+"`sentence_chunker_config.tiktoken_config.model_name`：the model name used "
+"by the tokenizer. Here we use `gpt-4o`."
+msgstr "分词器使用的模型名称，这里我们使用了 `gpt-4o`。"
+
+#: ../../source/tutorial/preparing_corpus.md:39
+#: d4c43b0c6b5a40b5ad12544966a8092b
+msgid ""
+"After executing the above command, you will see that the PDF file has "
+"been parsed into a JSONL file. As shown in the figure below, FlexRAG "
+"executed three steps in this process:"
+msgstr "执行完上述命令后，您就可以看到 PDF 文件被解析为了一个 JSONL 文件。如下图所示，在这个过程中，FlexRAG 共计执行了三个步骤："
+
+#: ../../source/tutorial/preparing_corpus.md:40
+#: 061868c371614b2e936593f8b31fd1d4
+msgid "**Parsing**: parsing the file into structured data;"
+msgstr "**解析**：将文件解析为结构化数据"
+
+#: ../../source/tutorial/preparing_corpus.md:41
+#: 58147515b75a4ba1b6ed3f603fd18435
+msgid ""
+"**Chunking**: chunking long text paragraphs in the structured data into "
+"short text paragraphs suitable for processing;"
+msgstr "**切分**：将结构化数据中的长文本段落切分为适合处理的短文本段落"
+
+#: ../../source/tutorial/preparing_corpus.md:42
+#: 3433b59cedb841f980c34dc70c3d106c
+msgid ""
+"**Preprocessing**: preprocessing and filtering the chunked text "
+"paragraphs."
+msgstr "**预处理**：对切分后的文本段落进行预处理和过滤"
+
+#: ../../source/tutorial/preparing_corpus.md:45
+#: a5e5823b86904d898967054edc991ab5
+msgid "Parse File"
+msgstr "Parse File"
+
+#: ../../source/tutorial/preparing_corpus.md:52
+#: 9061ad8c9b174af69160a154812dab60
+msgid ""
+"You can check the [FlexRAG Entrypoints](./entrypoints.md) documentation "
+"for more information about the `prepare_corpus` command."
+msgstr ""
+"您可以查看文档 [FlexRAG Entrypoints](./entrypoints.md) 了解更多关于 `prepare_corpus` "
+"命令的信息。"
+
+#: ../../source/tutorial/preparing_corpus.md:56
+#: b6a5babf7350435085801f93e0e8bc7c
+msgid ""
+"You can check the [Preparing the Retriever](./preparing_retriever.md) "
+"documentation for how to build a retriever for your knowledge base."
+msgstr ""
+"您可以查看文档 [Preparing the Retriever](./preparing_retriever.md) "
+"了解如何为您的知识库构建检索器。"
+

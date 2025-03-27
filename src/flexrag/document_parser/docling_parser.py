@@ -9,8 +9,8 @@ from .document_parser_base import Document, DocumentParserBase, DOCUMENTPARSERS
 class DoclingConfig:
     do_ocr: bool = False
     do_table_structure: bool = True
-    generate_page_images: bool = True
-    generate_picture_images: bool = True
+    generate_page_images: bool = False
+    generate_picture_images: bool = False
 
 
 @DOCUMENTPARSERS("docling", config_class=DoclingConfig)
@@ -42,7 +42,9 @@ class DoclingParser(DocumentParserBase):
         assert os.path.exists(input_file_path)
         document_ = self.doc_converter.convert(input_file_path).document
         document = Document(
-            source_file_path=input_file_path, text=document_.export_to_markdown()
+            source_file_path=input_file_path,
+            text=document_.export_to_markdown(),
+            title=document_.name,
         )
         if document.pagaes.image is not None:
             document.screenshots = [p.image.pil_image for p in document_.pages]

@@ -9,7 +9,6 @@ from .rag_dataset import (
     RAGEvalDatasetConfig,
 )
 from .retrieval_dataset import MTEBDataset, MTEBDatasetConfig
-from .document_dataset import DocumentDataset, DocumentDatasetConfig
 
 __all__ = [
     "ChainDataset",
@@ -26,6 +25,4 @@ __all__ = [
     "RAGCorpusDataset",
     "MTEBDataset",
     "MTEBDatasetConfig",
-    "DocumentDataset",
-    "DocumentDatasetConfig",
 ]

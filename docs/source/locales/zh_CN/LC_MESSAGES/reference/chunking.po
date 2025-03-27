@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"POT-Creation-Date: 2025-03-27 11:25+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -20,21 +20,21 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.16.0\n"
 
-#: ../../source/reference/chunking.rst:2 4fed9935b9b24ecc9dfec46f252f469c
+#: ../../source/reference/chunking.rst:2 93efdd3c65744c4eb3c76b1edb0a98b8
 msgid "Chunking"
 msgstr ""
 
-#: ../../source/reference/chunking.rst:3 66f95c562d4340daa4416310ab3bc3be
+#: ../../source/reference/chunking.rst:3 9b37f5a286b64a598d08bc83b45ab0fe
 msgid ""
 "This module provides a set of classes for chunking a long text into "
 "smaller chunks."
 msgstr ""
 
-#: ../../source/reference/chunking.rst:7 72e61ac26a2c4dc984fa02e4116bafbf
+#: ../../source/reference/chunking.rst:7 ba34ab6b639b457ab295d9d2c03ca611
 msgid "The Chunker Interface"
 msgstr ""
 
-#: ../../source/reference/chunking.rst:8 31cba1f32fc246028cc050c40be9856d
+#: ../../source/reference/chunking.rst:8 6b8a26fb3e8440f59e6d86daa15f295f
 msgid ""
 "`ChunkerBase` is the base class for all chunkers. It provides a simple "
 "interface for chunking a text into smaller chunks. The chunking process "
@@ -42,7 +42,7 @@ msgid ""
 "constructor."
 msgstr ""
 
-#: ba63d63fb59c49b5ab30fa3dcc2c1b98 flexrag.chunking.chunker_base.ChunkerBase:1
+#: 27950c76d24e4d9d90cbb8d3db842857 flexrag.chunking.chunker_base.ChunkerBase:1
 #: of
 msgid ""
 "Chunker that splits text into chunks of fixed size. This is an abstract "
@@ -50,9 +50,9 @@ msgid ""
 "implement the `chunk` method to split the text."
 msgstr ""
 
-#: 0660b6cb834644fe979f0b9deace3422 0b3cd9ee6a254116a2b48ecf29e68f15
-#: 2c5839cf676d4498bc36ec84653655a7 8e1057174d254e5c8cfaa709be39c7d4
-#: cb45fb4368554ff28ae6877d59d37b5b d9519b49e9cc4111a9235d526d487c7f
+#: 12db90e933fd4723b674e4d0c7e6de2f 235f3c381ad74e3ca936447f8207740b
+#: 67cfbb92e0514166803e804f566d8f18 bf8b9257e996447c892d134c6d75809f
+#: d357825662c342f68d4748a07cb691aa fc5a8a566c464b3a9c522a44cd832a79
 #: flexrag.chunking.basic_chunkers.CharChunker.chunk:1
 #: flexrag.chunking.basic_chunkers.RecursiveChunker.chunk:1
 #: flexrag.chunking.basic_chunkers.SentenceChunker.chunk:1
@@ -62,17 +62,17 @@ msgstr ""
 msgid "Chunk the given text into smaller chunks."
 msgstr ""
 
-#: ../../source/reference/chunking.rst 172dba2d6bae494193e0c9c6ba49bd5b
-#: 251f93f421b8452daf300ef0da59afe4 2a313402185549cb91ea769aaf506f16
-#: 3a78f8f6e96a40889d4acd5840bfb63e 4a2d0e65b3004c8fa5945ca867dda5f5
-#: 56aa24697e2d4ec2973ab7da25780c9c 5945a50f7c454ac1b1bd164a493196c2
-#: 680244124f2643af93248b1ee7186e8d 684975d07cb443719bac1b6bb9de79cd
-#: 7fd68fceff7b43a69b77d099881ec65f 927f8ec0d8db4ed985924412745b567a
-#: aae7ba39f62446bcbd91e581b7504000 af1ccb6fd6d24b94ba167a0b32e3d9c6
-#: b0dfd368a5ed433bbc83a3582136027c b7f977e7889e4fdba44c3ab43be3d332
-#: c589ef1f1ec440b396d4ba78b1f1190c d11af703a0e84cb98b777a2b96fe54df
-#: df65abc8566d4635b8f58cac7e921050 faf1ee6f30ad42d9befe428705253e64
-#: fbfe6a1eb4ec478fb4ad3d8f81b6e70d
+#: ../../source/reference/chunking.rst 17bbe570b7d5471fb674316d91db7d28
+#: 193c3bf29a3447bea867c6f226792ea4 19b78efe17cd471b8c7689ff4db8c54c
+#: 22d3aff72e764ebe9e8bfda9c22f904f 3f36f978ebbf4df2af6d7c5a63269332
+#: 4eb06f9f10a544159cb77203acf57ff7 4f032f859a4c47dc859c1d4f7d589ba5
+#: 600f36be5cbd4c1689cf677aded6c8d6 6134693804bc461294598bfaa0191992
+#: 65bcdf202c834fca904f069be5ed0d72 7b99d3c3b31a4366b9f2072d6b0fc448
+#: 95a593e8b20b48589e64cd7ee3b14621 b0d9d4af3a61427d9f99c5c5eccd8ce3
+#: b23df55ddd58428b85f1839a43abdb0b b3c9f5d6b390462fa0be54a4de2c5105
+#: c783b8f0f791425c9ec151eed00d9fb1 cf97f35ff53e49819c69f06ec033099c
+#: d37302867092451bb19f9748770cffc3 f04c7137fe124678a4b8eda7b0605c71
+#: f0b6f5978bea4de78a831f63dca9b351
 #: flexrag.chunking.basic_chunkers.RecursiveChunkerConfig
 #: flexrag.chunking.basic_chunkers.SentenceChunkerConfig
 #: flexrag.chunking.basic_chunkers.TokenChunkerConfig
@@ -81,9 +81,9 @@ msgstr ""
 msgid "Parameters"
 msgstr ""
 
-#: 68038e14e0b84f759e3d354a61fc0633 70f0196bb04a478aa42b04279d875bd6
-#: 8fd730a342e1463eab4b89122afb03bf d12dd899f2fa495f873d6f5542c4e981
-#: f708802790534680944cd3cce0d9774c ff7d0697d7494b6caffc7a80264eb649
+#: 00d2b162760e40ba9e207a1276568329 0e93b22201bb45f1be79842e234929b9
+#: 36f41b0ad41a4bc79440e0feb82a2b0a 3f795b8964424075ba8aea2dd1f92357
+#: 7aed4877efe342ef8b5c8ab33c02a0ea a92b8f1926b04723a8c7c54c1dc63404
 #: flexrag.chunking.basic_chunkers.CharChunker.chunk:3
 #: flexrag.chunking.basic_chunkers.RecursiveChunker.chunk:3
 #: flexrag.chunking.basic_chunkers.SentenceChunker.chunk:3
@@ -93,18 +93,18 @@ msgstr ""
 msgid "The text to chunk."
 msgstr ""
 
-#: ../../source/reference/chunking.rst 28906bff32f140c3bec651a68836b424
-#: 5cb071efa7e8459883479c803859c202 74845bea19804970bf803d987964b247
-#: a06e90f92cee4dd382c051b60c9da5cf acd90990b0d44445bfbd4035a85c2df9
-#: c6abbc016f0d473fb248ce7b47059a31 dbc1bd2307ac408cb557185e4c964b74
-#: eba54139623a4c8da9ae6f535878b20d f6b38eb486a44ad994825847e3482d5f
-#: f8fab4a026f041f4a8ec80cc7ec9a9e2
+#: ../../source/reference/chunking.rst 2ce31e44ed244f7796ee51adfacde256
+#: 585a05858d3f4cc6a928330793427a90 5d44562d88644149911b5dd672f8f3dd
+#: 5f7459d0370146589435ee4fcb8ee1c5 6422a209d5784c7a9c6090418e32c15a
+#: 6d6f1cd8a6984ea9b00a0e81db541fbb 7530b7027db949829b1438125bae274d
+#: 8ce7d921cbc448308cf5b81c98f330fb a29710b9fc004d6085eedad3f9768e7a
+#: c0d07704404f4b0c847370c712f05abe
 msgid "Returns"
 msgstr ""
 
-#: 09d7444a9beb4ee4ba4e35e3d1de1e58 228d0a2cc4d54e5da69d39fcc76d556f
-#: 92b581103f3d4000943f89a500af036a acc2f70ef4624b26914af59bc81c3114
-#: d21f77053ba74f04abe670482b71ad94 dabddc6cfdfa46038f60ebbf8ba25131
+#: 032bac601bca4230a7c1cebf3df861db 4309f590be834bd893cde24232f3708c
+#: 6d72f5ef7fe949fab13bd0c62e1c914b 9d12518ed0e942bfa6a64ecd6875f007
+#: b2f1c6f397264cdfab6eb931a198b08b e39ef03aa78840a1a9364bfbb910ab29
 #: flexrag.chunking.basic_chunkers.CharChunker.chunk:5
 #: flexrag.chunking.basic_chunkers.RecursiveChunker.chunk:5
 #: flexrag.chunking.basic_chunkers.SentenceChunker.chunk:5
@@ -114,44 +114,44 @@ msgstr ""
 msgid "The chunks of the text."
 msgstr ""
 
-#: ../../source/reference/chunking.rst 16dc6352fa4e4eab94ac66e5357f4be0
-#: 28d8884ba3dc4b389dec97fcddbb5f12 2bfa7ef8badf4c11892198dcc74cf2fe
-#: 2d51095132fb48f39dacf6dd2d85ee81 424782f8fc2d4e4dad76170f265b9b3e
-#: 947219dea0644e079ed32bee727d3076 ba2d79b7893d479282ea0f80d5541626
-#: ba51195e44a14f15ae93583c28d57751 c5611c12df314b1cbbcdda7861580c8c
-#: eeec800571414a0a962b39dba6fc25d1
+#: ../../source/reference/chunking.rst 13c70535f32a44cfa6c4e2b57eaa8bfd
+#: 1c658a4de8b041b9b8a262db498f33ca 531cad5bc10a4cb7aa3aecdd3874ec43
+#: 78d0cd7362624e21b16c6a8a72c2907e 85618304340944ce910f8eb01ee2cf98
+#: 89aab72e40df44db8507e023bde56b57 b00463f72e2f4640888fd8f485f35e18
+#: c206487ceea748a49df57f835b39f90e dfcd23e462d949f4a409b2f9f5a3ee23
+#: f7238ffe987b40888e93e425cb324b07
 msgid "Return type"
 msgstr ""
 
-#: ../../source/reference/chunking.rst:18 b49b72e0ef90418aa7068bc751181a61
+#: ../../source/reference/chunking.rst:18 498ad4f05be34563ad22b7d68736429e
 msgid "Chunkers"
 msgstr ""
 
-#: 9e7a7cd47abb4e46992db9d59541aa44
+#: 0a1bcdbb5f70432f8e475862567071c4
 #: flexrag.chunking.basic_chunkers.CharChunkerConfig:1 of
 msgid "Configuration for CharChunker."
 msgstr ""
 
-#: d2304069867c4d198a2d929ee7573148
+#: c9306e7f87c74d04b106c90923ed0ab1
 #: flexrag.chunking.basic_chunkers.CharChunkerConfig:3 of
 msgid "The number of characters in each chunk. Default is 2048."
 msgstr ""
 
-#: 8757bed0d6e84dee8d78a801150953a3
+#: 84f4d2c6b7bf428989079f5d63f328f6
 #: flexrag.chunking.basic_chunkers.CharChunkerConfig:5 of
 msgid "The number of characters to overlap between chunks. Default is 0."
 msgstr ""
 
-#: 232c228d159a4a34985436f720781bb3
+#: b78cca4c916b4028a39e9cea1146e05b
 #: flexrag.chunking.basic_chunkers.CharChunkerConfig:8 of
 msgid ""
 "For example, to chunk a text into chunks with 1024 characters with 128 "
 "characters overlap:"
 msgstr ""
 
-#: 653f9841f297454c9a663b8cb5421a44 76071f97c9494c7d82ae590b853653bf
-#: 8c938f7d4d1446dd81761849f877735a 92c088546fca4548bd8daf8f9a90be82
-#: c2a42b60591846d492bae38871d87947
+#: 5fdceb4436a24aee8f881306c63a21cb 680a8ba6c69e49429c4739409f635def
+#: cb89b0487c76420682be84d7c1a3d6b6 e1640dab9af3421baea0781b2be80937
+#: e6d43ad8e38541dd9e444bd3604ad828
 #: flexrag.chunking.basic_chunkers.CharChunker:1
 #: flexrag.chunking.basic_chunkers.RecursiveChunker:1
 #: flexrag.chunking.basic_chunkers.SentenceChunker:1
@@ -160,40 +160,40 @@ msgstr ""
 msgid "Bases: :py:class:`~flexrag.chunking.chunker_base.ChunkerBase`"
 msgstr ""
 
-#: f93ab9ae35c641c984507a165a9fd861
+#: 9f6cfb2aa222483e94dd20ec2ab0551e
 #: flexrag.chunking.basic_chunkers.CharChunker:1 of
 msgid "CharChunker splits text into chunks with fixed length of characters."
 msgstr ""
 
-#: 6a532086b80c41e4a22cbcfc907b06c4 6c9c4689e6684252b8796370bc70d39a
+#: 8226c398a4464917a079e525db6dc4a9 bd6f17470e5a44088fc4a1ac7bbe2e71
 #: flexrag.chunking.basic_chunkers.RecursiveChunkerConfig:1
 #: flexrag.chunking.basic_chunkers.TokenChunkerConfig:1 of
 msgid "Bases: :py:class:`~types.tokenizer_config`"
 msgstr ""
 
-#: 48428f431c954fb892f6f1815347040a
+#: c403353700214789b9ca4f252ec54003
 #: flexrag.chunking.basic_chunkers.TokenChunkerConfig:1 of
 msgid "Configuration for TokenChunker."
 msgstr ""
 
-#: a6c1d1248b6144efb061a448be8b8974
+#: c89728aaff514664a09273fca000c764
 #: flexrag.chunking.basic_chunkers.TokenChunkerConfig:3 of
 msgid "The number of tokens in each chunk. Default is 512."
 msgstr ""
 
-#: 85dce9b7138243d0bc3504eaa9412703
+#: 52c76670030542d5b03bc7d1881390bf
 #: flexrag.chunking.basic_chunkers.TokenChunkerConfig:5 of
 msgid "The number of tokens to overlap between chunks. Default is 0."
 msgstr ""
 
-#: 1f2b5fd4268e4dac99dfb86a26b3b6f8
+#: b41cbf9f377e40a0bd866a300ee75e9a
 #: flexrag.chunking.basic_chunkers.TokenChunkerConfig:8 of
 msgid ""
 "For example, to chunk a text into chunks with 256 tokens with 128 tokens "
 "overlap:"
 msgstr ""
 
-#: 2ab72f640fbe4a4baef53a84e12b6510
+#: 4c32046a3fb34b9d887f2feb771a2725
 #: flexrag.chunking.basic_chunkers.TokenChunkerConfig:23 of
 msgid ""
 "Note that the ``TokenChunker`` relies on the ``tokenize`` and "
@@ -201,39 +201,39 @@ msgid ""
 " between may be lost if the tokenizer is not reversible."
 msgstr ""
 
-#: 88bfbeac4c5045ce95587f4f5c481495
+#: a53305a702324dfeab6bb806e553c9ea
 #: flexrag.chunking.basic_chunkers.TokenChunker:1 of
 msgid "TokenChunker splits text into chunks with fixed number of tokens."
 msgstr ""
 
-#: dc2ea010607e4f649715aee182eacf55
+#: 0255c81270ae41379be95d860d7aca05
 #: flexrag.chunking.basic_chunkers.RecursiveChunkerConfig:1 of
 msgid "Configuration for RecursiveChunker."
 msgstr ""
 
-#: c25bb650f5884d23838ac9f27bba3b05
+#: 98e927e269eb4fed8f69535804a46381
 #: flexrag.chunking.basic_chunkers.RecursiveChunkerConfig:3 of
 msgid "The maximum number of tokens in each chunk. Default is 512."
 msgstr ""
 
-#: f5aa365399da40a3aa17c162fbcd52d2
+#: 541f6e387f15402ab375ffdf3246f087
 #: flexrag.chunking.basic_chunkers.RecursiveChunkerConfig:5 of
 msgid ""
 "The seperators used to split text recursively. The order of the "
 "seperators matters. Default is ``PREDEFINED_SPLIT_PATTERNS[\"en\"]``."
 msgstr ""
 
-#: 23a5bb65f47047d6a314dcddf2a0ac99
+#: 660b3f94ec69422e86c9be021e4f2a83
 #: flexrag.chunking.basic_chunkers.RecursiveChunkerConfig:9 of
 msgid "For example, to split a text recursively with 256 tokens in each chunk:"
 msgstr ""
 
-#: 9d427a6038414a0e8d439f468ac197e9
+#: a7eefe06a7ec46b7ac514fe73bcc2f6e
 #: flexrag.chunking.basic_chunkers.RecursiveChunkerConfig:18 of
 msgid "You can also specify your own seperator list:"
 msgstr ""
 
-#: 396a3be889304d18861c24eb612c2726
+#: 6be816aef0d345f6ace366b293e204cc
 #: flexrag.chunking.basic_chunkers.RecursiveChunkerConfig:30 of
 msgid ""
 "Note that the ``RecursiveChunker`` relies on the regex pattern to split "
@@ -242,14 +242,14 @@ msgid ""
 "assertion to avoid consuming the splitter."
 msgstr ""
 
-#: ffe45c9f6df7443882ecbd019f2e21ca
+#: 47cdb7a740824e84be38b38c7f16e9a3
 #: flexrag.chunking.basic_chunkers.RecursiveChunker:1 of
 msgid ""
 "RecursiveChunker splits text into chunks recursively using the specified "
 "seperators."
 msgstr ""
 
-#: ddf91f032c3c4cc9bb11731135dacdc5
+#: df4ccb60f49644a6b19e6409bf293b9f
 #: flexrag.chunking.basic_chunkers.RecursiveChunker:3 of
 msgid ""
 "The order of the seperators matters. The text will be split recursively "
@@ -257,52 +257,52 @@ msgid ""
 "are defined in ``PREDEFINED_SPLIT_PATTERNS``."
 msgstr ""
 
-#: c883d194aa474b8ebabeb653fc5e14aa
+#: d12a7b14ec4d4ae98be376eff2c5cb96
 #: flexrag.chunking.basic_chunkers.RecursiveChunker:6 of
 msgid ""
 "If the text is still too long after splitting with the last level "
 "seperators, the text will be split into tokens."
 msgstr ""
 
-#: 975f99f1c2a24424a45cf0066fd33c79
+#: 2f83289606d0485da92fae059cb452bd
 #: flexrag.chunking.basic_chunkers.SentenceChunkerConfig:1 of
 msgid ""
 "Bases: :py:class:`~types.tokenizer_config`, "
 ":py:class:`~types.SentenceSplitterConfig`"
 msgstr ""
 
-#: a65972fb0df1441b9db349536df4ea4f
+#: e97a3743b43745e5867c7a900453e464
 #: flexrag.chunking.basic_chunkers.SentenceChunkerConfig:1 of
 msgid "Configuration for SentenceChunker."
 msgstr ""
 
-#: ef61ab02faeb49b9a5eef02f00bae101
+#: ea342753126a4324a0873a58630f7bd5
 #: flexrag.chunking.basic_chunkers.SentenceChunkerConfig:3 of
 msgid "The maximum number of sentences in each chunk. Default is None."
 msgstr ""
 
-#: b00f0951b67b4114b085be98611ca66d e94791c8d5524a59bc0134de29c284d6
+#: 38782227638349ec82186ee8c9ccbe1a 88a25aa6c6064d85bad678e071a993f3
 #: flexrag.chunking.basic_chunkers.SentenceChunkerConfig:5
 #: flexrag.chunking.semantic_chunker.SemanticChunkerConfig:3 of
 msgid "The maximum number of tokens in each chunk. Default is None."
 msgstr ""
 
-#: e879909b07ae41a887436d77996e8106
+#: 00f0b8fd0e1d47b3a98736023bc5cdaa
 #: flexrag.chunking.basic_chunkers.SentenceChunkerConfig:7 of
 msgid "The maximum number of characters in each chunk. Default is None."
 msgstr ""
 
-#: 667ce5f39b834d3386caa889f04a95f1
+#: 725cb337cf874f94a38cfb00e2dc9b9b
 #: flexrag.chunking.basic_chunkers.SentenceChunkerConfig:9 of
 msgid "The number of sentences to overlap between chunks. Default is 0."
 msgstr ""
 
-#: 59405df16a6d456a94a596377900209f
+#: 0d8e69e0243b4b97894be328771eee69
 #: flexrag.chunking.basic_chunkers.SentenceChunkerConfig:12 of
 msgid "For example, to chunk a text into chunks with 10 sentences in each chunk:"
 msgstr ""
 
-#: 9059c9f6f063455d9f97c384c7e2120f
+#: 2736814c5483450aa5f2af1615f53da0
 #: flexrag.chunking.basic_chunkers.SentenceChunkerConfig:21 of
 msgid ""
 "Note that the ``SentenceChunker`` relies on the sentence splitter to "
@@ -310,7 +310,7 @@ msgid ""
 "splitter is not reversible."
 msgstr ""
 
-#: b9afe5f739a945ab8b477d217ac378a4
+#: 1b45b506d424421b9c752fd9c2d3a26b
 #: flexrag.chunking.basic_chunkers.SentenceChunker:1 of
 msgid ""
 "SentenceChunker first splits text into sentences using the specified "
@@ -318,26 +318,26 @@ msgid ""
 "specified constraints."
 msgstr ""
 
-#: 3a020c3931fe4206837ce11134a6594a
+#: 43ab123d6e114b1ab81adb71b145db53
 #: flexrag.chunking.semantic_chunker.SemanticChunkerConfig:1 of
 msgid ""
 "Bases: :py:class:`~types.SentenceSplitterConfig`, "
 ":py:class:`~types.EncoderConfig`, :py:class:`~types.tokenizer_config`"
 msgstr ""
 
-#: b5361efff3724e99859aebae040d2bfa
+#: 225ee2bcff9b4fb4989fe6396c4d11bf
 #: flexrag.chunking.semantic_chunker.SemanticChunkerConfig:1 of
 msgid "Configuration for SemanticChunker."
 msgstr ""
 
-#: d99ce6f2681e4b6ea9afb221b3e87675
+#: e60f6c675a464b6fb99d1153f4d6ee32
 #: flexrag.chunking.semantic_chunker.SemanticChunkerConfig:5 of
 msgid ""
 "The threshold for semantic similarity. Default is None. If provided, the "
 "`threshold_percentile` and `max_tokens` will be ignored."
 msgstr ""
 
-#: 00c4cceb0d354b1f805db4d12ee3bb62
+#: ca9fb7794fca49af81753b0d6bb02659
 #: flexrag.chunking.semantic_chunker.SemanticChunkerConfig:8 of
 msgid ""
 "The ratio of the threshold for semantic similarity. Default is None. "
@@ -346,12 +346,12 @@ msgid ""
 " ignored."
 msgstr ""
 
-#: 0f8addb0ae6d40a18974e46b7a71881c
+#: 51795188556f47a89b2a2b9c93eef57b
 #: flexrag.chunking.semantic_chunker.SemanticChunkerConfig:12 of
 msgid "The window size for calculating semantic similarity. Default is None."
 msgstr ""
 
-#: 116ef1e6479f4226885fb5586b69a5b7
+#: a5ef355ff8a44b0480303ef4323fcf65
 #: flexrag.chunking.semantic_chunker.SemanticChunkerConfig:14 of
 msgid ""
 "The similarity function to use. Default is \"COS\". Available choices are"
@@ -359,7 +359,7 @@ msgid ""
 "product, and \"COS\" for cosine similarity."
 msgstr ""
 
-#: bd7c812c3f0547d182add1e6fe258d2e
+#: 89a6bea93352404ea95e70241b34699c
 #: flexrag.chunking.semantic_chunker.SemanticChunkerConfig:18 of
 msgid ""
 "The similarity higher than the threshold will be considered as coherent, "
@@ -373,28 +373,28 @@ msgid ""
 "within the token limit."
 msgstr ""
 
-#: dd89ef37871e40b99877e60ed5db3980
+#: ac9ac8c0b22b46ea889a5366009332fc
 #: flexrag.chunking.semantic_chunker.SemanticChunkerConfig:25 of
 msgid ""
 "For example, to split the text into chunks with a maximum of 512 tokens, "
 "you can use the following configuration:"
 msgstr ""
 
-#: 5b23e3a908f340e4a856338bd602dfad
+#: bb5bbaa07b4b45ae976139fa3868af0f
 #: flexrag.chunking.semantic_chunker.SemanticChunkerConfig:36 of
 msgid ""
 "To split the text into chunks with a threshold_percentile of 5%, you can "
 "use the following configuration:"
 msgstr ""
 
-#: 890ddcf9861244d6bae08c6da1a52548
+#: e2fb5b3064344cf1a21689e73163fb99
 #: flexrag.chunking.semantic_chunker.SemanticChunkerConfig:45 of
 msgid ""
 "To split the text into chunks with a given threshold, you can use the "
 "following configuration:"
 msgstr ""
 
-#: a9032edd48a04738868710e307d8789b
+#: f4a92351b5454a2bb81ba726f2663985
 #: flexrag.chunking.semantic_chunker.SemanticChunker:1 of
 msgid ""
 "SemanticChunker splits text into sentences and then groups them into "
@@ -403,17 +403,17 @@ msgid ""
 "com/RetrievalTutorials/blob/main/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb"
 msgstr ""
 
-#: ../../source/reference/chunking.rst:66 8368c929a325491e8b58f74c2000a72a
+#: ../../source/reference/chunking.rst:66 fb0d4055a2854b8bbdf2f2009b99b3af
 msgid "Sentence Splitters"
 msgstr ""
 
-#: ../../source/reference/chunking.rst:67 7f884d8626a04eea8ecd2f15fadab39f
+#: ../../source/reference/chunking.rst:67 6a8f554db8924d838681c23dea4f3200
 msgid ""
 "This submodule provides a set of useful tools for splitting a text into "
 "sentences."
 msgstr ""
 
-#: 26810e2c734a478492e9eee394f9e75e
+#: 767134a0c6e64d908e20fd2760a10ef0
 #: flexrag.chunking.sentence_splitter.SentenceSplitterBase:1 of
 msgid ""
 "Sentence splitter that splits text into sentences. This is an abstract "
@@ -423,15 +423,15 @@ msgid ""
 " concatenate back to the original text."
 msgstr ""
 
-#: 0e3b14b74f2349398a23aa2e52092e1d
+#: 8483b3d02cf84db1ad49f9a3b3ef31f2
 #: flexrag.chunking.sentence_splitter.SentenceSplitterBase.reversible:1 of
 msgid ""
 "return True if the splitted sentences can be concatenate back to the "
 "original text."
 msgstr ""
 
-#: 36e4300b39eb499ca846a0993de8b892 731af869342e41b3b6ae8c7b9619caab
-#: 8d772c5f952f41fd98c98bf81dc93217 e7e03038083a47c084d9b3f72bdcee81
+#: 4a00796353ea4ec3b348f39075c919a8 56301b66a7b744f1a4405f6c2d7f532b
+#: 838448a10b404ae9adb3af09363103a2 e49fd95acc1a4568889eae4ddac77f18
 #: flexrag.chunking.sentence_splitter.NLTKSentenceSplitter.split:1
 #: flexrag.chunking.sentence_splitter.RegexSplitter.split:1
 #: flexrag.chunking.sentence_splitter.SentenceSplitterBase.split:1
@@ -439,8 +439,8 @@ msgstr ""
 msgid "Split the given text into sentences."
 msgstr ""
 
-#: 2bed65ceb5454919890b7d10984389f7 44049d5d46e44219bfc0afd7aea9db7d
-#: 6c1eac040dd144dda2fd678ba305e9f5 c233fd8af19048eb8b31709290913daf
+#: 01b92900796344d5a1aca28249a2deef 410baba16980445d8588425bc66dde91
+#: 5a302f65825b4692b7c74f78d47befba b6a589f53d464c9581afd04118a1e14b
 #: flexrag.chunking.sentence_splitter.NLTKSentenceSplitter.split:3
 #: flexrag.chunking.sentence_splitter.RegexSplitter.split:3
 #: flexrag.chunking.sentence_splitter.SentenceSplitterBase.split:3
@@ -448,8 +448,8 @@ msgstr ""
 msgid "The text to split."
 msgstr ""
 
-#: 2d7eef84163f491e84ac95d7e9482309 8d3aae357e104a95b35d191715177d65
-#: c6aa5be9864e4b549aa17df7d38b0577 cf43c1be93c14d44a15c04a036370b10
+#: 1050a054b35f42dc8e1a965b6801b51e 8f99031eb74741be87ecbc64272f9c79
+#: 9a26e02a80244d71bbaa44db539534ae b76f3724e6d048a4964f6075335fa156
 #: flexrag.chunking.sentence_splitter.NLTKSentenceSplitter.split:5
 #: flexrag.chunking.sentence_splitter.RegexSplitter.split:5
 #: flexrag.chunking.sentence_splitter.SentenceSplitterBase.split:5
@@ -457,18 +457,18 @@ msgstr ""
 msgid "The sentences of the text."
 msgstr ""
 
-#: 41d629264cad4a71bee8e1718947ef7f
+#: 13d769eefbf24c5f937db9d7b6ecccd9
 #: flexrag.chunking.sentence_splitter.NLTKSentenceSplitterConfig:1 of
 msgid "Configuration for NLTKSentenceSplitter."
 msgstr ""
 
-#: b1ff88b8a193437fa534becb22f75776
+#: 404af43bbea74d66a26016b29032d052
 #: flexrag.chunking.sentence_splitter.NLTKSentenceSplitterConfig:3 of
 msgid "The language to use for the sentence splitter. Default is \"english\"."
 msgstr ""
 
-#: 180c23ad39d14e2e8985b6191782e2a1 47345d84ac0746c0aed2c75c8dc00bd9
-#: f5470e2d7b6a4d5da1a48300210235a8
+#: 7592b943738e4fa9a91446324775e452 987d4f672fc14fc7b2211f67c9c9af62
+#: cddec8f395d947bf8b85f39f6b1d5691
 #: flexrag.chunking.sentence_splitter.NLTKSentenceSplitter:1
 #: flexrag.chunking.sentence_splitter.RegexSplitter:1
 #: flexrag.chunking.sentence_splitter.SpacySentenceSplitter:1 of
@@ -477,7 +477,7 @@ msgid ""
 ":py:class:`~flexrag.chunking.sentence_splitter.SentenceSplitterBase`"
 msgstr ""
 
-#: 4b3d184c29204861ba7d3620ecf9e3be
+#: 543a1ca974344227849227a21382c82e
 #: flexrag.chunking.sentence_splitter.NLTKSentenceSplitter:1 of
 msgid ""
 "NLTKSentenceSplitter splits text into sentences using NLTK's "
@@ -486,26 +486,26 @@ msgid ""
 "nltk.tokenize.punkt."
 msgstr ""
 
-#: aa1c57c5d5224241aeef9fbee7eb8bb9
+#: a560349001ac4158a4afe114637a6192
 #: flexrag.chunking.sentence_splitter.NLTKSentenceSplitter.reversible:1 of
 msgid ""
 "NLTKSentenceSplitter is not reversible as it may lose spaces between "
 "sentences."
 msgstr ""
 
-#: f711e4594ef0437fbebb7ab7f09096ac
+#: d5836ea40a42433eadf2d80d1ebb669b
 #: flexrag.chunking.sentence_splitter.RegexSplitterConfig:1 of
 msgid "Configuration for RegexSentenceSplitter."
 msgstr ""
 
-#: 06e6db82676f44a18522d998c1d8d806
+#: ca6448485a9042c78b0e5ec577225487
 #: flexrag.chunking.sentence_splitter.RegexSplitterConfig:3 of
 msgid ""
 "The regular expression pattern to split the text. Default is "
 "``PREDEFINED_SPLIT_PATTERNS[\"en\"][\"sentence\"]``"
 msgstr ""
 
-#: b612316f8e77497a8bf950c62d99a200
+#: 4753aaa03566475684d371fe6e06fbf2
 #: flexrag.chunking.sentence_splitter.RegexSplitterConfig:7 of
 msgid ""
 "Note that some patterns may lose the seperators between sentences. A good"
@@ -513,54 +513,54 @@ msgid ""
 "consuming the splitter."
 msgstr ""
 
-#: 31c5b11023b54eeea068f95f0297cb39
+#: e12b0805bbef47f2b6f277db61de4b86
 #: flexrag.chunking.sentence_splitter.RegexSplitter:1 of
 msgid ""
 "RegexSentenceSplitter splits text into sentences using a regular "
 "expression pattern."
 msgstr ""
 
-#: 897d365d98ea4b54a7685629281b02ae
+#: 959212ed35c5451abd7269be7a6ae8ce
 #: flexrag.chunking.sentence_splitter.RegexSplitter:3 of
 msgid ""
 "Note that this splitter uses the `regex` module, which might be slightly "
 "different from the built-in `re` module."
 msgstr ""
 
-#: 0cfcc5f0f8c24b7fb6397dfb2558160d
+#: d2900a8a41a74790b6f37fc22ad2db14
 #: flexrag.chunking.sentence_splitter.RegexSplitter.reversible:1 of
 msgid ""
 "The default RegexSplitter is reversible. However, the reversibility "
 "depends on the pattern used."
 msgstr ""
 
-#: 10043bf8f4a7423f959016f40cc35626
+#: 058adf6e948f40cf941e8bae0cae4b3d
 #: flexrag.chunking.sentence_splitter.SpacySentenceSplitterConfig:1 of
 msgid "Configuration for SpacySentenceSplitter."
 msgstr ""
 
-#: b7d85179f528447d877d65522273637f
+#: 8263ed1fae124081bfeab6b10c482a87
 #: flexrag.chunking.sentence_splitter.SpacySentenceSplitterConfig:3 of
 msgid ""
 "The spaCy model to use for sentence splitting. Default is "
 "\"en_core_web_sm\"."
 msgstr ""
 
-#: ddadea81c73f415b972606e7546f4e6f
+#: c6e0e1a3bb5b4f58ac343f3f98df7ca4
 #: flexrag.chunking.sentence_splitter.SpacySentenceSplitter:1 of
 msgid ""
 "SpacySentenceSplitter splits text into sentences using spaCy's sentence "
 "splitter."
 msgstr ""
 
-#: c52510c1ffb34e4392bdecc87f2d2c05
+#: 3e5aab85b1974fc9bfd7076969802647
 #: flexrag.chunking.sentence_splitter.SpacySentenceSplitter.reversible:1 of
 msgid ""
 "SpacySentenceSplitter is not reversible as it may lose spaces between "
 "sentences."
 msgstr ""
 
-#: ../../source/reference/chunking.rst:99 b210975ffaa64401a9fc1d1ae4d2b6af
+#: ../../source/reference/chunking.rst:99 3b604e70799a442b8898f6f1360dadd6
 msgid ""
 "A dictionary of predefined sentence splitting patterns. The keys are the "
 "names of the patterns, and the values are the corresponding regular "
@@ -569,63 +569,76 @@ msgid ""
 "source code for more details."
 msgstr ""
 
-#: ../../source/reference/chunking.rst:105 415a5813ec2e4856887feb1484871043
+#: ../../source/reference/chunking.rst:105 4a5993f9e83e42899761a85e01fae2bd
 msgid "General Configuration"
 msgstr ""
 
-#: ../../source/reference/chunking.rst:106 56fea89ca40b4360b103ce0d45eb2147
+#: ../../source/reference/chunking.rst:106 03c375d63d914d57a80e5d53c8ff2ef4
 msgid ""
 "The configuration provides a general interface for loading and "
 "configurate the chunker or the sentence splitter."
 msgstr ""
 
-#: ace3b11a575346c6b0f2251581d7f305 of types.ChunkerConfig:1
-msgid "Configuration class for chunker (name: ChunkerConfig, default: sentence)."
+#: 8aea22dd61394b7395f1ea762536ed92 of types.ChunkerConfig:1
+msgid ""
+"Configuration class for chunker (name: ChunkerConfig, default: "
+"sentence_chunker)."
 msgstr ""
 
-#: 18a32a0492b146e5bae8926a8f2f5461 of types.ChunkerConfig:3
+#: f0250b108eaf4f5caa4ef648d8a437c9 of types.ChunkerConfig:3
 msgid "The chunker type to use."
 msgstr ""
 
-#: 956dc178fdd54ed69da456ecb08a331f of types.ChunkerConfig:5
+#: a685779c449d409c9beb09ef76493d89 of types.ChunkerConfig:5
 msgid "The config for CharChunker."
 msgstr ""
 
-#: 6b1e0404b34d47bea555e09997afadbc of types.ChunkerConfig:7
+#: b9ee4517446d4f69bcaf83e2043abf4b of types.ChunkerConfig:7
 msgid "The config for TokenChunker."
 msgstr ""
 
-#: 9a2af55e346743b7ac51cf2fe0ef71ee of types.ChunkerConfig:9
+#: f24426c7f0da49818dd19a31d7a7f47a of types.ChunkerConfig:9
 msgid "The config for RecursiveChunker."
 msgstr ""
 
-#: 17f19a8798914cdaab0887e28d841af0 of types.ChunkerConfig:11
+#: 32a66aad63f74db9bb70cd5394ad6d10 of types.ChunkerConfig:11
 msgid "The config for SentenceChunker."
 msgstr ""
 
-#: a96b68cc75734f2782fd7d24a9b660b2 of types.ChunkerConfig:13
+#: 1bfcb61fb943465b813ef30e992b29ac of types.ChunkerConfig:13
 msgid "The config for SemanticChunker."
 msgstr ""
 
-#: 74ec41705afc45988c1185f44c640184 of types.SentenceSplitterConfig:1
+#: c58c665db9b3468f88e5382a9004b417 of types.SentenceSplitterConfig:1
 msgid ""
 "Configuration class for sentence_splitter (name: SentenceSplitterConfig, "
-"default: nltk_splitter)."
+"default: regex)."
 msgstr ""
 
-#: 7a379ad6b2b9414a816fb321afb24489 of types.SentenceSplitterConfig:3
+#: 88aa0c6cce1c4944ac211fb151695b35 of types.SentenceSplitterConfig:3
 msgid "The sentence_splitter type to use."
 msgstr ""
 
-#: e6fd74d0eeef485face133c4be948e86 of types.SentenceSplitterConfig:5
+#: 44b9ca9142544096913d6198f0246bf4 of types.SentenceSplitterConfig:5
 msgid "The config for NLTKSentenceSplitter."
 msgstr ""
 
-#: 23d5e378efe1405c9837fdc7bce25d4a of types.SentenceSplitterConfig:7
+#: c3e18fe4afb1455bb522b58f9739f3c0 of types.SentenceSplitterConfig:7
 msgid "The config for RegexSplitter."
 msgstr ""
 
-#: c0138be119694dea921c0f14dd01c12f of types.SentenceSplitterConfig:9
+#: 0369bb5f5306491dbe0b051e03ff2aa7 of types.SentenceSplitterConfig:9
 msgid "The config for SpacySentenceSplitter."
 msgstr ""
+
+#~ msgid ""
+#~ "Configuration class for chunker (name: "
+#~ "ChunkerConfig, default: sentence)."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Configuration class for sentence_splitter "
+#~ "(name: SentenceSplitterConfig, default: "
+#~ "nltk_splitter)."
+#~ msgstr ""
 

@@ -30,6 +30,7 @@ FlexRAG is a highly reproducible, easy-to-use, and high-performance RAG framewor
    :maxdepth: 1
    :caption: Tutorial:
 
+   tutorial/preparing_corpus
    tutorial/preparing_retriever
    tutorial/building_assistant
    tutorial/entrypoints
