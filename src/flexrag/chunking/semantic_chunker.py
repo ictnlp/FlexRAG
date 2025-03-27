@@ -77,7 +77,7 @@ class SemanticChunkerConfig(SentenceSplitterConfig, EncoderConfig, TokenizerConf
     similarity_function: Choices(["L2", "IP", "COS"]) = "COS"  # type: ignore
 
 
-@CHUNKERS("semantic", config_class=SemanticChunkerConfig)
+@CHUNKERS("semantic_chunker", config_class=SemanticChunkerConfig)
 class SemanticChunker(ChunkerBase):
     """SemanticChunker splits text into sentences and then groups them into chunks based on semantic similarity.
     This chunker is inspired by the Greg Kamradt's wonderful notebook:

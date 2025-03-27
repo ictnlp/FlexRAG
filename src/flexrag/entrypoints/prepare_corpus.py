@@ -10,13 +10,14 @@ from omegaconf import MISSING, OmegaConf
 from flexrag.chunking import CHUNKERS, ChunkerConfig
 from flexrag.common_dataclass import Context
 from flexrag.document_parser import DOCUMENTPARSERS, DocumentParserConfig
+from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger
 
 logger = LOGGER_MANAGER.get_logger("flexrag.entrypoints.prepare_corpus")
 
 
 @dataclass
-class Config(DocumentParserConfig, ChunkerConfig):
+class Config(DocumentParserConfig, ChunkerConfig, TextProcessPipelineConfig):
     """The configuration for prepare corpus.
     The documents will be parsed by the DocumentParser specified in the config and then chunked by the Chunker.
 
@@ -88,6 +89,7 @@ def main(cfg: Config):
     # load document parser and chunker
     parser = DOCUMENTPARSERS.load(cfg)
     chunker = CHUNKERS.load(cfg)
+    processor = TextProcessPipeline(cfg)
 
     # parse the documents
     global_id = 0
@@ -99,20 +101,26 @@ def main(cfg: Config):
             if chunker is not None:
                 chunks = chunker.chunk(document.text)
                 for chunk in chunks:
+                    text = processor(chunk.text)
+                    if text is None:
+                        continue
                     writer.write(
                         Context(
                             context_id=f"{global_id}-{in_doc_id}",
-                            data={"text": chunk.text, "title": document.title},
+                            data={"text": text, "title": document.title},
                             source=path,
                             meta_data={"source_file_path": document.source_file_path},
                         )
                     )
                     in_doc_id += 1
             else:
+                text = processor(document.text)
+                if text is None:
+                    continue
                 writer.write(
                     Context(
                         context_id=f"{global_id}-{in_doc_id}",
-                        data={"text": document.text, "title": document.title},
+                        data={"text": text, "title": document.title},
                         source=path,
                         meta_data={"source_file_path": document.source_file_path},
                     )

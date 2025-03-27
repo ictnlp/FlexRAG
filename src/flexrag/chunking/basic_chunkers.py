@@ -39,7 +39,7 @@ class CharChunkerConfig:
     overlap: int = 0
 
 
-@CHUNKERS("char", config_class=CharChunkerConfig)
+@CHUNKERS("char_chunker", config_class=CharChunkerConfig)
 class CharChunker(ChunkerBase):
     """CharChunker splits text into chunks with fixed length of characters."""
 
@@ -93,7 +93,7 @@ class TokenChunkerConfig(TokenizerConfig):
     overlap: int = 0
 
 
-@CHUNKERS("token", config_class=TokenChunkerConfig)
+@CHUNKERS("token_chunker", config_class=TokenChunkerConfig)
 class TokenChunker(ChunkerBase):
     """TokenChunker splits text into chunks with fixed number of tokens."""
 
@@ -170,7 +170,7 @@ class RecursiveChunkerConfig(TokenizerConfig):
     )
 
 
-@CHUNKERS("recursive", config_class=RecursiveChunkerConfig)
+@CHUNKERS("recursive_chunker", config_class=RecursiveChunkerConfig)
 class RecursiveChunker(ChunkerBase):
     """RecursiveChunker splits text into chunks recursively using the specified seperators.
 
@@ -273,7 +273,7 @@ class SentenceChunkerConfig(TokenizerConfig, SentenceSplitterConfig):
     overlap: int = 0
 
 
-@CHUNKERS("sentence", config_class=SentenceChunkerConfig)
+@CHUNKERS("sentence_chunker", config_class=SentenceChunkerConfig)
 class SentenceChunker(ChunkerBase):
     """SentenceChunker first splits text into sentences using the specified sentence splitter,
     then merges the sentences into chunks based on the specified constraints.
