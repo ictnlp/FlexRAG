@@ -87,11 +87,11 @@ msgstr "举例来说，您可以通过下面的命令在 *Natural Questions* 数
 #: ../../source/tutorial/building_assistant.md:69
 #: a580d73b63f046439e188baf083607d8
 msgid ""
-"In [flexrag_examples](https://github.com/ictnlp/flexrag_examples) "
+"In [FlexRAG_Examples](https://github.com/ictnlp/FlexRAG_Examples) "
 "repository, we provide several detailed examples of how to build a RAG "
 "assistant."
 msgstr ""
-"在仓库 [flexrag_examples](https://github.com/ictnlp/flexrag_examples) "
+"在仓库 [FlexRAG_Examples](https://github.com/ictnlp/FlexRAG_Examples) "
 "中，我们提供了一些详细的示例来展示如何使用 FlexRAG 来构建您的 RAG 助手。您可以访问该仓库以学习更多有关如何构建 RAG 助手的知识。"
 
 #~ msgid ""

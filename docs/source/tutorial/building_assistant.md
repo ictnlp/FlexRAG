@@ -66,4 +66,4 @@ python -m flexrag.entrypoints.run_assistant \
     log_interval=10
 ```
 
-In [flexrag_examples](https://github.com/ictnlp/flexrag_examples) repository, we provide several detailed examples of how to build a RAG assistant.
+In [FlexRAG_Examples](https://github.com/ictnlp/FlexRAG_Examples) repository, we provide several detailed examples of how to build a RAG assistant.

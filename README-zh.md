@@ -17,7 +17,7 @@
 <a href="./README.md"><b>README (english)</b></a> |
 <a href="https://flexrag.readthedocs.io/zh-cn/latest/"><b>文档</b></a> |
 <a href="https://huggingface.co/collections/ICTNLP/flexrag-retrievers-67b5373b70123669108a2e59"><b>检索器</b></a> |
-<a href="https://github.com/ictnlp/flexrag_examples"><b>示例</b></a>
+<a href="https://github.com/ictnlp/FlexRAG_Examples"><b>示例</b></a>
 |
 </p>
 
