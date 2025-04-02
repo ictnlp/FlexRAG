@@ -10,11 +10,20 @@
 [![Read the Docs](https://img.shields.io/badge/docs-Chinese-yellow)](https://flexrag.readthedocs.io/zh-cn/latest/)
 [![PyPI - Version](https://img.shields.io/pypi/v/flexrag)](https://pypi.org/project/flexrag/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14306983.svg)](https://doi.org/10.5281/zenodo.14306983)
-\[ [English](README.md) | [中文](README-zh.md) \]
 
-FlexRAG is a highly reproducible, easy-to-use, and high-performance RAG framework designed for both research and application scenarios. It supports **text**, **multimodal**, and **web-based** RAG, providing a **complete RAG pipeline and evaluation process**. With built-in **asynchronous** processing and **persistent caching**, it ensures efficiency and scalability. Easily load retrievers from Hugging Face and quickly build powerful RAG solutions out of the box.
+<p align="center">
+|
+<a href="https://youtu.be/a1XPiwdGzuM"><b>Introduction Video</b></a> |
+<a href="./README-zh.md"><b>README (chinese)</b></a> |
+<a href="https://flexrag.readthedocs.io/en/latest/"><b>Documentation</b></a> |
+<a href="https://huggingface.co/collections/ICTNLP/flexrag-retrievers-67b5373b70123669108a2e59"><b>Retrievers</b></a> |
+<a href="https://github.com/ictnlp/flexrag_examples"><b>Examples</b></a>
+|
+</p>
 
-https://github.com/user-attachments/assets/4dfc0ec9-686b-40e2-b1f0-daa2b918e093
+FlexRAG is an innovative open-source framework designed to streamline the rapid reproduction, development, and evaluation of Retrieval-Augmented Generation (RAG) systems. It provides comprehensive support for various RAG scenarios, including **text-based**, **multimodal**, and **web-accessible** applications. With an **end-to-end pipeline** covering everything from data preparation to system evaluation, FlexRAG empowers researchers to efficiently **share their work** with the community and swiftly develop demonstrative prototypes based on their algorithms.
+
+****
 
 # 📖 Table of Contents
 - [📖 Table of Contents](#-table-of-contents)
@@ -29,13 +38,10 @@ https://github.com/user-attachments/assets/4dfc0ec9-686b-40e2-b1f0-daa2b918e093
 
 
 # ✨ Key Features
-- 🎯 **High Reproducibility**: FlexRAG comes with a companion repository, [flexrag_examples](https://github.com/ictnlp/flexrag_examples), providing comprehensive reproduction cases for various RAG algorithms. Additionally, unified retrievers available on the HuggingFace Hub ensure easy replication of experimental results under the same environment.  
-- ✅ **Low Learning Curve**: Download and load retrievers from the HuggingFace Hub with a single command, eliminating complex setup processes. Moreover, FlexRAG offers carefully optimized default configurations, allowing you to achieve excellent performance right out of the box and streamlining the development process.  
-- 🌍 **Diverse Application Scenarios**: FlexRAG supports not only text-based RAG but also multimodal and network-based RAG, enabling broad applications across different data types.  
-- 🧪 **Research-Oriented**: Provides a unified evaluation process for various RAG tasks, making it easy to test across different datasets. Official benchmark tests are also available for convenient comparison and reference.  
-- ⚡ **Superior Performance**: Leverages persistent caching and asynchronous functions to enhance high-performance RAG development.  
-- 🔄 **End-to-End Support**: From document information extraction and segmentation to retrieval, generation, and evaluation of output quality, FlexRAG fully supports every stage of the RAG lifecycle.  
-- 🛠️ **Modular & Flexible Design**: With a lightweight modular architecture, FlexRAG accommodates multiple development modes, helping you quickly build customized RAG solutions.  
+<p align="center">
+<img src="assets/Framework-Features-en.png" width=80%>
+</p>
+
 
 # 📢 News
 - **2025-03-24**: The Chinese documentation is now available! Please visit the [documentation](https://flexrag.readthedocs.io/zh-cn/latest/) for more details.
@@ -53,14 +59,14 @@ pip install flexrag
 
 Visit our [documentation](https://flexrag.readthedocs.io/en/latest/) to learn more.
 - [Installation](https://flexrag.readthedocs.io/en/latest/getting_started/installation.html)
-- [Quickstart](https://flexrag.readthedocs.io/en/latest/getting_started/quickstart.html)
-- [Entrypoints](https://flexrag.readthedocs.io/en/latest/tutorial/entrypoints.html)
+- [Quickstart](https://flexrag.readthedocs.io/en/latest/getting_started/quickstart1.html)
+- [Tutorial](https://flexrag.readthedocs.io/en/latest/tutorial/preparing_corpus.html)
 
 
 # 🏗️ Architecture
 FlexRAG is designed with a **modular** architecture, allowing you to easily customize and extend the framework to meet your specific needs. The following diagram illustrates the architecture of FlexRAG:
 <p align="center">
-<img src="assets/Framework-FlexRAG.png" width=70%>
+<img src="assets/Framework-FlexRAGv3-en.png" width=70%>
 </p>
 
 # 📊 Benchmarks

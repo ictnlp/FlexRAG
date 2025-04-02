@@ -11,9 +11,17 @@
 [![PyPI - Version](https://img.shields.io/pypi/v/flexrag)](https://pypi.org/project/flexrag/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14306983.svg)](https://doi.org/10.5281/zenodo.14306983)
 
-\[ [English](README.md) | [中文](README-zh.md) \]
+<p align="center">
+|
+<a href="https://www.bilibili.com/video/BV13rZbYDEHZ"><b>介绍视频</b></a> |
+<a href="./README.md"><b>README (english)</b></a> |
+<a href="https://flexrag.readthedocs.io/zh-cn/latest/"><b>文档</b></a> |
+<a href="https://huggingface.co/collections/ICTNLP/flexrag-retrievers-67b5373b70123669108a2e59"><b>检索器</b></a> |
+<a href="https://github.com/ictnlp/flexrag_examples"><b>示例</b></a>
+|
+</p>
 
-FlexRAG 是一个具备高可复现性、易上手且性能优越的检索增强生成（Retrieval Augmented Generation, RAG）框架，专为科研与原型开发而设计。它支持**文本**、**多模态**以及**网络** RAG，提供完整的 RAG 流水线与评估流程，开箱即用，同时具备高效的**异步处理**与**持久化缓存**能力，助力快速搭建强大的 RAG 解决方案。
+FlexRAG 是一个创新的开源框架，旨在简化 RAG（检索增强生成）系统的快速复现、开发和评估。它全面支持多种 RAG 场景，包括 **基于文本的、多模态的以及可通过 Web 访问的 RAG** 。借助从数据准备到系统评估的**端到端流水线**，FlexRAG 能够帮助研究人员高效地与社区共享他们的工作，并快速基于自己的算法开发演示原型。
 
 # 📖 目录
 - [📖 目录](#-目录)
@@ -28,13 +36,9 @@ FlexRAG 是一个具备高可复现性、易上手且性能优越的检索增强
 
 
 # ✨ 框架特色
-- 🎯**高可复现性**：FlexRAG 附带了伴生仓库 [flexrag_examples](https://github.com/ictnlp/flexrag_examples)，为各类 RAG 算法提供详尽的复现案例；同时，在 HuggingFace Hub 上统一提供的检索器，确保您在相同环境下轻松复现实验结果。
-- ✅**低上手难度**：一键下载并加载 HuggingFace Hub 上的检索器，免除了繁琐的构建流程；此外，FlexRAG 对默认配置进行了精心优化，使您在默认参数下就能获得出色性能，从而简化开发流程。
-- 🌍**多样化应用场景**：FlexRAG 不仅适用于文本 RAG，还支持多模态及网络 RAG，为不同数据类型提供了广泛的应用可能。
-- 🧪**科研优先**：为各类 RAG 任务提供统一评估流程，助您在不同数据集上轻松测试；同时，提供官方基准测试方便对比和查阅。
-- ⚡**卓越性能**：利用持久化缓存和异步函数，助力高性能 RAG 开发。
-- 🔄**全流程支持**：从文档信息提取、切分到检索与生成，再到生成质量评估，FlexRAG 完备支持 RAG 全生命周期的各个环节。
-- 🛠️**模块化灵活设计**：采用轻量级模块化架构，FlexRAG 支持多种开发模式，助您快速构建专属 RAG 解决方案。
+<p align="center">
+<img src="assets/Framework-Features-zh.png" width=80%>
+</p>
 
 # 📢 最新消息
 - **2025-03-24**: 中文文档上线啦！请访问 [文档](https://flexrag.readthedocs.io/zh-cn/latest/) 查看。
@@ -51,14 +55,14 @@ pip install flexrag
 ```
 
 访问我们的[文档](https://flexrag.readthedocs.io/zh-cn/latest/)以了解更多信息。
-- [安装](https://flexrag.readthedocs.io/en/latest/getting_started/installation.html)
-- [快速入门](https://flexrag.readthedocs.io/en/latest/getting_started/quickstart.html)
-- [命令行入口](https://flexrag.readthedocs.io/en/latest/tutorial/entrypoints.html)
+- [安装](https://flexrag.readthedocs.io/zh-cn/latest/getting_started/installation.html)
+- [快速入门](https://flexrag.readthedocs.io/zh-cn/latest/getting_started/quickstart1.html)
+- [教程](https://flexrag.readthedocs.io/zh-cn/latest/tutorial/preparing_corpus.html)
 
 # 🏗️ FlexRAG 架构
 FlexRAG 采用**模块化**架构设计，让您可以轻松定制和扩展框架以满足您的特定需求。下图说明了 FlexRAG 的架构：
 <p align="center">
-<img src="assets/Framework-FlexRAG-zh.png" width=70%>
+<img src="assets/Framework-FlexRAGv3-zh.png" width=70%>
 </p>
 
 # 📊 基准测试
