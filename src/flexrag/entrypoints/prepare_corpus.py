@@ -74,9 +74,6 @@ class ContextWriter:
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(cfg: Config):
-    default_cfg = OmegaConf.structured(Config)
-    cfg = OmegaConf.merge(default_cfg, cfg)
-
     # parse paths
     if isinstance(cfg.document_paths, str):
         document_paths = [cfg.document_paths]

@@ -11,9 +11,6 @@ cs.store(name="default", node=DenseRetrieverConfig)
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(cfg: DenseRetrieverConfig):
-    default_cfg = OmegaConf.structured(DenseRetrieverConfig)
-    cfg = OmegaConf.merge(default_cfg, cfg)
-
     # rebuild index
     retriever = DenseRetriever(cfg, no_check=True)
     retriever.build_index(rebuild=True)
