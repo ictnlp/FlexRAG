@@ -63,17 +63,6 @@ The defination of the configuration structure for the `cache` entrypoint is as f
 If you wish to disable the Cache during retrieval, you can set the environment variable by `export DISABLE_CACHE=True`.
 ```
 
-### Evaluating the Generated Responses
-This entrypoint is used to evaluate the generated responses. You can use this entrypoint by running `python -m flexrag.entrypoints.evaluate`.
-The defination of the configuration structure for the `evaluate` entrypoint is as follows:
-
-```{eval-rst}
-.. autoclass:: flexrag.entrypoints.evaluate::Config
-    :members:
-    :noindex:
-    :show-inheritance:
-```
-
 
 ## Configuration Management
 FlexRAG employs `dataclass` and [hydra-core](https://github.com/facebookresearch/hydra) for configuration management, which brings remarkable clarity to the complex configurations within the RAG pipeline. Moreover, you can pass parameters to the FlexRAG's entrypoints either via the command line or through configuration files. This section will illustrate how to utilize both methods to convey parameters to the FlexRAG entry point.

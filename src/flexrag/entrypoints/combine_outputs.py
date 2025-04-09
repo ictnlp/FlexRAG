@@ -23,10 +23,6 @@ logger = LOGGER_MANAGER.get_logger("combine_outputs")
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(cfg: Config):
-    # merge config
-    default_cfg = OmegaConf.structured(Config)
-    cfg = OmegaConf.merge(default_cfg, cfg)
-
     # load the metadata
     config_path = os.path.join(cfg.result_paths[0], "config.yaml")
     loaded_config = OmegaConf.load(config_path)

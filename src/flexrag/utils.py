@@ -276,11 +276,11 @@ class Register(Generic[RegistedType]):
                     id_path = os.path.join(type_str, "cls.id")
                     with open(id_path, "r") as f:
                         cls_name = f.read().strip()
-                    # load the cls config if exists
-                    cfg_name = f"{self[cls_name]['short_names'][0]}_config"
-                    new_cfg = getattr(config, cfg_name, None)
+                    # the configure will be ignored
+                    # cfg_name = f"{self[cls_name]['short_names'][0]}_config"
+                    # new_cfg = getattr(config, cfg_name, None)
                     # load the item
-                    return self[cls_name]["item"].load_from_local(type_str, new_cfg)
+                    return self[cls_name]["item"].load_from_local(type_str)
 
             # Load the item directly
             if type_str in self:

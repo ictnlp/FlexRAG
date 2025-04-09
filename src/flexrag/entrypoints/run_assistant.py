@@ -39,10 +39,6 @@ logger = LOGGER_MANAGER.get_logger("run_assistant")
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(config: Config):
-    # merge config
-    default_cfg = OmegaConf.structured(Config)
-    config = OmegaConf.merge(default_cfg, config)
-
     # load dataset
     testset = RAGEvalDataset(config)
 

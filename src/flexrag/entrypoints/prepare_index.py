@@ -39,9 +39,6 @@ cs.store(name="default", node=Config)
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(cfg: Config):
-    default_cfg = OmegaConf.structured(Config)
-    cfg = OmegaConf.merge(default_cfg, cfg)
-
     # load retriever
     match cfg.retriever_type:
         case "bm25s":

@@ -51,10 +51,6 @@ user_path = Path(__file__).parents[0] / "assets" / "user.png"
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(config: Config):
-    # merge config
-    default_cfg = OmegaConf.structured(Config)
-    config = OmegaConf.merge(default_cfg, config)
-
     # load assistant
     assistant = ASSISTANTS.load(config)
 
