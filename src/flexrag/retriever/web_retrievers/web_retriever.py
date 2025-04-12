@@ -129,6 +129,7 @@ class SimpleWebRetriever(WebRetrieverBase):
         super().__init__(cfg)
         # load the web page reader
         self.reader = WEB_READERS.load(cfg)
+        assert self.reader is not None, "WebReader is not set."
 
         # load the search engine
         self.search_engine = SEARCH_ENGINES.load(cfg)

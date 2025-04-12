@@ -49,11 +49,25 @@ class BingEngineConfig:
     :type base_url: str
     :param timeout: The timeout for the requests. Default is 3.0.
     :type timeout: float
+    :param market: The market to use.
+        see https://learn.microsoft.com/en-us/bing/search-apis/bing-web-search/reference/market-codes for more information).
+        Default is en-US.
+    :type market: str
+    :param lang: The language to use. Default is "en".
+    :type lang: str
+    :param freshness: To get articles discovered by Bing during a specific timeframe, 
+        specify a date range in the form, YYYY-MM-DD..YYYY-MM-DD. 
+        For example, &freshness=2019-02-01..2019-05-30.
+        Default is None.
+    :type freshness: Optional[str]
     """
 
     subscription_key: str = os.environ.get("BING_SEARCH_KEY", "EMPTY")
     base_url: str = "https://api.bing.microsoft.com/v7.0/search"
     timeout: float = 3.0
+    market: str = "en-US"
+    lang: str = "en"
+    freshness: Optional[str] = None
 
 
 @SEARCH_ENGINES("bing", config_class=BingEngineConfig)
@@ -69,6 +83,9 @@ class BingEngine(WebSeekerBase):
             timeout=cfg.timeout,
             follow_redirects=True,
         )
+        self.market = cfg.market
+        self.freshness = cfg.freshness
+        self.lang = cfg.lang
         return
 
     def seek(
@@ -77,7 +94,9 @@ class BingEngine(WebSeekerBase):
         top_k: int = 10,
         **search_kwargs,
     ) -> list[WebResource]:
-        params = {"q": query, "mkt": "en-US", "count": top_k}
+        params = {"q": query, "mkt": self.market, "count": top_k, "setLang": self.lang}
+        if self.freshness is not None:
+            params["freshness"] = self.freshness
         params.update(search_kwargs)
         response = self.client.get("", params=params)
         response.raise_for_status()
