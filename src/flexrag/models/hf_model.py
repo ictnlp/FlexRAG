@@ -40,6 +40,7 @@ from .model_base import (
     ENCODERS,
     GENERATORS,
     EncoderBase,
+    EncoderBaseConfig,
     GenerationConfig,
     GeneratorBase,
     VLMGeneratorBase,
@@ -529,7 +530,7 @@ class HFVLMGenerator(VLMGeneratorBase):
 
 
 @dataclass
-class HFEncoderConfig(HFModelConfig):
+class HFEncoderConfig(HFModelConfig, EncoderBaseConfig):
     """Configuration for HFEncoder.
 
     :param max_encode_length: The maximum length of the input sequence. Default is 512.
@@ -554,7 +555,7 @@ class HFEncoderConfig(HFModelConfig):
 @ENCODERS("hf", config_class=HFEncoderConfig)
 class HFEncoder(EncoderBase):
     def __init__(self, cfg: HFEncoderConfig):
-        self.devices = cfg.device_id
+        super().__init__(cfg)
         # load model
         self.model, self.tokenizer = load_hf_model(
             model_path=cfg.model_path,
@@ -563,6 +564,8 @@ class HFEncoder(EncoderBase):
             device_id=cfg.device_id,
             trust_remote_code=cfg.trust_remote_code,
         )
+        # setup model
+        self.devices = cfg.device_id
         if len(self.devices) > 1:
             if self.is_jina:
                 logger.warning("Data parallel does not support self implemented model.")
@@ -648,7 +651,7 @@ class HFEncoder(EncoderBase):
 
 
 @dataclass
-class HFClipEncoderConfig(HFModelConfig):
+class HFClipEncoderConfig(HFModelConfig, EncoderBaseConfig):
     """Configuration for HFClipEncoder.
 
     :param max_encode_length: The maximum length of the input sequence. Default is 512.
@@ -670,6 +673,7 @@ class HFClipEncoder(EncoderBase):
     tokenizer: PreTrainedTokenizer
 
     def __init__(self, cfg: HFClipEncoderConfig):
+        super().__init__(cfg)
         self.devices = cfg.device_id
         # load model
         self.model, (self.tokenizer, self.processor) = load_hf_model(

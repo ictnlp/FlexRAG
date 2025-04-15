@@ -9,11 +9,11 @@ from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER, Choices
 
-from .model_base import EncoderBase, ENCODERS
+from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
 
 
 @dataclass
-class JinaEncoderConfig:
+class JinaEncoderConfig(EncoderBaseConfig):
     """Configuration for JinaEncoder.
 
     :param model: The model to use. Default is "jina-embeddings-v3".
@@ -51,6 +51,7 @@ class JinaEncoderConfig:
 @ENCODERS("jina", config_class=JinaEncoderConfig)
 class JinaEncoder(EncoderBase):
     def __init__(self, cfg: JinaEncoderConfig):
+        super().__init__(cfg)
         # prepare client
         self.client = httpx.Client(
             headers={

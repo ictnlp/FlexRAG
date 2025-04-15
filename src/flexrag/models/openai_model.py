@@ -1,23 +1,24 @@
 import asyncio
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Optional
 
 import httpx
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor
 from omegaconf import MISSING
 
 from flexrag.prompt import ChatPrompt
-from flexrag.utils import TIME_METER, LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, TIME_METER
 
 from .model_base import (
-    EncoderBase,
     ENCODERS,
+    GENERATORS,
+    EncoderBase,
+    EncoderBaseConfig,
     GenerationConfig,
     GeneratorBase,
-    GENERATORS,
 )
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.openai")
@@ -63,21 +64,10 @@ class OpenAIGeneratorConfig(OpenAIConfig):
     allow_parallel: bool = True
 
 
-@dataclass
-class OpenAIEncoderConfig(OpenAIConfig):
-    """Configuration for OpenAI Encoder.
-
-    :param is_azure: Whether the model is hosted on Azure. Default is False.
-    :type is_azure: bool
-    """
-
-    dimension: Optional[int] = None
-
-
 @GENERATORS("openai", config_class=OpenAIGeneratorConfig)
 class OpenAIGenerator(GeneratorBase):
     def __init__(self, cfg: OpenAIGeneratorConfig) -> None:
-        from openai import OpenAI, AzureOpenAI
+        from openai import AzureOpenAI, OpenAI
 
         # prepare proxy
         if cfg.proxy is not None:
@@ -248,10 +238,22 @@ class OpenAIGenerator(GeneratorBase):
         assert self.model_name in model_lists, f"Model {self.model_name} not found"
 
 
+@dataclass
+class OpenAIEncoderConfig(OpenAIConfig, EncoderBaseConfig):
+    """Configuration for OpenAI Encoder.
+
+    :param is_azure: Whether the model is hosted on Azure. Default is False.
+    :type is_azure: bool
+    """
+
+    dimension: Optional[int] = None
+
+
 @ENCODERS("openai", config_class=OpenAIEncoderConfig)
 class OpenAIEncoder(EncoderBase):
     def __init__(self, cfg: OpenAIEncoderConfig) -> None:
-        from openai import OpenAI, AzureOpenAI
+        super().__init__(cfg)
+        from openai import AzureOpenAI, OpenAI
 
         # prepare proxy
         if cfg.proxy is not None:

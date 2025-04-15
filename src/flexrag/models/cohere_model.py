@@ -10,11 +10,11 @@ from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER, Choices
 
-from .model_base import ENCODERS, EncoderBase
+from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
 
 
 @dataclass
-class CohereEncoderConfig:
+class CohereEncoderConfig(EncoderBaseConfig):
     """Configuration for CohereEncoder.
 
     :param model: The model to use. Default is "embed-multilingual-v3.0".
@@ -60,6 +60,7 @@ class CohereEncoder(EncoderBase):
         )
         self.model = cfg.model
         self.input_type = cfg.input_type
+        super().__init__(cfg)
         return
 
     @TIME_METER("cohere_encode")

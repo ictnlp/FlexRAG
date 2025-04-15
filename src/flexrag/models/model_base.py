@@ -6,8 +6,7 @@ import numpy as np
 from PIL.Image import Image
 
 from flexrag.prompt import ChatPrompt, MultiModelChatPrompt
-from flexrag.utils import Register, LOGGER_MANAGER
-
+from flexrag.utils import LOGGER_MANAGER, Register, SimpleProgressLogger
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models")
 
@@ -224,9 +223,29 @@ class VLMGeneratorBase(GeneratorBase):
         )
 
 
+@dataclass
+class EncoderBaseConfig:
+    """Configuration for the encoder.
+
+    :param batch_size: The size of each batch. Defaults to 32.
+    :type batch_size: int
+    :param log_interval: The interval for logging. Defaults to 1000.
+    :type log_interval: int
+    """
+
+    batch_size: int = 32
+    log_interval: int = 1000
+
+
 class EncoderBase(ABC):
+    def __init__(self, cfg: EncoderBaseConfig):
+        super().__init__()
+        self.batch_size = cfg.batch_size
+        self.log_interval = cfg.log_interval
+        return
+
     def encode(self, texts: list[str] | str) -> np.ndarray:
-        """encode the given texts into embeddings.
+        """Encode the given texts into embeddings.
 
         :param texts: A batch of texts.
         :type texts: list[str] | str
@@ -236,6 +255,37 @@ class EncoderBase(ABC):
         if not isinstance(texts, list):
             texts = [texts]
         return self._encode(texts)
+
+    def encode_batch(
+        self, texts: list[str] | str, batch_size: int = None
+    ) -> np.ndarray:
+        """Encode the given texts into embeddings in batches.
+
+        :param texts: A batch of texts.
+        :type texts: list[str] | str
+        :param batch_size: The size of each batch. Defaults to self.batch_size.
+        :type batch_size: int
+        :return: A batch of embeddings.
+        :rtype: np.ndarray
+        """
+        batch_size = batch_size or self.batch_size
+        if not isinstance(texts, list):
+            texts = [texts]
+
+        # prepare progress logger
+        if (len(texts) > self.log_interval) and (len(texts) > batch_size):
+            p_logger = SimpleProgressLogger(logger, len(texts), self.log_interval)
+        else:
+            p_logger = None
+
+        # encode
+        embeddings = []
+        for i in range(0, len(texts), batch_size):
+            batch_texts = texts[i : i + batch_size]
+            embeddings.append(self._encode(batch_texts))
+            if p_logger is not None:
+                p_logger.update(len(batch_texts), desc="Encoding")
+        return np.concatenate(embeddings, axis=0)
 
     @abstractmethod
     def _encode(self, texts: list[str]) -> np.ndarray:

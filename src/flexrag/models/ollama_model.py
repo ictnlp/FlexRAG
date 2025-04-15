@@ -1,22 +1,23 @@
 import asyncio
 import logging
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor
 from numpy import ndarray
 from omegaconf import MISSING
 
 from flexrag.prompt import ChatPrompt
-from flexrag.utils import TIME_METER, LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, TIME_METER
 
 from .model_base import (
-    GenerationConfig,
-    GeneratorBase,
+    ENCODERS,
     GENERATORS,
     EncoderBase,
-    ENCODERS,
+    EncoderBaseConfig,
+    GenerationConfig,
+    GeneratorBase,
 )
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.ollama")
@@ -215,7 +216,7 @@ class OllamaGenerator(GeneratorBase):
 
 
 @dataclass
-class OllamaEncoderConfig:
+class OllamaEncoderConfig(EncoderBaseConfig):
     """Configuration for the OllamaEncoder.
 
     :param model_name: The name of the model to use. Required.
@@ -242,7 +243,7 @@ class OllamaEncoderConfig:
 @ENCODERS("ollama", config_class=OllamaEncoderConfig)
 class OllamaEncoder(EncoderBase):
     def __init__(self, cfg: OllamaEncoderConfig) -> None:
-        super().__init__()
+        super().__init__(cfg)
         from ollama import Client
 
         self.client = Client(host=cfg.base_url)

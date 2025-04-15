@@ -7,11 +7,11 @@ from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER
 
-from .model_base import ENCODERS, EncoderBase
+from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
 
 
 @dataclass
-class SentenceTransformerEncoderConfig:
+class SentenceTransformerEncoderConfig(EncoderBaseConfig):
     """Configuration for SentenceTransformerEncoder.
 
     :param model_path: The path to the model. Required.
@@ -48,7 +48,7 @@ class SentenceTransformerEncoderConfig:
 @ENCODERS("sentence_transformer", config_class=SentenceTransformerEncoderConfig)
 class SentenceTransformerEncoder(EncoderBase):
     def __init__(self, config: SentenceTransformerEncoderConfig) -> None:
-        super().__init__()
+        super().__init__(config)
         from sentence_transformers import SentenceTransformer
 
         self.devices = config.device_id
