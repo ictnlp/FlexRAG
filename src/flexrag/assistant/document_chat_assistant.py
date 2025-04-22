@@ -7,7 +7,7 @@ from flexrag.document_parser import DOCUMENTPARSERS, DocumentParserConfig
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.ranker import RANKERS, RankerConfig
-from flexrag.retriever import DenseRetriever, DenseRetrieverConfig
+from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
 from flexrag.utils import LOGGER_MANAGER
 
 from .assistant import ASSISTANTS, AssistantBase
@@ -19,7 +19,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.assistant.modular")
 class DocumentChatAssistantConfig(
     GeneratorConfig,
     GenerationConfig,
-    DenseRetrieverConfig,
+    FlexRetrieverConfig,
     RankerConfig,
     DocumentParserConfig,
     ChunkerConfig,
@@ -39,7 +39,7 @@ class DocumentChatAssistant(AssistantBase):
         self.generator = GENERATORS.load(cfg)
 
         # load retriever
-        self.retriever = DenseRetriever(cfg)
+        self.retriever = FlexRetriever(cfg)
         assert len(self.retriever) == 0, "Retriever is not empty."
 
         # load ranker
@@ -54,10 +54,10 @@ class DocumentChatAssistant(AssistantBase):
 
     def attach_document(self, document_path: str = None) -> None:
         if document_path is None:
-            self.retriever.clean()
+            self.retriever.clear()
             return
         # parse document
-        self.retriever.clean()
+        self.retriever.clear()
         document = self.parser.parse(document_path)
         if self.chunker is not None:
             chunks = self.chunker.chunk(document.text)

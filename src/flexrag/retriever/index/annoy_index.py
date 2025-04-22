@@ -1,13 +1,16 @@
-import os
 import math
+import os
 import shutil
 from dataclasses import dataclass
+from functools import partial
+from typing import Any, Iterable
 
 import numpy as np
+from omegaconf import OmegaConf
 
-from flexrag.utils import Choices, SimpleProgressLogger, LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger
 
-from .index_base import DENSE_INDEX, DenseIndexBase, DenseIndexBaseConfig
+from .index_base import RETRIEVER_INDEX, DenseIndexBase, DenseIndexBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index.annoy")
 
@@ -16,27 +19,28 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index.annoy")
 class AnnoyIndexConfig(DenseIndexBaseConfig):
     """The configuration for the `AnnoyIndex`.
 
-    :param distance_function: The distance function to use. Defaults to "IP".
-        available choices are "IP", "L2", "COSINE", "HAMMING", and "MANHATTAN".
-    :type distance_function: str
     :param n_trees: The number of trees to build the index. Defaults to -1.
+        -1 means auto.
+        The number of trees is set to max(1, log(n_items) // 10) * sqrt(embedding_size) * 10.
     :type n_trees: int
     :param n_jobs: The number of jobs to build the index. Defaults to -1.
+        -1 means all available CPU cores.
     :type n_jobs: int
     :param search_k: The number of neighbors to search. Defaults to -1.
+        -1 means auto.
+        The number of neighbors to search is set to max(top_k, 100) * n_trees.
     :type search_k: int
     :param on_disk_build: Whether to build the index on disk. Defaults to False.
     :type on_disk_build: bool
     """
 
-    distance_function: Choices(["IP", "L2", "COSINE", "HAMMING", "MANHATTAN"]) = "IP"  # type: ignore
     n_trees: int = -1  # -1 means auto
     n_jobs: int = -1  # -1 means auto
-    search_k: int = -1  # -1 means auto
+    n_neighbors: int = -1  # -1 means auto
     on_disk_build: bool = False
 
 
-@DENSE_INDEX("annoy", config_class=AnnoyIndexConfig)
+@RETRIEVER_INDEX("annoy", config_class=AnnoyIndexConfig)
 class AnnoyIndex(DenseIndexBase):
     """AnnoyIndex is a wrapper for the `annoy <https://github.com/spotify/annoy>`_ library.
 
@@ -44,8 +48,10 @@ class AnnoyIndex(DenseIndexBase):
     However, building index on disk is slower than building index in memory.
     """
 
-    def __init__(self, cfg: AnnoyIndexConfig, index_path: str = None) -> None:
-        super().__init__(cfg, index_path)
+    cfg: AnnoyIndexConfig
+
+    def __init__(self, cfg: AnnoyIndexConfig) -> None:
+        super().__init__(cfg)
         # check annoy
         try:
             from annoy import AnnoyIndex as AnnIndex
@@ -55,80 +61,99 @@ class AnnoyIndex(DenseIndexBase):
             raise ImportError("Please install annoy by running `pip install annoy`")
 
         # set annoy params
-        self.cfg = cfg
         if self.cfg.on_disk_build:
-            assert index_path is not None, "index_path is required for on disk build."
+            assert (
+                self.cfg.index_path is not None
+            ), "index_path is required for on disk build."
+        match self.cfg.distance_function:
+            case "IP":
+                self.index = partial(self.ann, metric="dot")
+            case "L2":
+                self.index = partial(self.ann, metric="euclidean")
+            case _:
+                raise ValueError(
+                    f"Unsupported distance function: {self.cfg.distance_function}"
+                )
 
-        # prepare index
-        self.index = None
-        if self.index_path is not None:
-            if os.path.exists(self.index_path):
-                self.deserialize()
+        # load the index if index_path is provided
+        if self.cfg.index_path is not None:
+            if os.path.exists(self.cfg.index_path):
+                logger.info(f"Loading index from {self.cfg.index_path}")
+                try:
+                    meta_path = os.path.join(self.cfg.index_path, "emb.size")
+                    emb_size = int(
+                        open(meta_path, "r", encoding="utf-8").read().strip()
+                    )
+                    self.index = self.index(emb_size)
+                    self.index.load(os.path.join(self.cfg.index_path, "index.annoy"))
+                except:
+                    raise FileNotFoundError(
+                        f"Unable to load index from {self.cfg.index_path}"
+                    )
         return
 
-    def build_index(self, embeddings: np.ndarray) -> None:
-        self.clean()
+    def build_index(self, data: Iterable[Any]) -> None:
+        self.clear()
+        embeddings = self.encode_data_batch(data, is_query=False)
         # prepare index
-        match self.distance_function:
-            case "IP":
-                self.index = self.ann(embeddings.shape[1], "dot")
-            case "L2":
-                self.index = self.ann(embeddings.shape[1], "euclidean")
-            case "COSINE":
-                self.index = self.ann(embeddings.shape[1], "angular")
-            case "HAMMING":
-                self.index = self.ann(embeddings.shape[1], "hamming")
-            case "MANHATTAN":
-                self.index = self.ann(embeddings.shape[1], "manhattan")
+        self.index = self.index(embeddings.shape[1])
         if self.cfg.on_disk_build:
-            self.index.on_disk_build(self.index_path)
+            self.index.on_disk_build(os.path.join(self.cfg.index_path, "index.annoy"))
 
         # add embeddings
-        p_logger = SimpleProgressLogger(
-            logger, total=len(embeddings), interval=self.log_interval
-        )
-        for idx, embed in enumerate(embeddings):
-            self.index.add_item(idx, embed)
+        p_logger = SimpleProgressLogger(logger, len(embeddings), self.cfg.log_interval)
+        for n, embed in enumerate(embeddings):
+            self.index.add_item(n, embed)
             p_logger.update(step=1, desc="Adding embeddings")
 
         # build index
         logger.info("Building index")
-        if self.n_trees == -1:
+        if self.cfg.n_trees == -1:
             n_trees = (
                 max(1, math.floor(math.log(embeddings.shape[0]) // 10))
                 * math.floor(math.sqrt(embeddings.shape[1]))
                 * 10
             )
         else:
-            n_trees = self.n_trees
+            n_trees = self.cfg.n_trees
         self.index.build(n_trees, self.cfg.n_jobs)
 
-        if (not self.cfg.on_disk_build) and (self.index_path is not None):
-            self.serialize()
+        # serialize index
+        if self.cfg.index_path is not None:
+            self.save_to_local()
+
+        # clear temporary file
+        if isinstance(embeddings, np.memmap):
+            os.remove(embeddings.filename)
+            del embeddings
         return
 
-    def add_embeddings_batch(self, embeddings: np.ndarray) -> None:
+    def add_embeddings(self, embeddings: np.ndarray) -> None:
         raise NotImplementedError(
-            "Annoy does not support adding embeddings. Please retrain the index."
+            "AnnoyIndex does not support adding embeddings. Please retrain the index."
         )
 
-    def _search_batch(
+    def search(
         self,
-        query: np.ndarray,
+        query: list[Any],
         top_k: int,
         **search_kwargs,
     ) -> tuple[np.ndarray, np.ndarray]:
-        query = query.astype("float32")
+        # encode query
+        query_vector = self.encode_data(query, is_query=True)
+
+        # prepare search params
+        n_neighbors = search_kwargs.get("n_neighbors", self.cfg.n_neighbors)
+        if n_neighbors == -1:
+            n_neighbors = max(top_k, 100) * self.cfg.n_trees
+
         indices = []
         scores = []
-        search_k = search_kwargs.get("search_k", self.cfg.search_k)
-        if search_k == -1:
-            search_k = max(top_k, 100) * self.n_trees
-        for q in query:
+        for q in query_vector:
             idx, dis = self.index.get_nns_by_vector(
                 q,
                 top_k,
-                search_k=search_k,
+                search_k=n_neighbors,
                 include_distances=True,
             )
             indices.append(idx)
@@ -137,56 +162,49 @@ class AnnoyIndex(DenseIndexBase):
         scores = np.array(scores)
         return indices, scores
 
-    def serialize(self, index_path: str = None) -> None:
+    def save_to_local(self, index_path: str = None) -> None:
         if index_path is not None:
-            self.index_path = index_path
-        assert self.index_path is not None, "`index_path` is not set."
-        logger.info(f"Serializing index to {self.index_path}")
-        if not os.path.exists(os.path.dirname(self.index_path)):
-            os.makedirs(os.path.dirname(self.index_path))
-        self.index.save(self.index_path)
-        with open(f"{self.index_path}.meta", "w", encoding="utf-8") as f:
-            f.write(f"distance_function: {self.distance_function}\n")
-            f.write(f"embedding_size: {self.embedding_size}\n")
+            self.cfg.index_path = index_path
+        assert self.cfg.index_path is not None, "`index_path` is not set."
+        if not os.path.exists(self.cfg.index_path):
+            os.makedirs(self.cfg.index_path)
+        logger.info(f"Serializing index to {self.cfg.index_path}")
+
+        # save configurations
+        cfg_path = os.path.join(self.cfg.index_path, "config.yaml")
+        with open(cfg_path, "w", encoding="utf-8") as f:
+            OmegaConf.save(self.cfg, f)
+        id_path = os.path.join(self.cfg.index_path, "cls.id")
+        with open(id_path, "w", encoding="utf-8") as f:
+            f.write(self.__class__.__name__)
+        additional_cfg_path = os.path.join(self.cfg.index_path, "emb.size")
+        with open(additional_cfg_path, "w", encoding="utf-8") as f:
+            f.write(str(self.embedding_size))
+
+        # save index
+        if self.cfg.on_disk_build:
+            return
+        index_path = os.path.join(self.cfg.index_path, "index.annoy")
+        self.index.save(index_path)
         return
 
-    def deserialize(self) -> None:
-        logger.info(f"Loading index from {self.index_path}")
-        with open(f"{self.index_path}.meta", "r", encoding="utf-8") as f:
-            self.distance_function = f.readline()[len("distance_function: ") :].strip()
-            embedding_size = int(f.readline()[len("embedding_size: ") :].strip())
-        match self.distance_function:
-            case "IP":
-                self.index = self.ann(embedding_size, "dot")
-            case "L2":
-                self.index = self.ann(embedding_size, "euclidean")
-            case "COSINE":
-                self.index = self.ann(embedding_size, "angular")
-            case "HAMMING":
-                self.index = self.ann(embedding_size, "hamming")
-            case "MANHATTAN":
-                self.index = self.ann(embedding_size, "manhattan")
-            case _:
-                raise ValueError(
-                    f"Unsupported distance function: {self.distance_function}"
-                )
-        self.index.load(self.index_path)
-        return
-
-    def clean(self):
-        if self.index is not None:
+    def clear(self):
+        if not isinstance(self.index, partial):
             self.index.unload()
-        if self.index_path is not None:
-            if os.path.exists(self.index_path):
-                shutil.rmtree(self.index_path)
-                shutil.rmtree(f"{self.index_path}.meta")
+        if self.cfg.index_path is not None:
+            if os.path.exists(self.cfg.index_path):
+                shutil.rmtree(self.cfg.index_path)
         return
 
     @property
     def embedding_size(self) -> int:
-        if self.index is None:
-            raise ValueError("Index is not initialized.")
-        return self.index.f
+        if not isinstance(self.index, partial):
+            return self.index.f
+        if self.passage_encoder is not None:
+            return self.passage_encoder.embedding_size
+        if self.query_encoder is not None:
+            return self.query_encoder.embedding_size
+        raise ValueError("Index is not initialized.")
 
     @property
     def is_addable(self) -> bool:
@@ -196,7 +214,7 @@ class AnnoyIndex(DenseIndexBase):
     def n_trees(self) -> int:
         if not hasattr(self, "index"):
             return self.cfg.n_trees
-        if self.index is None:
+        if isinstance(self.index, partial):
             return self.cfg.n_trees
         if self.index.get_n_items() <= 0:
             return self.cfg.n_trees
@@ -205,4 +223,6 @@ class AnnoyIndex(DenseIndexBase):
         return self.index.get_n_trees()
 
     def __len__(self) -> int:
+        if isinstance(self.index, partial):
+            return 0
         return self.index.get_n_items()

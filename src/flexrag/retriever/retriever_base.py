@@ -4,13 +4,12 @@ import tempfile
 import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from typing import Iterable, Optional
+from typing import Any, Generator, Iterable, Optional
 
 import numpy as np
 from huggingface_hub import HfApi
 from omegaconf import DictConfig, OmegaConf
 
-from flexrag.utils import __VERSION__
 from flexrag.cache import (
     FIFOPersistentCache,
     LFUPersistentCache,
@@ -22,6 +21,7 @@ from flexrag.cache import (
 from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import (
+    __VERSION__,
     FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
     Register,
@@ -130,10 +130,18 @@ class RetrieverBaseConfig:
     :type log_interval: int
     :param top_k: The number of retrieved documents. Default: 10.
     :type top_k: int
+    :param batch_size: The batch size for retrieval. Default: 32.
+    :type batch_size: int
+    :param query_preprocess_pipeline: The text process pipeline for query. Default: TextProcessPipelineConfig.
+    :type query_preprocess_pipeline: TextProcessPipelineConfig
     """
 
     log_interval: int = 100
     top_k: int = 10
+    batch_size: int = 32
+    query_preprocess_pipeline: TextProcessPipelineConfig = field(  # type: ignore
+        default_factory=TextProcessPipelineConfig
+    )
 
 
 class RetrieverBase(ABC):
@@ -142,14 +150,20 @@ class RetrieverBase(ABC):
     """
 
     def __init__(self, cfg: RetrieverBaseConfig):
+        # set basic args
         self.cfg = cfg
         self.log_interval = cfg.log_interval
         self.top_k = cfg.top_k
+        self.batch_size = cfg.batch_size
+        # load preprocess pipeline
+        self.query_preprocess_pipeline = TextProcessPipeline(
+            cfg.query_preprocess_pipeline
+        )
         return
 
     async def async_search(
         self,
-        query: list[str],
+        query: list[Any],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         """Search queries asynchronously."""
@@ -159,16 +173,58 @@ class RetrieverBase(ABC):
             **search_kwargs,
         )
 
+    @batched_cache
+    def search_batch(
+        self,
+        query: Iterable[Any],
+        no_preprocess: bool = False,
+        **search_kwargs,
+    ) -> list[list[RetrievedContext]]:
+        """Search queries in batches.
+
+        :param query: Queries to search.
+        :type query: list[Any]
+        :param no_preprocess: Whether to preprocess the query. Default: False.
+        :type no_preprocess: bool
+        :param search_kwargs: Other search arguments.
+        :type search_kwargs: Any
+        :return: A batch of list that contains k RetrievedContext.
+        :rtype: list[list[RetrievedContext]]
+        """
+
+        def get_batch() -> Generator[list[Any], None, None]:
+            batch = []
+            for q in query:
+                if not no_preprocess:
+                    batch.append(self.query_preprocess_pipeline(q))
+                else:
+                    batch.append(q)
+                if len(batch) == self.batch_size:
+                    yield batch
+                    batch = []
+            if batch:
+                yield batch
+            return
+
+        final_results = []
+        total = len(query) if hasattr(query, "__len__") else None
+        p_logger = SimpleProgressLogger(logger, total, self.log_interval)
+        for batch in get_batch():
+            results_ = self.search(batch, **search_kwargs)
+            final_results.extend(results_)
+            p_logger.update(1, "Retrieving")
+        return final_results
+
     @abstractmethod
     def search(
         self,
-        query: list[str],
+        query: list[Any] | Any,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
-        """Search queries.
+        """Search a batch of queries.
 
         :param query: Queries to search.
-        :type query: list[str]
+        :type query: list[Any] | Any
         :param search_kwargs: Keyword arguments, contains other search arguments.
         :type search_kwargs: Any
         :return: A batch of list that contains k RetrievedContext.
@@ -220,33 +276,16 @@ RETRIEVERS = Register[RetrieverBase]("retriever", True)
 
 @dataclass
 class EditableRetrieverConfig(RetrieverBaseConfig):
-    """Configuration class for LocalRetriever.
-
-    :param batch_size: The batch size for retrieval. Default: 32.
-    :type batch_size: int
-    :param query_preprocess_pipeline: The text process pipeline for query. Default: TextProcessPipelineConfig.
-    :type query_preprocess_pipeline: TextProcessPipelineConfig
-    """
-
-    batch_size: int = 32
-    query_preprocess_pipeline: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
+    """Configuration class for LocalRetriever."""
 
 
 class EditableRetriever(RetrieverBase):
     """The base class for all `editable` retrievers.
-    In FlexRAG, the ``EditableRetriever`` is a concept referring to a retriever that includes the ``add_passages`` and ``clean`` methods,
+    In FlexRAG, the ``EditableRetriever`` is a concept referring to a retriever that includes the ``add_passages`` and ``clear`` methods,
     allowing you to build the retriever using your own knowledge base.
-    FlexRAG provides following editable retrievers: ``BM25SRetriever``, ``DenseRetriever``, ``ElasticRetriever``, ``TypesenseRetriever``, and ``HydeRetriever``.
+    FlexRAG provides following editable retrievers: ``FlexRetriever``, ``ElasticRetriever``, ``TypesenseRetriever``, and ``HydeRetriever``.
+    The subclasses should implement the ``add_passages``, ``clear``, and ``__len__`` methods.
     """
-
-    def __init__(self, cfg: EditableRetrieverConfig) -> None:
-        super().__init__(cfg)
-        # set args for process documents
-        self.batch_size = cfg.batch_size
-        self.query_preprocess_pipeline = TextProcessPipeline(
-            cfg.query_preprocess_pipeline
-        )
-        return
 
     @abstractmethod
     def add_passages(self, passages: Iterable[Context]):
@@ -260,43 +299,8 @@ class EditableRetriever(RetrieverBase):
         return
 
     @abstractmethod
-    def search_batch(
-        self,
-        query: list[str],
-        **search_kwargs,
-    ) -> list[list[RetrievedContext]]:
-        """Search queries using local retriever.
-
-        :param query: Queries to search.
-        :type query: list[str]
-        :return: A batch of list that contains k RetrievedContext.
-        :rtype: list[list[RetrievedContext]]
-        """
-        return
-
-    @batched_cache
-    def search(
-        self,
-        query: list[str] | str,
-        no_preprocess: bool = False,
-        **search_kwargs,
-    ) -> list[list[RetrievedContext]]:
-        # search for documents
-        query = [query] if isinstance(query, str) else query
-        if not no_preprocess:
-            query = [self.query_preprocess_pipeline(q) for q in query]
-        final_results = []
-        p_logger = SimpleProgressLogger(logger, len(query), self.log_interval)
-        for idx in range(0, len(query), self.batch_size):
-            p_logger.update(1, "Retrieving")
-            batch = query[idx : idx + self.batch_size]
-            results_ = self.search_batch(batch, **search_kwargs)
-            final_results.extend(results_)
-        return final_results
-
-    @abstractmethod
-    def clean(self) -> None:
-        """Clean the retriever database."""
+    def clear(self) -> None:
+        """Clear the retriever database."""
         return
 
     @abstractmethod
@@ -305,60 +309,17 @@ class EditableRetriever(RetrieverBase):
         return
 
 
-RETRIEVER_CARD_TEMPLATE = """---
-language: en
-library_name: FlexRAG
-tags:
-- FlexRAG
-- retrieval
-- search
-- lexical
-- RAG
----
-
-# FlexRAG Retriever
-
-This is a {retriever_type} created with the [`FlexRAG`](https://github.com/ictnlp/flexrag) library (version `{version}`).
-
-## Installation
-
-You can install the `FlexRAG` library with `pip`:
-
-```bash
-pip install flexrag
-```
-
-## Loading a `FlexRAG` retriever
-
-You can use this retriever for information retrieval tasks. Here is an example:
-
-```python
-from flexrag.retriever import LocalRetriever
-
-# Load the retriever from the HuggingFace Hub
-retriever = LocalRetriever.load_from_hub("{repo_id}")
-
-# You can retrieve now
-results = retriever.search("Who is Bruce Wayne?")
-```
-
-FlexRAG Related Links:
-* 📚[Documentation](https://flexrag.readthedocs.io/en/latest/)
-* 💻[GitHub Repository](https://github.com/ictnlp/flexrag)
-"""
-
-
 @dataclass
 class LocalRetrieverConfig(EditableRetrieverConfig):
     """The configuration class for LocalRetriever.
 
-    :param database_path: The path to the local database. Default: None.
+    :param retriever_path: The path to the local database. Default: None.
         If specified, all modifications to the retriever will be applied simultaneously on the disk.
         If not specified, the retriever will be kept in memory.
-    :type database_path: Optional[str]
+    :type retriever_path: Optional[str]
     """
 
-    database_path: Optional[str] = None
+    retriever_path: Optional[str] = None
 
 
 class LocalRetriever(EditableRetriever):
@@ -368,7 +329,7 @@ class LocalRetriever(EditableRetriever):
     The subclasses provide the ``save_to_local`` and ``load_from_local`` methods to save and load the retriever from the local disk,
     and the ``save_to_hub`` and ``load_from_hub`` methods to save and load the retriever from the HuggingFace Hub.
 
-    FlexRAG provides following local retrievers: ``BM25SRetriever``, ``DenseRetriever``, and ``HydeRetriever``.
+    FlexRAG provides following local retrievers: ``FlexRetriever``, and ``HydeRetriever``.
 
     For example, to load a retriever hosted on the HuggingFace Hub, you can run the following code:
 
@@ -377,15 +338,6 @@ class LocalRetriever(EditableRetriever):
         from flexrag.retriever import LocalRetriever
 
         retriever = LocalRetriever.load_from_hub("flexrag/wiki2021_atlas_bm25s")
-
-    You can also override the configuration when loading the retriever:
-
-    .. code-block:: python
-
-        from flexrag.retriever import LocalRetriever, BM25SRetrieverConfig
-
-        cfg = BM25SRetrieverConfig(top_k=20)
-        retriever = LocalRetriever.load_from_hub("flexrag/wiki2021_atlas_bm25s", retriever_config=cfg)
 
     To save a retriever to the HuggingFace Hub, you can run the following code:
 
@@ -437,12 +389,12 @@ class LocalRetriever(EditableRetriever):
         private: bool = False,
         **kwargs,
     ) -> str:
-        # make a temporary directory if database_path is not specified
-        if self.cfg.database_path is None:
+        # make a temporary directory if retriever_path is not specified
+        if self.cfg.retriever_path is None:
             with tempfile.TemporaryDirectory(prefix="flexrag-retriever") as tmp_dir:
                 logger.info(
                     (
-                        "As the `database_path` is not set, "
+                        "As the `retriever_path` is not set, "
                         f"the retriever will be saved temporarily at {tmp_dir}."
                     )
                 )
@@ -455,20 +407,8 @@ class LocalRetriever(EditableRetriever):
                     private=private,
                     **kwargs,
                 )
-            self.cfg.database_path = None
+            self.cfg.retriever_path = None
             return
-        else:
-            # make sure the configuration file is saved
-            if retriever_card is None:
-                if not os.path.exists(
-                    os.path.join(self.cfg.database_path, "README.md")
-                ):
-                    retriever_card = RETRIEVER_CARD_TEMPLATE.format(
-                        retriever_type=self.__class__.__name__,
-                        repo_id=repo_id,
-                        version=__VERSION__,
-                    )
-            self._save_configures(self.cfg.database_path, retriever_card)
 
         # prepare the client
         api = HfApi(token=token)
@@ -487,7 +427,7 @@ class LocalRetriever(EditableRetriever):
         api.upload_folder(
             repo_id=repo_id,
             commit_message=commit_message,
-            folder_path=self.cfg.database_path,
+            folder_path=self.cfg.retriever_path,
             **kwargs,
         )
         return repo_url
@@ -508,16 +448,18 @@ class LocalRetriever(EditableRetriever):
         with open(config_path, "r", encoding="utf-8") as f:
             local_cfg = OmegaConf.load(f)
         local_cfg = OmegaConf.merge(config_cls(), local_cfg)
+        cfg: LocalRetrieverConfig
         if retriever_config is None:
             cfg = local_cfg
         else:
             cfg = OmegaConf.merge(local_cfg, retriever_config)
-        cfg.database_path = repo_path
+        cfg.retriever_path = repo_path
 
         # load the retriever
         retriever = retriever_cls(cfg)
         return retriever
 
+    @abstractmethod
     def save_to_local(
         self,
         database_path: str = None,
@@ -525,50 +467,11 @@ class LocalRetriever(EditableRetriever):
         retriever_card: str = None,
         update_config: bool = False,
     ):
-        # check if the database_path is available
-        db_path = database_path or self.cfg.database_path
-        if db_path is None:
-            raise ValueError("The `database_path` is not specified.")
-        if not os.path.exists(db_path):
-            os.makedirs(db_path, exist_ok=True)
-        if not len(os.listdir(db_path)) == 0:
-            if not overwrite:
-                raise ValueError(f"Database path {db_path} is not empty.")
-
-        # save the configures
-        self._save_configures(db_path, retriever_card)
-
-        # save the retriever
-        self._save_to_local(db_path)
-
-        # update the configuration
-        if update_config:
-            self.cfg.database_path = db_path
-        return
-
-    def _save_configures(self, database_path: str, retriever_card: str = None):
-        # save the retriever card
-        if retriever_card is not None:
-            card_path = os.path.join(database_path, "README.md")
-            with open(card_path, "w", encoding="utf-8") as f:
-                f.write(retriever_card)
-
-        # save the configuration
-        config_path = os.path.join(database_path, "config.yaml")
-        with open(config_path, "w", encoding="utf-8") as f:
-            OmegaConf.save(self.cfg, f)
-        id_path = os.path.join(database_path, "cls.id")
-        with open(id_path, "w", encoding="utf-8") as f:
-            f.write(self.__class__.__name__)
         return
 
     @abstractmethod
-    def _save_to_local(self, database_path: str):
-        return
-
     def detach(self):
         """Detach the retriever from the local database.
         After detaching, the retriever will be kept in memory and all modifications will not be applied to the disk.
         """
-        self.cfg.database_path = None
         return

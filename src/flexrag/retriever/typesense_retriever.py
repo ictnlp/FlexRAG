@@ -40,8 +40,6 @@ class TypesenseRetrieverConfig(EditableRetrieverConfig):
 
 @RETRIEVERS("typesense", config_class=TypesenseRetrieverConfig)
 class TypesenseRetriever(EditableRetriever):
-    name = "Typesense"
-
     def __init__(self, cfg: TypesenseRetrieverConfig) -> None:
         super().__init__(cfg)
         import typesense
@@ -146,7 +144,7 @@ class TypesenseRetriever(EditableRetriever):
                 )
         return retrieved
 
-    def clean(self) -> None:
+    def clear(self) -> None:
         if self.index_name in self.indices:
             self.client.collections[self.index_name].delete()
         return

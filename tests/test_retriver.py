@@ -9,14 +9,18 @@ from omegaconf import OmegaConf
 from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
 from flexrag.models import EncoderConfig, HFEncoderConfig
 from flexrag.retriever import (
-    BM25SRetriever,
-    BM25SRetrieverConfig,
-    DenseRetriever,
-    DenseRetrieverConfig,
     ElasticRetriever,
     ElasticRetrieverConfig,
+    FlexRetriever,
+    FlexRetrieverConfig,
     TypesenseRetriever,
     TypesenseRetrieverConfig,
+)
+from flexrag.retriever.index import (
+    BM25IndexConfig,
+    FaissIndexConfig,
+    MultiFieldIndexConfig,
+    RetrieverIndexConfig,
 )
 
 
@@ -31,7 +35,7 @@ def setup_elastic():
     TestRetrievers.cfg.elastic_config.index_name = str(uuid.uuid4())
     retriever = ElasticRetriever(TestRetrievers.cfg.elastic_config)
     yield retriever
-    retriever.clean()
+    retriever.clear()
     return
 
 
@@ -40,7 +44,7 @@ def setup_typesense():
     TestRetrievers.cfg.typesense_config.index_name = str(uuid.uuid4())
     retriever = TypesenseRetriever(TestRetrievers.cfg.typesense_config)
     yield retriever
-    retriever.clean()
+    retriever.clear()
     return
 
 
@@ -56,80 +60,157 @@ class TestRetrievers:
         "What is the capital of China?",
     ]
 
-    def test_dense_retriever(self):
+    def test_flex_retriever(self):
+        # load datasets
+        cfg1 = RAGCorpusDatasetConfig(
+            file_paths=[
+                os.path.join(os.path.dirname(__file__), "testcorp", "testcorp.jsonl")
+            ],
+            data_ranges=[[0, 10000]],
+            id_field="id",
+        )
+        cfg2 = RAGCorpusDatasetConfig(
+            file_paths=[
+                os.path.join(os.path.dirname(__file__), "testcorp", "testcorp.jsonl")
+            ],
+            data_ranges=[[10000, 20000]],
+            id_field="id",
+        )
+        dataset1 = RAGCorpusDataset(cfg1)
+        dataset2 = RAGCorpusDataset(cfg2)
         with tempfile.TemporaryDirectory() as tempdir:
-            # load retriever
-            retriever_cfg = DenseRetrieverConfig(
-                top_k=10,
-                database_path=tempdir,
-                query_encoder_config=EncoderConfig(
-                    encoder_type="hf",
-                    hf_config=HFEncoderConfig(
-                        model_path="sentence-transformers/all-MiniLM-L6-v2",
-                        device_id=[0],
-                    ),
-                ),
-                passage_encoder_config=EncoderConfig(
-                    encoder_type="hf",
-                    hf_config=HFEncoderConfig(
-                        model_path="sentence-transformers/all-MiniLM-L6-v2",
-                        device_id=[0],
-                    ),
-                ),
-                encode_fields=["text"],
-                index_type="faiss",
+            # in mem retriever
+            cfg = FlexRetrieverConfig(
                 batch_size=512,
+                used_indexes=["contriever"],
+                top_k=5,
+                log_interval=1000,
             )
-            retriever = DenseRetriever(retriever_cfg)
-
-            # build index
-            data_cfg = RAGCorpusDatasetConfig(
-                file_paths=[
-                    os.path.join(
-                        os.path.dirname(__file__), "testcorp", "testcorp.jsonl"
-                    )
-                ],
-                id_field="id",
+            retriever = FlexRetriever(cfg)
+            retriever.add_passages(dataset1)
+            retriever.add_index(
+                "contriever",
+                index_config=RetrieverIndexConfig(
+                    index_type="faiss",
+                    faiss_config=FaissIndexConfig(
+                        index_type="auto",
+                        batch_size=512,
+                        query_encoder_config=EncoderConfig(
+                            encoder_type="hf",
+                            hf_config=HFEncoderConfig(
+                                model_path="facebook/contriever-msmarco",
+                                device_id=[2, 3],
+                            ),
+                        ),
+                        passage_encoder_config=EncoderConfig(
+                            encoder_type="hf",
+                            hf_config=HFEncoderConfig(
+                                model_path="facebook/contriever-msmarco",
+                                device_id=[2, 3],
+                            ),
+                        ),
+                    ),
+                ),
+                indexed_fields_config=MultiFieldIndexConfig(
+                    indexed_fields=["text"],
+                    merge_method="max",
+                ),
             )
-            corpus = RAGCorpusDataset(data_cfg)
-            retriever.add_passages(corpus)
-
-            # search
-            r = retriever.search(self.query, disable_cache=True)
-            assert len(r) == 2
-            assert len(r[0]) == 10
-            assert len(r[1]) == 10
-        return
-
-    def test_bm25s_retriever(self):
-        with tempfile.TemporaryDirectory() as tempdir:
-            # load retriever
-            retriever_cfg = BM25SRetrieverConfig(
-                top_k=10,
-                database_path=tempdir,
-                method="lucene",
-                idf_method="lucene",
-                indexed_fields=["text"],
+            assert len(retriever) == 10000
+            ctxs = retriever.search(
+                ["Who is Bruce Wayne?", "What is the capital of France?"]
             )
-            retriever = BM25SRetriever(retriever_cfg)
+            assert len(ctxs) == 2
+            assert len(ctxs[0]) == 5
+            assert len(ctxs[1]) == 5
 
-            # build index
-            data_cfg = RAGCorpusDatasetConfig(
-                file_paths=[
-                    os.path.join(
-                        os.path.dirname(__file__), "testcorp", "testcorp.jsonl"
-                    )
-                ],
-                id_field="id",
+            # add new passages
+            retriever.add_passages(dataset2)
+            assert len(retriever) == 20000
+            ctxs = retriever.search(
+                ["Who is Bruce Wayne?", "What is the capital of France?"]
             )
-            corpus = RAGCorpusDataset(data_cfg)
-            retriever.add_passages(corpus)
+            assert len(ctxs) == 2
+            assert len(ctxs[0]) == 5
+            assert len(ctxs[1]) == 5
 
-            # search
-            r = retriever.search(self.query, disable_cache=True)
-            assert len(r) == 2
-            assert len(r[0]) == 10
-            assert len(r[1]) == 10
+            # add new index
+            retriever.add_index(
+                "bm25",
+                index_config=RetrieverIndexConfig(
+                    index_type="bm25",
+                    bm25_config=BM25IndexConfig(batch_size=512),
+                ),
+                indexed_fields_config=MultiFieldIndexConfig(
+                    indexed_fields=["title", "section", "text"],
+                    merge_method="max",
+                ),
+            )
+            ctxs = retriever.search(
+                ["Who is Bruce Wayne?", "What is the capital of France?"],
+                used_indexes=["contriever", "bm25"],
+            )
+            assert len(ctxs) == 2
+            assert len(ctxs[0]) == 5
+            assert len(ctxs[1]) == 5
+            ctxs = retriever.search(
+                ["Who is Bruce Wayne?", "What is the capital of France?"],
+                used_indexes=["bm25"],
+            )
+            assert len(ctxs) == 2
+            assert len(ctxs[0]) == 5
+            assert len(ctxs[1]) == 5
+            ctxs = retriever.search(
+                ["Who is Bruce Wayne?", "What is the capital of France?"],
+                used_indexes=["contriever"],
+            )
+            assert len(ctxs) == 2
+            assert len(ctxs[0]) == 5
+            assert len(ctxs[1]) == 5
+
+            # save index to loacl
+            retriever.save_to_local(tempdir)
+            del retriever
+            assert os.path.exists(tempdir)
+            assert os.path.exists(os.path.join(tempdir, "indexes"))
+            assert os.path.exists(os.path.join(tempdir, "indexes", "contriever"))
+            assert os.path.exists(os.path.join(tempdir, "indexes", "bm25"))
+            assert os.path.exists(os.path.join(tempdir, "database.lance"))
+
+            # load index from local
+            retriever: FlexRetriever = FlexRetriever.load_from_local(tempdir)
+            assert len(retriever) == 20000
+            ctxs = retriever.search(
+                ["Who is Bruce Wayne?", "What is the capital of France?"]
+            )
+            assert len(ctxs) == 2
+            assert len(ctxs[0]) == 5
+            assert len(ctxs[1]) == 5
+
+            # remove one index
+            retriever.remove_index("contriever")
+            assert not os.path.exists(os.path.join(tempdir, "indexes", "contriever"))
+            ctxs = retriever.search(
+                ["Who is Bruce Wayne?", "What is the capital of France?"],
+                used_indexes=["bm25"],
+            )
+            assert len(ctxs) == 2
+            assert len(ctxs[0]) == 5
+            assert len(ctxs[1]) == 5
+
+            # detach retriever from the disk
+            retriever.detach()
+            ctxs = retriever.search(
+                ["Who is Bruce Wayne?", "What is the capital of France?"],
+                used_indexes=["bm25"],
+            )
+            assert len(ctxs) == 2
+            assert len(ctxs[0]) == 5
+            assert len(ctxs[1]) == 5
+
+            # remove another index
+            retriever.remove_index("bm25")
+            assert os.path.exists(os.path.join(tempdir, "indexes", "bm25"))
         return
 
     def test_elastic_retriever(self, setup_elastic):

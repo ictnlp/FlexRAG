@@ -6,10 +6,8 @@ from omegaconf import OmegaConf
 
 from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
 from flexrag.retriever import (
-    BM25SRetriever,
-    BM25SRetrieverConfig,
-    DenseRetriever,
-    DenseRetrieverConfig,
+    FlexRetriever,
+    FlexRetrieverConfig,
     ElasticRetriever,
     ElasticRetrieverConfig,
     TypesenseRetriever,
@@ -24,9 +22,8 @@ logger = LOGGER_MANAGER.get_logger("flexrag.prepare_index")
 @dataclass
 class Config(RAGCorpusDatasetConfig):
     # retriever configs
-    retriever_type: Choices(["dense", "elastic", "typesense", "bm25s"]) = "dense"  # type: ignore
-    bm25s_config: BM25SRetrieverConfig = field(default_factory=BM25SRetrieverConfig)
-    dense_config: DenseRetrieverConfig = field(default_factory=DenseRetrieverConfig)
+    retriever_type: Choices(["flex", "elastic", "typesense"]) = "flex"  # type: ignore
+    flex_config: FlexRetrieverConfig = field(default_factory=FlexRetrieverConfig)
     elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)
     typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)
     reinit: bool = False
@@ -41,10 +38,8 @@ cs.store(name="default", node=Config)
 def main(cfg: Config):
     # load retriever
     match cfg.retriever_type:
-        case "bm25s":
-            retriever = BM25SRetriever(cfg.bm25s_config)
-        case "dense":
-            retriever = DenseRetriever(cfg.dense_config)
+        case "flex":
+            retriever = FlexRetriever(cfg.flex_config)
         case "elastic":
             retriever = ElasticRetriever(cfg.elastic_config)
         case "typesense":
@@ -55,7 +50,7 @@ def main(cfg: Config):
     # add passages
     if cfg.reinit and (len(retriever) > 0):
         logger.warning("Reinitializing retriever and removing all passages")
-        retriever.clean()
+        retriever.clear()
 
     retriever.add_passages(passages=RAGCorpusDataset(cfg))
     return

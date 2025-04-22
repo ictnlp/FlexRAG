@@ -172,7 +172,7 @@ class ElasticRetriever(EditableRetriever):
         responses = self.client.msearch(body=body, **search_kwargs)["responses"]
         return self._form_results(query, responses)
 
-    def clean(self) -> None:
+    def clear(self) -> None:
         if self.index_name in self.indices:
             self.client.indices.delete(index=self.index_name)
         return
