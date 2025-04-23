@@ -144,7 +144,7 @@ class MultiFieldIndex:
 
         scores = []
         indices = []
-        batch_size = batch_size or self.index.cfg.batch_size
+        batch_size = self.index.cfg.batch_size or self.index.cfg.batch_size
         total = len(query) if hasattr(query, "__len__") else None
         p_logger = SimpleProgressLogger(
             logger, total, interval=self.index.cfg.log_interval
