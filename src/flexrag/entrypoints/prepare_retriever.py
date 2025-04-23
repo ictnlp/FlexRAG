@@ -2,7 +2,6 @@ from dataclasses import dataclass, field
 
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import OmegaConf
 
 from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
 from flexrag.retriever import (

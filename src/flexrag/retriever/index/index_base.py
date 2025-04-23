@@ -1,6 +1,5 @@
 import os
 from abc import ABC, abstractmethod
-from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import Any, Generator, Iterable, Optional
 from uuid import uuid4
