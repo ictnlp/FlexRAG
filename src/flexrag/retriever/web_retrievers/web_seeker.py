@@ -55,8 +55,8 @@ class BingEngineConfig:
     :type market: str
     :param lang: The language to use. Default is "en".
     :type lang: str
-    :param freshness: To get articles discovered by Bing during a specific timeframe, 
-        specify a date range in the form, YYYY-MM-DD..YYYY-MM-DD. 
+    :param freshness: To get articles discovered by Bing during a specific timeframe,
+        specify a date range in the form, YYYY-MM-DD..YYYY-MM-DD.
         For example, &freshness=2019-02-01..2019-05-30.
         Default is None.
     :type freshness: Optional[str]
