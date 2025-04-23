@@ -2,7 +2,7 @@ import random as rd
 from dataclasses import dataclass
 
 from flexrag.common_dataclass import RetrievedContext
-from flexrag.utils import Choices, TIME_METER
+from flexrag.utils import TIME_METER, Choices
 
 from .refiner import REFINERS, RefinerBase
 

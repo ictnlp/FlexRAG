@@ -12,13 +12,13 @@ from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.utils import Register
 
+from .utils import WebResource
 from .web_downloader import (
     WEB_DOWNLOADERS,
     PlaywrightWebDownloader,
     PlaywrightWebDownloaderConfig,
     WebDownloaderConfig,
 )
-from .utils import WebResource
 
 
 class WebReaderBase(ABC):

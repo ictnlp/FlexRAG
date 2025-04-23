@@ -19,12 +19,11 @@ from flexrag.ranker import (
     MixedbreadRankerConfig,
     RankGPTRanker,
     RankGPTRankerConfig,
+    RankingResult,
     VoyageRanker,
     VoyageRankerConfig,
-    RankingResult,
 )
 from flexrag.utils import LOGGER_MANAGER
-
 
 logger = LOGGER_MANAGER.get_logger("tests.test_ranker")
 

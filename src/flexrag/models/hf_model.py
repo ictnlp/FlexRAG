@@ -6,8 +6,8 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from omegaconf import MISSING
-from PIL.ImageFile import ImageFile
 from PIL.Image import Image
+from PIL.ImageFile import ImageFile
 from torch.nn.parallel import DataParallel as DP
 from transformers import (
     AutoConfig,
@@ -45,7 +45,7 @@ from .model_base import (
     GeneratorBase,
     VLMGeneratorBase,
 )
-from .utils import guess_model_name, configure_attn
+from .utils import configure_attn, guess_model_name
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.hf_model")
 

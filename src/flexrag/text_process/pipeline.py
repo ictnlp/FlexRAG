@@ -2,7 +2,6 @@ from flexrag.utils import TIME_METER
 
 from .processor import PROCESSORS, Processor, TextUnit
 
-
 TextProcessPipelineConfig = PROCESSORS.make_config(
     allow_multiple=True, config_name="TextProcessPipelineConfig"
 )

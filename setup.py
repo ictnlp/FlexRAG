@@ -1,6 +1,6 @@
+import logging
 import os
 import re
-import logging
 
 import pybind11
 from setuptools import Extension, find_packages, setup

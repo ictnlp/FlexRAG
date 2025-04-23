@@ -1,12 +1,11 @@
 from .arranger import ContextArranger, ContextArrangerConfig
+from .refiner import REFINERS, RefinerBase
 from .summarizer import (
-    RecompExtractiveSummarizer,
-    RecompExtractiveSummarizerConfig,
     AbstractiveSummarizer,
     AbstractiveSummarizerConfig,
+    RecompExtractiveSummarizer,
+    RecompExtractiveSummarizerConfig,
 )
-from .refiner import RefinerBase, REFINERS
-
 
 RefinerConfig = REFINERS.make_config(
     allow_multiple=True, default=None, config_name="RefinerConfig"

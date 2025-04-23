@@ -5,12 +5,12 @@ from flexrag.chunking import (
     CharChunkerConfig,
     RecursiveChunker,
     RecursiveChunkerConfig,
+    SemanticChunker,
+    SemanticChunkerConfig,
     SentenceChunker,
     SentenceChunkerConfig,
     TokenChunker,
     TokenChunkerConfig,
-    SemanticChunker,
-    SemanticChunkerConfig,
 )
 from flexrag.models import HFEncoderConfig
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig

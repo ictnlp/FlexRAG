@@ -5,8 +5,7 @@ from typing import Optional
 import numpy as np
 
 from flexrag.common_dataclass import RetrievedContext
-from flexrag.utils import Register, LOGGER_MANAGER
-
+from flexrag.utils import LOGGER_MANAGER, Register
 
 logger = LOGGER_MANAGER.get_logger("flexrag.rankers")
 

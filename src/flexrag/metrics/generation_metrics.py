@@ -3,9 +3,9 @@ from dataclasses import dataclass
 import rouge
 import sacrebleu
 
-from flexrag.utils import Choices, TIME_METER
+from flexrag.utils import TIME_METER, Choices
 
-from .metrics_base import MetricsBase, METRICS
+from .metrics_base import METRICS, MetricsBase
 
 
 @dataclass

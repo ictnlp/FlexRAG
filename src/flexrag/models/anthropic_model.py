@@ -1,17 +1,17 @@
 import asyncio
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from typing import Optional
 
 import httpx
-from concurrent.futures import ThreadPoolExecutor
 from omegaconf import MISSING
 
 from flexrag.prompt import ChatPrompt
-from flexrag.utils import TIME_METER, LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, TIME_METER
 
-from .model_base import GenerationConfig, GeneratorBase, GENERATORS
+from .model_base import GENERATORS, GenerationConfig, GeneratorBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.anthropic")
 

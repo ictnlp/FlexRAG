@@ -1,8 +1,7 @@
 import os
 from dataclasses import dataclass
 
-
-from .document_parser_base import Document, DocumentParserBase, DOCUMENTPARSERS
+from .document_parser_base import DOCUMENTPARSERS, Document, DocumentParserBase
 
 
 @dataclass

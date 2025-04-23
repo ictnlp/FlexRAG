@@ -4,7 +4,6 @@ from flexrag.utils import LOGGER_MANAGER
 from .assistant import ASSISTANTS
 from .modular_rag_assistant import ModularAssistant, ModularAssistantConfig
 
-
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant.chatqa")
 
 

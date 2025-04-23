@@ -1,12 +1,11 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from functools import partial
-from typing import Optional, Generic, TypeVar
+from typing import Generic, Optional, TypeVar
 
 from omegaconf import MISSING
 
 from flexrag.utils import Register
-
 
 TokenType = TypeVar("TokenType")
 

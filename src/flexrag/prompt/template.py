@@ -5,7 +5,7 @@ from typing import Optional
 
 from transformers import PreTrainedTokenizer
 
-from flexrag.utils import Choices, LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, Choices
 
 from .prompt_base import ChatPrompt
 

@@ -6,7 +6,7 @@ from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER
 
-from .ranker import RankerBase, RankerBaseConfig, RANKERS
+from .ranker import RANKERS, RankerBase, RankerBaseConfig
 
 
 @dataclass

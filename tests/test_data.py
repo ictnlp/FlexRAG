@@ -4,7 +4,6 @@ from flexrag.common_dataclass import RAGEvalData
 from flexrag.datasets import RAGEvalDataset, RAGEvalDatasetConfig
 from flexrag.utils import LOGGER_MANAGER
 
-
 logger = LOGGER_MANAGER.get_logger("tests.datasets")
 
 

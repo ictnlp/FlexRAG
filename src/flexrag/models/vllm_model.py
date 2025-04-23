@@ -4,8 +4,8 @@ from dataclasses import dataclass
 from omegaconf import MISSING
 from transformers import AutoConfig, PretrainedConfig
 
-from flexrag.prompt import load_template, ChatPrompt
-from flexrag.utils import Choices, TIME_METER, LOGGER_MANAGER
+from flexrag.prompt import ChatPrompt, load_template
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices
 
 from .model_base import GENERATORS, GenerationConfig, GeneratorBase
 from .utils import guess_model_name

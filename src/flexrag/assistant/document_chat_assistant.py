@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import Any
 
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.chunking import CHUNKERS, ChunkerConfig
+from flexrag.common_dataclass import RetrievedContext
 from flexrag.document_parser import DOCUMENTPARSERS, DocumentParserConfig
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn

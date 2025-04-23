@@ -2,8 +2,8 @@ from dataclasses import dataclass, field
 
 from flexrag.utils import TIME_METER, Choices
 
-from .xfinder_utils import Evaluator
 from .metrics_base import METRICS, MetricsBase
+from .xfinder_utils import Evaluator
 
 
 @dataclass

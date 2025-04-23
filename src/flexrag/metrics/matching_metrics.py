@@ -3,7 +3,7 @@ from collections import Counter
 
 from flexrag.utils import TIME_METER
 
-from .metrics_base import MetricsBase, METRICS
+from .metrics_base import METRICS, MetricsBase
 
 
 class MatchingMetrics(MetricsBase):

@@ -1,34 +1,31 @@
 from .anthropic_model import AnthropicGenerator, AnthropicGeneratorConfig
-from .cohere_model import (
-    CohereEncoder,
-    CohereEncoderConfig,
-)
+from .cohere_model import CohereEncoder, CohereEncoderConfig
 from .hf_model import (
-    HFModelConfig,
+    HFClipEncoder,
+    HFClipEncoderConfig,
     HFEncoder,
     HFEncoderConfig,
     HFGenerator,
     HFGeneratorConfig,
-    HFClipEncoder,
-    HFClipEncoderConfig,
+    HFModelConfig,
     HFVLMGenerator,
     HFVLMGeneratorConfig,
 )
 from .jina_model import JinaEncoder, JinaEncoderConfig
 from .llamacpp_model import LlamacppGenerator, LlamacppGeneratorConfig
 from .model_base import (
+    ENCODERS,
+    GENERATORS,
     EncoderBase,
     GenerationConfig,
     GeneratorBase,
     VLMGeneratorBase,
-    GENERATORS,
-    ENCODERS,
 )
 from .ollama_model import (
-    OllamaGenerator,
-    OllamaGeneratorConfig,
     OllamaEncoder,
     OllamaEncoderConfig,
+    OllamaGenerator,
+    OllamaGeneratorConfig,
 )
 from .openai_model import (
     OpenAIConfig,
@@ -37,12 +34,11 @@ from .openai_model import (
     OpenAIGenerator,
     OpenAIGeneratorConfig,
 )
-from .vllm_model import VLLMGenerator, VLLMGeneratorConfig
 from .sentence_transformers_model import (
     SentenceTransformerEncoder,
     SentenceTransformerEncoderConfig,
 )
-
+from .vllm_model import VLLMGenerator, VLLMGeneratorConfig
 
 GeneratorConfig = GENERATORS.make_config(config_name="GeneratorConfig")
 EncoderConfig = ENCODERS.make_config(config_name="EncoderConfig", default=None)

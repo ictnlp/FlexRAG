@@ -1,7 +1,6 @@
-from .document_parser_base import DocumentParserBase, Document, DOCUMENTPARSERS
-from .docling_parser import DoclingParser, DoclingConfig
+from .docling_parser import DoclingConfig, DoclingParser
+from .document_parser_base import DOCUMENTPARSERS, Document, DocumentParserBase
 from .markitdown_parser import MarkItDownParser
-
 
 DocumentParserConfig = DOCUMENTPARSERS.make_config(default="markitdown")
 

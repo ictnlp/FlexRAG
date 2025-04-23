@@ -3,16 +3,15 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-import PIL.Image
 import gradio as gr
 import hydra
 import PIL
+import PIL.Image
 from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 
 from flexrag.assistant import ASSISTANTS
-from flexrag.utils import load_user_module, LOGGER_MANAGER
-
+from flexrag.utils import LOGGER_MANAGER, load_user_module
 
 # load user modules before loading config
 for arg in sys.argv:

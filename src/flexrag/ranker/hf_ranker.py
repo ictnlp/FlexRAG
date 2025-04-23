@@ -2,13 +2,13 @@ import asyncio
 import math
 from dataclasses import dataclass
 
-import torch
 import numpy as np
+import torch
 
-from flexrag.models.hf_model import HFModelConfig, load_hf_model, HFGenerationConfig
+from flexrag.models.hf_model import HFGenerationConfig, HFModelConfig, load_hf_model
 from flexrag.utils import TIME_METER
 
-from .ranker import RankerBase, RankerBaseConfig, RANKERS
+from .ranker import RANKERS, RankerBase, RankerBaseConfig
 
 
 @dataclass

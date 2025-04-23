@@ -6,7 +6,8 @@ from typing import Optional
 import httpx
 from omegaconf import MISSING
 
-from flexrag.utils import Register, Choices
+from flexrag.utils import Choices, Register
+
 from .utils import WebResource
 
 

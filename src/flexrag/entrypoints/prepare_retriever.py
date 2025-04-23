@@ -5,10 +5,10 @@ from hydra.core.config_store import ConfigStore
 
 from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
 from flexrag.retriever import (
-    FlexRetriever,
-    FlexRetrieverConfig,
     ElasticRetriever,
     ElasticRetrieverConfig,
+    FlexRetriever,
+    FlexRetrieverConfig,
     TypesenseRetriever,
     TypesenseRetrieverConfig,
 )

@@ -2,13 +2,13 @@ import os
 from dataclasses import dataclass
 from typing import Optional
 
-import numpy as np
 import httpx
+import numpy as np
 from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER
 
-from .ranker import RankerBase, RankerBaseConfig, RANKERS
+from .ranker import RANKERS, RankerBase, RankerBaseConfig
 
 
 @dataclass

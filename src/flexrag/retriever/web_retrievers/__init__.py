@@ -36,10 +36,10 @@ from .web_seeker import (
     DuckDuckGoEngineConfig,
     GoogleEngine,
     GoogleEngineConfig,
+    SearchEngineConfig,
     SerpApi,
     SerpApiConfig,
     WebSeekerBase,
-    SearchEngineConfig,
     WebSeekerConfig,
 )
 from .wikipedia_retriever import WikipediaRetriever, WikipediaRetrieverConfig

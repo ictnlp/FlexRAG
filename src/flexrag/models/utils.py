@@ -1,10 +1,9 @@
-import transformers
 import torch
 import torch.distributed as dist
+import transformers
 from transformers import AutoConfig, PretrainedConfig
 
 from flexrag.utils import LOGGER_MANAGER
-
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.utils")
 

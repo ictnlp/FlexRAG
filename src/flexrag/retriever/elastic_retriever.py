@@ -2,11 +2,11 @@ import logging
 from dataclasses import dataclass
 from typing import Iterable, Optional
 
-from omegaconf import MISSING
 from elasticsearch import Elasticsearch
+from omegaconf import MISSING
 
 from flexrag.common_dataclass import Context, RetrievedContext
-from flexrag.utils import SimpleProgressLogger, LOGGER_MANAGER, TIME_METER
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger
 
 from .retriever_base import RETRIEVERS, EditableRetriever, EditableRetrieverConfig
 
