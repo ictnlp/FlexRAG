@@ -1,0 +1,34 @@
+repos:
+  # - repo: https://github.com/pre-commit/pre-commit-hooks
+  #   rev: v5.0.0
+  #   hooks:
+  #     - id: check-yaml
+  #     - id: end-of-file-fixer
+  #     - id: trailing-whitespace
+
+  - repo: https://github.com/PyCQA/autoflake
+    rev: v2.3.1
+    hooks:
+      - id: autoflake
+        args:
+          [
+            "--remove-unused-variables",
+            "--remove-all-unused-imports",
+            "--ignore-init-module-imports",
+          ]
+
+  - repo: https://github.com/PyCQA/isort
+    rev: 6.0.1
+    hooks:
+      - id: isort
+
+  - repo: https://github.com/psf/black
+    rev: 25.1.0
+    hooks:
+      - id: black
+
+  # - repo: https://github.com/codespell-project/codespell
+  #   rev: v2.4.1
+  #   hooks:
+  #     - id: codespell
+  #       args: ["--ignore-words", ".codespell-ignore"]
