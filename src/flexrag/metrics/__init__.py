@@ -11,6 +11,7 @@ from .metrics_base import MetricsBase
 from .retrieval_metrics import (
     RetrievalMAP,
     RetrievalMAPConfig,
+    RetrievalMRR,
     RetrievalNDCG,
     RetrievalNDCGConfig,
     RetrievalPrecision,
@@ -44,6 +45,7 @@ __all__ = [
     "RetrievalPrecisionConfig",
     "RetrievalMAP",
     "RetrievalMAPConfig",
+    "RetrievalMRR",
     "RetrievalNDCG",
     "RetrievalNDCGConfig",
     "Evaluator",

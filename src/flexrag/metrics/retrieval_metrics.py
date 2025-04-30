@@ -81,10 +81,10 @@ class SuccessRate(MetricsBase):
 
 
 def pytrec_evaluate(
-    retrieved_contexts: list[list[RetrievedContext]],
-    golden_contexts: list[list[Context]],
+    retrieved_contexts: list[list[RetrievedContext | str]],
+    golden_contexts: list[list[Context | str]],
     k_values: list[int] = [1, 5, 10],
-    measure: Choices(["recall", "precision", "ndcg", "map"]) = "recall",  # type: ignore
+    measure: Choices(["recall", "precision", "ndcg", "map", "mrr"]) = "recall",  # type: ignore
 ) -> tuple[dict[str, float], dict]:
     """Evaluate the retrieval results using pytrec_eval.
 
@@ -103,13 +103,28 @@ def pytrec_evaluate(
     # convert flexrag format to pytrec_eval format
     qrels: dict[str, dict[str, int]] = {}
     retrieved: dict[str, dict[str, float]] = {}
-    for n, (ctxs, rctxs) in enumerate(zip(golden_contexts, retrieved_contexts)):
+    ctx_ids: dict[str, str] = {}  # label the context if it is a string
+    for n, (gctxs, rctxs) in enumerate(zip(golden_contexts, retrieved_contexts)):
         qrels[str(n)] = {}
         retrieved[str(n)] = {}
-        for ctx in ctxs:
-            qrels[str(n)][ctx.context_id] = ctx.meta_data.get("score", 1)
+        for ctx in gctxs:
+            if isinstance(ctx, str):
+                ctx_id = ctx_ids.get(ctx, str(len(ctx_ids)))
+                ctx_ids[ctx] = ctx_id
+                ctx_score = 1
+            else:
+                ctx_id = ctx.context_id
+                ctx_score = ctx.meta_data.get("score", 1)
+            qrels[str(n)][ctx_id] = ctx_score
         for ctx in rctxs:
-            retrieved[str(n)][ctx.context_id] = ctx.score
+            if isinstance(ctx, str):
+                ctx_id = ctx_ids.get(ctx, str(len(ctx_ids)))
+                ctx_ids[ctx] = ctx_id
+                ctx_score = 1.0
+            else:
+                ctx_id = ctx.context_id
+                ctx_score = ctx.score or 1.0
+            retrieved[str(n)][ctx_id] = ctx_score
 
     # prepare pytrec_eval measure_strings
     k_values = [str(k) for k in k_values]
@@ -143,6 +158,10 @@ def pytrec_evaluate(
                 measures_ = {"map"}
                 measure_strs_ = ["map"]
                 measure_strs = ["MAP"]
+        case "mrr":
+            measures_ = {"recip_rank"}
+            measure_strs_ = ["recip_rank"]
+            measure_strs = ["MRR"]
         case _:
             raise ValueError(f"Invalid measure: {measure}")
 
@@ -306,5 +325,24 @@ class RetrievalNDCG(MetricsBase):
             golden_contexts=golden_contexts,
             k_values=self.k_values,
             measure="ndcg",
+        )
+        return scores, details
+
+
+@METRICS("retrieval_mrr")
+class RetrievalMRR(MetricsBase):
+    """The RetrievalMRR metric computes the Mean Reciprocal Rank (MRR) of the retrieved contexts."""
+
+    @TIME_METER("metrics.retrieval_mrr")
+    def compute(
+        self,
+        retrieved_contexts: list[list[RetrievedContext]] = None,
+        golden_contexts: list[list[Context]] = None,
+        **kwargs,
+    ) -> tuple[dict[str, float], dict]:
+        scores, details = pytrec_evaluate(
+            retrieved_contexts=retrieved_contexts,
+            golden_contexts=golden_contexts,
+            measure="mrr",
         )
         return scores, details
