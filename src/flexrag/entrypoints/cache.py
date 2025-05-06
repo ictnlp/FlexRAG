@@ -6,11 +6,11 @@ from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING
 
 from flexrag.retriever.retriever_base import RETRIEVAL_CACHE
-from flexrag.utils import Choices
+from flexrag.utils import Choices, ConfigureBase
 
 
 @dataclass
-class Config:
+class Config(ConfigureBase):
     export_path: str = MISSING
     action: Choices(["clear", "export", "_"]) = "_"  # type: ignore
 

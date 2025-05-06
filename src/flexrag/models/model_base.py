@@ -6,13 +6,13 @@ import numpy as np
 from PIL.Image import Image
 
 from flexrag.prompt import ChatPrompt, MultiModelChatPrompt
-from flexrag.utils import LOGGER_MANAGER, Register, SimpleProgressLogger
+from flexrag.utils import LOGGER_MANAGER, ConfigureBase, Register, SimpleProgressLogger
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models")
 
 
 @dataclass
-class GenerationConfig:
+class GenerationConfig(ConfigureBase):
     """Configuration for text generation.
 
     :param do_sample: Whether to use sampling for generation. Defaults to True.
@@ -224,7 +224,7 @@ class VLMGeneratorBase(GeneratorBase):
 
 
 @dataclass
-class EncoderBaseConfig:
+class EncoderBaseConfig(ConfigureBase):
     """Configuration for the encoder.
 
     :param batch_size: The size of each batch. Defaults to 32.

@@ -2,13 +2,13 @@ import random as rd
 from dataclasses import dataclass
 
 from flexrag.common_dataclass import RetrievedContext
-from flexrag.utils import TIME_METER, Choices
+from flexrag.utils import TIME_METER, Choices, ConfigureBase
 
 from .refiner import REFINERS, RefinerBase
 
 
 @dataclass
-class ContextArrangerConfig:
+class ContextArrangerConfig(ConfigureBase):
     """The configuration for the ``ContextArranger``.
 
     :param order: The order to arrange the contexts. Defaults to "ascending".

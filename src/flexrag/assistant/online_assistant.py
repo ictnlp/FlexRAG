@@ -9,7 +9,7 @@ from omegaconf import MISSING
 from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import GenerationConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.utils import LOGGER_MANAGER, Choices
+from flexrag.utils import LOGGER_MANAGER, Choices, ConfigureBase
 
 from .assistant import ASSISTANTS, AssistantBase
 
@@ -17,7 +17,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.assistant")
 
 
 @dataclass
-class JinaDeepSearchConfig:
+class JinaDeepSearchConfig(ConfigureBase):
     """The configuration for the Jina DeepSearch Assistant.
 
     :param prompt_path: The path to the prompt file. Defaults to None.

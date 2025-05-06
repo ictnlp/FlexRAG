@@ -4,11 +4,13 @@ from dataclasses import dataclass, field
 from glob import glob
 from typing import Iterator
 
+from flexrag.utils import ConfigureBase
+
 from .dataset import IterableDataset
 
 
 @dataclass
-class LineDelimitedDatasetConfig:
+class LineDelimitedDatasetConfig(ConfigureBase):
     """The configuration for ``LineDelimitedDataset``.
 
     :param file_paths: The paths to the line delimited files.
@@ -53,7 +55,8 @@ class LineDelimitedDataset(IterableDataset):
     def __init__(self, cfg: LineDelimitedDatasetConfig) -> None:
         # process unix style path
         file_paths = [glob(p) for p in cfg.file_paths]
-        for p in file_paths:
+        for p, p_ in zip(file_paths, cfg.file_paths):
+            assert len(p) != 0, f"File {p_} does not exsit."
             if len(p) != 1:
                 assert (
                     len(cfg.data_ranges) == 0

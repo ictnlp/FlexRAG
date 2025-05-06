@@ -3,13 +3,13 @@ from dataclasses import dataclass
 import rouge
 import sacrebleu
 
-from flexrag.utils import TIME_METER, Choices
+from flexrag.utils import TIME_METER, Choices, ConfigureBase
 
 from .metrics_base import METRICS, MetricsBase
 
 
 @dataclass
-class BLEUConfig:
+class BLEUConfig(ConfigureBase):
     """Configuration for ``BLEU`` metric.
     The computation of BLEU score is based on `sacrebleu <https://github.com/mjpost/sacrebleu>`_.
 
@@ -43,7 +43,7 @@ class BLEU(MetricsBase):
 
 
 @dataclass
-class chrFConfig:
+class chrFConfig(ConfigureBase):
     """Configuration for ``chrF`` metric.
     The computation of chrF score is based on `sacrebleu <https://github.com/mjpost/sacrebleu>`_.
 

@@ -10,7 +10,7 @@ from omegaconf import MISSING
 from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.utils import Register
+from flexrag.utils import ConfigureBase, Register
 
 from .utils import WebResource
 from .web_downloader import (
@@ -84,7 +84,7 @@ class JinaReaderLM(WebReaderBase):
     def __init__(self, cfg: JinaReaderLMConfig):
         self.reader = GENERATORS.load(cfg)
         self.downloader = WEB_DOWNLOADERS.load(cfg)
-        self.cfg = cfg
+        self.cfg = JinaReaderLMConfig.extract(cfg)
         if self.cfg.use_v2_prompt:
             self.template = (
                 "Extract the main content from the given HTML and convert it to Markdown format."
@@ -206,7 +206,7 @@ class JinaReaderLM(WebReaderBase):
 
 
 @dataclass
-class JinaReaderConfig:
+class JinaReaderConfig(ConfigureBase):
     """The configuration for the ``JinaReader``.
 
     :param base_url: The base URL of the Jina Reader API. Default is "https://r.jina.ai".

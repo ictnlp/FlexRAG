@@ -9,13 +9,13 @@ from typing import Any, Optional
 from httpx import Client
 from PIL import Image
 
-from flexrag.utils import Choices, Register
+from flexrag.utils import Choices, ConfigureBase, Register
 
 from .utils import WebResource
 
 
 @dataclass
-class WebDownloaderBaseConfig:
+class WebDownloaderBaseConfig(ConfigureBase):
     """The configuration for the ``WebDownloaderBase``.
 
     :param allow_parallel: Whether to allow parallel downloading. Default is True.

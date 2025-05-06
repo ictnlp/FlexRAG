@@ -42,6 +42,7 @@ class TypesenseRetrieverConfig(EditableRetrieverConfig):
 class TypesenseRetriever(EditableRetriever):
     def __init__(self, cfg: TypesenseRetrieverConfig) -> None:
         super().__init__(cfg)
+        self.cfg = TypesenseRetrieverConfig.extract(cfg)
         import typesense
 
         # load database
@@ -67,7 +68,7 @@ class TypesenseRetriever(EditableRetriever):
         def get_batch() -> Generator[list[dict[str, str]], None, None]:
             batch = []
             for passage in passages:
-                if len(batch) == self.batch_size:
+                if len(batch) == self.cfg.batch_size:
                     yield batch
                     batch = []
                 data = passage.data.copy()
@@ -88,7 +89,7 @@ class TypesenseRetriever(EditableRetriever):
             self.client.collections.create(schema)
 
         # import documents
-        p_logger = SimpleProgressLogger(logger=logger, interval=self.log_interval)
+        p_logger = SimpleProgressLogger(logger, interval=self.cfg.log_interval)
         for batch in get_batch():
             r = self.client.collections[self.index_name].documents.import_(batch)
             assert all([i["success"] for i in r])
@@ -108,7 +109,7 @@ class TypesenseRetriever(EditableRetriever):
                 "collection": self.index_name,
                 "q": q,
                 "query_by": ",".join(self.fields),
-                "per_page": search_kwargs.pop("top_k", self.top_k),
+                "per_page": search_kwargs.pop("top_k", self.cfg.top_k),
                 **search_kwargs,
             }
             for q in query

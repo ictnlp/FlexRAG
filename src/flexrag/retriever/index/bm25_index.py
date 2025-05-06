@@ -52,11 +52,8 @@ class BM25Index(RetrieverIndexBase):
     The implementation is based on the `bm25s <https://github.com/xhluca/bm25s>`_ project.
     """
 
-    cfg: BM25IndexConfig
-
     def __init__(self, cfg: BM25IndexConfig) -> None:
-        super().__init__(cfg)
-        # set basic args
+        self.cfg = BM25IndexConfig.extract(cfg)
         try:
             import Stemmer
 

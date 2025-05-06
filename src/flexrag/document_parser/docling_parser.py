@@ -1,11 +1,13 @@
 import os
 from dataclasses import dataclass
 
+from flexrag.utils import ConfigureBase
+
 from .document_parser_base import DOCUMENTPARSERS, Document, DocumentParserBase
 
 
 @dataclass
-class DoclingConfig:
+class DoclingConfig(ConfigureBase):
     do_ocr: bool = False
     do_table_structure: bool = True
     generate_page_images: bool = False

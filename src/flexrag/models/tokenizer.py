@@ -5,7 +5,7 @@ from typing import Generic, Optional, TypeVar
 
 from omegaconf import MISSING
 
-from flexrag.utils import Register
+from flexrag.utils import ConfigureBase, Register
 
 TokenType = TypeVar("TokenType")
 
@@ -51,7 +51,7 @@ TOKENIZERS = Register[TokenizerBase]("tokenizer")
 
 
 @dataclass
-class HuggingFaceTokenizerConfig:
+class HuggingFaceTokenizerConfig(ConfigureBase):
     """Configuration for HuggingFaceTokenizer.
 
     :param tokenizer_path: The path to the HuggingFace tokenizer.
@@ -84,7 +84,7 @@ class HuggingFaceTokenizer(TokenizerBase[int]):
 
 
 @dataclass
-class TikTokenTokenizerConfig:
+class TikTokenTokenizerConfig(ConfigureBase):
     """Configuration for TikTokenTokenizer.
 
     :param tokenizer_name: Load the tokenizer by the name. Default is None.
@@ -127,7 +127,7 @@ class TikTokenTokenizer(TokenizerBase[int]):
 
 
 @dataclass
-class MosesTokenizerConfig:
+class MosesTokenizerConfig(ConfigureBase):
     """Configuration for MosesTokenizer.
 
     :param lang: The language code for the tokenizer. Default is "en".
@@ -161,7 +161,7 @@ class MosesTokenizer(TokenizerBase[str]):
 
 
 @dataclass
-class NLTKTokenizerConfig:
+class NLTKTokenizerConfig(ConfigureBase):
     """Configuration for NLTKTokenizer.
 
     :param lang: The language to use for the tokenizer. Default is "english".
@@ -195,7 +195,7 @@ class NLTKTokenizer(TokenizerBase[str]):
 
 
 @dataclass
-class JiebaTokenizerConfig:
+class JiebaTokenizerConfig(ConfigureBase):
     """Configuration for JiebaTokenizer.
 
     :param enable_hmm: Whether to use the Hidden Markov Model. Default is True.

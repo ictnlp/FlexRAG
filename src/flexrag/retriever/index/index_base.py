@@ -14,6 +14,7 @@ from flexrag.utils import (
     LOGGER_MANAGER,
     TIME_METER,
     Choices,
+    ConfigureBase,
     Register,
     SimpleProgressLogger,
 )
@@ -22,7 +23,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index")
 
 
 @dataclass
-class RetrieverIndexBaseConfig:
+class RetrieverIndexBaseConfig(ConfigureBase):
     """The configuration for the `RetrieverIndexBase`.
 
     :log_interval: The interval to log the progress. Defaults to 10000.
@@ -54,10 +55,7 @@ class RetrieverIndexBase(ABC):
     - `is_addable`: Return whether the index is addable.
     """
 
-    def __init__(self, cfg: RetrieverIndexBaseConfig):
-        # set configurations
-        self.cfg = cfg
-        return
+    cfg: RetrieverIndexBaseConfig
 
     @abstractmethod
     def build_index(self, data: Iterable[Any]) -> None:
@@ -229,10 +227,12 @@ class RetrieverIndexBase(ABC):
         # load configuration
         config_cls = RETRIEVER_INDEX[index_name]["config_class"]
         config_path = os.path.join(index_path, "config.yaml")
-        assert os.path.exists(config_path)
+        assert os.path.exists(
+            config_path
+        ), f"Configuration file {config_path} does not exist."
         with open(config_path, "r", encoding="utf-8") as f:
             local_cfg = OmegaConf.load(f)
-        cfg = OmegaConf.merge(config_cls(), local_cfg)
+        cfg = OmegaConf.merge(config_cls, local_cfg)
         cfg.index_path = index_path
 
         # load the index
@@ -272,7 +272,6 @@ class DenseIndexBase(RetrieverIndexBase):
     """The base class for all dense indexes."""
 
     def __init__(self, cfg: DenseIndexBaseConfig):
-        super().__init__(cfg)
         # load the encoder
         self.query_encoder = ENCODERS.load(cfg.query_encoder_config)
         self.passage_encoder = ENCODERS.load(cfg.passage_encoder_config)

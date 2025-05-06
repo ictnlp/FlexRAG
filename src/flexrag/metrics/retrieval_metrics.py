@@ -6,7 +6,7 @@ import pytrec_eval
 
 from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
-from flexrag.utils import TIME_METER, Choices
+from flexrag.utils import TIME_METER, Choices, ConfigureBase
 
 from .metrics_base import METRICS, MetricsBase
 
@@ -30,7 +30,7 @@ def get_contain_map_py(evidences: list[str], retrieved: list[str]) -> list[list[
 
 
 @dataclass
-class SuccessRateConfig:
+class SuccessRateConfig(ConfigureBase):
     """Configuration for ``SuccessRate`` metric.
     This metric computes whether the retrieved contexts contain any of the golden responses.
 
@@ -182,7 +182,7 @@ def pytrec_evaluate(
 
 
 @dataclass
-class RetrievalRecallConfig:
+class RetrievalRecallConfig(ConfigureBase):
     """Configuration for ``RetrievalRecall`` metric.
     This metric computes the recall of the retrieved contexts.
     The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
@@ -219,7 +219,7 @@ class RetrievalRecall(MetricsBase):
 
 
 @dataclass
-class RetrievalPrecisionConfig:
+class RetrievalPrecisionConfig(ConfigureBase):
     """Configuration for ``RetrievalPrecision`` metric.
     This metric computes the precision of the retrieved contexts.
     The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
@@ -256,7 +256,7 @@ class RetrievalPrecision(MetricsBase):
 
 
 @dataclass
-class RetrievalMAPConfig:
+class RetrievalMAPConfig(ConfigureBase):
     """Configuration for ``RetrievalMAP`` metric.
     This metric computes the MAP of the retrieved contexts.
     The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
@@ -293,7 +293,7 @@ class RetrievalMAP(MetricsBase):
 
 
 @dataclass
-class RetrievalNDCGConfig:
+class RetrievalNDCGConfig(ConfigureBase):
     """Configuration for ``RetrievalNDCG`` metric.
     This metric computes the nDCG of the retrieved contexts.
     The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.

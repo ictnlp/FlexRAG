@@ -5,12 +5,13 @@ from dataclasses import dataclass
 from omegaconf import MISSING
 
 from flexrag.common_dataclass import Context, IREvalData
+from flexrag.utils import ConfigureBase
 
 from .dataset import MappingDataset
 
 
 @dataclass
-class MTEBDatasetConfig:
+class MTEBDatasetConfig(ConfigureBase):
     """Configuration for loading `MTEB <https://huggingface.co/mteb>`_ Retrieval Dataset.
     The __getitem__ method will return `IREvalData` objects.
 

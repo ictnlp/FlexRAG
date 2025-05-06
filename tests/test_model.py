@@ -36,13 +36,13 @@ from flexrag.models import (
     VLLMGeneratorConfig,
 )
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.utils import LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, ConfigureBase
 
 logger = LOGGER_MANAGER.get_logger("tests.test_model")
 
 
 @dataclass
-class GeneratorTestConfig:
+class GeneratorTestConfig(ConfigureBase):
     openai_configs: list[OpenAIGeneratorConfig] = field(default_factory=list)
     ollama_configs: list[OllamaGeneratorConfig] = field(default_factory=list)
     anthropic_configs: list[AnthropicGeneratorConfig] = field(default_factory=list)
@@ -196,7 +196,7 @@ class TestGenerator:
 
 
 @dataclass
-class EncodeTestConfig:
+class EncodeTestConfig(ConfigureBase):
     openai_configs: list[OpenAIEncoderConfig] = field(default_factory=list)
     ollama_configs: list[OllamaEncoderConfig] = field(default_factory=list)
     hf_configs: list[HFEncoderConfig] = field(default_factory=list)

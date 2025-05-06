@@ -4,13 +4,13 @@ from dataclasses import dataclass
 from omegaconf import MISSING
 
 from flexrag.prompt import ChatPrompt
-from flexrag.utils import TIME_METER
+from flexrag.utils import TIME_METER, ConfigureBase
 
 from .model_base import GENERATORS, GenerationConfig, GeneratorBase
 
 
 @dataclass
-class LlamacppGeneratorConfig:
+class LlamacppGeneratorConfig(ConfigureBase):
     """Configuration for LlamacppGenerator.
 
     :param model_path: The path to the model.

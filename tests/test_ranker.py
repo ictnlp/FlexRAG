@@ -23,13 +23,13 @@ from flexrag.ranker import (
     VoyageRanker,
     VoyageRankerConfig,
 )
-from flexrag.utils import LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, ConfigureBase
 
 logger = LOGGER_MANAGER.get_logger("tests.test_ranker")
 
 
 @dataclass
-class RankerTestConfig:
+class RankerTestConfig(ConfigureBase):
     cohere_configs: list[CohereRankerConfig] = field(default_factory=list)
     jina_configs: list[JinaRankerConfig] = field(default_factory=list)
     mixedbread_configs: list[MixedbreadRankerConfig] = field(default_factory=list)

@@ -5,11 +5,13 @@ from datasets import Dataset as _Dataset
 from datasets import DatasetDict as _DatasetDict
 from datasets import load_dataset
 
+from flexrag.utils import ConfigureBase
+
 from .dataset import MappingDataset
 
 
 @dataclass
-class HFDatasetConfig:
+class HFDatasetConfig(ConfigureBase):
     """The configuration for the ``HFDataset``.
     The ``HFDataset`` is a wrapper class that employs the ``load_dataset`` method in HuggingFace ``datasets`` library to load the dataset.
 

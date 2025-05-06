@@ -7,7 +7,7 @@ from typing import Any, Generator, Iterable
 import numpy as np
 from omegaconf import OmegaConf
 
-from flexrag.utils import LOGGER_MANAGER, Choices, SimpleProgressLogger
+from flexrag.utils import LOGGER_MANAGER, Choices, ConfigureBase, SimpleProgressLogger
 
 from .index_base import RetrieverIndexBase
 
@@ -15,23 +15,26 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retriever.index.multi_field_index")
 
 
 @dataclass
-class MultiFieldIndexConfig:
+class MultiFieldIndexConfig(ConfigureBase):
     """Configuration for MultiFieldIndex.
 
     :param indexed_fields: Fields to be indexed.
         If more than one field is specified, each field will be processed separately and pointed to the same id.
     :type indexed_fields: list[str]
     :param merge_method: The method to merge the scores of the same context id.
-        The options are "max", "sum", and "mean".
+        Available options are "max", "sum", "mean", and "concat".
         "max" will take the maximum score of the same context id.
         "sum" will take the sum of the scores of the same context id.
         "mean" will take the average of the scores of the same context id.
+        "concat" will concatenate the texts of each field and index them together.
+        Note that "concat" is only available if all indexed fields are of type str.
+        If only one field is specified, this argument will be ignored.
         Defaults to "max".
     :type merge_method: str
     """
 
     indexed_fields: list[str]
-    merge_method: Choices(["max", "sum", "mean"]) = "max"  # type: ignore
+    merge_method: Choices(["max", "sum", "mean", "concat"]) = "max"  # type: ignore
 
 
 class MultiFieldIndex:
@@ -40,7 +43,7 @@ class MultiFieldIndex:
     def __init__(self, cfg: MultiFieldIndexConfig, index: RetrieverIndexBase):
         # Initialize the MultiFieldIndex with a base index.
         self.index = index
-        self.cfg = cfg
+        self.cfg = MultiFieldIndexConfig.extract(cfg)
 
         # load the context_id mapping if exists
         if self.index.cfg.index_path is not None:
@@ -85,18 +88,23 @@ class MultiFieldIndex:
         def get_data() -> Generator[Any | str, None, None]:
             """A helper function that yields the id or the data to be indexed."""
             for context_id, item in zip(context_ids, data):
-                filed_num = 0
                 if self.cfg.indexed_fields is None:
                     indexed_fields = item.keys()
                 else:
-                    indexed_fields = self.cfg.indexed_fields
-                for field in indexed_fields:
-                    if field not in item:
-                        continue
-                    filed_num += 1
-                    self.max_field_num = max(self.max_field_num, filed_num)
-                    ctx_ids.append(context_id)
-                    yield item[field]
+                    indexed_fields = [i for i in self.cfg.indexed_fields if i in item]
+                if self.cfg.merge_method == "concat":
+                    concat_str = ""
+                    for field in indexed_fields:
+                        assert isinstance(item[field], str)
+                        concat_str += f"{field}: {item[field]} "
+                    yield concat_str
+                else:
+                    for field in indexed_fields:
+                        self.max_field_num = max(
+                            self.max_field_num, len(indexed_fields)
+                        )
+                        ctx_ids.append(context_id)
+                        yield item[field]
 
         self.index.build_index(get_data())
 
@@ -194,6 +202,8 @@ class MultiFieldIndex:
                         retrieved[context_id] = max(retrieved[context_id])
                     case "sum":
                         retrieved[context_id] = sum(retrieved[context_id])
+                    case "concat":
+                        retrieved[context_id] = retrieved[context_id][0]
                     case "mean":
                         retrieved[context_id] = sum(retrieved[context_id]) / len(
                             retrieved[context_id]

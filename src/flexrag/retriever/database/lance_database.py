@@ -1,8 +1,9 @@
 import os
 import shutil
+from collections import OrderedDict
+from collections.abc import ItemsView, Iterable, KeysView, ValuesView
 from functools import cached_property
 from hashlib import sha1
-from typing import Iterable
 
 import lance
 import numpy as np
@@ -16,6 +17,64 @@ from .databsae_base import RetrieverDatabaseBase
 logger = LOGGER_MANAGER.get_logger("lance_database")
 
 
+class LanceValuesView(ValuesView):
+    """A helper class for faster iterating over the lance database."""
+
+    def __init__(self, mapping: "LanceRetrieverDatabase"):
+        super().__init__(mapping)
+        self._mapping = mapping
+        return
+
+    def __len__(self):
+        return len(self._mapping)
+
+    def __iter__(self):
+        if self._mapping.database is None:
+            return iter([])
+        for batch in self._mapping.database.to_batches():
+            for item in batch.to_pandas().to_dict(orient="records"):
+                item.pop(self._mapping._id_field_name)
+                yield item
+
+
+class LanceItemsView(ItemsView):
+    """A helper class for faster iterating over the lance database."""
+
+    def __init__(self, mapping: "LanceRetrieverDatabase"):
+        super().__init__(mapping)
+        self._mapping = mapping
+        return
+
+    def __len__(self):
+        return len(self._mapping)
+
+    def __iter__(self):
+        if self._mapping.database is None:
+            return iter([])
+        for batch in self._mapping.database.to_batches():
+            for item in batch.to_pandas().to_dict(orient="records"):
+                key = item.pop(self._mapping._id_field_name)
+                yield key, item
+
+
+class LanceKeysView(KeysView):
+    """A helper class for faster iterating over the lance database."""
+
+    def __init__(self, mapping: "LanceRetrieverDatabase"):
+        super().__init__(mapping)
+        self._mapping = mapping
+        return
+
+    def __len__(self):
+        return len(self._mapping)
+
+    def __iter__(self):
+        return self._mapping._ids.__iter__()
+
+    def __contains__(self, key):
+        return self._mapping._ids.__contains__(key)
+
+
 class LanceRetrieverDatabase(RetrieverDatabaseBase):
     """LanceRetrieverDatabase is a class that implements the RetrieverDatabaseBase interface.
     It uses the Lance database to store the data.
@@ -25,8 +84,12 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
     def __init__(self, database_path: str) -> None:
         super().__init__()
         self.database_path = database_path
+        self._ids = OrderedDict()  # cached for faster visit
         if os.path.exists(database_path):
             self.database = lance.dataset(database_path)
+            for batch in self.database.to_batches():
+                for item in batch.to_pandas().to_dict(orient="records"):
+                    self._ids[item[self._id_field_name]] = None
         else:
             self.database = None
         return
@@ -51,6 +114,11 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
         assert len(data) == len(ids), "data and ids should have the same length"
         assert len(set(ids)) == len(ids), "ids should be unique"
 
+        # remove exist ids
+        exist_ids = [idx for idx in ids if idx in self._ids]
+        if len(exist_ids) > 0:
+            self.remove(exist_ids)
+
         # add the data to the database
         data = pd.DataFrame(data)
         data[self._id_field_name] = ids
@@ -62,6 +130,10 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
             )
         else:
             self.database.insert(data, mode="append")
+
+        # update ids cache
+        for idx in ids:
+            self._ids[idx] = None
         return
 
     def remove(self, ids: list[str] | str) -> None:
@@ -84,9 +156,13 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
         # remove the data from the database
         # as lance has issue with deleting data using pa.compute.Expression
         # so we use str to filter the data
-        ids = [f"'{i}'" for i in ids]
-        filter_str = f"{self._id_field_name} in ({', '.join([i for i in ids])})"
+        ids_ = [f"'{i}'" for i in ids]
+        filter_str = f"{self._id_field_name} in ({', '.join([i for i in ids_])})"
         self.database.delete(filter_str)
+
+        # update the _ids cache
+        for idx in ids:
+            self._ids.pop(idx)
         return
 
     def __getitem__(self, ids: str | list[str] | np.ndarray) -> list[dict]:
@@ -162,6 +238,7 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
             return
         self.database.drop(self.database_path)
         self.database = None
+        self._ids = OrderedDict()
         return
 
     def __len__(self) -> int:
@@ -174,11 +251,11 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
             return 0
         return self.database.count_rows()
 
-    def __iter__(self) -> Iterable[dict]:
+    def __iter__(self) -> Iterable[str]:
         """Get an iterator over the database.
 
         :return: An iterator over the database.
-        :rtype: Iterable[dict]
+        :rtype: Iterable[str]
         """
         if self.database is None:
             return iter([])
@@ -186,6 +263,15 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
             for ids in batch.to_pandas()[self._id_field_name]:
                 yield ids
         return
+
+    def values(self) -> ValuesView:
+        return LanceValuesView(self)
+
+    def items(self) -> ItemsView:
+        return LanceItemsView(self)
+
+    def keys(self) -> KeysView:
+        return LanceKeysView(self)
 
     @property
     def fields(self) -> list[str]:
@@ -200,7 +286,7 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
         fields.remove(self._id_field_name)
         return fields
 
-    def clearup_database(self) -> None:
+    def defragment(self) -> None:
         """Clear up the database."""
         if self.database is None:
             return
@@ -210,8 +296,9 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
         # we find that the `compact_files` operation will change the order of the rows
         # so we compact the files directly by reading and writing the data
         logger.info("Compacting the database. This may take a while.")
-        new_data_path = os.path.join(self.cfg.database_path, "tmp.lance")
-        ori_data_path = os.path.join(self.cfg.database_path, "database.lance")
+        parent_path = os.path.dirname(self.database_path)
+        new_data_path = os.path.join(parent_path, "tmp.lance")
+        ori_data_path = os.path.join(parent_path, "database.lance")
         lance.write_dataset(self.database, uri=new_data_path, mode="create")
         shutil.rmtree(ori_data_path)
         shutil.move(new_data_path, ori_data_path)

@@ -38,7 +38,7 @@ class WikipediaRetriever(RetrieverBase):
     def __init__(self, cfg: WikipediaRetrieverConfig):
         super().__init__(cfg)
         # set basic configs
-        self.search_url = cfg.search_url
+        self.cfg = WikipediaRetrieverConfig.extract(cfg)
         self.client = httpx.Client(proxy=cfg.proxy)
         return
 
@@ -53,7 +53,7 @@ class WikipediaRetriever(RetrieverBase):
 
         # search & parse
         results = []
-        p_logger = SimpleProgressLogger(logger, len(query), self.log_interval)
+        p_logger = SimpleProgressLogger(logger, len(query), self.cfg.log_interval)
         for q in query:
             time.sleep(delay)
             p_logger.update(1, "Searching")
@@ -61,7 +61,7 @@ class WikipediaRetriever(RetrieverBase):
         return results
 
     def search_item(self, query: str, **kwargs) -> RetrievedContext:
-        search_url = self.search_url + query.replace(" ", "+")
+        search_url = self.cfg.search_url + query.replace(" ", "+")
         response_text = self.client.get(search_url).text
 
         soup = BeautifulSoup(response_text, features="html.parser")

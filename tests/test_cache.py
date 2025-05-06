@@ -25,10 +25,11 @@ from flexrag.cache.serializer import (
     PickleSerializer,
     SerializerBase,
 )
+from flexrag.utils import ConfigureBase
 
 
 @dataclass
-class BackendTestConfig:
+class BackendTestConfig(ConfigureBase):
     lmdb_config: LMDBBackendConfig = field(default_factory=LMDBBackendConfig)
 
 

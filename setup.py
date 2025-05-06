@@ -38,7 +38,9 @@ def get_requirements() -> list[str]:
 
 
 def get_version() -> str:
-    with open(os.path.join("src", "flexrag", "utils.py"), encoding="utf-8") as f:
+    with open(
+        os.path.join("src", "flexrag", "utils", "default_vars.py"), encoding="utf-8"
+    ) as f:
         file_content = f.read()
         pattern = r"{}\W*=\W*\"([^\"]+)\"".format("__VERSION__")
         (version,) = re.findall(pattern, file_content)
@@ -73,7 +75,7 @@ setup(
     python_requires=">=3.11",
     install_requires=get_requirements(),
     extras_require={
-        "scann": ["scann>=1.3.2"],
+        "scann": ["scann>=1.4.0"],
         "annoy": ["annoy>1.17.0"],
         "llamacpp": ["llama_cpp_python>=0.2.84"],
         "minference": ["minference>=0.1.5"],
@@ -96,6 +98,8 @@ setup(
             "sphinx",
             "sphinx-autobuild",
             "myst-parser",
+            "rstcheck",
+            "doc8",
         ],
     },
     classifiers=[

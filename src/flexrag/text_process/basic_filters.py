@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
 from typing import Optional
 
+from flexrag.utils import ConfigureBase
+
 from .processor import PROCESSORS, Processor, TextUnit
 from .utils import UnifiedTokenizer, UTokenizerConfig
 
@@ -19,7 +21,7 @@ class ExactDeduplicate(Processor):
 
 
 @dataclass
-class LengthFilterConfig:
+class LengthFilterConfig(ConfigureBase):
     max_tokens: Optional[int] = None
     min_tokens: Optional[int] = None
     max_chars: Optional[int] = None

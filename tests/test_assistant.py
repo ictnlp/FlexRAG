@@ -5,10 +5,11 @@ import pytest
 from omegaconf import OmegaConf
 
 from flexrag.assistant import BasicAssistant, BasicAssistantConfig
+from flexrag.utils import ConfigureBase
 
 
 @dataclass
-class AssistantTestConfig:
+class AssistantTestConfig(ConfigureBase):
     assistant_config: BasicAssistantConfig = field(default_factory=BasicAssistantConfig)
 
 

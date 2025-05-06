@@ -48,10 +48,9 @@ class AnnoyIndex(DenseIndexBase):
     However, building index on disk is slower than building index in memory.
     """
 
-    cfg: AnnoyIndexConfig
-
     def __init__(self, cfg: AnnoyIndexConfig) -> None:
         super().__init__(cfg)
+        self.cfg = AnnoyIndexConfig.extract(cfg)
         # check annoy
         try:
             from annoy import AnnoyIndex as AnnIndex

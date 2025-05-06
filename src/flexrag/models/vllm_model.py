@@ -5,7 +5,7 @@ from omegaconf import MISSING
 from transformers import AutoConfig, PretrainedConfig
 
 from flexrag.prompt import ChatPrompt, load_template
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, ConfigureBase
 
 from .model_base import GENERATORS, GenerationConfig, GeneratorBase
 from .utils import guess_model_name
@@ -14,7 +14,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.models.vllm")
 
 
 @dataclass
-class VLLMGeneratorConfig:
+class VLLMGeneratorConfig(ConfigureBase):
     """Configuration for VLLMGenerator.
 
     :param model_path: Path to the model. Required.

@@ -10,7 +10,7 @@ import numpy as np
 from omegaconf import MISSING
 
 from flexrag.prompt import ChatPrompt
-from flexrag.utils import LOGGER_MANAGER, TIME_METER
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, ConfigureBase
 
 from .model_base import (
     ENCODERS,
@@ -25,7 +25,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.models.openai")
 
 
 @dataclass
-class OpenAIConfig:
+class OpenAIConfig(ConfigureBase):
     """The Base Configuration for OpenAI Client.
 
     :param is_azure: Whether the model is hosted on Azure. Default is False.

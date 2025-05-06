@@ -7,7 +7,7 @@ from typing import MutableMapping
 import lmdb
 from omegaconf import MISSING
 
-from flexrag.utils import Register
+from flexrag.utils import ConfigureBase, Register
 
 
 class StorageBackendBase(MutableMapping[bytes, bytes]):
@@ -62,7 +62,7 @@ STORAGEBACKENDS = Register[StorageBackendBase]("storage_backend")
 
 
 @dataclass
-class LMDBBackendConfig:
+class LMDBBackendConfig(ConfigureBase):
     db_path: str = MISSING
     db_size: int = 1 << 30  # 2^30 bytes = 1GB
 

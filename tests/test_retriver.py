@@ -22,10 +22,11 @@ from flexrag.retriever.index import (
     MultiFieldIndexConfig,
     RetrieverIndexConfig,
 )
+from flexrag.utils import ConfigureBase
 
 
 @dataclass
-class RetrieverTestConfig:
+class RetrieverTestConfig(ConfigureBase):
     typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)  # fmt: skip
     elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)  # fmt: skip
 

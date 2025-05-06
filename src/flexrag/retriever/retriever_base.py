@@ -24,6 +24,7 @@ from flexrag.utils import (
     __VERSION__,
     FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
+    ConfigureBase,
     Register,
     SimpleProgressLogger,
 )
@@ -123,7 +124,7 @@ def batched_cache(func):
 
 
 @dataclass
-class RetrieverBaseConfig:
+class RetrieverBaseConfig(ConfigureBase):
     """Base configuration class for all retrievers.
 
     :param log_interval: The interval of logging. Default: 100.
@@ -149,12 +150,9 @@ class RetrieverBase(ABC):
     The subclasses should implement the ``search`` method and the ``fields`` property.
     """
 
+    cfg: RetrieverBaseConfig
+
     def __init__(self, cfg: RetrieverBaseConfig):
-        # set basic args
-        self.cfg = cfg
-        self.log_interval = cfg.log_interval
-        self.top_k = cfg.top_k
-        self.batch_size = cfg.batch_size
         # load preprocess pipeline
         self.query_preprocess_pipeline = TextProcessPipeline(
             cfg.query_preprocess_pipeline
@@ -199,7 +197,7 @@ class RetrieverBase(ABC):
                     batch.append(self.query_preprocess_pipeline(q))
                 else:
                     batch.append(q)
-                if len(batch) == self.batch_size:
+                if len(batch) == self.cfg.batch_size:
                     yield batch
                     batch = []
             if batch:
@@ -208,7 +206,7 @@ class RetrieverBase(ABC):
 
         final_results = []
         total = len(query) if hasattr(query, "__len__") else None
-        p_logger = SimpleProgressLogger(logger, total, self.log_interval)
+        p_logger = SimpleProgressLogger(logger, total, self.cfg.log_interval)
         for batch in get_batch():
             results_ = self.search(batch, **search_kwargs)
             final_results.extend(results_)
@@ -260,7 +258,7 @@ class RetrieverBase(ABC):
         for _ in range(test_times):
             query = [sents[i % len(sents)] for i in range(sample_num)]
             start_time = time.perf_counter()
-            _ = self.search(query, self.top_k, **search_kwargs)
+            _ = self.search(query, self.cfg.top_k, **search_kwargs)
             end_time = time.perf_counter()
             total_times.append(end_time - start_time)
         avg_time = sum(total_times) / test_times
@@ -358,6 +356,23 @@ class LocalRetriever(EditableRetriever):
         retriever_config: LocalRetrieverConfig = None,
         **kwargs,
     ) -> "LocalRetriever":
+        """Load a retriever from the HuggingFace Hub.
+
+        :param repo_id: The repo id of the retriever on the HuggingFace Hub.
+        :type repo_id: str
+        :param revision: The revision of the retriever on the HuggingFace Hub. Default: None.
+        :type revision: str
+        :param token: The token to access the HuggingFace Hub. Default: None.
+        :type token: str
+        :param cache_dir: The cache directory to store the retriever. Default: FLEXRAG_CACHE_DIR.
+        :type cache_dir: str
+        :param retriever_config: Additional configuration for the retriever. Default: None.
+        :type retriever_config: LocalRetrieverConfig
+        :param kwargs: Additional arguments for the retriever.
+        :type kwargs: Any
+        :return: The loaded retriever.
+        :rtype: LocalRetriever
+        """
         # check if the retriever exists
         api = HfApi(token=token)
         repo_info = api.repo_info(repo_id)
@@ -389,6 +404,23 @@ class LocalRetriever(EditableRetriever):
         private: bool = False,
         **kwargs,
     ) -> str:
+        """Save the retriever to the HuggingFace Hub.
+
+        :param repo_id: The repo id of the retriever on the HuggingFace Hub.
+        :type repo_id: str
+        :param token: The token to access the HuggingFace Hub. Default: None.
+        :type token: str
+        :param commit_message: The commit message for the retriever. Default: "Update FlexRAG retriever".
+        :type commit_message: str
+        :param retriever_card: The markdown readme file for the retriever. Default: None.
+        :type retriever_card: str
+        :param private: Whether to create a private repo. Default: False.
+        :type private: bool
+        :param kwargs: Additional arguments for uploading the retriever.
+        :type kwargs: Any
+        :return: The repo url of the retriever.
+        :rtype: str
+        """
         # make a temporary directory if retriever_path is not specified
         if self.cfg.retriever_path is None:
             with tempfile.TemporaryDirectory(prefix="flexrag-retriever") as tmp_dir:
@@ -436,6 +468,15 @@ class LocalRetriever(EditableRetriever):
     def load_from_local(
         repo_path: str = None, retriever_config: LocalRetrieverConfig = None
     ) -> "LocalRetriever":
+        """Load a retriever from the local disk.
+
+        :param repo_path: The path to the local database. Default: None.
+        :type repo_path: str
+        :param retriever_config: Additional configuration for the retriever. Default: None.
+        :type retriever_config: LocalRetrieverConfig
+        :return: The loaded retriever.
+        :rtype: LocalRetriever
+        """
         # prepare the cls
         id_path = os.path.join(repo_path, "cls.id")
         with open(id_path, "r", encoding="utf-8") as f:
@@ -460,13 +501,14 @@ class LocalRetriever(EditableRetriever):
         return retriever
 
     @abstractmethod
-    def save_to_local(
-        self,
-        database_path: str = None,
-        overwrite: bool = False,
-        retriever_card: str = None,
-        update_config: bool = False,
-    ):
+    def save_to_local(self, retriever_path: str = None):
+        """Save the retriever to the local disk.
+
+        :param retriever_path: The path to the local database. Default: None.
+        :type retriever_path: str
+        :return: None
+        :rtype: None
+        """
         return
 
     @abstractmethod

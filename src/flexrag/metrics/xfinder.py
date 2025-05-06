@@ -1,13 +1,13 @@
 from dataclasses import dataclass, field
 
-from flexrag.utils import TIME_METER, Choices
+from flexrag.utils import TIME_METER, Choices, ConfigureBase
 
 from .metrics_base import METRICS, MetricsBase
 from .xfinder_utils import Evaluator
 
 
 @dataclass
-class xFinderConfig:
+class xFinderConfig(ConfigureBase):
     model_type: Choices(["qwen", "llama"]) = "qwen"  # type: ignore
     model_path: str = "IAAR-Shanghai/xFinder-qwen1505"
     answer_type: Choices(  # type: ignore

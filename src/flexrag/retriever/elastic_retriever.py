@@ -48,6 +48,7 @@ class ElasticRetriever(EditableRetriever):
 
     def __init__(self, cfg: ElasticRetrieverConfig) -> None:
         super().__init__(cfg)
+        self.cfg = ElasticRetrieverConfig.extract(cfg)
         # set basic args
         self.host = cfg.host
         self.api_key = cfg.api_key
@@ -112,14 +113,14 @@ class ElasticRetriever(EditableRetriever):
                 }
                 actions.append(action)
                 actions.append(passage.data)
-                if len(actions) == self.batch_size * 2:
+                if len(actions) == self.cfg.batch_size * 2:
                     yield actions
                     actions = []
             if actions:
                 yield actions
             return
 
-        p_logger = SimpleProgressLogger(logger, interval=self.log_interval)
+        p_logger = SimpleProgressLogger(logger, interval=self.cfg.log_interval)
         for actions in generate_actions():
             r = self.client.bulk(
                 operations=actions,
@@ -164,7 +165,7 @@ class ElasticRetriever(EditableRetriever):
                             "fields": self.fields,
                         },
                     },
-                    "size": search_kwargs.pop("top_k", self.top_k),
+                    "size": search_kwargs.pop("top_k", self.cfg.top_k),
                 }
             )
 

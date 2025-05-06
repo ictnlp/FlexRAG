@@ -34,7 +34,7 @@ from transformers import (
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
 from flexrag.prompt import ChatPrompt, MultiModelChatPrompt, load_template
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, ConfigureBase
 
 from .model_base import (
     ENCODERS,
@@ -247,7 +247,7 @@ def load_hf_model(
 
 
 @dataclass
-class HFModelConfig:
+class HFModelConfig(ConfigureBase):
     """The Base Configuration for Huggingface Models,
     including `HFGenerator`, `HFVLMGenerator`, `HFEncoder` and `HFClipEncoder`.
 

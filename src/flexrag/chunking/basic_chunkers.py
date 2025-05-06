@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
-from flexrag.utils import LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, ConfigureBase
 
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 from .sentence_splitter import (
@@ -17,7 +17,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.chunking.basic_chunkers")
 
 
 @dataclass
-class CharChunkerConfig:
+class CharChunkerConfig(ConfigureBase):
     """Configuration for CharChunker.
 
     :param max_chars: The number of characters in each chunk. Default is 2048.

@@ -6,7 +6,7 @@ from typing import Optional
 import httpx
 from omegaconf import MISSING
 
-from flexrag.utils import Choices, Register
+from flexrag.utils import Choices, ConfigureBase, Register
 
 from .utils import WebResource
 
@@ -39,7 +39,7 @@ SEARCH_ENGINES = Register[WebSeekerBase]("search_engine")
 
 
 @dataclass
-class BingEngineConfig:
+class BingEngineConfig(ConfigureBase):
     """The configuration for the ``BingSeeker``.
 
     :param subscription_key: The subscription key for the Bing Search API.
@@ -119,7 +119,7 @@ class BingEngine(WebSeekerBase):
 
 
 @dataclass
-class DuckDuckGoEngineConfig:
+class DuckDuckGoEngineConfig(ConfigureBase):
     """The configuration for the ``DuckDuckGoEngine``.
 
     :param proxy: The proxy to use. Default is None.
@@ -165,7 +165,7 @@ class DuckDuckGoEngine(WebSeekerBase):
 
 
 @dataclass
-class GoogleEngineConfig:
+class GoogleEngineConfig(ConfigureBase):
     """The configuration for the ``GoogleEngine``.
 
     :param subscription_key: The subscription key for the Google Search API.
@@ -240,7 +240,7 @@ class GoogleEngine(WebSeekerBase):
 
 
 @dataclass
-class SerpApiConfig:
+class SerpApiConfig(ConfigureBase):
     """The configuration for the ``SerpApi``.
 
     :param api_key: The API key for the SerpApi.

@@ -68,10 +68,9 @@ class FaissIndex(DenseIndexBase):
     FaissIndex provides a flexible and efficient way to build and search indexes with embeddings.
     """
 
-    cfg: FaissIndexConfig
-
     def __init__(self, cfg: FaissIndexConfig) -> None:
         super().__init__(cfg)
+        self.cfg = FaissIndexConfig.extract(cfg)
         # prepare index
         self.index = None
 

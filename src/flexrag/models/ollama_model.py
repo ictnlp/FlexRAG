@@ -9,7 +9,7 @@ from numpy import ndarray
 from omegaconf import MISSING
 
 from flexrag.prompt import ChatPrompt
-from flexrag.utils import LOGGER_MANAGER, TIME_METER
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, ConfigureBase
 
 from .model_base import (
     ENCODERS,
@@ -24,7 +24,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.models.ollama")
 
 
 @dataclass
-class OllamaGeneratorConfig:
+class OllamaGeneratorConfig(ConfigureBase):
     """Configuration for the OllamaGenerator.
 
     :param model_name: The name of the model to use. Required.

@@ -5,13 +5,13 @@ from typing import Optional
 import numpy as np
 
 from flexrag.common_dataclass import RetrievedContext
-from flexrag.utils import LOGGER_MANAGER, Register
+from flexrag.utils import LOGGER_MANAGER, ConfigureBase, Register
 
 logger = LOGGER_MANAGER.get_logger("flexrag.rankers")
 
 
 @dataclass
-class RankerBaseConfig:
+class RankerBaseConfig(ConfigureBase):
     """The configuration for the ranker.
 
     :param reserve_num: the number of candidates to reserve.

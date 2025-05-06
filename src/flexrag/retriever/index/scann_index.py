@@ -51,10 +51,9 @@ class ScaNNIndex(DenseIndexBase):
     However, it requires more memory than ``FaissIndex``.
     """
 
-    cfg: ScaNNIndexConfig
-
     def __init__(self, cfg: ScaNNIndexConfig) -> None:
         super().__init__(cfg)
+        self.cfg = ScaNNIndexConfig.extract(cfg)
         # check scann
         try:
             import scann
