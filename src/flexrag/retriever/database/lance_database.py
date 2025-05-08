@@ -94,8 +94,8 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
             self.database = None
         return
 
-    def add(self, ids: list[str] | str, data: list[dict] | dict) -> None:
-        """Add a batch of data to the database.
+    def __setitem__(self, ids: list[str] | str, data: list[dict] | dict) -> None:
+        """Add (a batch of) data to the database.
 
         :param ids: The IDs of the data to add to the database.
         :type ids: list[str] | str
@@ -136,8 +136,8 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
             self._ids[idx] = None
         return
 
-    def remove(self, ids: list[str] | str) -> None:
-        """Remove a batch of data from the database.
+    def __delitem__(self, ids: list[str] | str) -> None:
+        """Remove (a batch of) data from the database.
 
         :param ids: The IDs of the data to remove from the database.
         :type ids: list[str] | str
@@ -202,45 +202,6 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
             return data[0]
         return data
 
-    def __setitem__(self, ids: str, data: dict) -> None:
-        """
-        Set an item in the database.
-
-        :param idx: The index of the data to set.
-        :type idx: str
-        :param item: The data to set.
-        :type item: dict
-        :return: None
-        :rtype: None
-        """
-        self.add(ids, data)
-        return
-
-    def __delitem__(self, ids: str) -> None:
-        """
-        Delete an item from the database.
-
-        :param idx: The index of the data to delete.
-        :type idx: str
-        :return: None
-        :rtype: None
-        """
-        self.remove(ids)
-        return
-
-    def clear(self) -> None:
-        """Clear the database.
-
-        :return: None
-        :rtype: None
-        """
-        if self.database is None:
-            return
-        self.database.drop(self.database_path)
-        self.database = None
-        self._ids = OrderedDict()
-        return
-
     def __len__(self) -> int:
         """Get the number of items in the database.
 
@@ -264,12 +225,24 @@ class LanceRetrieverDatabase(RetrieverDatabaseBase):
                 yield ids
         return
 
+    # implement for faster clearing
+    def clear(self) -> None:
+        if self.database is None:
+            return
+        self.database.drop(self.database_path)
+        self.database = None
+        self._ids = OrderedDict()
+        return
+
+    # implement for faster iterating
     def values(self) -> ValuesView:
         return LanceValuesView(self)
 
+    # implement for faster iterating
     def items(self) -> ItemsView:
         return LanceItemsView(self)
 
+    # implement for faster iterating
     def keys(self) -> KeysView:
         return LanceKeysView(self)
 

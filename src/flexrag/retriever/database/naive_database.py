@@ -16,8 +16,8 @@ class NaiveRetrieverDatabase(RetrieverDatabaseBase):
         self._fields = Counter()
         return
 
-    def add(self, ids: list[str] | str, data: list[dict] | dict) -> None:
-        """Add a batch of data to the database.
+    def __setitem__(self, ids: list[str] | str, data: list[dict] | dict) -> None:
+        """Add (a batch of) data to the database.
 
         :param data: The data to add to the database.
         :type data: list[dict] | dict
@@ -35,11 +35,12 @@ class NaiveRetrieverDatabase(RetrieverDatabaseBase):
         assert len(data) == len(ids), "data and ids should have the same length"
         assert len(set(ids)) == len(ids), "ids should be unique"
         for idx, item in zip(ids, data):
-            self[idx] = item
+            self.data[idx] = item
+            self._fields.update(item.keys())
         return
 
-    def remove(self, ids: list[str] | str) -> None:
-        """Remove a batch of data from the database.
+    def __delitem__(self, ids: list[str] | str) -> None:
+        """Remove (a batch of) data from the database.
 
         :param ids: The IDs of the data to remove from the database.
         :type ids: list[str] | str
@@ -53,8 +54,27 @@ class NaiveRetrieverDatabase(RetrieverDatabaseBase):
         assert len(set(ids)) == len(ids), "ids should be unique"
         for idx in ids:
             assert idx in self.data, f"ID {idx} does not exist"
-            del self[idx]
+            item = self.data.pop(idx)
+            self._fields.subtract(item.keys())
         return
+
+    def __getitem__(self, idx: str | list[str] | np.ndarray) -> dict | list[dict]:
+        """
+        Get (a batch of) data from the database.
+
+        :param idx: The index of the data to get.
+        :type idx: str | list[str] | np.ndarray
+        :return: The data from the database.
+        :rtype: dict | list[dict]
+        :raises TypeError: If the index is not str, list[str], np.ndarray.
+        """
+        if isinstance(idx, str):
+            return self.data[idx]
+        elif isinstance(idx, (list, tuple, np.ndarray)):
+            return [self.data[i] for i in idx]
+        raise TypeError(
+            f"Index should be str, list[str], or np.ndarray, but got {type(idx)}"
+        )
 
     def __len__(self) -> int:
         """Get the number of items in the database.
@@ -71,52 +91,6 @@ class NaiveRetrieverDatabase(RetrieverDatabaseBase):
         :rtype: Iterable[dict]
         """
         return iter(self.data.keys())
-
-    def __getitem__(self, idx: str | list[str] | np.ndarray) -> dict | list[dict]:
-        """
-        Get an / a batch of data from the database.
-
-        :param idx: The index of the data to get.
-        :type idx: str | list[str] | np.ndarray
-        :return: The data from the database.
-        :rtype: dict | list[dict]
-        :raises TypeError: If the index is not str, list[str], np.ndarray.
-        """
-        if isinstance(idx, str):
-            return self.data[idx]
-        elif isinstance(idx, (list, tuple, np.ndarray)):
-            return [self.data[i] for i in idx]
-        raise TypeError(
-            f"Index should be str, list[str], or np.ndarray, but got {type(idx)}"
-        )
-
-    def __setitem__(self, idx: str, item: dict) -> None:
-        """
-        Set an item in the database.
-
-        :param idx: The index of the data to set.
-        :type idx: str
-        :param item: The data to set.
-        :type item: dict
-        :return: None
-        :rtype: None
-        """
-        self.data[idx] = item
-        self._fields.update(item.keys())
-        return
-
-    def __delitem__(self, idx: str) -> None:
-        """
-        Delete an item from the database.
-
-        :param idx: The index of the data to delete.
-        :type idx: str
-        :return: None
-        :rtype: None
-        """
-        self._fields.subtract(self.data[idx].keys())
-        del self.data[idx]
-        return
 
     @property
     def fields(self) -> list[str]:

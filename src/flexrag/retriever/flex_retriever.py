@@ -139,9 +139,9 @@ class FlexRetriever(LocalRetriever):
         context_ids = []
         p_logger = SimpleProgressLogger(logger, interval=self.cfg.log_interval)
         for batch, ids in get_batch():
-            self.database.add(ids, batch)
+            self.database[ids] = batch
             context_ids.extend(ids)
-            p_logger.update(step=len(batch), desc="Adding passages.")
+            p_logger.update(step=len(batch), desc="Adding passages")
 
         # defragment
         if isinstance(self.database, LanceRetrieverDatabase):
@@ -318,18 +318,24 @@ class FlexRetriever(LocalRetriever):
         # save the database
         def get_data() -> Generator[tuple[list[str], list[dict]], None, None]:
             batch_ids = []
-            for ctx_id in self.database.ids:
+            batch_data = []
+            for ctx_id, ctx in self.database.items():
+                # unify the schema
+                # FIXME: if the schema is not consistent, we need to handle it
+                ctx = {k: ctx.get(k, "") for k in self.fields}
                 batch_ids.append(ctx_id)
+                batch_data.append(ctx)
                 if len(batch_ids) == self.cfg.batch_size:
-                    yield batch_ids, self.database[batch_ids]
+                    yield batch_ids, batch_data
                     batch_ids = []
+                    batch_data = []
             if batch_ids:
-                yield batch_ids, self.database[batch_ids]
+                yield batch_ids, batch_data
             return
 
         new_db = LanceRetrieverDatabase(os.path.join(retriever_path, "database.lance"))
         for batch_ids, batch_data in get_data():
-            new_db.add(batch_ids, batch_data)
+            new_db[batch_ids] = batch_data
         self.database = new_db
 
         # save the index
@@ -357,7 +363,7 @@ class FlexRetriever(LocalRetriever):
         if isinstance(self.database, LanceRetrieverDatabase):
             new_db = NaiveRetrieverDatabase()
             for batch_ids, batch_data in get_data():
-                new_db.add(batch_ids, batch_data)
+                new_db[batch_ids] = batch_data
             self.database = new_db
 
         # detach the indexes

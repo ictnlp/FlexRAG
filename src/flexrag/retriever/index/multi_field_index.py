@@ -97,6 +97,7 @@ class MultiFieldIndex:
                     for field in indexed_fields:
                         assert isinstance(item[field], str)
                         concat_str += f"{field}: {item[field]} "
+                    ctx_ids.append(context_id)
                     yield concat_str
                 else:
                     for field in indexed_fields:
