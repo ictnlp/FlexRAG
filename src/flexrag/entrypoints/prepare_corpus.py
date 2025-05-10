@@ -5,7 +5,7 @@ from glob import glob
 
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import MISSING, OmegaConf
+from omegaconf import MISSING
 
 from flexrag.chunking import CHUNKERS, ChunkerConfig
 from flexrag.common_dataclass import Context

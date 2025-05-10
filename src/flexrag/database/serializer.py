@@ -1,0 +1,147 @@
+import json
+import pickle
+from abc import ABC, abstractmethod
+from typing import Any
+
+import numpy as np
+from omegaconf import DictConfig, ListConfig, OmegaConf
+from PIL import Image
+
+from flexrag.utils import Register
+
+
+class SerializerBase(ABC):
+    """A simple interface for serializing and deserializing python objects."""
+
+    @abstractmethod
+    def serialize(self, obj: Any) -> bytes:
+        """Serialize the object into bytes.
+
+        :param obj: The object to serialize.
+        :type obj: Any
+        :return: The serialized object.
+        :rtype: bytes
+        """
+        return
+
+    @abstractmethod
+    def deserialize(self, data: bytes) -> Any:
+        """Deserialize the bytes into an object.
+
+        :param data: The serialized object.
+        :type data: bytes
+        :return: The deserialized object.
+        :rtype: Any
+        """
+        return
+
+
+SERIALIZERS = Register[SerializerBase]("serializer")
+
+
+@SERIALIZERS("pickle")
+class PickleSerializer(SerializerBase):
+    """A serializer that uses the pickle module.
+
+    PickleSerializer supports almost all python objects.
+    However, it is not safe for loading untrusted data.
+    """
+
+    def serialize(self, obj: Any) -> bytes:
+        return pickle.dumps(obj)
+
+    def deserialize(self, data: bytes) -> Any:
+        return pickle.loads(data)
+
+
+@SERIALIZERS("json")
+class JsonSerializer(SerializerBase):
+    """A serializer that uses the json module.
+
+    JsonSerializer supports basic types, including:
+    str, int, float, bool, list, dict.
+    """
+
+    def serialize(self, obj: Any) -> bytes:
+        return json.dumps(obj).encode("utf-8")
+
+    def deserialize(self, data: bytes) -> Any:
+        return json.loads(data.decode("utf-8"))
+
+
+@SERIALIZERS("msgpack")
+class MsgpackSerializer(SerializerBase):
+    """A serializer that uses the msgpack module.
+
+    MsgpackSerializer supports more types than JsonSerializer, including:
+    str, int, float, bool, list, set, dict, np.ndarray, np.generic, Image.Image,
+    omegaconf.DictConfig, and omegaconf.ListConfig.
+    """
+
+    def __init__(self) -> None:
+        try:
+            import msgpack
+
+            self.msgpack = msgpack
+        except ImportError:
+            raise ImportError("Please install msgpack using `pip install msgpack`.")
+        return
+
+    def serialize(self, obj: Any) -> bytes:
+        def extended_encode(obj):
+            if isinstance(obj, set):
+                return {
+                    "__type__": "set",
+                    "data": list(obj),
+                }
+            elif isinstance(obj, np.ndarray):
+                return {
+                    "__type__": "np_ndarray",
+                    "dtype": obj.dtype.name,
+                    "shape": obj.shape,
+                    "data": obj.tobytes(),
+                }
+            elif isinstance(obj, np.generic):
+                return {
+                    "__type__": "np_generic",
+                    "dtype": obj.dtype.name,
+                    "data": obj.tobytes(),
+                }
+            elif isinstance(obj, Image.Image):
+                return {
+                    "__type__": "pillow_image",
+                    "mode": obj.mode,
+                    "size": obj.size,
+                    "data": obj.tobytes(),
+                }
+            elif isinstance(obj, (DictConfig, ListConfig)):
+                return {
+                    "__type__": "omegaconf_config",
+                    "data": OmegaConf.to_container(obj, resolve=True),
+                }
+            return obj
+
+        return self.msgpack.packb(obj, use_bin_type=True, default=extended_encode)
+
+    def deserialize(self, data: bytes) -> Any:
+        def extended_decode(obj):
+            if "__type__" not in obj:
+                return obj
+            if obj["__type__"] == "set":
+                return set(obj["data"])
+            elif obj["__type__"] == "np_ndarray":
+                return np.frombuffer(obj["data"], dtype=np.dtype(obj["dtype"])).reshape(
+                    obj["shape"]
+                )
+            elif obj["__type__"] == "np_generic":
+                return np.frombuffer(obj["data"], dtype=np.dtype(obj["dtype"])).item()
+            elif obj["__type__"] == "pillow_image":
+                return Image.frombytes(obj["mode"], obj["size"], obj["data"])
+            elif obj["__type__"] == "omegaconf_config":
+                return OmegaConf.create(obj["data"])
+            return obj
+
+        return self.msgpack.unpackb(data, raw=False, object_hook=extended_decode)
+
+
+SerializerConfig = SERIALIZERS.make_config(default="msgpack")

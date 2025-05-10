@@ -10,14 +10,6 @@ import numpy as np
 from huggingface_hub import HfApi
 from omegaconf import DictConfig, OmegaConf
 
-from flexrag.cache import (
-    FIFOPersistentCache,
-    LFUPersistentCache,
-    LMDBBackendConfig,
-    LRUPersistentCache,
-    PersistentCacheBase,
-    PersistentCacheConfig,
-)
 from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import (
@@ -25,6 +17,7 @@ from flexrag.utils import (
     FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
     ConfigureBase,
+    LRUPersistentCache,
     Register,
     SimpleProgressLogger,
 )
@@ -33,29 +26,18 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retrievers")
 
 
 # load cache for retrieval
-RETRIEVAL_CACHE: PersistentCacheBase | None
+RETRIEVAL_CACHE: LRUPersistentCache | None
 if os.environ.get("DISABLE_CACHE", "False") == "True":
     RETRIEVAL_CACHE = None
 else:
-    cache_config = PersistentCacheConfig(
-        maxsize=10000000,
-        storage_backend_type=os.environ.get("CACHE_BACKEND", "dict"),
-        lmdb_config=LMDBBackendConfig(
-            db_path=os.path.join(FLEXRAG_CACHE_DIR, "cache.lmdb")
-        ),
+    cache_size = os.environ.get("CACHE_SIZE", None)
+    cache_path = os.environ.get(
+        "CACHE_PATH", os.path.join(FLEXRAG_CACHE_DIR, "retrieval_cache")
     )
-    match os.environ.get("RETRIEVAL_CACHE_TYPE", "FIFO"):
-        case "LRU":
-            RETRIEVAL_CACHE = LRUPersistentCache(cache_config)
-        case "LFU":
-            RETRIEVAL_CACHE = LFUPersistentCache(cache_config)
-        case "FIFO":
-            RETRIEVAL_CACHE = FIFOPersistentCache(cache_config)
-        case _:
-            logger.warning("Invalid cache type, cache is disabled.")
-            RETRIEVAL_CACHE = None
+    RETRIEVAL_CACHE = LRUPersistentCache(maxsize=cache_size, cache_path=cache_path)
 
 
+# TODO: fix this
 def batched_cache(func):
     """The helper function to cache the retrieval results in batch.
     You can use this function to decorate the `search` method of the retriever class to cache the retrieval results in batch.

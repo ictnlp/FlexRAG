@@ -1,9 +1,9 @@
 from .databsae_base import RetrieverDatabaseBase
-from .lance_database import LanceRetrieverDatabase
+from .lmdb_database import LMDBRetrieverDatabase
 from .naive_database import NaiveRetrieverDatabase
 
 __all__ = [
     "RetrieverDatabaseBase",
     "NaiveRetrieverDatabase",
-    "LanceRetrieverDatabase",
+    "LMDBRetrieverDatabase",
 ]

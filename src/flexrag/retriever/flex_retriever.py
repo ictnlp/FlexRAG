@@ -8,6 +8,11 @@ from jinja2 import Template
 from omegaconf import OmegaConf
 
 from flexrag.common_dataclass import Context, RetrievedContext
+from flexrag.database import (
+    LMDBRetrieverDatabase,
+    NaiveRetrieverDatabase,
+    RetrieverDatabaseBase,
+)
 from flexrag.utils import (
     __VERSION__,
     LOGGER_MANAGER,
@@ -16,11 +21,6 @@ from flexrag.utils import (
     SimpleProgressLogger,
 )
 
-from .database import (
-    LanceRetrieverDatabase,
-    NaiveRetrieverDatabase,
-    RetrieverDatabaseBase,
-)
 from .index import (
     RETRIEVER_INDEX,
     MultiFieldIndex,
@@ -144,8 +144,8 @@ class FlexRetriever(LocalRetriever):
             p_logger.update(step=len(batch), desc="Adding passages")
 
         # defragment
-        if isinstance(self.database, LanceRetrieverDatabase):
-            self.database.defragment()
+        # if isinstance(self.database, LanceRetrieverDatabase):
+        #     self.database.defragment()
 
         # update the indexes
         self._update_index(context_ids)
@@ -155,9 +155,11 @@ class FlexRetriever(LocalRetriever):
     @TIME_METER("flex_retriever", "search")
     def search(
         self,
-        query: list[str],
+        query: list[str] | str,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
+        if isinstance(query, str):
+            query = [query]
         top_k = search_kwargs.pop("top_k", self.cfg.top_k)
         merge_method = search_kwargs.pop(
             "indexes_merge_method", self.cfg.indexes_merge_method
@@ -204,15 +206,15 @@ class FlexRetriever(LocalRetriever):
             zip(query, merged_scores, merged_ids)
         ):
             results.append([])
-            for j, (s, idx) in enumerate(zip(score, context_id)):
-                data = self.database[idx]
+            ctxs = self.database[context_id]
+            for j, (s, ctx_id, ctx) in enumerate(zip(score, context_id, ctxs)):
                 results[-1].append(
                     RetrievedContext(
-                        context_id=idx,
+                        context_id=ctx_id,
                         retriever="FlexRetriever",
                         query=q,
                         score=float(s),
-                        data=data,
+                        data=ctx,
                     )
                 )
         return results
@@ -312,7 +314,7 @@ class FlexRetriever(LocalRetriever):
             assert retriever_path is not None, "`retriever_path` is not set."
             self.cfg.retriever_path = retriever_path
         if not os.path.exists(retriever_path):
-            self._init_retriever_path(retriever_path)
+            self._check_retriever_path(retriever_path)
         logger.info(f"Serializing retriever to {retriever_path}")
 
         # save the database
@@ -333,7 +335,7 @@ class FlexRetriever(LocalRetriever):
                 yield batch_ids, batch_data
             return
 
-        new_db = LanceRetrieverDatabase(os.path.join(retriever_path, "database.lance"))
+        new_db = LMDBRetrieverDatabase(os.path.join(retriever_path, "database.lmdb"))
         for batch_ids, batch_data in get_data():
             new_db[batch_ids] = batch_data
         self.database = new_db
@@ -360,7 +362,7 @@ class FlexRetriever(LocalRetriever):
             return
 
         # detach the database
-        if isinstance(self.database, LanceRetrieverDatabase):
+        if isinstance(self.database, LMDBRetrieverDatabase):
             new_db = NaiveRetrieverDatabase()
             for batch_ids, batch_data in get_data():
                 new_db[batch_ids] = batch_data
@@ -392,8 +394,8 @@ class FlexRetriever(LocalRetriever):
 
     def _load_database(self) -> RetrieverDatabaseBase:
         if self.cfg.retriever_path is not None:
-            database_path = os.path.join(self.cfg.retriever_path, "database.lance")
-            database = LanceRetrieverDatabase(database_path)
+            database_path = os.path.join(self.cfg.retriever_path, "database.lmdb")
+            database = LMDBRetrieverDatabase(database_path)
         else:
             database = NaiveRetrieverDatabase()
         return database
@@ -414,30 +416,32 @@ class FlexRetriever(LocalRetriever):
 
     def _check_consistency(self) -> None:
         if self.cfg.retriever_path is not None:
-            if not os.path.exists(self.cfg.retriever_path):
-                self._init_retriever_path(self.cfg.retriever_path)
+            self._check_retriever_path(self.cfg.retriever_path)
         for index_name, index in self.index_table.items():
             assert len(index) == len(self.database), "Index and database size mismatch"
         return
 
-    def _init_retriever_path(self, retriever_path: str) -> None:
+    def _check_retriever_path(self, retriever_path: str) -> None:
         if not os.path.exists(retriever_path):
             os.makedirs(retriever_path)
 
         # save the retriever card
-        retriever_card = RETRIEVER_CARD_TEMPLATE.render(
-            retriever_type=self.__class__.__name__,
-            version=__VERSION__,
-            repo_path=self.cfg.retriever_path,
-        )
         card_path = os.path.join(retriever_path, "README.md")
-        with open(card_path, "w", encoding="utf-8") as f:
-            f.write(retriever_card)
+        if not os.path.exists(card_path):
+            retriever_card = RETRIEVER_CARD_TEMPLATE.render(
+                retriever_type=self.__class__.__name__,
+                version=__VERSION__,
+                repo_path=self.cfg.retriever_path,
+            )
+            with open(card_path, "w", encoding="utf-8") as f:
+                f.write(retriever_card)
 
         # save the configuration
         cfg_path = os.path.join(retriever_path, "config.yaml")
-        with open(cfg_path, "w", encoding="utf-8") as f:
-            OmegaConf.save(self.cfg, f)
+        if not os.path.exists(cfg_path):
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                OmegaConf.save(self.cfg, f)
         id_path = os.path.join(retriever_path, "cls.id")
-        with open(id_path, "w", encoding="utf-8") as f:
-            f.write(self.__class__.__name__)
+        if not os.path.exists(id_path):
+            with open(id_path, "w", encoding="utf-8") as f:
+                f.write(self.__class__.__name__)

@@ -16,7 +16,6 @@ class RetrieverDatabaseBase(MutableMapping[str, dict]):
         * __iter__: Iterate over the keys in the database.
         * __len__: Get the number of items in the database.
         * fields: Get the fields of the database.
-        * ids: Get the IDs of the items in the database.
     """
 
     def set(self, ids: list[str] | str, data: list[dict] | dict) -> None:
