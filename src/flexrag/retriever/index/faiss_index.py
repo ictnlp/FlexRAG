@@ -18,31 +18,37 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retriever.index.faiss")
 class FaissIndexConfig(DenseIndexBaseConfig):
     """The configuration for the `FaissIndex`.
 
-    :param index_type: The type of the index. Defaults to "auto".
+    :param index_type: Building param: the type of the index. Defaults to "auto".
         available choices are "FLAT", "IVF", "PQ", "IVFPQ", and "auto".
         If set to "auto", the index will be set to "IVF{n_list},PQ{embedding_size//2}x4fs".
     :type index_type: str
-    :param n_subquantizers: The number of subquantizers. Defaults to 8.
+    :param n_subquantizers: Building param: the number of subquantizers. Defaults to 8.
+        This parameter is only used when the index type is "PQ" or "IVFPQ".
     :type n_subquantizers: int
-    :param n_bits: The number of bits per subquantizer. Defaults to 8.
+    :param n_bits: Building param: the number of bits per subquantizer. Defaults to 8.
+        This parameter is only used when the index type is "PQ" or "IVFPQ".
     :type n_bits: int
-    :param n_list: The number of cells. Defaults to 1000.
+    :param n_list: Building param: the number of cells. Defaults to 1000.
+        This parameter is only used when the index type is "IVF" or "IVFPQ".
     :type n_list: int
-    :param factory_str: The factory string to build the index. Defaults to None.
+    :param factory_str: Building param: the factory string to build the index. Defaults to None.
         If set, the `index_type` will be ignored.
     :type factory_str: Optional[str]
-    :param index_train_num: The number of data used to train the index. Defaults to 1000000.
+    :param index_train_num: Building param: the number of data used to train the index. Defaults to -1.
+        If set to -1, all data will be used to train the index.
     :type index_train_num: int
-    :param n_probe: The number of probes. Defaults to 32.
-    :type n_probe: int
-    :param device_id: The device id to use. Defaults to [].
+    :param n_probe: Inference param: the number of probes. Defaults to None.
+        If not set, the number of probes will be set to `n_list // 8`.
+        This parameter is only used when the index type is "IVF" or "IVFPQ".
+    :type n_probe: Optional[int]
+    :param device_id: Inference param: the device(s) to use. Defaults to [].
         [] means CPU. If set, the index will be accelerated with GPU.
     :type device_id: list[int]
-    :param k_factor: The k factor for search. Defaults to 10.
+    :param k_factor: Inference param: the k factor for search. Defaults to 10.
     :type k_factor: int
-    :param polysemous_ht: The polysemous hash table. Defaults to 0.
+    :param polysemous_ht: Inference param: the polysemous hash table. Defaults to 0.
     :type polysemous_ht: int
-    :param efSearch: The efSearch for HNSW. Defaults to 100.
+    :param efSearch: Inference param: the efSearch for HNSW. Defaults to 100.
     :type efSearch: int
     """
 
@@ -51,9 +57,9 @@ class FaissIndexConfig(DenseIndexBaseConfig):
     n_bits: int = 8
     n_list: int = 1000
     factory_str: Optional[str] = None
-    index_train_num: int = 1000000
+    index_train_num: int = -1
     # Inference Arguments
-    n_probe: int = 32
+    n_probe: Optional[int] = None
     device_id: list[int] = field(default_factory=list)
     k_factor: int = 10
     polysemous_ht: int = 0
@@ -67,6 +73,8 @@ class FaissIndex(DenseIndexBase):
     FaissIndex supports various index types, including FLAT, IVF, PQ, IVFPQ, and auto.
     FaissIndex provides a flexible and efficient way to build and search indexes with embeddings.
     """
+
+    cfg: FaissIndexConfig
 
     def __init__(self, cfg: FaissIndexConfig) -> None:
         super().__init__(cfg)
@@ -215,6 +223,8 @@ class FaissIndex(DenseIndexBase):
         # set search kwargs
         k_factor = kwargs.get("k_factor", self.cfg.k_factor)
         n_probe = kwargs.get("n_probe", self.cfg.n_probe)
+        if n_probe is None:
+            n_probe = getattr(self.index, "nlist", 256) // 8
         polysemous_ht = kwargs.get("polysemous_ht", self.cfg.polysemous_ht)
         efSearch = kwargs.get("efSearch", self.cfg.efSearch)
 
