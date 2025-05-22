@@ -392,3 +392,11 @@ class MultiFieldIndex:
     def __len__(self) -> int:
         """Get the number of indexed contexts."""
         return len(self.context_id_to_index)
+
+    @property
+    def infimum(self) -> float:
+        return self.index.infimum
+
+    @property
+    def supremum(self) -> float:
+        return self.index.supremum

@@ -161,3 +161,11 @@ class BM25Index(RetrieverIndexBase):
         if hasattr(self.index, "scores"):
             return self.index.scores.get("num_docs", 0)
         return 0
+
+    @property
+    def infimum(self) -> float:
+        return 0.0
+
+    @property
+    def supremum(self) -> float:
+        return float("inf")

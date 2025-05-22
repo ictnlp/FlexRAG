@@ -249,6 +249,18 @@ class RetrieverIndexBase(ABC):
         """Return the number of data in the index."""
         return
 
+    @property
+    @abstractmethod
+    def infimum(self) -> float:
+        """Return the infimum of the similarity scores for the index."""
+        return
+
+    @property
+    @abstractmethod
+    def supremum(self) -> float:
+        """Return the supremum of the similarity scores for the index."""
+        return
+
 
 @dataclass
 class DenseIndexBaseConfig(RetrieverIndexBaseConfig):
@@ -471,6 +483,17 @@ class DenseIndexBase(RetrieverIndexBase):
                 "Please make sure loading the appropriate encoder when loading the retriever."
             )
         return
+
+    @property
+    def infimum(self) -> float:
+        return 0.0
+
+    @property
+    def supremum(self) -> float:
+        # For L2 distance, the supremum is infinity
+        # For IP distance, if the embedding is normalized, the supremum is 1.0.
+        # Otherwise, the supremum is infinity.
+        return float("inf")
 
 
 RETRIEVER_INDEX = Register[RetrieverIndexBase]("index")
