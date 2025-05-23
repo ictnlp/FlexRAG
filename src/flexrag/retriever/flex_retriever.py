@@ -198,9 +198,10 @@ class FlexRetriever(LocalRetriever):
                     # prepare merge weights
                     if self.cfg.indexes_merge_weights is not None:
                         assert len(self.cfg.indexes_merge_weights) == len(used_indexes)
-                        merge_weights = self.cfg.indexes_merge_weights / sum(
-                            self.cfg.indexes_merge_weights
-                        )
+                        merge_weights = [
+                            i / sum(self.cfg.indexes_merge_weights)
+                            for i in self.cfg.indexes_merge_weights
+                        ]
                     else:
                         merge_weights = [1.0 / len(all_scores)] * len(all_scores)
                     # recompute the scores according to the rank
