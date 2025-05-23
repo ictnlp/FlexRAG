@@ -87,15 +87,26 @@ class FlexRetrieverConfig(LocalRetrieverConfig):
     """Configuration class for FlexRetriever.
 
     :param indexes_merge_method: Method to merge the scores of multiple indexes.
-        Available choices are "max", "sum", and "mean".
+        Available choices are "rrf" and "linear". Default is "rrf".
+        * "rrf": Reciprocal Rank Fusion (RRF) method.
+        * "linear": Linear combination of the scores.
     :type indexes_merge_method: str
-    :param used_indexes: List of indexes to use for retrieval.
+    :param merge_weights: List of weights for each index. Default is None.
+        If None, all indexes will be treated equally.
+        This option is used in both "rrf" and "linear" methods.
+    :type merge_weights: Optional[list[float]]
+    :param used_indexes: List of indexes to use for retrieval. Default is None.
         If None, all indexes will be used.
-    :type used_indexes: list[str]
+    :type used_indexes: Optional[list[str]]
+    :param rrf_base: Base for the RRF method. Default is 60.
+        This option is only used when `indexes_merge_method` is "rrf".
+    :type rrf_base: int
     """
 
-    indexes_merge_method: Choices(["max", "sum", "mean"]) = "max"  # type: ignore
+    indexes_merge_method: Choices(["rrf", "linear"]) = "rrf"  # type: ignore
+    indexes_merge_weights: Optional[list[float]] = None
     used_indexes: Optional[list[str]] = None
+    rrf_base: int = 60
 
 
 @RETRIEVERS("flex", config_class=FlexRetrieverConfig)
@@ -143,10 +154,6 @@ class FlexRetriever(LocalRetriever):
             context_ids.extend(ids)
             p_logger.update(step=len(batch), desc="Adding passages")
 
-        # defragment
-        # if isinstance(self.database, LanceRetrieverDatabase):
-        #     self.database.defragment()
-
         # update the indexes
         self._update_index(context_ids)
         logger.info("Finished adding passages.")
@@ -161,9 +168,6 @@ class FlexRetriever(LocalRetriever):
         if isinstance(query, str):
             query = [query]
         top_k = search_kwargs.pop("top_k", self.cfg.top_k)
-        merge_method = search_kwargs.pop(
-            "indexes_merge_method", self.cfg.indexes_merge_method
-        )
         used_indexes = search_kwargs.pop("used_indexes", self.cfg.used_indexes)
         if used_indexes is None:
             used_indexes = list(self.index_table.keys())
@@ -180,25 +184,79 @@ class FlexRetriever(LocalRetriever):
             all_scores.append(r[1])
 
         # merge the indices and scores
-        merged_ids = []
-        merged_scores = []
-        for i in range(len(query)):
-            context_score_dict = defaultdict(list)
-            for ctx_ids, scores in zip(all_context_ids, all_scores):
-                for ctx_id, score in zip(ctx_ids[i], scores[i]):
-                    context_score_dict[ctx_id].append(score)
+        merged_ids: list[list[str]] = []
+        merged_scores: list[list[float]] = []
+        if len(all_scores) == 1:  # only one index is activated
+            merged_scores = all_scores[0].tolist()
+            merged_ids = all_context_ids[0]
+        else:  # merge multiple indexes
+            merge_method = search_kwargs.pop(
+                "indexes_merge_method", self.cfg.indexes_merge_method
+            )
             match merge_method:
-                case "max":
-                    key_func = lambda x: -max(x[1])
-                case "mean":
-                    key_func = lambda x: -sum(x[1]) / len(x[1])
-                case "sum":
-                    key_func = lambda x: -sum(x[1])
+                case "rrf":
+                    # prepare merge weights
+                    if self.cfg.indexes_merge_weights is not None:
+                        assert len(self.cfg.indexes_merge_weights) == len(used_indexes)
+                        merge_weights = self.cfg.indexes_merge_weights / sum(
+                            self.cfg.indexes_merge_weights
+                        )
+                    else:
+                        merge_weights = [1.0 / len(all_scores)] * len(all_scores)
+                    # recompute the scores according to the rank
+                    for i in range(len(query)):
+                        scores_dict = defaultdict(float)
+                        for ctx_ids, scores, merge_weight in zip(
+                            all_context_ids, all_scores, merge_weights
+                        ):
+                            sort_ranks = scores[i].argsort()[::-1] + 1
+                            for ctx_id, rank in zip(ctx_ids[i], sort_ranks):
+                                scores_dict[ctx_id] += merge_weight / (
+                                    rank + self.cfg.rrf_base
+                                )
+                        sorted_items = sorted(scores_dict.items(), key=lambda x: -x[1])
+                        merged_ids.append([item[0] for item in sorted_items][:top_k])
+                        merged_scores.append([item[1] for item in sorted_items][:top_k])
+                case "linear":
+                    # prepare merge weights
+                    if self.cfg.indexes_merge_weights is not None:
+                        assert len(self.cfg.indexes_merge_weights) == len(used_indexes)
+                        merge_weights = self.cfg.indexes_merge_weights / sum(
+                            self.cfg.indexes_merge_weights
+                        )
+                    else:
+                        merge_weights = [1.0 / len(all_scores)] * len(all_scores)
+                    # According to "An Analysis of Fusion Functions for Hybrid Retrieval",
+                    # we employ the TMM normalization method to normalize the scores.
+                    if any(
+                        self.index_table[index_name].infimum == float("-inf")
+                        for index_name in used_indexes
+                    ):
+                        use_infimum = False
+                    else:
+                        use_infimum = True
+                    for n in range(len(used_indexes)):
+                        index_name = used_indexes[n]
+                        if use_infimum:
+                            infimum = self.index_table[index_name].infimum
+                        else:
+                            infimum = all_scores[n].min(axis=1, keepdims=True)
+                        all_scores[n] = (all_scores[n] - infimum) / (
+                            all_scores[n].max(axis=1, keepdims=True) - infimum
+                        )
+                    # merge the scores
+                    for i in range(len(query)):
+                        scores_dict = defaultdict(float)
+                        for ctx_ids, scores, merge_weight in zip(
+                            all_context_ids, all_scores, merge_weights
+                        ):
+                            for ctx_id, score in zip(ctx_ids[i], scores[i]):
+                                scores_dict[ctx_id] += score * merge_weight
+                        sorted_items = sorted(scores_dict.items(), key=lambda x: -x[1])
+                        merged_ids.append([item[0] for item in sorted_items][:top_k])
+                        merged_scores.append([item[1] for item in sorted_items][:top_k])
                 case _:
                     raise ValueError(f"Unknown merge method: {merge_method}")
-            sorted_items = sorted(context_score_dict.items(), key=key_func)[:top_k]
-            merged_ids.append([item[0] for item in sorted_items])
-            merged_scores.append([key_func(item) for item in sorted_items])
 
         # form the final results
         results: list[list[RetrievedContext]] = []

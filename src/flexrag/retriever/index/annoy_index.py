@@ -67,6 +67,8 @@ class AnnoyIndex(DenseIndexBase):
         match self.cfg.distance_function:
             case "IP":
                 self.index = partial(self.ann, metric="dot")
+            case "COS":
+                self.index = partial(self.ann, metric="dot")
             case "L2":
                 self.index = partial(self.ann, metric="euclidean")
             case _:

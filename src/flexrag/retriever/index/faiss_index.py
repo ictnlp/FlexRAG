@@ -132,6 +132,9 @@ class FaissIndex(DenseIndexBase):
             case "IP":
                 basic_index = faiss.IndexFlatIP(embedding_size)
                 basic_metric = faiss.METRIC_INNER_PRODUCT
+            case "COS":
+                basic_index = faiss.IndexFlatIP(embedding_size)
+                basic_metric = faiss.METRIC_INNER_PRODUCT
             case "L2":
                 basic_index = faiss.IndexFlatL2(embedding_size)
                 basic_metric = faiss.METRIC_L2

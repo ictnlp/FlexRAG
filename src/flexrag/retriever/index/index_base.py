@@ -271,13 +271,13 @@ class DenseIndexBaseConfig(RetrieverIndexBaseConfig):
     :param passage_encoder_config: Configuration for the passage encoder. Default: None.
     :type passage_encoder_config: EncoderConfig
     :param distance_function: The distance function to use. Defaults to "IP".
-        available choices are "IP" and "L2".
+        available choices are "IP", "L2", and "COS.
     :type distance_function: str
     """
 
     query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
-    distance_function: Choices(["IP", "L2"]) = "IP"  # type: ignore
+    distance_function: Choices(["IP", "L2", "COS"]) = "IP"  # type: ignore
 
 
 class DenseIndexBase(RetrieverIndexBase):
@@ -486,13 +486,18 @@ class DenseIndexBase(RetrieverIndexBase):
 
     @property
     def infimum(self) -> float:
+        # For L2 distance, the infimum is 0.0
+        # For IP distance, the infimum is -infinity
+        # For COS distance, the infimum is -1.0
         return 0.0
 
     @property
     def supremum(self) -> float:
         # For L2 distance, the supremum is infinity
-        # For IP distance, if the embedding is normalized, the supremum is 1.0.
-        # Otherwise, the supremum is infinity.
+        # For IP distance, the supremum is infinity
+        # For COS distance, the supremum is 1.0
+        if self.distance_function == "COS":
+            return 1.0
         return float("inf")
 
 

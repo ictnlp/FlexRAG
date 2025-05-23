@@ -88,6 +88,8 @@ class ScaNNIndex(DenseIndexBase):
         # prepare arguments
         if self.cfg.distance_function == "IP":
             distance_measure = "dot_product"
+        elif self.cfg.distance_function == "COS":
+            distance_measure = "dot_product"
         else:
             distance_measure = "squared_l2"
         train_num = (
