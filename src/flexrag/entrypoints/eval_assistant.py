@@ -32,7 +32,7 @@ AssistantConfig = ASSISTANTS.make_config()
 
 @configure
 class Config(AssistantConfig, RAGEvalDatasetConfig):
-    eval_config: EvaluatorConfig = field(default_factory=EvaluatorConfig)  # fmt: skip
+    eval_config: EvaluatorConfig = field(default_factory=EvaluatorConfig)
     log_interval: int = 10
     output_path: Optional[str] = None
 

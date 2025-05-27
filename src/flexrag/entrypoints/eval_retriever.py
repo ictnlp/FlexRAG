@@ -1,4 +1,3 @@
-import json
 import logging
 import os
 import sys
@@ -9,6 +8,7 @@ import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 
+from flexrag.database.serializer import json_dump
 from flexrag.datasets import MTEBDataset, MTEBDatasetConfig
 from flexrag.metrics import Evaluator, EvaluatorConfig
 from flexrag.retriever import RETRIEVERS
@@ -32,7 +32,7 @@ RetrieverConfig = RETRIEVERS.make_config(config_name="RetrieverConfig")
 @configure
 class Config(RetrieverConfig, MTEBDatasetConfig):
     output_path: Optional[str] = None
-    eval_config: EvaluatorConfig = field(default_factory=EvaluatorConfig)  # fmt: skip
+    eval_config: EvaluatorConfig = field(default_factory=EvaluatorConfig)
     log_interval: int = 10
 
 
@@ -81,17 +81,18 @@ def main(config: Config):
             goldens.append(item.contexts)
             ctxs = retriever.search(query=item.question)[0]
             retrieved.append(ctxs)
-            json.dump(
-                {
-                    "question": item.question,
-                    "golden_contexts": item.contexts,
-                    "metadata": item.meta_data,
-                    "contexts": ctxs,
-                },
-                f,
-                ensure_ascii=False,
+            f.write(
+                json_dump(
+                    {
+                        "question": item.question,
+                        "golden_contexts": item.contexts,
+                        "metadata": item.meta_data,
+                        "contexts": ctxs,
+                    },
+                    ensure_ascii=False,
+                )
+                + "\n"
             )
-            f.write("\n")
             p_logger.update(desc="Searching")
 
     # evaluate
@@ -103,14 +104,15 @@ def main(config: Config):
         log=True,
     )
     with open(eval_score_path, "w", encoding="utf-8") as f:
-        json.dump(
-            {
-                "eval_scores": resp_score,
-                "eval_details": resp_score_detail,
-            },
-            f,
-            indent=4,
-            ensure_ascii=False,
+        f.write(
+            json_dump(
+                {
+                    "eval_scores": resp_score,
+                    "eval_details": resp_score_detail,
+                },
+                indent=4,
+                ensure_ascii=False,
+            )
         )
     return
 

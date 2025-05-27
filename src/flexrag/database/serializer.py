@@ -119,6 +119,8 @@ def json_dump(
     **kwargs,
 ) -> bytes | str:
     """A shortcut for serialize the object into JSON format.
+    This function extends the json.dumps function to support
+    additional types such as DictConfig and ListConfig.
 
     :param obj: The object to serialize.
     :type obj: Any
