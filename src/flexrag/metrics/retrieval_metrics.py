@@ -77,6 +77,7 @@ class SuccessRate(MetricsBase):
                 ctxs = [ctx["data"][self.eval_field] for ctx in ctxs]
             if self.simplifier is not None:
                 ctxs = [self.simplifier(ctx) for ctx in ctxs]
+                golds = [self.simplifier(gold) for gold in golds]
             rel_map = get_contain_map_py(golds, ctxs)
             is_success = any(sum(rel_map, []))
             success_map.append(is_success)
