@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 
 import pytrec_eval
 
-from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
+from flexrag.text_process import AnswerSimplifier
 from flexrag.utils import TIME_METER, Choices, configure
 from flexrag.utils.dataclasses import Context, RetrievedContext
 
@@ -37,12 +37,12 @@ class SuccessRateConfig:
     :param eval_field: The field to evaluate. Defaults to None.
         If None, only strings are supported as the `retrieved_contexts`.
     :type eval_field: Optional[str]
-    :param context_preprocess: The preprocessing pipeline for the context. Defaults to TextProcessPipelineConfig.
-    :type context_preprocess: TextProcessPipelineConfig
+    :param simplify: Whether to simplify the retrieved contexts. Defaults to True.
+    :type simplify: bool
     """
 
     eval_field: Optional[str] = None
-    context_preprocess: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
+    simplify: bool = True
 
 
 @METRICS("retrieval_success_rate", config_class=SuccessRateConfig)
@@ -51,7 +51,10 @@ class SuccessRate(MetricsBase):
 
     def __init__(self, cfg: SuccessRateConfig) -> None:
         self.eval_field = cfg.eval_field
-        self.context_pipeline = TextProcessPipeline(cfg.context_preprocess)
+        if cfg.simplify:
+            self.simplifier = AnswerSimplifier()
+        else:
+            self.simplifier = None
         return
 
     @TIME_METER("metrics.retrieval_success_rate")
@@ -72,7 +75,8 @@ class SuccessRate(MetricsBase):
                 ctxs = [ctx.data[self.eval_field] for ctx in ctxs]
             if isinstance(ctxs[0], dict):
                 ctxs = [ctx["data"][self.eval_field] for ctx in ctxs]
-            ctxs = [self.context_pipeline(ctx) for ctx in ctxs]
+            if self.simplifier is not None:
+                ctxs = [self.simplifier(ctx) for ctx in ctxs]
             rel_map = get_contain_map_py(golds, ctxs)
             is_success = any(sum(rel_map, []))
             success_map.append(is_success)

@@ -7,6 +7,7 @@ from flexrag.utils.dataclasses import Context, RetrievedContext
 class MetricsBase(ABC):
     def __call__(
         self,
+        *,
         questions: list[str] = None,
         responses: list[str] = None,
         golden_responses: list[list[str | Context]] = None,

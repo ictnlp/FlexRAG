@@ -1,13 +1,32 @@
 from abc import abstractmethod
 from collections import Counter
 
-from flexrag.utils import TIME_METER
+from flexrag.text_process import AnswerSimplifier
+from flexrag.utils import TIME_METER, configure
 
 from .metrics_base import METRICS, MetricsBase
 
 
+@configure
+class MatchingMetricsConfig:
+    """Configuration class for MatchingMetrics.
+
+    :param simplify: Whether to simplify the answer before computing the matching score. Defaults to True.
+    :type simplify: bool
+    """
+
+    simplify: bool = True
+
+
 class MatchingMetrics(MetricsBase):
     name: str
+
+    def __init__(self, cfg: MatchingMetricsConfig) -> None:
+        if cfg.simplify:
+            self.simplifier = AnswerSimplifier()
+        else:
+            self.simplifier = None
+        return
 
     @abstractmethod
     def compute_item(self, golds: list[str], response: str) -> float:
@@ -17,6 +36,11 @@ class MatchingMetrics(MetricsBase):
     def compute(
         self, responses: list[str], golden_responses: list[list[str]], **kwargs
     ) -> tuple[float, dict[str, list[float]]]:
+        if self.simplifier is not None:
+            responses = [self.simplifier(response) for response in responses]
+            golden_responses = [
+                [self.simplifier(gold) for gold in golds] for golds in golden_responses
+            ]
         matching_list = []
         for golds, response in zip(golden_responses, responses):
             matching_list.append(self.compute_item(golds, response))
@@ -24,7 +48,11 @@ class MatchingMetrics(MetricsBase):
         return {self.name: matching_score}, {"item_score": matching_list}
 
 
-@METRICS("generation_em")
+ExactMatchConfig = MatchingMetricsConfig
+AccuracyConfig = MatchingMetricsConfig
+
+
+@METRICS("generation_em", config_class=ExactMatchConfig)
 class ExactMatch(MatchingMetrics):
     """ExactMatch metric computes if any of the golden responses is exactly the same as the predicted response."""
 
@@ -34,7 +62,7 @@ class ExactMatch(MatchingMetrics):
         return float(response in golds)
 
 
-@METRICS("generation_accuracy")
+@METRICS("generation_accuracy", config_class=AccuracyConfig)
 class Accuracy(MatchingMetrics):
     """Accuracy metric computes if any of the golden responses is in the predicted response."""
 
@@ -63,7 +91,12 @@ def f1_recall_precision(golds: list[str], response: str) -> tuple[float, float, 
     return f1, recall, precision
 
 
-@METRICS("generation_f1")
+F1Config = MatchingMetricsConfig
+RecallConfig = MatchingMetricsConfig
+PrecisionConfig = MatchingMetricsConfig
+
+
+@METRICS("generation_f1", config_class=F1Config)
 class F1(MatchingMetrics):
     """F1 metric computes the F1 score of the predicted response against the golden responses."""
 
@@ -73,7 +106,7 @@ class F1(MatchingMetrics):
         return f1_recall_precision(golds, response)[0]
 
 
-@METRICS("generation_recall")
+@METRICS("generation_recall", config_class=RecallConfig)
 class Recall(MatchingMetrics):
     """Recall metric computes the recall of the predicted response against the golden responses."""
 
@@ -83,7 +116,7 @@ class Recall(MatchingMetrics):
         return f1_recall_precision(golds, response)[1]
 
 
-@METRICS("generation_precision")
+@METRICS("generation_precision", config_class=PrecisionConfig)
 class Precision(MatchingMetrics):
     """Precision metric computes the precision of the predicted response against the golden responses."""
 
