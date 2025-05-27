@@ -1,7 +1,7 @@
 import os
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
-from typing import Any, Generator, Iterable, Optional
+from dataclasses import field
+from typing import Annotated, Any, Generator, Iterable, Optional
 from uuid import uuid4
 
 import numpy as np
@@ -14,16 +14,16 @@ from flexrag.utils import (
     LOGGER_MANAGER,
     TIME_METER,
     Choices,
-    ConfigureBase,
     Register,
     SimpleProgressLogger,
+    configure,
 )
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index")
 
 
-@dataclass
-class RetrieverIndexBaseConfig(ConfigureBase):
+@configure
+class RetrieverIndexBaseConfig:
     """The configuration for the `RetrieverIndexBase`.
 
     :log_interval: The interval to log the progress. Defaults to 10000.
@@ -262,7 +262,7 @@ class RetrieverIndexBase(ABC):
         return
 
 
-@dataclass
+@configure
 class DenseIndexBaseConfig(RetrieverIndexBaseConfig):
     """The configuration for the `DenseIndexBase`.
 
@@ -277,7 +277,7 @@ class DenseIndexBaseConfig(RetrieverIndexBaseConfig):
 
     query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
     passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
-    distance_function: Choices(["IP", "L2", "COS"]) = "IP"  # type: ignore
+    distance_function: Annotated[str, Choices("IP", "L2", "COS")] = "IP"
 
 
 class DenseIndexBase(RetrieverIndexBase):

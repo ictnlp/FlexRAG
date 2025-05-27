@@ -1,15 +1,15 @@
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from functools import partial
-from typing import Optional
+from typing import Literal, Optional
 
 from transformers import PreTrainedTokenizer
 
-from flexrag.utils import LOGGER_MANAGER, Choices
+from flexrag.utils import LOGGER_MANAGER
 
 from .prompt_base import ChatPrompt
 
-TRUNCATION_STRATEGIES = ["left", "right", "history", "demo", "auto"]
+# TRUNCATION_STRATEGIES = ["left", "right", "history", "demo", "auto"]
 
 
 logger = LOGGER_MANAGER.get_logger("flexrag.prompt")
@@ -29,7 +29,7 @@ class ChatTemplate(ABC):
         self,
         prompt: ChatPrompt,
         max_length: int = None,
-        truncation: Choices(TRUNCATION_STRATEGIES) = "auto",  # type: ignore
+        truncation: Literal["left", "right", "history", "demo", "auto"] = "auto",
         padding: bool = False,
         has_label: bool = False,
         add_generation_prompt: bool = True,
@@ -74,9 +74,8 @@ class HFTemplate(ChatTemplate):
         self,
         prompt: ChatPrompt,
         max_length: Optional[int] = None,
-        truncation: Choices(TRUNCATION_STRATEGIES) = "auto",  # type: ignore
+        truncation: Literal["left", "right", "history", "demo", "auto"] = "auto",
         padding: bool = False,
-        has_label: bool = False,  # TODO: support label(mask_input)
         add_generation_prompt: bool = True,
     ) -> list[int] | tuple[list[int], list[int]]:
         def _encode(

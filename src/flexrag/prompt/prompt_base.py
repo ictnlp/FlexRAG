@@ -1,18 +1,18 @@
 import base64
 import json
-from dataclasses import dataclass, field
+from dataclasses import field
 from io import BytesIO
 from os import PathLike
-from typing import Optional
+from typing import Annotated, Optional
 
 from PIL.Image import Image
 
-from flexrag.utils import Choices
+from flexrag.utils import Choices, data
 
 
-@dataclass
+@data
 class ChatTurn:
-    role: Choices(["user", "assistant", "system"])  # type: ignore
+    role: Annotated[str, Choices("user", "assistant", "system")]
     content: str
 
     def to_dict(self) -> dict[str, str]:
@@ -23,9 +23,9 @@ class ChatTurn:
         return cls(role=chat_turn["role"], content=chat_turn["content"])
 
 
-@dataclass
+@data
 class MultiModelChatTurn:
-    role: Choices(["user", "assistant", "system"])  # type: ignore
+    role: Annotated[str, Choices("user", "assistant", "system")]
     content: list[dict[str, str | Image]] | str
 
     def to_dict(self, encode_img: bool = True) -> dict[str, str | dict]:
@@ -74,7 +74,7 @@ class MultiModelChatTurn:
         return cls(role=chat_turn["role"], content=chat_turn["content"])
 
 
-@dataclass
+@data
 class ChatPrompt:
     system: Optional[ChatTurn] = None
     history: list[ChatTurn] = field(default_factory=list)
@@ -191,7 +191,7 @@ class ChatPrompt:
         return system_num + history_num + demo_num
 
 
-@dataclass
+@data
 class MultiModelChatPrompt:
     """
     This class shares almost all the methods with ChatPrompt.

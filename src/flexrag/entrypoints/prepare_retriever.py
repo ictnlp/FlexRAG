@@ -1,4 +1,5 @@
-from dataclasses import dataclass, field
+from dataclasses import field
+from typing import Annotated
 
 import hydra
 from hydra.core.config_store import ConfigStore
@@ -12,16 +13,16 @@ from flexrag.retriever import (
     TypesenseRetriever,
     TypesenseRetrieverConfig,
 )
-from flexrag.utils import LOGGER_MANAGER, Choices
+from flexrag.utils import LOGGER_MANAGER, Choices, configure
 
 logger = LOGGER_MANAGER.get_logger("flexrag.prepare_index")
 
 
 # fmt: off
-@dataclass
+@configure
 class Config(RAGCorpusDatasetConfig):
     # retriever configs
-    retriever_type: Choices(["flex", "elastic", "typesense"]) = "flex"  # type: ignore
+    retriever_type: Annotated[str, Choices("flex", "elastic", "typesense")] = "flex"
     flex_config: FlexRetrieverConfig = field(default_factory=FlexRetrieverConfig)
     elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)
     typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)

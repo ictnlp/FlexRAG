@@ -1,13 +1,11 @@
 import os
 import shutil
 from collections import defaultdict
-from dataclasses import dataclass
-from typing import Any, Generator, Iterable, Optional
+from typing import Annotated, Any, Generator, Iterable, Optional
 
 from jinja2 import Template
 from omegaconf import OmegaConf
 
-from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.database import (
     LMDBRetrieverDatabase,
     NaiveRetrieverDatabase,
@@ -19,7 +17,10 @@ from flexrag.utils import (
     TIME_METER,
     Choices,
     SimpleProgressLogger,
+    configure,
 )
+from flexrag.utils.configure import extract_config
+from flexrag.utils.dataclasses import Context, RetrievedContext
 
 from .index import (
     RETRIEVER_INDEX,
@@ -82,7 +83,7 @@ FlexRAG Related Links:
 )
 
 
-@dataclass
+@configure
 class FlexRetrieverConfig(LocalRetrieverConfig):
     """Configuration class for FlexRetriever.
 
@@ -103,7 +104,7 @@ class FlexRetrieverConfig(LocalRetrieverConfig):
     :type rrf_base: int
     """
 
-    indexes_merge_method: Choices(["rrf", "linear"]) = "rrf"  # type: ignore
+    indexes_merge_method: Annotated[str, Choices("rrf", "linear")] = "rrf"
     indexes_merge_weights: Optional[list[float]] = None
     used_indexes: Optional[list[str]] = None
     rrf_base: int = 60
@@ -119,7 +120,7 @@ class FlexRetriever(LocalRetriever):
 
     def __init__(self, cfg: FlexRetrieverConfig) -> None:
         super().__init__(cfg)
-        self.cfg = FlexRetrieverConfig.extract(cfg)
+        self.cfg = extract_config(cfg, FlexRetrieverConfig)
         # load the retriever if the retriever_path is set
         self.database = self._load_database()
         self.index_table = self._load_index()

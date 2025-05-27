@@ -1,21 +1,20 @@
-from dataclasses import dataclass
 from typing import Any
 
 from flexrag.chunking import CHUNKERS, ChunkerConfig
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.document_parser import DOCUMENTPARSERS, DocumentParserConfig
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.ranker import RANKERS, RankerConfig
 from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
-from flexrag.utils import LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, configure
+from flexrag.utils.dataclasses import RetrievedContext
 
 from .assistant import ASSISTANTS, AssistantBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant.modular")
 
 
-@dataclass
+@configure
 class DocumentChatAssistantConfig(
     GeneratorConfig,
     GenerationConfig,

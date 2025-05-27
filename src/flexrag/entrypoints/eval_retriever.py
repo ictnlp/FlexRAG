@@ -2,18 +2,23 @@ import json
 import logging
 import os
 import sys
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 
-from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.datasets import MTEBDataset, MTEBDatasetConfig
 from flexrag.metrics import Evaluator, EvaluatorConfig
 from flexrag.retriever import RETRIEVERS
-from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, load_user_module
+from flexrag.utils import (
+    LOGGER_MANAGER,
+    SimpleProgressLogger,
+    configure,
+    load_user_module,
+)
+from flexrag.utils.dataclasses import Context, RetrievedContext
 
 # load user modules before loading config
 for arg in sys.argv:
@@ -24,7 +29,7 @@ for arg in sys.argv:
 RetrieverConfig = RETRIEVERS.make_config(config_name="RetrieverConfig")
 
 
-@dataclass
+@configure
 class Config(RetrieverConfig, MTEBDatasetConfig):
     output_path: Optional[str] = None
     eval_config: EvaluatorConfig = field(default_factory=EvaluatorConfig)  # fmt: skip

@@ -1,17 +1,16 @@
 from copy import deepcopy
-from dataclasses import dataclass
 from typing import Optional
 
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.utils import LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, configure
 
 from .assistant import ASSISTANTS, AssistantBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant")
 
 
-@dataclass
+@configure
 class BasicAssistantConfig(GeneratorConfig, GenerationConfig):
     """The configuration for the basic assistant.
 

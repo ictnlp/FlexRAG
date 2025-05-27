@@ -1,17 +1,23 @@
-from dataclasses import dataclass
-from typing import Generator, Iterable
+from typing import Annotated, Generator, Iterable
 
 from omegaconf import MISSING
 
-from flexrag.common_dataclass import Context, RetrievedContext
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, SimpleProgressLogger
+from flexrag.utils import (
+    LOGGER_MANAGER,
+    TIME_METER,
+    Choices,
+    SimpleProgressLogger,
+    configure,
+)
+from flexrag.utils.configure import extract_config
+from flexrag.utils.dataclasses import Context, RetrievedContext
 
 from .retriever_base import RETRIEVERS, EditableRetriever, EditableRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.typesense")
 
 
-@dataclass
+@configure
 class TypesenseRetrieverConfig(EditableRetrieverConfig):
     """Configuration class for TypesenseRetriever.
 
@@ -32,7 +38,7 @@ class TypesenseRetrieverConfig(EditableRetrieverConfig):
 
     host: str = MISSING
     port: int = 8108
-    protocol: Choices(["https", "http"]) = "http"  # type: ignore
+    protocol: Annotated[str, Choices("https", "http")] = "http"
     api_key: str = MISSING
     index_name: str = MISSING
     timeout: float = 200.0
@@ -42,7 +48,7 @@ class TypesenseRetrieverConfig(EditableRetrieverConfig):
 class TypesenseRetriever(EditableRetriever):
     def __init__(self, cfg: TypesenseRetrieverConfig) -> None:
         super().__init__(cfg)
-        self.cfg = TypesenseRetrieverConfig.extract(cfg)
+        self.cfg = extract_config(cfg, TypesenseRetrieverConfig)
         import typesense
 
         # load database

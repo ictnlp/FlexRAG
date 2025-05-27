@@ -1,12 +1,12 @@
 import json
 import time
 from abc import abstractmethod
-from dataclasses import dataclass
 
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
-from flexrag.common_dataclass import RetrievedContext
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, configure
+from flexrag.utils.configure import extract_config
+from flexrag.utils.dataclasses import RetrievedContext
 
 from ..retriever_base import (
     RETRIEVERS,
@@ -30,7 +30,7 @@ def _save_error_state(retry_state: RetryCallState) -> Exception:
     raise retry_state.outcome.exception()
 
 
-@dataclass
+@configure
 class WebRetrieverBaseConfig(RetrieverBaseConfig):
     """The configuration for the ``WebRetrieverBase``.
 
@@ -107,7 +107,7 @@ class WebRetrieverBase(RetrieverBase):
         return
 
 
-@dataclass
+@configure
 class SimpleWebRetrieverConfig(
     WebRetrieverBaseConfig,
     WebReaderConfig,
@@ -123,7 +123,7 @@ class SimpleWebRetriever(WebRetrieverBase):
     def __init__(self, cfg: SimpleWebRetrieverConfig):
         super().__init__(cfg)
         # load the web page reader
-        self.cfg = SimpleWebRetrieverConfig.extract(cfg)
+        self.cfg = extract_config(cfg, SimpleWebRetrieverConfig)
         self.reader = WEB_READERS.load(cfg)
         assert self.reader is not None, "WebReader is not set."
 

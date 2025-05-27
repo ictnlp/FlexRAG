@@ -1,23 +1,23 @@
 import os
 from copy import deepcopy
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import field
+from typing import Annotated, Optional
 
 import httpx
 from omegaconf import MISSING
 
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import GenerationConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.utils import LOGGER_MANAGER, Choices, ConfigureBase
+from flexrag.utils import LOGGER_MANAGER, Choices, configure
+from flexrag.utils.dataclasses import RetrievedContext
 
 from .assistant import ASSISTANTS, AssistantBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant")
 
 
-@dataclass
-class JinaDeepSearchConfig(ConfigureBase):
+@configure
+class JinaDeepSearchConfig:
     """The configuration for the Jina DeepSearch Assistant.
 
     :param prompt_path: The path to the prompt file. Defaults to None.
@@ -45,7 +45,7 @@ class JinaDeepSearchConfig(ConfigureBase):
     base_url: str = "https://deepsearch.jina.ai/v1"
     api_key: str = os.getenv("JINA_API_KEY", MISSING)
     model: str = "jina-deepsearch-v1"
-    reasoning_effort: Choices(["low", "medium", "high"]) = "medium"  # type: ignore
+    reasoning_effort: Annotated[str, Choices("low", "medium", "high")] = "medium"
     proxy: Optional[str] = None
     timeout: int = 10
 
@@ -113,7 +113,7 @@ class JinaDeepSearch(AssistantBase):
         return
 
 
-@dataclass
+@configure
 class PerplexityAssistantConfig(GenerationConfig):
     """The configuration for the PerplexityAI Assistant.
 
@@ -145,7 +145,9 @@ class PerplexityAssistantConfig(GenerationConfig):
     api_key: str = os.environ.get("PERPLEXITY_API_KEY", MISSING)
     model: str = "sonar"
     search_domain_filter: list[str] = field(default_factory=list)
-    search_recency_filter: Optional[Choices(["month", "week", "day", "hour"])] = None  # type: ignore
+    search_recency_filter: Annotated[
+        str, Choices("month", "week", "day", "hour", "none")
+    ] = "none"
     proxy: Optional[str] = None
     timeout: int = 10
 
@@ -188,9 +190,9 @@ class PerplexityAssistant(AssistantBase):
             "presence_penalty": 0,
             "frequency_penalty": 1,
         }
-        if cfg.search_domain_filter is not None:
+        if len(cfg.search_domain_filter) > 0:
             self.data_template["search_domain_filter"] = cfg.search_domain_filter
-        if cfg.search_recency_filter is not None:
+        if cfg.search_recency_filter != "none":
             self.data_template["search_recency_filter"] = cfg.search_recency_filter
         return
 

@@ -1,17 +1,16 @@
 import asyncio
-from dataclasses import dataclass
 from typing import Optional
 
 import httpx
 import numpy as np
 from omegaconf import MISSING
 
-from flexrag.utils import TIME_METER
+from flexrag.utils import TIME_METER, configure
 
 from .ranker import RANKERS, RankerBase, RankerBaseConfig
 
 
-@dataclass
+@configure
 class MixedbreadRankerConfig(RankerBaseConfig):
     """The configuration for the Mixedbread ranker.
 

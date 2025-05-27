@@ -1,6 +1,6 @@
 import csv
 import json
-from dataclasses import dataclass, field
+from dataclasses import field
 from glob import glob
 
 import hydra
@@ -8,15 +8,15 @@ from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING
 
 from flexrag.chunking import CHUNKERS, ChunkerConfig
-from flexrag.common_dataclass import Context
 from flexrag.document_parser import DOCUMENTPARSERS, DocumentParserConfig
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
-from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger
+from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, configure
+from flexrag.utils.dataclasses import Context
 
 logger = LOGGER_MANAGER.get_logger("flexrag.entrypoints.prepare_corpus")
 
 
-@dataclass
+@configure
 class Config(DocumentParserConfig, ChunkerConfig, TextProcessPipelineConfig):
     """The configuration for prepare corpus.
     The documents will be parsed by the DocumentParser specified in the config and then chunked by the Chunker.

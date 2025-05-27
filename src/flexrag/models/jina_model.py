@@ -1,18 +1,17 @@
 import os
-from dataclasses import dataclass
-from typing import Optional
+from typing import Annotated, Optional
 
 import httpx
 import numpy as np
 from numpy import ndarray
 from omegaconf import MISSING
 
-from flexrag.utils import TIME_METER, Choices
+from flexrag.utils import TIME_METER, Choices, configure
 
 from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
 
 
-@dataclass
+@configure
 class JinaEncoderConfig(EncoderBaseConfig):
     """Configuration for JinaEncoder.
 
@@ -24,7 +23,8 @@ class JinaEncoderConfig(EncoderBaseConfig):
     :type api_key: str
     :param dimensions: The dimension of the embeddings. Default is 1024.
     :type dimensions: int
-    :param task: The task for the embeddings. Default is None. Available options are "retrieval.query", "retrieval.passage", "separation", "classification", and "text-matching".
+    :param task: The task for the embeddings. Default is None.
+        Available options are "retrieval.query", "retrieval.passage", "separation", "classification", and "text-matching".
     :type task: str
     :param proxy: The proxy to use. Defaults to None.
     :type proxy: Optional[str]
@@ -35,15 +35,16 @@ class JinaEncoderConfig(EncoderBaseConfig):
     api_key: str = os.environ.get("JINA_API_KEY", MISSING)
     dimensions: int = 1024
     task: Optional[
-        Choices(  # type: ignore
-            [
+        Annotated[
+            str,
+            Choices(
                 "retrieval.query",
                 "retrieval.passage",
                 "separation",
                 "classification",
                 "text-matching",
-            ]
-        )
+            ),
+        ]
     ] = None
     proxy: Optional[str] = None
 

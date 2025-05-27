@@ -3,24 +3,24 @@ import os
 import tempfile
 import time
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Any, Generator, Iterable, Optional
 
 import numpy as np
 from huggingface_hub import HfApi
 from omegaconf import DictConfig, OmegaConf
 
-from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import (
     __VERSION__,
     FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
-    ConfigureBase,
     LRUPersistentCache,
     Register,
     SimpleProgressLogger,
+    configure,
 )
+from flexrag.utils.dataclasses import Context, RetrievedContext
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers")
 
@@ -105,8 +105,8 @@ def batched_cache(func):
     return wrapper
 
 
-@dataclass
-class RetrieverBaseConfig(ConfigureBase):
+@configure
+class RetrieverBaseConfig:
     """Base configuration class for all retrievers.
 
     :param log_interval: The interval of logging. Default: 100.
@@ -254,7 +254,7 @@ class RetrieverBase(ABC):
 RETRIEVERS = Register[RetrieverBase]("retriever", True)
 
 
-@dataclass
+@configure
 class EditableRetrieverConfig(RetrieverBaseConfig):
     """Configuration class for LocalRetriever."""
 
@@ -289,7 +289,7 @@ class EditableRetriever(RetrieverBase):
         return
 
 
-@dataclass
+@configure
 class LocalRetrieverConfig(EditableRetrieverConfig):
     """The configuration class for LocalRetriever.
 

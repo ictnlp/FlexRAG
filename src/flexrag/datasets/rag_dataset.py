@@ -1,9 +1,9 @@
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Iterator, Optional
 
-from flexrag.common_dataclass import Context, RAGEvalData
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
-from flexrag.utils import LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, configure, data
+from flexrag.utils.dataclasses import Context
 
 from .hf_dataset import HFDataset, HFDatasetConfig
 from .line_delimited_dataset import LineDelimitedDataset, LineDelimitedDatasetConfig
@@ -11,7 +11,27 @@ from .line_delimited_dataset import LineDelimitedDataset, LineDelimitedDatasetCo
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.rag_dataset")
 
 
-@dataclass
+@data
+class RAGEvalData:
+    """The dataclass for RAG evaluation data.
+
+    :param question: The question for evaluation. Required.
+    :type question: str
+    :param golden_contexts: The contexts related to the question. Default: None.
+    :type golden_contexts: Optional[list[Context]]
+    :param golden_answers: The golden answers for the question. Default: None.
+    :type golden_answers: Optional[list[str]]
+    :param meta_data: The metadata of the evaluation data. Default: {}.
+    :type meta_data: dict
+    """
+
+    question: str
+    golden_contexts: Optional[list[Context]] = None
+    golden_answers: Optional[list[str]] = None
+    meta_data: dict = field(default_factory=dict)
+
+
+@configure
 class RAGEvalDatasetConfig(HFDatasetConfig):
     """The configuration for ``RAGEvalDataset``.
     This dataset helps to load the evaluation dataset collected by `FlashRAG <https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets>`_.
@@ -117,7 +137,7 @@ class RAGEvalDataset(HFDataset):
         yield from super().__iter__()
 
 
-@dataclass
+@configure
 class RAGCorpusDatasetConfig(LineDelimitedDatasetConfig):
     """The configuration for ``RAGCorpusDataset``.
     This dataset helps to load the pre-processed corpus data for RAG retrieval.

@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.utils import Register
+from flexrag.utils.dataclasses import Context, RetrievedContext
 
 
 class MetricsBase(ABC):

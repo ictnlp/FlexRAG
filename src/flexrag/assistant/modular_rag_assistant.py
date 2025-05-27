@@ -1,21 +1,21 @@
 from copy import deepcopy
-from dataclasses import dataclass, field
-from typing import Any, Optional
+from dataclasses import field
+from typing import Annotated, Any, Optional
 
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.context_refine import REFINERS, RefinerConfig
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.ranker import RANKERS, RankerConfig
 from flexrag.retriever import RETRIEVERS, RetrieverConfig
-from flexrag.utils import LOGGER_MANAGER, Choices
+from flexrag.utils import LOGGER_MANAGER, Choices, data
+from flexrag.utils.dataclasses import RetrievedContext
 
 from .assistant import ASSISTANTS, PREDEFINED_PROMPTS, AssistantBase, SearchHistory
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant.modular")
 
 
-@dataclass
+@data
 class ModularAssistantConfig(
     GeneratorConfig, GenerationConfig, RetrieverConfig, RankerConfig, RefinerConfig
 ):
@@ -32,7 +32,15 @@ class ModularAssistantConfig(
     :type used_fields: list[str], optional
     """
 
-    response_type: Choices(["short", "long", "original", "custom"]) = "short"  # type: ignore
+    response_type: Annotated[
+        str,
+        Choices(
+            "short",
+            "long",
+            "original",
+            "custom",
+        ),
+    ] = "short"
     prompt_with_context_path: Optional[str] = None
     prompt_without_context_path: Optional[str] = None
     used_fields: list[str] = field(default_factory=list)

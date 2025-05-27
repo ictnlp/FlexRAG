@@ -1,8 +1,8 @@
-from dataclasses import dataclass
+from typing import Annotated
 
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import GENERATORS, GeneratorBase, GeneratorConfig
-from flexrag.utils import TIME_METER, Choices
+from flexrag.utils import TIME_METER, Choices, configure
+from flexrag.utils.dataclasses import RetrievedContext
 
 from .flex_retriever import FlexRetriever, FlexRetrieverConfig
 from .retriever_base import RETRIEVERS
@@ -35,7 +35,7 @@ class HydeRewriter:
         return new_queries
 
 
-@dataclass
+@configure
 class HydeRetrieverConfig(FlexRetrieverConfig, GeneratorConfig):
     """Configuration class for HydeRetriever.
 
@@ -46,7 +46,7 @@ class HydeRetrieverConfig(FlexRetrieverConfig, GeneratorConfig):
     :type language: str
     """
 
-    task: Choices(HydeRewriter.Prompts.keys()) = "WEB_SEARCH"  # type: ignore
+    task: Annotated[str, Choices(*HydeRewriter.Prompts.keys())] = "WEB_SEARCH"
     language: str = "en"
 
 

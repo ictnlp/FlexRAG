@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from functools import partial
 
-from flexrag.utils import ConfigureBase, Register
+from flexrag.utils import Register, configure
 
 
 class SentenceSplitterBase(ABC):
@@ -33,8 +32,8 @@ class SentenceSplitterBase(ABC):
 SENTENCE_SPLITTERS = Register[SentenceSplitterBase]("sentence_splitter")
 
 
-@dataclass
-class NLTKSentenceSplitterConfig(ConfigureBase):
+@configure
+class NLTKSentenceSplitterConfig:
     """Configuration for NLTKSentenceSplitter.
 
     :param language: The language to use for the sentence splitter. Default is "english".
@@ -86,8 +85,8 @@ PREDEFINED_SPLIT_PATTERNS = {
 }
 
 
-@dataclass
-class RegexSplitterConfig(ConfigureBase):
+@configure
+class RegexSplitterConfig:
     """Configuration for RegexSentenceSplitter.
 
     :param pattern: The regular expression pattern to split the text.
@@ -123,8 +122,8 @@ class RegexSplitter(SentenceSplitterBase):
         return True
 
 
-@dataclass
-class SpacySentenceSplitterConfig(ConfigureBase):
+@configure
+class SpacySentenceSplitterConfig:
     """Configuration for SpacySentenceSplitter.
 
     :param model: The spaCy model to use for sentence splitting. Default is "en_core_web_sm".

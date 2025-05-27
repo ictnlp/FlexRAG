@@ -1,13 +1,13 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Optional
 
 from PIL.Image import Image
 
-from flexrag.utils import Register
+from flexrag.utils import Register, data
 
 
-@dataclass
+@data
 class Document:
     """A document parsed by a DocumentParser."""
 

@@ -1,8 +1,8 @@
-from dataclasses import dataclass, field
+from dataclasses import field
 
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
-from flexrag.utils import LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, configure
+from flexrag.utils.dataclasses import RetrievedContext
 
 from .metrics_base import METRICS, MetricsBase
 
@@ -10,7 +10,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.metrics")
 MetricConfig = METRICS.make_config(allow_multiple=True)
 
 
-@dataclass
+@configure
 class EvaluatorConfig(MetricConfig):
     round: int = 2
     response_preprocess: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore

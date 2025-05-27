@@ -1,20 +1,20 @@
 import os
 import shutil
-from dataclasses import dataclass
-from typing import Any, Iterable, Optional
+from typing import Annotated, Any, Iterable, Optional
 
 import bm25s
 import numpy as np
 from omegaconf import OmegaConf
 
-from flexrag.utils import LOGGER_MANAGER, Choices
+from flexrag.utils import LOGGER_MANAGER, Choices, configure
+from flexrag.utils.configure import extract_config
 
 from .index_base import RETRIEVER_INDEX, RetrieverIndexBase, RetrieverIndexBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index.bm25")
 
 
-@dataclass
+@configure
 class BM25IndexConfig(RetrieverIndexBaseConfig):
     """Configuration class for BM25Index.
 
@@ -37,9 +37,29 @@ class BM25IndexConfig(RetrieverIndexBaseConfig):
     :type lang: str
     """
 
-    method: Choices(["atire", "bm25l", "bm25+", "lucene", "robertson"]) = "lucene"  # type: ignore
-    idf_method: Optional[Choices(["atire", "bm25l", "bm25+", "lucene", "robertson"])] = None  # type: ignore
-    backend: Choices(["numpy", "numba", "auto"]) = "auto"  # type: ignore
+    method: Annotated[
+        str,
+        Choices(
+            "atire",
+            "bm25l",
+            "bm25+",
+            "lucene",
+            "robertson",
+        ),
+    ] = "lucene"
+    idf_method: Optional[
+        Annotated[
+            str,
+            Choices(
+                "atire",
+                "bm25l",
+                "bm25+",
+                "lucene",
+                "robertson",
+            ),
+        ]
+    ] = None
+    backend: Annotated[str, Choices("numpy", "numba", "auto")] = "auto"
     k1: float = 1.5
     b: float = 0.75
     delta: float = 0.5
@@ -53,7 +73,7 @@ class BM25Index(RetrieverIndexBase):
     """
 
     def __init__(self, cfg: BM25IndexConfig) -> None:
-        self.cfg = BM25IndexConfig.extract(cfg)
+        self.cfg = extract_config(cfg, BM25IndexConfig)
         try:
             import Stemmer
 

@@ -1,12 +1,12 @@
 from collections import defaultdict
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import field
+from typing import Annotated, Optional
 
 import pytrec_eval
 
-from flexrag.common_dataclass import Context, RetrievedContext
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
-from flexrag.utils import TIME_METER, Choices, ConfigureBase
+from flexrag.utils import TIME_METER, Choices, configure
+from flexrag.utils.dataclasses import Context, RetrievedContext
 
 from .metrics_base import METRICS, MetricsBase
 
@@ -29,8 +29,8 @@ def get_contain_map_py(evidences: list[str], retrieved: list[str]) -> list[list[
     return contain_map
 
 
-@dataclass
-class SuccessRateConfig(ConfigureBase):
+@configure
+class SuccessRateConfig:
     """Configuration for ``SuccessRate`` metric.
     This metric computes whether the retrieved contexts contain any of the golden responses.
 
@@ -84,7 +84,9 @@ def pytrec_evaluate(
     retrieved_contexts: list[list[RetrievedContext | str]],
     golden_contexts: list[list[Context | str]],
     k_values: list[int] = [1, 5, 10],
-    measure: Choices(["recall", "precision", "ndcg", "map", "mrr"]) = "recall",  # type: ignore
+    measure: Annotated[
+        str, Choices("recall", "precision", "ndcg", "map", "mrr")
+    ] = "recall",
 ) -> tuple[dict[str, float], dict]:
     """Evaluate the retrieval results using pytrec_eval.
 
@@ -181,8 +183,8 @@ def pytrec_evaluate(
     return scores, details
 
 
-@dataclass
-class RetrievalRecallConfig(ConfigureBase):
+@configure
+class RetrievalRecallConfig:
     """Configuration for ``RetrievalRecall`` metric.
     This metric computes the recall of the retrieved contexts.
     The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
@@ -218,8 +220,8 @@ class RetrievalRecall(MetricsBase):
         return scores, details
 
 
-@dataclass
-class RetrievalPrecisionConfig(ConfigureBase):
+@configure
+class RetrievalPrecisionConfig:
     """Configuration for ``RetrievalPrecision`` metric.
     This metric computes the precision of the retrieved contexts.
     The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
@@ -255,8 +257,8 @@ class RetrievalPrecision(MetricsBase):
         return scores, details
 
 
-@dataclass
-class RetrievalMAPConfig(ConfigureBase):
+@configure
+class RetrievalMAPConfig:
     """Configuration for ``RetrievalMAP`` metric.
     This metric computes the MAP of the retrieved contexts.
     The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
@@ -292,8 +294,8 @@ class RetrievalMAP(MetricsBase):
         return scores, details
 
 
-@dataclass
-class RetrievalNDCGConfig(ConfigureBase):
+@configure
+class RetrievalNDCGConfig:
     """Configuration for ``RetrievalNDCG`` metric.
     This metric computes the nDCG of the retrieved contexts.
     The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.

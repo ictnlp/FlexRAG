@@ -1,6 +1,6 @@
 import asyncio
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import field
+from typing import Annotated, Optional
 
 import numpy as np
 import torch
@@ -34,7 +34,7 @@ from transformers import (
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
 from flexrag.prompt import ChatPrompt, MultiModelChatPrompt, load_template
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, ConfigureBase
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, configure
 
 from .model_base import (
     ENCODERS,
@@ -246,8 +246,8 @@ def load_hf_model(
     return model, tokenizer
 
 
-@dataclass
-class HFModelConfig(ConfigureBase):
+@configure
+class HFModelConfig:
     """The Base Configuration for Huggingface Models,
     including `HFGenerator`, `HFVLMGenerator`, `HFEncoder` and `HFClipEncoder`.
 
@@ -267,8 +267,9 @@ class HFModelConfig(ConfigureBase):
     tokenizer_path: Optional[str] = None
     trust_remote_code: bool = False
     device_id: list[int] = field(default_factory=list)
-    load_dtype: Choices(  # type: ignore
-        [
+    load_dtype: Annotated[
+        str,
+        Choices(
             "bfloat16",
             "bf16",
             "float32",
@@ -279,11 +280,11 @@ class HFModelConfig(ConfigureBase):
             "8bit",
             "4bit",
             "auto",
-        ]
-    ) = "auto"
+        ),
+    ] = "auto"
 
 
-@dataclass
+@configure
 class HFGeneratorConfig(HFModelConfig):
     """Configuration for HFGenerator.
 
@@ -296,7 +297,7 @@ class HFGeneratorConfig(HFModelConfig):
 
     pipeline_parallel: bool = False
     use_minference: bool = False
-    model_type: Choices(["causal_lm", "seq2seq"]) = "causal_lm"  # type: ignore
+    model_type: Annotated[str, Choices("causal_lm", "seq2seq")] = "causal_lm"
 
 
 @GENERATORS("hf", config_class=HFGeneratorConfig)
@@ -437,7 +438,7 @@ class HFGenerator(GeneratorBase):
         return
 
 
-@dataclass
+@configure
 class HFVLMGeneratorConfig(HFModelConfig):
     """Configuration for HFVLMGenerator.
 
@@ -529,7 +530,7 @@ class HFVLMGenerator(VLMGeneratorBase):
         )
 
 
-@dataclass
+@configure
 class HFEncoderConfig(HFModelConfig, EncoderBaseConfig):
     """Configuration for HFEncoder.
 
@@ -546,7 +547,7 @@ class HFEncoderConfig(HFModelConfig, EncoderBaseConfig):
     """
 
     max_encode_length: int = 512
-    encode_method: Choices(["cls", "mean"]) = "mean"  # type: ignore
+    encode_method: Annotated[str, Choices("cls", "mean")] = "mean"
     normalize: bool = False
     prompt: str = ""  # used in nomic-text-embedding
     task: str = ""  # used in jina-embedding
@@ -650,7 +651,7 @@ class HFEncoder(EncoderBase):
         )
 
 
-@dataclass
+@configure
 class HFClipEncoderConfig(HFModelConfig, EncoderBaseConfig):
     """Configuration for HFClipEncoder.
 

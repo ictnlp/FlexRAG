@@ -1,4 +1,3 @@
-from .annoy_index import AnnoyIndex, AnnoyIndexConfig
 from .bm25_index import BM25Index, BM25IndexConfig
 from .faiss_index import FaissIndex, FaissIndexConfig
 from .index_base import RETRIEVER_INDEX, RetrieverIndexBase, RetrieverIndexBaseConfig

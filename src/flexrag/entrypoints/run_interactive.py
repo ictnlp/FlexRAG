@@ -1,5 +1,4 @@
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -8,10 +7,9 @@ import hydra
 import PIL
 import PIL.Image
 from hydra.core.config_store import ConfigStore
-from omegaconf import OmegaConf
 
 from flexrag.assistant import ASSISTANTS
-from flexrag.utils import LOGGER_MANAGER, load_user_module
+from flexrag.utils import LOGGER_MANAGER, configure, load_user_module
 
 # load user modules before loading config
 for arg in sys.argv:
@@ -23,7 +21,7 @@ for arg in sys.argv:
 AssistantConfig = ASSISTANTS.make_config()
 
 
-@dataclass
+@configure
 class Config(AssistantConfig):
     share: bool = False
     server_name: str = "127.0.0.1"

@@ -1,19 +1,19 @@
 import logging
-from dataclasses import dataclass
 from typing import Iterable, Optional
 
 from elasticsearch import Elasticsearch
 from omegaconf import MISSING
 
-from flexrag.common_dataclass import Context, RetrievedContext
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, configure
+from flexrag.utils.configure import extract_config
+from flexrag.utils.dataclasses import Context, RetrievedContext
 
 from .retriever_base import RETRIEVERS, EditableRetriever, EditableRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.elastic")
 
 
-@dataclass
+@configure
 class ElasticRetrieverConfig(EditableRetrieverConfig):
     """Configuration class for ElasticRetriever.
 
@@ -48,7 +48,7 @@ class ElasticRetriever(EditableRetriever):
 
     def __init__(self, cfg: ElasticRetrieverConfig) -> None:
         super().__init__(cfg)
-        self.cfg = ElasticRetrieverConfig.extract(cfg)
+        self.cfg = extract_config(cfg, ElasticRetrieverConfig)
         # set basic args
         self.host = cfg.host
         self.api_key = cfg.api_key

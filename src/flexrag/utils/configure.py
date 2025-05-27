@@ -1,66 +1,141 @@
-import copyreg
 import json
+import keyword
 import os
-from dataclasses import field, fields, is_dataclass, make_dataclass
-from enum import StrEnum
-from functools import partial
-from typing import Generic, Iterable, Optional, Type, TypeVar
+import types
+from dataclasses import field, fields, is_dataclass
+from typing import Annotated, Callable, Generic, Optional, Type, TypeVar
 
-import numpy as np
 from huggingface_hub import HfApi
 from omegaconf import MISSING, DictConfig, ListConfig, OmegaConf
+from pydantic import ConfigDict, Field
+from pydantic.dataclasses import ConfigDict, dataclass
 
 from .default_vars import FLEXRAG_CACHE_DIR
 
-T = TypeVar("T", bound="ConfigureBase")
+T = TypeVar("T")
 
 
-class ConfigureBase:
-    @classmethod
-    def extract(cls: Type[T], instance: object) -> T:
-        """Extract the configuration from another instance."""
-        if (not is_dataclass(instance)) and (not isinstance(instance, DictConfig)):
-            raise TypeError("Input must be a dataclass or DictConfig instance.")
-        field_names = {f.name for f in fields(cls)}
-        kwargs = {name: getattr(instance, name) for name in field_names}
-        return cls(**kwargs)
+def extract_config(config, config_cls: Type[T]) -> T:
+    """
+    Extracts the configuration from a pydantic dataclass.
+    """
+    if isinstance(config, DictConfig):
+        config = OmegaConf.to_container(config, resolve=True)
+    if isinstance(config, dict):
+        return config_cls(**config)
+    elif is_dataclass(config):
+        field_names = {f.name for f in fields(config_cls)}
+        kwargs = {name: getattr(config, name) for name in field_names}
+        return config_cls(**kwargs)
+    else:
+        raise TypeError(f"Expected {config_cls}, got {type(config)}")
 
 
-def _enum_as_str(obj: StrEnum):
-    """A helper function for pickle to serialize the StrEnum."""
-    return (str, (obj.value,))
+def make_dataclass(
+    cls_name,
+    fields,
+    *,
+    bases=(),
+    namespace=None,
+    repr=True,
+    eq=True,
+    order=False,
+    unsafe_hash=False,
+    frozen=False,
+    kw_only=False,
+    slots=False,
+    config=None,
+    validate_on_init=None,
+):
+    """Return a new dynamically created pydantic dataclass."""
+
+    if namespace is None:
+        namespace = {}
+
+    # While we're looking through the field names, validate that they
+    # are identifiers, are not keywords, and not duplicates.
+    seen = set()
+    annotations = {}
+    defaults = {}
+    for item in fields:
+        if isinstance(item, str):
+            name = item
+            tp = "typing.Any"
+        elif len(item) == 2:
+            (
+                name,
+                tp,
+            ) = item
+        elif len(item) == 3:
+            name, tp, spec = item
+            defaults[name] = spec
+        else:
+            raise TypeError(f"Invalid field: {item!r}")
+
+        if not isinstance(name, str) or not name.isidentifier():
+            raise TypeError(f"Field names must be valid identifiers: {name!r}")
+        if keyword.iskeyword(name):
+            raise TypeError(f"Field names must not be keywords: {name!r}")
+        if name in seen:
+            raise TypeError(f"Field name duplicated: {name!r}")
+
+        seen.add(name)
+        annotations[name] = tp
+
+    # Update 'ns' with the user-supplied namespace plus our calculated values.
+    def exec_body_callback(ns):
+        ns.update(namespace)
+        ns.update(defaults)
+        ns["__annotations__"] = annotations
+
+    # We use `types.new_class()` instead of simply `type()` to allow dynamic creation
+    # of generic dataclasses.
+    cls = types.new_class(cls_name, bases, {}, exec_body_callback)
+
+    # Apply the normal decorator.
+    return dataclass(
+        cls,
+        init=False,  # pydantic dataclass only supports `init=False`
+        repr=repr,
+        eq=eq,
+        order=order,
+        unsafe_hash=unsafe_hash,
+        frozen=frozen,
+        kw_only=kw_only,
+        slots=slots,
+        config=config,
+        validate_on_init=validate_on_init,
+    )
 
 
-def Choices(choices: Iterable[str]):
-    dynamic_enum = StrEnum("Choices", {c: c for c in choices})
-    copyreg.pickle(dynamic_enum, _enum_as_str)
-    return dynamic_enum
+def Choices(*args: str) -> Field:
+    """
+    A shortcut for creating a pydantic Field with a regex pattern that matches one of the provided choices.
+    This is useful as hydra-core does not support `Literal` types.
+    """
+    choices = list(args)
+    pattern = f"^({'|'.join(choices)})$"
+    return Field(pattern=pattern)
 
 
-# Monkey Patching the JSONEncoder to handle StrEnum
-class _CustomEncoder(json.JSONEncoder):
-    def default(self, obj):
-        if isinstance(obj, StrEnum):
-            return str(obj)
-        if isinstance(obj, DictConfig):
-            return OmegaConf.to_container(obj, resolve=True)
-        if isinstance(obj, np.int64):
-            return int(obj)
-        if isinstance(obj, np.int32):
-            return int(obj)
-        if isinstance(obj, np.float64):
-            return float(obj)
-        if isinstance(obj, np.float32):
-            return float(obj)
-        if hasattr(obj, "to_list"):
-            return obj.to_list()
-        if hasattr(obj, "to_dict"):
-            return obj.to_dict()
-        return super().default(obj)
+_T = TypeVar("_T")
 
 
-json.dumps = partial(json.dumps, cls=_CustomEncoder)
-json.dump = partial(json.dump, cls=_CustomEncoder)
+def _create_pydantic_dataclass(config: ConfigDict) -> Callable[[Type[_T]], Type[_T]]:
+    def decorator(cls: Type[_T]) -> Type[_T]:
+        return dataclass(config=config)(cls)  # type: ignore
+
+    return decorator
+
+
+# These two variables are intended as a shortcut
+# for creating pydantic.dataclasses.dataclass instances.
+configure = _create_pydantic_dataclass(
+    ConfigDict(extra="forbid", validate_assignment=True)
+)
+data = _create_pydantic_dataclass(
+    ConfigDict(validate_assignment=True, arbitrary_types_allowed=True)
+)
 
 RegistedType = TypeVar("RegistedType")
 
@@ -184,9 +259,21 @@ class Register(Generic[RegistedType]):
         choice_name = f"{self.name}_type"
         config_name = f"{self.name}_config" if config_name is None else config_name
         if allow_multiple:
-            config_fields = [(choice_name, list[str], field(default_factory=list))]
+            config_fields = [
+                (
+                    choice_name,
+                    list[Annotated[str, Choices(*self.names)]],
+                    field(default_factory=list),
+                )
+            ]
         else:
-            config_fields = [(choice_name, Optional[str], field(default=default))]
+            config_fields = [
+                (
+                    choice_name,
+                    Optional[Annotated[str, Choices(*self.names)]],
+                    field(default=default),
+                )
+            ]
         config_fields += [
             (
                 f"{self[name]['short_names'][0]}_config",
@@ -196,9 +283,7 @@ class Register(Generic[RegistedType]):
             for name in self.mainnames
             if self[name]["config_class"] is not None
         ]
-        generated_config = make_dataclass(
-            config_name, config_fields, bases=(ConfigureBase,)
-        )
+        generated_config = make_dataclass(config_name, config_fields)
 
         # set docstring
         docstring = (

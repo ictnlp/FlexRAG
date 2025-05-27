@@ -1,20 +1,20 @@
 import os
 import re
 import shutil
-from dataclasses import dataclass
 from typing import Any, Iterable
 
 import numpy as np
 from omegaconf import OmegaConf
 
-from flexrag.utils import LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, configure
+from flexrag.utils.configure import extract_config
 
 from .index_base import RETRIEVER_INDEX, DenseIndexBase, DenseIndexBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index.scann")
 
 
-@dataclass
+@configure
 class ScaNNIndexConfig(DenseIndexBaseConfig):
     """The configuration for the `ScaNNIndex`.
 
@@ -53,7 +53,7 @@ class ScaNNIndex(DenseIndexBase):
 
     def __init__(self, cfg: ScaNNIndexConfig) -> None:
         super().__init__(cfg)
-        self.cfg = ScaNNIndexConfig.extract(cfg)
+        self.cfg = extract_config(cfg, ScaNNIndexConfig)
         # check scann
         try:
             import scann

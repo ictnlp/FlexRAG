@@ -1,12 +1,11 @@
 import os
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Optional
+from typing import Annotated, Optional
 
 import httpx
 from omegaconf import MISSING
 
-from flexrag.utils import Choices, ConfigureBase, Register
+from flexrag.utils import Choices, Register, configure
 
 from .utils import WebResource
 
@@ -38,8 +37,8 @@ WEB_SEEKERS = Register[WebSeekerBase]("web_seeker")
 SEARCH_ENGINES = Register[WebSeekerBase]("search_engine")
 
 
-@dataclass
-class BingEngineConfig(ConfigureBase):
+@configure
+class BingEngineConfig:
     """The configuration for the ``BingSeeker``.
 
     :param subscription_key: The subscription key for the Bing Search API.
@@ -118,8 +117,8 @@ class BingEngine(WebSeekerBase):
         return result
 
 
-@dataclass
-class DuckDuckGoEngineConfig(ConfigureBase):
+@configure
+class DuckDuckGoEngineConfig:
     """The configuration for the ``DuckDuckGoEngine``.
 
     :param proxy: The proxy to use. Default is None.
@@ -164,8 +163,8 @@ class DuckDuckGoEngine(WebSeekerBase):
         return result
 
 
-@dataclass
-class GoogleEngineConfig(ConfigureBase):
+@configure
+class GoogleEngineConfig:
     """The configuration for the ``GoogleEngine``.
 
     :param subscription_key: The subscription key for the Google Search API.
@@ -239,8 +238,8 @@ class GoogleEngine(WebSeekerBase):
         return result
 
 
-@dataclass
-class SerpApiConfig(ConfigureBase):
+@configure
+class SerpApiConfig:
     """The configuration for the ``SerpApi``.
 
     :param api_key: The API key for the SerpApi.
@@ -256,8 +255,9 @@ class SerpApiConfig(ConfigureBase):
     """
 
     api_key: str = os.environ.get("SERP_API_KEY", MISSING)
-    engine: Choices(  # type: ignore
-        [
+    engine: Annotated[
+        str,
+        Choices(
             "google",
             "bing",
             "baidu",
@@ -265,8 +265,8 @@ class SerpApiConfig(ConfigureBase):
             "yahoo",
             "google_scholar",
             "duckduckgo",
-        ]
-    ) = "google"
+        ),
+    ] = "google"
     country: str = "us"
     language: str = "en"
 

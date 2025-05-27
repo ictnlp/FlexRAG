@@ -1,16 +1,16 @@
 import json
 from csv import reader as csv_reader
-from dataclasses import dataclass, field
+from dataclasses import field
 from glob import glob
 from typing import Iterator
 
-from flexrag.utils import ConfigureBase
+from flexrag.utils import configure
 
 from .dataset import IterableDataset
 
 
-@dataclass
-class LineDelimitedDatasetConfig(ConfigureBase):
+@configure
+class LineDelimitedDatasetConfig:
     """The configuration for ``LineDelimitedDataset``.
 
     :param file_paths: The paths to the line delimited files.

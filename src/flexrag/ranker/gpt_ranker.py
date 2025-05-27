@@ -1,18 +1,17 @@
 import copy
 import os
 import re
-from dataclasses import dataclass
 
 import numpy as np
 
 from flexrag.models import GENERATORS, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.utils import TIME_METER
+from flexrag.utils import TIME_METER, configure
 
 from .ranker import RANKERS, RankerBase, RankerBaseConfig
 
 
-@dataclass
+@configure
 class RankGPTRankerConfig(RankerBaseConfig, GeneratorConfig):
     """The configuration for the RankGPT ranker.
 

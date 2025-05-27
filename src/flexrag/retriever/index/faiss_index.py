@@ -1,20 +1,21 @@
 import os
 import shutil
-from dataclasses import dataclass, field
-from typing import Any, Iterable, Optional
+from dataclasses import field
+from typing import Annotated, Any, Iterable, Optional
 
 import faiss
 import numpy as np
 from omegaconf import OmegaConf
 
-from flexrag.utils import LOGGER_MANAGER, Choices
+from flexrag.utils import LOGGER_MANAGER, Choices, configure
+from flexrag.utils.configure import extract_config
 
 from .index_base import RETRIEVER_INDEX, DenseIndexBase, DenseIndexBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retriever.index.faiss")
 
 
-@dataclass
+@configure
 class FaissIndexConfig(DenseIndexBaseConfig):
     """The configuration for the `FaissIndex`.
 
@@ -52,7 +53,7 @@ class FaissIndexConfig(DenseIndexBaseConfig):
     :type efSearch: int
     """
 
-    index_type: Choices(["FLAT", "IVF", "PQ", "IVFPQ", "auto"]) = "auto"  # type: ignore
+    index_type: Annotated[str, Choices("FLAT", "IVF", "PQ", "IVFPQ", "auto")] = "auto"
     n_subquantizers: int = 8
     n_bits: int = 8
     n_list: int = 1000
@@ -78,7 +79,7 @@ class FaissIndex(DenseIndexBase):
 
     def __init__(self, cfg: FaissIndexConfig) -> None:
         super().__init__(cfg)
-        self.cfg = FaissIndexConfig.extract(cfg)
+        self.cfg = extract_config(cfg, FaissIndexConfig)
         # prepare index
         self.index = None
 

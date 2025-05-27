@@ -1,14 +1,13 @@
-from dataclasses import dataclass
-
 import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING
 
 from flexrag.retriever import FlexRetriever
 from flexrag.retriever.index import MultiFieldIndexConfig, RetrieverIndexConfig
+from flexrag.utils import configure
 
 
-@dataclass
+@configure
 class Config(RetrieverIndexConfig, MultiFieldIndexConfig):
     index_name: str = MISSING
     retriever_path: str = MISSING

@@ -1,19 +1,19 @@
 import time
-from dataclasses import dataclass
 from typing import Optional
 
 import httpx
 from bs4 import BeautifulSoup
 
-from flexrag.common_dataclass import RetrievedContext
-from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger
+from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, configure
+from flexrag.utils.configure import extract_config
+from flexrag.utils.dataclasses import RetrievedContext
 
 from ..retriever_base import RETRIEVERS, RetrieverBase, RetrieverBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.web_retriever")
 
 
-@dataclass
+@configure
 class WikipediaRetrieverConfig(RetrieverBaseConfig):
     """The configuration for the ``WikipediaRetriever``.
 
@@ -38,7 +38,7 @@ class WikipediaRetriever(RetrieverBase):
     def __init__(self, cfg: WikipediaRetrieverConfig):
         super().__init__(cfg)
         # set basic configs
-        self.cfg = WikipediaRetrieverConfig.extract(cfg)
+        self.cfg = extract_config(cfg, WikipediaRetrieverConfig)
         self.client = httpx.Client(proxy=cfg.proxy)
         return
 

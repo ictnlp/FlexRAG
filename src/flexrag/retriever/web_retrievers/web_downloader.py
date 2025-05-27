@@ -2,20 +2,19 @@ import asyncio
 import io
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
 from functools import partial
-from typing import Any, Optional
+from typing import Annotated, Any, Optional
 
 from httpx import Client
 from PIL import Image
 
-from flexrag.utils import Choices, ConfigureBase, Register
+from flexrag.utils import Choices, Register, configure
 
 from .utils import WebResource
 
 
-@dataclass
-class WebDownloaderBaseConfig(ConfigureBase):
+@configure
+class WebDownloaderBaseConfig:
     """The configuration for the ``WebDownloaderBase``.
 
     :param allow_parallel: Whether to allow parallel downloading. Default is True.
@@ -76,7 +75,7 @@ class WebDownloaderBase(ABC):
 WEB_DOWNLOADERS = Register[WebDownloaderBase]("web_downloader")
 
 
-@dataclass
+@configure
 class SimpleWebDownloaderConfig(WebDownloaderBaseConfig):
     """The configuration for the ``SimpleWebDownloader``.
 
@@ -114,7 +113,7 @@ class SimpleWebDownloader(WebDownloaderBase):
         return resource
 
 
-@dataclass
+@configure
 class PlaywrightWebDownloaderConfig(WebDownloaderBaseConfig):
     """The configuration for the ``PlaywrightWebDownloader``.
 
@@ -136,7 +135,9 @@ class PlaywrightWebDownloaderConfig(WebDownloaderBaseConfig):
     """
 
     headless: bool = True
-    browser: Choices(["chromium", "firefox", "webkit", "msedge"]) = "chromium"  # type: ignore
+    browser: Annotated[str, Choices("chromium", "firefox", "webkit", "msedge")] = (
+        "chromium"
+    )
     device: str = "Desktop Chrome"
     page_width: Optional[int] = None
     page_height: Optional[int] = None

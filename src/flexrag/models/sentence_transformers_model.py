@@ -1,16 +1,16 @@
 import math
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Any, Optional
 
 import numpy as np
 from omegaconf import MISSING
 
-from flexrag.utils import TIME_METER
+from flexrag.utils import TIME_METER, configure
 
 from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
 
 
-@dataclass
+@configure
 class SentenceTransformerEncoderConfig(EncoderBaseConfig):
     """Configuration for SentenceTransformerEncoder.
 

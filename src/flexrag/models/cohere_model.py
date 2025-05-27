@@ -1,19 +1,18 @@
 import asyncio
 import os
-from dataclasses import dataclass
-from typing import Optional
+from typing import Annotated, Optional
 
 import httpx
 import numpy as np
 from numpy import ndarray
 from omegaconf import MISSING
 
-from flexrag.utils import TIME_METER, Choices
+from flexrag.utils import TIME_METER, Choices, configure
 
 from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
 
 
-@dataclass
+@configure
 class CohereEncoderConfig(EncoderBaseConfig):
     """Configuration for CohereEncoder.
 
@@ -30,15 +29,16 @@ class CohereEncoderConfig(EncoderBaseConfig):
     """
 
     model: str = "embed-multilingual-v3.0"
-    input_type: Choices(  # type: ignore
-        [
+    input_type: Annotated[
+        str,
+        Choices(
             "search_document",
             "search_query",
             "classification",
             "clustering",
             "image",
-        ]
-    ) = "search_document"
+        ),
+    ] = "search_document"
     base_url: Optional[str] = None
     api_key: str = os.environ.get("COHERE_API_KEY", MISSING)
     proxy: Optional[str] = None

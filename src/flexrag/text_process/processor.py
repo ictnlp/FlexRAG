@@ -1,10 +1,10 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import field
 
-from flexrag.utils import Register
+from flexrag.utils import Register, data
 
 
-@dataclass
+@data
 class TextUnit:
     content: str
     reserved: bool = True

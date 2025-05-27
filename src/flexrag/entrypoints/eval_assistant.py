@@ -1,8 +1,7 @@
-import json
 import logging
 import os
 import sys
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Optional
 
 import hydra
@@ -10,10 +9,16 @@ from hydra.core.config_store import ConfigStore
 from omegaconf import OmegaConf
 
 from flexrag.assistant import ASSISTANTS
-from flexrag.common_dataclass import RetrievedContext
+from flexrag.database.serializer import json_dump
 from flexrag.datasets import RAGEvalDataset, RAGEvalDatasetConfig
 from flexrag.metrics import Evaluator, EvaluatorConfig
-from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, load_user_module
+from flexrag.utils import (
+    LOGGER_MANAGER,
+    SimpleProgressLogger,
+    configure,
+    load_user_module,
+)
+from flexrag.utils.dataclasses import RetrievedContext
 
 # load user modules before loading config
 for arg in sys.argv:
@@ -25,7 +30,7 @@ for arg in sys.argv:
 AssistantConfig = ASSISTANTS.make_config()
 
 
-@dataclass
+@configure
 class Config(AssistantConfig, RAGEvalDatasetConfig):
     eval_config: EvaluatorConfig = field(default_factory=EvaluatorConfig)  # fmt: skip
     log_interval: int = 10
@@ -81,20 +86,22 @@ def main(config: Config):
             response, ctxs, metadata = assistant.answer(question=item.question)
             responses.append(response)
             contexts.append(ctxs)
-            json.dump(
-                {
-                    "question": item.question,
-                    "golden": item.golden_answers,
-                    "golden_contexts": item.golden_contexts,
-                    "metadata_test": item.meta_data,
-                    "response": response,
-                    "contexts": ctxs,
-                    "metadata": metadata,
-                },
-                f,
-                ensure_ascii=False,
+            f.write(
+                json_dump(
+                    {
+                        "question": item.question,
+                        "golden": item.golden_answers,
+                        "golden_contexts": item.golden_contexts,
+                        "metadata_test": item.meta_data,
+                        "response": response,
+                        "contexts": ctxs,
+                        "metadata": metadata,
+                    },
+                    to_bytes=False,
+                    ensure_ascii=False,
+                )
+                + "\n"
             )
-            f.write("\n")
             p_logger.update(desc="Searching")
 
     # evaluate
@@ -108,14 +115,16 @@ def main(config: Config):
         log=True,
     )
     with open(eval_score_path, "w", encoding="utf-8") as f:
-        json.dump(
-            {
-                "eval_scores": resp_score,
-                "eval_details": resp_score_detail,
-            },
-            f,
-            indent=4,
-            ensure_ascii=False,
+        f.write(
+            json_dump(
+                {
+                    "eval_scores": resp_score,
+                    "eval_details": resp_score_detail,
+                },
+                to_bytes=False,
+                indent=4,
+                ensure_ascii=False,
+            )
         )
     return
 

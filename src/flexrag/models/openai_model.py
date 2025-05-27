@@ -2,7 +2,6 @@ import asyncio
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
 from typing import Optional
 
 import httpx
@@ -10,7 +9,7 @@ import numpy as np
 from omegaconf import MISSING
 
 from flexrag.prompt import ChatPrompt
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, ConfigureBase
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, configure
 
 from .model_base import (
     ENCODERS,
@@ -24,8 +23,8 @@ from .model_base import (
 logger = LOGGER_MANAGER.get_logger("flexrag.models.openai")
 
 
-@dataclass
-class OpenAIConfig(ConfigureBase):
+@configure
+class OpenAIConfig:
     """The Base Configuration for OpenAI Client.
 
     :param is_azure: Whether the model is hosted on Azure. Default is False.
@@ -53,7 +52,7 @@ class OpenAIConfig(ConfigureBase):
     proxy: Optional[str] = None
 
 
-@dataclass
+@configure
 class OpenAIGeneratorConfig(OpenAIConfig):
     """Configuration for OpenAI Generator.
 
@@ -238,7 +237,7 @@ class OpenAIGenerator(GeneratorBase):
         assert self.model_name in model_lists, f"Model {self.model_name} not found"
 
 
-@dataclass
+@configure
 class OpenAIEncoderConfig(OpenAIConfig, EncoderBaseConfig):
     """Configuration for OpenAI Encoder.
 

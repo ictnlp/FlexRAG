@@ -1,15 +1,14 @@
 import asyncio
-from dataclasses import dataclass
 
 import numpy as np
 from omegaconf import MISSING
 
-from flexrag.utils import TIME_METER
+from flexrag.utils import TIME_METER, configure
 
 from .ranker import RANKERS, RankerBase, RankerBaseConfig
 
 
-@dataclass
+@configure
 class VoyageRankerConfig(RankerBaseConfig):
     """The configuration for the Voyage ranker.
 

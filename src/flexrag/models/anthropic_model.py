@@ -2,22 +2,21 @@ import asyncio
 import logging
 import os
 from concurrent.futures import ThreadPoolExecutor
-from dataclasses import dataclass
 from typing import Optional
 
 import httpx
 from omegaconf import MISSING
 
 from flexrag.prompt import ChatPrompt
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, ConfigureBase
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, configure
 
 from .model_base import GENERATORS, GenerationConfig, GeneratorBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.anthropic")
 
 
-@dataclass
-class AnthropicGeneratorConfig(ConfigureBase):
+@configure
+class AnthropicGeneratorConfig:
     """Configuration for AnthropicGenerator.
 
     :param model_name: The name of the model. Required.

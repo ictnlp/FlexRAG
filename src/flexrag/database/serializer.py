@@ -1,6 +1,7 @@
 import json
 import pickle
 from abc import ABC, abstractmethod
+from dataclasses import asdict, is_dataclass
 from typing import Any
 
 import numpy as np
@@ -62,11 +63,75 @@ class JsonSerializer(SerializerBase):
     str, int, float, bool, list, dict.
     """
 
-    def serialize(self, obj: Any) -> bytes:
-        return json.dumps(obj).encode("utf-8")
+    def __init__(self) -> None:
+        class CustomEncoder(json.JSONEncoder):
+            def default(self, obj):
+                if isinstance(obj, DictConfig):
+                    return OmegaConf.to_container(obj, resolve=True)
+                if isinstance(obj, np.int64):
+                    return int(obj)
+                if isinstance(obj, np.int32):
+                    return int(obj)
+                if isinstance(obj, np.float64):
+                    return float(obj)
+                if isinstance(obj, np.float32):
+                    return float(obj)
+                if is_dataclass(obj):
+                    return asdict(obj)
+                # if hasattr(obj, "to_list"):
+                #     return obj.to_list()
+                # if hasattr(obj, "to_dict"):
+                #     return obj.to_dict()
+                return super().default(obj)
+
+        self.encoder = CustomEncoder
+
+    def serialize(
+        self,
+        obj: Any,
+        to_bytes: bool = True,
+        ensure_ascii: bool = True,
+        indent: int = None,
+        **kwargs,
+    ) -> bytes | str:
+        if to_bytes:
+            return json.dumps(obj, cls=self.encoder).encode("utf-8")
+        return json.dumps(
+            obj,
+            cls=self.encoder,
+            ensure_ascii=ensure_ascii,
+            indent=indent,
+            **kwargs,
+        )
 
     def deserialize(self, data: bytes) -> Any:
         return json.loads(data.decode("utf-8"))
+
+
+_JsonSerializer = JsonSerializer()
+
+
+def json_dump(
+    obj: Any,
+    to_bytes: bool = True,
+    ensure_ascii: bool = True,
+    indent: int = None,
+    **kwargs,
+) -> bytes | str:
+    """A shortcut for serialize the object into JSON format.
+
+    :param obj: The object to serialize.
+    :type obj: Any
+    :param to_bytes: Whether to return bytes or str. Defaults to True.
+    :type to_bytes: bool, optional
+    :param ensure_ascii: Whether to ensure ASCII encoding. Defaults to True.
+    :type ensure_ascii: bool, optional
+    :param indent: The indentation level for pretty printing. Defaults to None.
+    :type indent: int, optional
+    :return: The serialized object in JSON format.
+    :rtype: bytes | str
+    """
+    return _JsonSerializer.serialize(obj, to_bytes, ensure_ascii, indent, **kwargs)
 
 
 @SERIALIZERS("msgpack")

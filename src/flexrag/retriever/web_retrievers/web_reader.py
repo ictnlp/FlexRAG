@@ -1,16 +1,16 @@
 import os
 import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Optional
 
 import httpx
 from omegaconf import MISSING
 
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.utils import ConfigureBase, Register
+from flexrag.utils import Register, configure
+from flexrag.utils.configure import extract_config
+from flexrag.utils.dataclasses import RetrievedContext
 
 from .utils import WebResource
 from .web_downloader import (
@@ -48,7 +48,7 @@ class WebReaderBase(ABC):
 WEB_READERS = Register[WebReaderBase]("web_reader")
 
 
-@dataclass
+@configure
 class JinaReaderLMConfig(GeneratorConfig, WebDownloaderConfig, GenerationConfig):
     """The configuration for the ``JinaReaderLM``.
 
@@ -84,7 +84,7 @@ class JinaReaderLM(WebReaderBase):
     def __init__(self, cfg: JinaReaderLMConfig):
         self.reader = GENERATORS.load(cfg)
         self.downloader = WEB_DOWNLOADERS.load(cfg)
-        self.cfg = JinaReaderLMConfig.extract(cfg)
+        self.cfg = extract_config(cfg, JinaReaderLMConfig)
         if self.cfg.use_v2_prompt:
             self.template = (
                 "Extract the main content from the given HTML and convert it to Markdown format."
@@ -205,8 +205,8 @@ class JinaReaderLM(WebReaderBase):
         return html
 
 
-@dataclass
-class JinaReaderConfig(ConfigureBase):
+@configure
+class JinaReaderConfig:
     """The configuration for the ``JinaReader``.
 
     :param base_url: The base URL of the Jina Reader API. Default is "https://r.jina.ai".
@@ -281,7 +281,7 @@ class SnippetWebReader(WebReaderBase):
         return ["snippet"]
 
 
-@dataclass
+@configure
 class ScreenshotWebReaderConfig(PlaywrightWebDownloaderConfig):
     """The configuration for the ``ScreenshotWebReader``."""
 

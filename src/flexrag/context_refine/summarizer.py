@@ -1,21 +1,20 @@
 import re
 from copy import deepcopy
-from dataclasses import dataclass
 from string import Template
 from typing import Optional
 
 import numpy as np
 from omegaconf import MISSING
 
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import ENCODERS, GENERATORS, EncoderConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.utils import TIME_METER
+from flexrag.utils import TIME_METER, configure
+from flexrag.utils.dataclasses import RetrievedContext
 
 from .refiner import REFINERS, RefinerBase
 
 
-@dataclass
+@configure
 class AbstractiveSummarizerConfig(GeneratorConfig):
     """The configuration for the ``AbstractiveSummarizer``.
 
@@ -161,7 +160,7 @@ class AbstractiveSummarizer(RefinerBase):
         return new_contexts
 
 
-@dataclass
+@configure
 class RecompExtractiveSummarizerConfig(EncoderConfig):
     """The configuration for the ``RecompExtractiveSummarizer``.
 

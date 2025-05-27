@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from functools import partial
 from typing import Generic, Optional, TypeVar
 
 from omegaconf import MISSING
 
-from flexrag.utils import ConfigureBase, Register
+from flexrag.utils import Register, configure
 
 TokenType = TypeVar("TokenType")
 
@@ -50,8 +49,8 @@ class TokenizerBase(ABC, Generic[TokenType]):
 TOKENIZERS = Register[TokenizerBase]("tokenizer")
 
 
-@dataclass
-class HuggingFaceTokenizerConfig(ConfigureBase):
+@configure
+class HuggingFaceTokenizerConfig:
     """Configuration for HuggingFaceTokenizer.
 
     :param tokenizer_path: The path to the HuggingFace tokenizer.
@@ -83,8 +82,8 @@ class HuggingFaceTokenizer(TokenizerBase[int]):
         return True
 
 
-@dataclass
-class TikTokenTokenizerConfig(ConfigureBase):
+@configure
+class TikTokenTokenizerConfig:
     """Configuration for TikTokenTokenizer.
 
     :param tokenizer_name: Load the tokenizer by the name. Default is None.
@@ -126,8 +125,8 @@ class TikTokenTokenizer(TokenizerBase[int]):
         return True
 
 
-@dataclass
-class MosesTokenizerConfig(ConfigureBase):
+@configure
+class MosesTokenizerConfig:
     """Configuration for MosesTokenizer.
 
     :param lang: The language code for the tokenizer. Default is "en".
@@ -160,8 +159,8 @@ class MosesTokenizer(TokenizerBase[str]):
         return False
 
 
-@dataclass
-class NLTKTokenizerConfig(ConfigureBase):
+@configure
+class NLTKTokenizerConfig:
     """Configuration for NLTKTokenizer.
 
     :param lang: The language to use for the tokenizer. Default is "english".
@@ -194,8 +193,8 @@ class NLTKTokenizer(TokenizerBase[str]):
         return False
 
 
-@dataclass
-class JiebaTokenizerConfig(ConfigureBase):
+@configure
+class JiebaTokenizerConfig:
     """Configuration for JiebaTokenizer.
 
     :param enable_hmm: Whether to use the Hidden Markov Model. Default is True.

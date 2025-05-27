@@ -1,11 +1,11 @@
 import asyncio
-from dataclasses import dataclass
+from typing import Annotated
 
 from omegaconf import MISSING
 from transformers import AutoConfig, PretrainedConfig
 
 from flexrag.prompt import ChatPrompt, load_template
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, ConfigureBase
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, configure
 
 from .model_base import GENERATORS, GenerationConfig, GeneratorBase
 from .utils import guess_model_name
@@ -13,8 +13,8 @@ from .utils import guess_model_name
 logger = LOGGER_MANAGER.get_logger("flexrag.models.vllm")
 
 
-@dataclass
-class VLLMGeneratorConfig(ConfigureBase):
+@configure
+class VLLMGeneratorConfig:
     """Configuration for VLLMGenerator.
 
     :param model_path: Path to the model. Required.
@@ -35,7 +35,9 @@ class VLLMGeneratorConfig(ConfigureBase):
     gpu_memory_utilization: float = 0.85
     max_model_len: int = 16384
     tensor_parallel: int = 1
-    load_dtype: Choices(["auto", "float32", "float16", "bfloat16"]) = "auto"  # type: ignore
+    load_dtype: Annotated[str, Choices("auto", "float32", "float16", "bfloat16")] = (
+        "auto"
+    )
     use_minference: bool = False
     trust_remote_code: bool = False
 

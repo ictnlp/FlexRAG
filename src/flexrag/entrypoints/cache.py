@@ -1,18 +1,18 @@
 import json
-from dataclasses import dataclass
+from typing import Annotated
 
 import hydra
 from hydra.core.config_store import ConfigStore
 from omegaconf import MISSING
 
 from flexrag.retriever.retriever_base import RETRIEVAL_CACHE
-from flexrag.utils import Choices, ConfigureBase
+from flexrag.utils import Choices, configure
 
 
-@dataclass
-class Config(ConfigureBase):
+@configure
+class Config:
     export_path: str = MISSING
-    action: Choices(["clear", "export", "_"]) = "_"  # type: ignore
+    action: Annotated[str, Choices("clear", "export", "_")] = "_"
 
 
 cs = ConfigStore.instance()

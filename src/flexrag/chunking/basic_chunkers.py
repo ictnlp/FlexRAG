@@ -1,8 +1,8 @@
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Optional
 
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
-from flexrag.utils import LOGGER_MANAGER, ConfigureBase
+from flexrag.utils import LOGGER_MANAGER, configure
 
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 from .sentence_splitter import (
@@ -16,8 +16,8 @@ from .sentence_splitter import (
 logger = LOGGER_MANAGER.get_logger("flexrag.chunking.basic_chunkers")
 
 
-@dataclass
-class CharChunkerConfig(ConfigureBase):
+@configure
+class CharChunkerConfig:
     """Configuration for CharChunker.
 
     :param max_chars: The number of characters in each chunk. Default is 2048.
@@ -61,7 +61,7 @@ class CharChunker(ChunkerBase):
         return chunks
 
 
-@dataclass
+@configure
 class TokenChunkerConfig(TokenizerConfig):
     """Configuration for TokenChunker.
 
@@ -128,7 +128,7 @@ class TokenChunker(ChunkerBase):
         return chunks
 
 
-@dataclass
+@configure
 class RecursiveChunkerConfig(TokenizerConfig):
     """Configuration for RecursiveChunker.
 
@@ -241,7 +241,7 @@ class RecursiveChunker(ChunkerBase):
             return new_chunks
 
 
-@dataclass
+@configure
 class SentenceChunkerConfig(TokenizerConfig, SentenceSplitterConfig):
     """Configuration for SentenceChunker.
 

@@ -1,11 +1,10 @@
-from dataclasses import dataclass
-from typing import Optional
+from typing import Annotated, Optional
 
 import numpy as np
 
 from flexrag.models import ENCODERS, EncoderConfig
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
-from flexrag.utils import LOGGER_MANAGER, Choices
+from flexrag.utils import LOGGER_MANAGER, Choices, configure
 
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 from .sentence_splitter import SENTENCE_SPLITTERS, SentenceSplitterConfig
@@ -13,7 +12,7 @@ from .sentence_splitter import SENTENCE_SPLITTERS, SentenceSplitterConfig
 logger = LOGGER_MANAGER.get_logger("flexrag.chunking.semantic_chunker")
 
 
-@dataclass
+@configure
 class SemanticChunkerConfig(SentenceSplitterConfig, EncoderConfig, TokenizerConfig):
     """Configuration for SemanticChunker.
 
@@ -74,7 +73,7 @@ class SemanticChunkerConfig(SentenceSplitterConfig, EncoderConfig, TokenizerConf
     threshold: Optional[float] = None
     threshold_percentile: Optional[float] = None
     similarity_window: int = 1
-    similarity_function: Choices(["L2", "IP", "COS"]) = "COS"  # type: ignore
+    similarity_function: Annotated[str, Choices("L2", "IP", "COS")] = "COS"
 
 
 @CHUNKERS("semantic_chunker", config_class=SemanticChunkerConfig)

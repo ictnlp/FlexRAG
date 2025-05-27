@@ -1,15 +1,15 @@
-from dataclasses import dataclass
+from typing import Annotated
 
 import rouge
 import sacrebleu
 
-from flexrag.utils import TIME_METER, Choices, ConfigureBase
+from flexrag.utils import TIME_METER, Choices, configure
 
 from .metrics_base import METRICS, MetricsBase
 
 
-@dataclass
-class BLEUConfig(ConfigureBase):
+@configure
+class BLEUConfig:
     """Configuration for ``BLEU`` metric.
     The computation of BLEU score is based on `sacrebleu <https://github.com/mjpost/sacrebleu>`_.
 
@@ -18,7 +18,9 @@ class BLEUConfig(ConfigureBase):
     :type tokenizer: str
     """
 
-    tokenizer: Choices(sacrebleu.BLEU.TOKENIZERS) = sacrebleu.BLEU.TOKENIZER_DEFAULT  # type: ignore
+    tokenizer: Annotated[str, Choices(*sacrebleu.BLEU.TOKENIZERS)] = (
+        sacrebleu.BLEU.TOKENIZER_DEFAULT
+    )
 
 
 @METRICS("generation_bleu", config_class=BLEUConfig)
@@ -42,8 +44,8 @@ class BLEU(MetricsBase):
         return {"response_bleu": bleu.score}, vars(bleu)
 
 
-@dataclass
-class chrFConfig(ConfigureBase):
+@configure
+class chrFConfig:
     """Configuration for ``chrF`` metric.
     The computation of chrF score is based on `sacrebleu <https://github.com/mjpost/sacrebleu>`_.
 

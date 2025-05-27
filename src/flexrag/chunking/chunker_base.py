@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Optional
 
-from flexrag.utils import Register
+from flexrag.utils import Register, data
 
 
-@dataclass
+@data
 class Chunk:
     """The dataclass for a chunk of text.
 

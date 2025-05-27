@@ -1,18 +1,18 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Optional
 
 import numpy as np
 from PIL.Image import Image
 
 from flexrag.prompt import ChatPrompt, MultiModelChatPrompt
-from flexrag.utils import LOGGER_MANAGER, ConfigureBase, Register, SimpleProgressLogger
+from flexrag.utils import LOGGER_MANAGER, Register, SimpleProgressLogger, configure
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models")
 
 
-@dataclass
-class GenerationConfig(ConfigureBase):
+@configure
+class GenerationConfig:
     """Configuration for text generation.
 
     :param do_sample: Whether to use sampling for generation. Defaults to True.
@@ -223,8 +223,8 @@ class VLMGeneratorBase(GeneratorBase):
         )
 
 
-@dataclass
-class EncoderBaseConfig(ConfigureBase):
+@configure
+class EncoderBaseConfig:
     """Configuration for the encoder.
 
     :param batch_size: The size of each batch. Defaults to 32.

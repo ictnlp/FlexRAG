@@ -1,21 +1,21 @@
 import os
 import pickle
 from collections import defaultdict
-from dataclasses import dataclass
-from typing import Any, Generator, Iterable
+from typing import Annotated, Any, Generator, Iterable
 
 import numpy as np
 from omegaconf import OmegaConf
 
-from flexrag.utils import LOGGER_MANAGER, Choices, ConfigureBase, SimpleProgressLogger
+from flexrag.utils import LOGGER_MANAGER, Choices, SimpleProgressLogger, configure
+from flexrag.utils.configure import extract_config
 
 from .index_base import RetrieverIndexBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retriever.index.multi_field_index")
 
 
-@dataclass
-class MultiFieldIndexConfig(ConfigureBase):
+@configure
+class MultiFieldIndexConfig:
     """Configuration for MultiFieldIndex.
 
     :param indexed_fields: Fields to be indexed.
@@ -34,7 +34,7 @@ class MultiFieldIndexConfig(ConfigureBase):
     """
 
     indexed_fields: list[str]
-    merge_method: Choices(["max", "sum", "mean", "concat"]) = "max"  # type: ignore
+    merge_method: Annotated[str, Choices("max", "sum", "mean", "concat")] = "max"
 
 
 class MultiFieldIndex:
@@ -43,7 +43,7 @@ class MultiFieldIndex:
     def __init__(self, cfg: MultiFieldIndexConfig, index: RetrieverIndexBase):
         # Initialize the MultiFieldIndex with a base index.
         self.index = index
-        self.cfg = MultiFieldIndexConfig.extract(cfg)
+        self.cfg = extract_config(cfg, MultiFieldIndexConfig)
 
         # load the context_id mapping if exists
         if self.index.cfg.index_path is not None:

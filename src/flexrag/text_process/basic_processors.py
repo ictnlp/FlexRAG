@@ -1,16 +1,16 @@
 import re
 import string
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Optional
 
-from flexrag.utils import ConfigureBase
+from flexrag.utils import configure
 
 from .processor import PROCESSORS, Processor, TextUnit
 from .utils import UnifiedTokenizer, UTokenizerConfig
 
 
-@dataclass
-class TokenNormalizerConfig(ConfigureBase):
+@configure
+class TokenNormalizerConfig:
     lang: str = "en"
     penn: bool = True
     norm_quote_commas: bool = True
@@ -74,8 +74,8 @@ class Unifier(Processor):
         return input_text
 
 
-@dataclass
-class TruncatorConfig(ConfigureBase):
+@configure
+class TruncatorConfig:
     max_chars: Optional[int] = None
     max_bytes: Optional[int] = None
     max_tokens: Optional[int] = None
