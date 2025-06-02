@@ -7,6 +7,7 @@ from typing import Optional
 import httpx
 import numpy as np
 from omegaconf import MISSING
+from openai import AzureOpenAI, OpenAI
 
 from flexrag.prompt import ChatPrompt
 from flexrag.utils import LOGGER_MANAGER, TIME_METER, configure
@@ -66,8 +67,6 @@ class OpenAIGeneratorConfig(OpenAIConfig):
 @GENERATORS("openai", config_class=OpenAIGeneratorConfig)
 class OpenAIGenerator(GeneratorBase):
     def __init__(self, cfg: OpenAIGeneratorConfig) -> None:
-        from openai import AzureOpenAI, OpenAI
-
         # prepare proxy
         if cfg.proxy is not None:
             httpx_client = httpx.Client(proxies=cfg.proxy)
@@ -252,8 +251,6 @@ class OpenAIEncoderConfig(OpenAIConfig, EncoderBaseConfig):
 class OpenAIEncoder(EncoderBase):
     def __init__(self, cfg: OpenAIEncoderConfig) -> None:
         super().__init__(cfg)
-        from openai import AzureOpenAI, OpenAI
-
         # prepare proxy
         if cfg.proxy is not None:
             httpx_client = httpx.Client(proxies=cfg.proxy)

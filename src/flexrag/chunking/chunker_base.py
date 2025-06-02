@@ -28,11 +28,14 @@ class ChunkerBase(ABC):
     """
 
     @abstractmethod
-    def chunk(self, text: str) -> list[Chunk]:
+    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
         """Chunk the given text into smaller chunks.
 
         :param text: The text to chunk.
         :type text: str
+        :param return_str: If True, return the chunks as strings instead of Chunk objects.
+            Default is False.
+        :type return_str: bool
         :return: The chunks of the text.
         :rtype: list[Chunk]
         """

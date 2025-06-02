@@ -8,6 +8,7 @@ from .rag_dataset import (
     RAGEvalData,
     RAGEvalDataset,
     RAGEvalDatasetConfig,
+    RAGMultipleChoiceData,
 )
 from .retrieval_dataset import IREvalData, MTEBDataset, MTEBDatasetConfig
 

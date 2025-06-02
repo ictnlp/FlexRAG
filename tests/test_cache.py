@@ -1,204 +1,15 @@
-import os
-import tempfile
-from dataclasses import dataclass, field
-
-from omegaconf import OmegaConf
-
-from flexrag.cache.backends import (
-    DictBackend,
-    LMDBBackend,
-    LMDBBackendConfig,
-    StorageBackendBase,
-)
-from flexrag.cache.persistent_cache import (
+from flexrag.utils.persistent_cache import (
     FIFOPersistentCache,
     LFUPersistentCache,
     LRUPersistentCache,
     PersistentCacheBase,
-    PersistentCacheConfig,
     RandomPersistentCache,
 )
-from flexrag.cache.serializer import (
-    CloudPickleSerializer,
-    JsonSerializer,
-    MsgpackSerializer,
-    PickleSerializer,
-    SerializerBase,
-)
-from flexrag.utils import ConfigureBase
-
-
-@dataclass
-class BackendTestConfig(ConfigureBase):
-    lmdb_config: LMDBBackendConfig = field(default_factory=LMDBBackendConfig)
-
-
-class TestBackend:
-    cfg: BackendTestConfig = OmegaConf.merge(
-        OmegaConf.structured(BackendTestConfig),
-        OmegaConf.load(
-            os.path.join(os.path.dirname(__file__), "configs", "backends.yaml")
-        ),
-    )
-
-    def backend_test(self, backend: StorageBackendBase):
-        # test basic operations
-        backend[b"key1"] = b"value1"
-        backend[b"key2"] = b"value2"
-        backend[b"key3"] = b"value3"
-        assert backend.get(b"key1") == b"value1"
-        assert backend.get(b"key2") == b"value2"
-        assert backend.get(b"key3") == b"value3"
-        assert backend[b"key1"] == b"value1"
-        assert backend[b"key2"] == b"value2"
-        assert backend[b"key3"] == b"value3"
-        assert len(backend) == 3
-        assert b"key1" in backend
-        assert b"key2" in backend
-        assert b"key3" in backend
-        assert b"key4" not in backend
-        assert b"key5" not in backend
-        assert b"key6" not in backend
-
-        # test popitem & pop
-        key, value = backend.popitem()
-        assert len(backend) == 2
-        assert isinstance(key, bytes)
-        assert isinstance(value, bytes)
-        if b"key2" in backend:
-            value = backend.pop(b"key2")
-            assert len(backend) == 1
-            assert value == b"value2"
-        else:
-            value = backend.pop(b"key1")
-            assert len(backend) == 1
-            assert value == b"value1"
-
-        # test clear & del
-        backend.clear()
-        backend[b"key3"] = b"value3"
-        backend[b"key4"] = b"value4"
-        del backend[b"key3"]
-        assert len(backend) == 1
-        backend.clear()
-        assert len(backend) == 0
-
-        # test update & setdefault
-        backend.update({b"key1": b"value1", b"key2": b"value2"})
-        assert len(backend) == 2
-        assert backend.setdefault(b"key1") == b"value1"
-        assert backend.setdefault(b"key3", b"value3") == b"value3"
-        assert len(backend) == 3
-
-        # test __iter__ & keys & values & items
-        assert set(backend) == {b"key1", b"key2", b"key3"}
-        assert set(backend.keys()) == {b"key1", b"key2", b"key3"}
-        assert set(backend.values()) == {b"value1", b"value2", b"value3"}
-        assert set(backend.items()) == {
-            (b"key1", b"value1"),
-            (b"key2", b"value2"),
-            (b"key3", b"value3"),
-        }
-
-        # test __eq__ & __ne__
-        dict1 = {b"key1": b"value1", b"key2": b"value2", b"key4": b"value4"}
-        dict2 = {b"key1": b"value1", b"key2": b"value2", b"key3": b"value3"}
-        assert backend != dict1
-        assert backend == dict2
-        return
-
-    def test_lmdb_backend(self):
-        with tempfile.TemporaryDirectory() as tmpdir:
-            self.cfg.lmdb_config.db_path = os.path.join(tmpdir, "test.lmdb")
-            backend = LMDBBackend(self.cfg.lmdb_config)
-            self.backend_test(backend)
-        return
-
-    def test_dict_backend(self):
-        backend = DictBackend()
-        self.backend_test(backend)
-        return
-
-
-class TestSerializer:
-    def serializer_test(self, serializer: SerializerBase, simple: bool = False):
-        # serialize int object
-        for i in range(10, 30, 2):
-            x = serializer.serialize(i)
-            assert serializer.deserialize(x) == i
-
-        # serialize float object
-        for i in range(10, 30, 2):
-            x = serializer.serialize(float(i) + 0.5)
-            assert serializer.deserialize(x) - float(i) - 0.5 < 1e-6
-
-        # serialize str object
-        for i in range(10):
-            x = serializer.serialize(f"test_{i}")
-            assert serializer.deserialize(x) == f"test_{i}"
-
-        # serialize list object
-        test_list = [i for i in range(10)]
-        x = serializer.serialize(test_list)
-        if not simple:
-            assert serializer.deserialize(x) == test_list
-        else:
-            assert list(serializer.deserialize(x)) == test_list
-
-        # serialize dict object
-        test_dict = {f"key_{i}": i for i in range(10)}
-        x = serializer.serialize(test_dict)
-        if not simple:
-            assert serializer.deserialize(x) == test_dict
-        else:
-            assert dict(serializer.deserialize(x)) == test_dict
-
-        # serialize tuple object
-        if not simple:
-            test_tuple = tuple(i for i in range(10))
-            x = serializer.serialize(test_tuple)
-            assert serializer.deserialize(x) == test_tuple
-
-        # serialize set object
-        if not simple:
-            test_set = {i for i in range(10)}
-            x = serializer.serialize(test_set)
-            assert serializer.deserialize(x) == test_set
-
-        # serialize bytes object
-        if not simple:
-            test_bytes = b"test_bytes"
-            x = serializer.serialize(test_bytes)
-            assert serializer.deserialize(x) == test_bytes
-        return
-
-    def test_json_serializer(self):
-        serializer = JsonSerializer()
-        self.serializer_test(serializer, simple=True)
-        return
-
-    def test_pickle_serializer(self):
-        serializer = PickleSerializer()
-        self.serializer_test(serializer)
-        return
-
-    def test_cloudpickle_serializer(self):
-        serializer = CloudPickleSerializer()
-        self.serializer_test(serializer)
-        return
-
-    def test_msgpack_serializer(self):
-        serializer = MsgpackSerializer()
-        self.serializer_test(serializer, simple=True)
-        return
 
 
 class TestPersistentCache:
-    cfg: PersistentCacheConfig = PersistentCacheConfig(
-        maxsize=3, storage_backend_type="dict", serializer_type="pickle"
-    )
 
-    def cache_test(self, cache: PersistentCacheBase):
+    def run_cache(self, cache: PersistentCacheBase):
         # prepare cached function
         cache.clear()
         called_args = set()
@@ -227,14 +38,112 @@ class TestPersistentCache:
         assert test_func(1, 4) == "missed"
         return
 
+    def run_mapping(self, cache: PersistentCacheBase):
+        cache.clear()
+        # test `__set__` operation
+        cache["key1"] = "value1"
+        cache["key2"] = ["value", 2]
+        cache["key3"] = {"data": "value3"}
+
+        # test `get` operation
+        assert cache.get("key1") == "value1"
+        assert cache.get("key2") == ["value", 2]
+        assert cache.get("key3") == {"data": "value3"}
+
+        # test `__get__` operation
+        assert cache["key1"] == "value1"
+        assert cache["key2"] == ["value", 2]
+        assert cache["key3"] == {"data": "value3"}
+
+        # test `__len__` operation
+        assert len(cache) == 3
+
+        # test `__contains__` operation
+        assert "key1" in cache
+        assert "key2" in cache
+        assert "key3" in cache
+        assert "key4" not in cache
+        assert "key5" not in cache
+        assert "key6" not in cache
+
+        # test popitem & pop
+        key, value = cache.popitem()
+        assert len(cache) == 2
+        assert isinstance(key, str)
+        if "key2" in cache:
+            value = cache.pop("key2")
+            assert len(cache) == 1
+            assert value == ["value", 2]
+        else:
+            value = cache.pop("key1")
+            assert len(cache) == 1
+            assert value == "value1"
+
+        # test clear & del
+        cache.clear()
+        cache["key3"] = {"data": "value3"}
+        cache["key4"] = {"data": "value4"}
+        del cache["key3"]
+        assert len(cache) == 1
+        cache.clear()
+        assert len(cache) == 0
+
+        # test update & setdefault
+        cache.update({"key1": "value1", "key2": ["value", 2]})
+        assert len(cache) == 2
+        assert cache.setdefault("key1") == "value1"
+        assert cache.setdefault("key3", {"data": "value3"}) == {"data": "value3"}
+        assert len(cache) == 3
+
+        # test __iter__ & keys & values & items
+        assert set(cache) == {"key1", "key2", "key3"}
+        assert set(cache.keys()) == {"key1", "key2", "key3"}
+        expected_values = [
+            "value1",
+            ["value", 2],
+            {"data": "value3"},
+        ]
+        actual_values = cache.values()
+        for actual_value in actual_values:
+            assert actual_value in expected_values
+            expected_values.remove(actual_value)
+        assert len(expected_values) == 0
+        expected_items = [
+            ("key1", "value1"),
+            ("key2", ["value", 2]),
+            ("key3", {"data": "value3"}),
+        ]
+        actual_items = cache.items()
+        for actual_item in actual_items:
+            assert actual_item in expected_items
+            expected_items.remove(actual_item)
+        assert len(expected_items) == 0
+
+        # test __eq__ & __ne__
+        dict1 = {
+            "key1": "value1",
+            "key2": ["value", 2],
+            "key4": {"data": "value4"},
+        }
+        dict2 = {
+            "key1": "value1",
+            "key2": ["value", 2],
+            "key3": {"data": "value3"},
+        }
+        assert cache != dict1
+        assert cache == dict2
+        return
+
     def test_random_cache(self):
-        cache = RandomPersistentCache(self.cfg)
-        self.cache_test(cache)
+        cache = RandomPersistentCache(maxsize=3)
+        self.run_mapping(cache)
+        self.run_cache(cache)
         return
 
     def test_fifo_cache(self):
-        cache = FIFOPersistentCache(self.cfg)
-        self.cache_test(cache)
+        cache = FIFOPersistentCache(maxsize=3)
+        self.run_mapping(cache)
+        self.run_cache(cache)
 
         # test fifo eviction
         cache.clear()
@@ -261,8 +170,9 @@ class TestPersistentCache:
         return
 
     def test_lru_cache(self):
-        cache = LRUPersistentCache(self.cfg)
-        self.cache_test(cache)
+        cache = LRUPersistentCache(maxsize=3)
+        self.run_mapping(cache)
+        self.run_cache(cache)
 
         # test lru eviction
         called_args = set()
@@ -298,8 +208,9 @@ class TestPersistentCache:
         return
 
     def test_lfu_cache(self):
-        cache = LFUPersistentCache(self.cfg)
-        self.cache_test(cache)
+        cache = LFUPersistentCache(maxsize=3)
+        self.run_mapping(cache)
+        self.run_cache(cache)
 
         # test lfu eviction
         called_args = set()

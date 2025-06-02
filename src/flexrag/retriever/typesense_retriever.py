@@ -104,7 +104,7 @@ class TypesenseRetriever(EditableRetriever):
         return
 
     @TIME_METER("typesense", "search")
-    def search_batch(
+    def search(
         self,
         query: list[str],
         **search_kwargs,

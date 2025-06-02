@@ -223,9 +223,10 @@ class FlexRetriever(LocalRetriever):
                     # prepare merge weights
                     if self.cfg.indexes_merge_weights is not None:
                         assert len(self.cfg.indexes_merge_weights) == len(used_indexes)
-                        merge_weights = self.cfg.indexes_merge_weights / sum(
-                            self.cfg.indexes_merge_weights
-                        )
+                        merge_weights = [
+                            i / sum(self.cfg.indexes_merge_weights)
+                            for i in self.cfg.indexes_merge_weights
+                        ]
                     else:
                         merge_weights = [1.0 / len(all_scores)] * len(all_scores)
                     # According to "An Analysis of Fusion Functions for Hybrid Retrieval",
@@ -373,8 +374,7 @@ class FlexRetriever(LocalRetriever):
         else:
             assert retriever_path is not None, "`retriever_path` is not set."
             self.cfg.retriever_path = retriever_path
-        if not os.path.exists(retriever_path):
-            self._check_retriever_path(retriever_path)
+        self._check_retriever_path(retriever_path)
         logger.info(f"Serializing retriever to {retriever_path}")
 
         # save the database

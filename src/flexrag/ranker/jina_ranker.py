@@ -86,5 +86,5 @@ class JinaRanker(RankerBase):
         data["top_n"] = len(candidates)
         response = await self.async_client.post("", json=data)
         response.raise_for_status()
-        scores = [i["relevance_score"] for i in response.json()["results"]]
+        scores = [i["relevance_score"] for i in (await response.json())["results"]]
         return None, scores

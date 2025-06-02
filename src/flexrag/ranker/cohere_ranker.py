@@ -24,7 +24,7 @@ class CohereRankerConfig(RankerBaseConfig):
     :type proxy: Optional[str]
     """
 
-    model: str = "rerank-multilingual-v3.0"
+    model: str = "rerank-v3.5"
     base_url: Optional[str] = None
     api_key: str = MISSING
     proxy: Optional[str] = None

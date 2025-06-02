@@ -3,7 +3,7 @@ import os
 import tempfile
 import time
 from abc import ABC, abstractmethod
-from dataclasses import field
+from dataclasses import asdict, field
 from typing import Any, Generator, Iterable, Optional
 
 import numpy as np
@@ -43,14 +43,6 @@ def batched_cache(func):
     You can use this function to decorate the `search` method of the retriever class to cache the retrieval results in batch.
     """
 
-    def dataclass_to_dict(data):
-        if not isinstance(data, DictConfig):
-            return OmegaConf.to_container(DictConfig(data))
-        return OmegaConf.to_container(data)
-
-    def retrieved_to_dict(data: list[RetrievedContext]) -> list[dict]:
-        return [r.to_dict() for r in data]
-
     def dict_to_retrieved(data: list[dict] | None) -> list[RetrievedContext] | None:
         if data is None:
             return None
@@ -78,7 +70,7 @@ def batched_cache(func):
             return func(self, query, **search_kwargs)
 
         # search from cache
-        cfg = dataclass_to_dict(self.cfg)
+        cfg = asdict(self.cfg)
         keys = [
             {
                 "retriever_config": cfg,
@@ -97,7 +89,7 @@ def batched_cache(func):
             # update cache
             for n, r in zip(new_indices, new_results):
                 results[n] = r
-                RETRIEVAL_CACHE[keys[n]] = retrieved_to_dict(r)
+                RETRIEVAL_CACHE[keys[n]] = asdict(r)
         # check results
         check(results)
         return results

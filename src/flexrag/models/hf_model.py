@@ -729,4 +729,8 @@ class HFClipEncoder(EncoderBase):
 
     @property
     def embedding_size(self) -> int:
-        return self.model.config.hidden_size
+        if hasattr(self.model.config, "projection_dim"):
+            return self.model.config.projection_dim
+        if hasattr(self.model.config, "hidden_size"):
+            return self.model.config.hidden_size
+        raise ValueError("Cannot determine embedding size from model config.")

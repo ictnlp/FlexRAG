@@ -36,6 +36,16 @@ class SerializerBase(ABC):
         """
         return
 
+    @property
+    def allowed_types(self) -> list[str] | None:
+        """Return the list of allowed types for serialization.
+        This property is used to test the serializer.
+
+        :return: The list of allowed types. None means almost all types are allowed.
+        :rtype: list[str] | None
+        """
+        return
+
 
 SERIALIZERS = Register[SerializerBase]("serializer")
 
@@ -59,29 +69,28 @@ class PickleSerializer(SerializerBase):
 class JsonSerializer(SerializerBase):
     """A serializer that uses the json module.
 
-    JsonSerializer supports basic types, including:
-    str, int, float, bool, list, dict.
+    JsonSerializer supports basic types, including str, int, float, bool, list, and dict.
+
+    It also provides limited support for some additional types, including:
+
+        * omegaconf.DictConfig
+        * omegaconf.ListConfig
+        * numpy.integer
+        * numpy.floating
+        * dataclasses (using asdict)
     """
 
     def __init__(self) -> None:
         class CustomEncoder(json.JSONEncoder):
             def default(self, obj):
-                if isinstance(obj, DictConfig):
+                if isinstance(obj, (DictConfig, ListConfig)):
                     return OmegaConf.to_container(obj, resolve=True)
-                if isinstance(obj, np.int64):
+                if isinstance(obj, np.integer):
                     return int(obj)
-                if isinstance(obj, np.int32):
-                    return int(obj)
-                if isinstance(obj, np.float64):
-                    return float(obj)
-                if isinstance(obj, np.float32):
+                if isinstance(obj, np.floating):
                     return float(obj)
                 if is_dataclass(obj):
                     return asdict(obj)
-                # if hasattr(obj, "to_list"):
-                #     return obj.to_list()
-                # if hasattr(obj, "to_dict"):
-                #     return obj.to_dict()
                 return super().default(obj)
 
         self.encoder = CustomEncoder
@@ -106,6 +115,10 @@ class JsonSerializer(SerializerBase):
 
     def deserialize(self, data: bytes) -> Any:
         return json.loads(data.decode("utf-8"))
+
+    @property
+    def allowed_types(self) -> list[str]:
+        return ["str", "int", "float", "bool", "dict", "list"]
 
 
 _JsonSerializer = JsonSerializer()
@@ -209,6 +222,22 @@ class MsgpackSerializer(SerializerBase):
             return obj
 
         return self.msgpack.unpackb(data, raw=False, object_hook=extended_decode)
+
+    @property
+    def allowed_types(self) -> list[str]:
+        return [
+            "str",
+            "int",
+            "float",
+            "bool",
+            "list",
+            "set",
+            "dict",
+            "np.ndarray",
+            "np.generic",
+            "Image.Image",
+            "omegaconf",
+        ]
 
 
 SerializerConfig = SERIALIZERS.make_config(default="msgpack")

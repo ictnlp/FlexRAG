@@ -21,8 +21,8 @@ class JinaEncoderConfig(EncoderBaseConfig):
     :type base_url: str
     :param api_key: The API key for the Jina embeddings API.
     :type api_key: str
-    :param dimensions: The dimension of the embeddings. Default is 1024.
-    :type dimensions: int
+    :param embedding_size: The dimension of the embeddings. Default is 1024.
+    :type embedding_size: int
     :param task: The task for the embeddings. Default is None.
         Available options are "retrieval.query", "retrieval.passage", "separation", "classification", and "text-matching".
     :type task: str
@@ -33,7 +33,7 @@ class JinaEncoderConfig(EncoderBaseConfig):
     model: str = "jina-embeddings-v3"
     base_url: str = "https://api.jina.ai/v1/embeddings"
     api_key: str = os.environ.get("JINA_API_KEY", MISSING)
-    dimensions: int = 1024
+    embedding_size: int = 1024
     task: Optional[
         Annotated[
             str,
@@ -76,7 +76,7 @@ class JinaEncoder(EncoderBase):
         self.data_template = {
             "model": cfg.model,
             "task": cfg.task,
-            "dimensions": cfg.dimensions,
+            "dimensions": cfg.embedding_size,
             "late_chunking": False,
             "embedding_type": "float",
             "input": [],
@@ -90,16 +90,16 @@ class JinaEncoder(EncoderBase):
         response = self.client.post("", json=data)
         response.raise_for_status()
         embeddings = [i["embedding"] for i in response.json()["data"]]
-        return np.array(embeddings)
+        return np.array(embeddings)[:, : self.embedding_size]
 
     @TIME_METER("jina_encode")
     async def async_encode(self, texts: list[str]) -> ndarray:
         data = self.data_template.copy()
         data["input"] = texts
         response = await self.async_client.post("", json=data)
-        embeddings = [i["embedding"] for i in response.json()["data"]]
-        return np.array(embeddings)
+        embeddings = [i["embedding"] for i in (await response.json())["data"]]
+        return np.array(embeddings)[:, : self.embedding_size]
 
     @property
     def embedding_size(self) -> int:
-        return self.data_template["dimension"]
+        return self.data_template["dimensions"]

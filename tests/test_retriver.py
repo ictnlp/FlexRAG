@@ -1,14 +1,10 @@
-import os
 import tempfile
-import uuid
-from dataclasses import dataclass, field
-
-import pytest
-from omegaconf import OmegaConf
+from pathlib import Path
 
 from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
-from flexrag.models import EncoderConfig, HFEncoderConfig
+from flexrag.models import EncoderConfig, OpenAIEncoderConfig
 from flexrag.retriever import (
+    EditableRetriever,
     ElasticRetriever,
     ElasticRetrieverConfig,
     FlexRetriever,
@@ -22,59 +18,75 @@ from flexrag.retriever.index import (
     MultiFieldIndexConfig,
     RetrieverIndexConfig,
 )
-from flexrag.utils import ConfigureBase
-
-
-@dataclass
-class RetrieverTestConfig(ConfigureBase):
-    typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)  # fmt: skip
-    elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)  # fmt: skip
-
-
-@pytest.fixture
-def setup_elastic():
-    TestRetrievers.cfg.elastic_config.index_name = str(uuid.uuid4())
-    retriever = ElasticRetriever(TestRetrievers.cfg.elastic_config)
-    yield retriever
-    retriever.clear()
-    return
-
-
-@pytest.fixture
-def setup_typesense():
-    TestRetrievers.cfg.typesense_config.index_name = str(uuid.uuid4())
-    retriever = TypesenseRetriever(TestRetrievers.cfg.typesense_config)
-    yield retriever
-    retriever.clear()
-    return
 
 
 class TestRetrievers:
-    cfg: RetrieverTestConfig = OmegaConf.merge(
-        OmegaConf.structured(RetrieverTestConfig),
-        OmegaConf.load(
-            os.path.join(os.path.dirname(__file__), "configs", "retriever.yaml")
-        ),
-    )
     query = [
         "Who is Bruce Wayne?",
         "What is the capital of China?",
     ]
 
-    def test_flex_retriever(self):
-        # load datasets
+    def run_retriever(self, retriever: EditableRetriever):
+        retriever.clear()
+        assert len(retriever) == 0
+
+        # load corpus
         cfg1 = RAGCorpusDatasetConfig(
-            file_paths=[
-                os.path.join(os.path.dirname(__file__), "testcorp", "testcorp.jsonl")
-            ],
+            file_paths=[Path(__file__).parent / "testcorp" / "testcorp.jsonl"],
             data_ranges=[[0, 10000]],
             id_field="id",
         )
         cfg2 = RAGCorpusDatasetConfig(
-            file_paths=[
-                os.path.join(os.path.dirname(__file__), "testcorp", "testcorp.jsonl")
-            ],
+            file_paths=[Path(__file__).parent / "testcorp" / "testcorp.jsonl"],
             data_ranges=[[10000, 20000]],
+            id_field="id",
+        )
+        dataset1 = RAGCorpusDataset(cfg1)
+        dataset2 = RAGCorpusDataset(cfg2)
+
+        # testing add_passages
+        retriever.add_passages(dataset1)
+        assert len(retriever) == 10000
+
+        # testing search without top_k option
+        ctxs = retriever.search(self.query, disable_cache=True)
+        assert len(ctxs) == 2
+        assert len(ctxs[0]) == 10
+
+        # testing search with top_k option
+        ctxs = retriever.search(self.query, disable_cache=True, top_k=5)
+        assert len(ctxs) == 2
+        assert len(ctxs[0]) == 5
+
+        # testing add_passages
+        retriever.add_passages(dataset2)
+        assert len(retriever) == 20000
+
+        # testing search without top_k option
+        ctxs = retriever.search(self.query, disable_cache=True)
+        assert len(ctxs) == 2
+        assert len(ctxs[0]) == 10
+
+        # testing search with top_k option
+        ctxs = retriever.search(self.query, disable_cache=True, top_k=5)
+        assert len(ctxs) == 2
+        assert len(ctxs[0]) == 5
+
+        # testing clear method
+        retriever.clear()
+        assert len(retriever) == 0
+        return
+
+    def test_flex_retriever(self, mock_openai_client):
+        # load datasets
+        cfg1 = RAGCorpusDatasetConfig(
+            file_paths=[Path(__file__).parent / "testcorp" / "testcorp.jsonl"],
+            data_ranges=[[0, 1000]],
+            id_field="id",
+        )
+        cfg2 = RAGCorpusDatasetConfig(
+            file_paths=[Path(__file__).parent / "testcorp" / "testcorp.jsonl"],
+            data_ranges=[[1000, 2000]],
             id_field="id",
         )
         dataset1 = RAGCorpusDataset(cfg1)
@@ -97,17 +109,15 @@ class TestRetrievers:
                         index_type="auto",
                         batch_size=512,
                         query_encoder_config=EncoderConfig(
-                            encoder_type="hf",
-                            hf_config=HFEncoderConfig(
-                                model_path="facebook/contriever-msmarco",
-                                device_id=[2, 3],
+                            encoder_type="openai",
+                            openai_config=OpenAIEncoderConfig(
+                                model_name="text-embedding-3-small",
                             ),
                         ),
                         passage_encoder_config=EncoderConfig(
-                            encoder_type="hf",
-                            hf_config=HFEncoderConfig(
-                                model_path="facebook/contriever-msmarco",
-                                device_id=[2, 3],
+                            encoder_type="openai",
+                            openai_config=OpenAIEncoderConfig(
+                                model_name="text-embedding-3-small",
                             ),
                         ),
                     ),
@@ -117,7 +127,7 @@ class TestRetrievers:
                     merge_method="max",
                 ),
             )
-            assert len(retriever) == 10000
+            assert len(retriever) == 1000
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"]
             )
@@ -127,7 +137,7 @@ class TestRetrievers:
 
             # add new passages
             retriever.add_passages(dataset2)
-            assert len(retriever) == 20000
+            assert len(retriever) == 2000
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"]
             )
@@ -172,15 +182,15 @@ class TestRetrievers:
             # save index to loacl
             retriever.save_to_local(tempdir)
             del retriever
-            assert os.path.exists(tempdir)
-            assert os.path.exists(os.path.join(tempdir, "indexes"))
-            assert os.path.exists(os.path.join(tempdir, "indexes", "contriever"))
-            assert os.path.exists(os.path.join(tempdir, "indexes", "bm25"))
-            assert os.path.exists(os.path.join(tempdir, "database.lance"))
+            assert Path(tempdir).exists()
+            assert Path(tempdir, "indexes").exists()
+            assert Path(tempdir, "indexes", "contriever").exists()
+            assert Path(tempdir, "indexes", "bm25").exists()
+            assert Path(tempdir, "database.lmdb").exists()
 
             # load index from local
             retriever: FlexRetriever = FlexRetriever.load_from_local(tempdir)
-            assert len(retriever) == 20000
+            assert len(retriever) == 2000
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"]
             )
@@ -190,7 +200,7 @@ class TestRetrievers:
 
             # remove one index
             retriever.remove_index("contriever")
-            assert not os.path.exists(os.path.join(tempdir, "indexes", "contriever"))
+            assert not Path(tempdir, "indexes", "contriever").exists()
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"],
                 used_indexes=["bm25"],
@@ -211,45 +221,29 @@ class TestRetrievers:
 
             # remove another index
             retriever.remove_index("bm25")
-            assert os.path.exists(os.path.join(tempdir, "indexes", "bm25"))
+            assert Path(tempdir, "indexes", "bm25").exists()
         return
 
-    def test_elastic_retriever(self, setup_elastic):
+    def test_elastic_retriever(self, mock_es_client):
         # load retriever
-        retriever: ElasticRetriever = setup_elastic
-
-        # build index
-        data_cfg = RAGCorpusDatasetConfig(
-            file_paths=[
-                os.path.join(os.path.dirname(__file__), "testcorp", "testcorp.jsonl")
-            ],
-            id_field="id",
+        retriever = ElasticRetriever(
+            ElasticRetrieverConfig(
+                host="http://127.0.0.1:9200",
+                index_name="testing",
+            )
         )
-        corpus = RAGCorpusDataset(data_cfg)
-        retriever.add_passages(corpus)
-
-        # search
-        r = retriever.search(self.query, disable_cache=True)
-        assert len(r) == 2
-        assert len(r[0]) == 10
-        assert len(r[1]) == 10
+        self.run_retriever(retriever)
         return
 
-    def test_typesense_retriever(self, setup_typesense):
+    def test_typesense_retriever(self, mock_ts_client):
         # load retriever
-        retriever: TypesenseRetriever = setup_typesense
-
-        # build index
-        data_cfg = RAGCorpusDatasetConfig(
-            file_paths=[
-                os.path.join(os.path.dirname(__file__), "testcorp", "testcorp.jsonl")
-            ],
-            id_field="id",
+        retriever = TypesenseRetriever(
+            TypesenseRetrieverConfig(
+                api_key="test_api_key",
+                host="127.0.0.1",
+                port=8108,
+                index_name="testing",
+            )
         )
-        corpus = RAGCorpusDataset(data_cfg)
-        retriever.add_passages(corpus)
-
-        # search
-        r = retriever.search(self.query, disable_cache=True)
-        assert len(r) == 2
+        self.run_retriever(retriever)
         return

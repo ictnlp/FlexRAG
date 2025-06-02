@@ -3,25 +3,10 @@ from collections import Counter, OrderedDict
 from typing import Any, MutableMapping, Optional
 
 from flexrag.database import LMDBRetrieverDatabase, NaiveRetrieverDatabase
-from flexrag.utils import configure
 
 from .logging import LOGGER_MANAGER
 
 logger = LOGGER_MANAGER.get_logger("flexrag.cache")
-
-
-@configure
-class PersistentCacheConfig:
-    """Configuration for the PersistentCacheBase class.
-
-    :param maxsize: The maximum size of the cache. If None, the cache will not be limited.
-    :type maxsize: Optional[int]
-    :param cache_path: The path to the cache file. If None, the cache will not be persisted.
-    :type cache_path: Optional[str]
-    """
-
-    maxsize: Optional[int] = None
-    cache_path: Optional[str] = None
 
 
 class PersistentCacheBase(MutableMapping[str, Any]):
@@ -44,10 +29,10 @@ class PersistentCacheBase(MutableMapping[str, Any]):
         return
 
     def __getitem__(self, key: str) -> Any:
-        return self.backend[key]
+        return self.backend[key]["value"]
 
     def __setitem__(self, key: str, value: Any) -> None:
-        self.backend[key] = value
+        self.backend[key] = {"value": value}
         self.reduce_size()
         return
 
@@ -156,7 +141,7 @@ class RandomPersistentCache(PersistentCacheBase):
         self, maxsize: Optional[int] = None, cache_path: Optional[str] = None
     ) -> None:
         super().__init__(maxsize, cache_path)
-        if len(self.backend) > self.maxsize:
+        if len(self) > self.maxsize:
             logger.warning(
                 "The current cache size is larger than the maxsize."
                 "Some items will be evicted."
@@ -185,14 +170,14 @@ class LRUPersistentCache(PersistentCacheBase):
     ) -> None:
         super().__init__(maxsize, cache_path)
         self.order = OrderedDict()
-        if len(self.backend) > 0:
+        if len(self) > 0:
             logger.warning(
                 "LRUPersistentCache currently does not support loading order from disk."
                 "The order will be reset."
             )
             for key in self.backend:
                 self.order[key] = None
-        if len(self.backend) > self.maxsize:
+        if len(self) > self.maxsize:
             logger.warning(
                 "The current cache size is larger than the maxsize."
                 "Some items will be evicted."
@@ -234,14 +219,14 @@ class LFUPersistentCache(PersistentCacheBase):
     ) -> None:
         super().__init__(maxsize, cache_path)
         self.counter = Counter()
-        if len(self.backend) > 0:
+        if len(self) > 0:
             logger.warning(
                 "LFUPersistentCache currently does not support loading counter from disk."
                 "The counter will be reset."
             )
-            for key in self.backend:
+            for key in self:
                 self.counter[key] = -1
-        if len(self.backend) > self.maxsize:
+        if len(self) > self.maxsize:
             logger.warning(
                 "The current cache size is larger than the maxsize."
                 "Some items will be evicted."
@@ -258,7 +243,7 @@ class LFUPersistentCache(PersistentCacheBase):
         if key not in self.backend:
             self.reduce_size(self.maxsize - 1)
         self.counter[key] = -1
-        self.backend[key] = value
+        self.backend[key] = {"value": value}
         return
 
     def __delitem__(self, key) -> None:
@@ -269,7 +254,7 @@ class LFUPersistentCache(PersistentCacheBase):
         if len(self) == 0:
             raise KeyError("popitem(): cache is empty")
         evict_key, _ = self.counter.most_common(1)[0]
-        value = self.backend.pop(evict_key)
+        value = self.backend.pop(evict_key)["value"]
         del self.counter[evict_key]
         return evict_key, value
 

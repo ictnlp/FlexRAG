@@ -8,7 +8,7 @@ from .basic_chunkers import (
     TokenChunker,
     TokenChunkerConfig,
 )
-from .chunker_base import CHUNKERS, ChunkerBase
+from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 from .semantic_chunker import SemanticChunker, SemanticChunkerConfig
 
 ChunkerConfig = CHUNKERS.make_config(
@@ -18,6 +18,7 @@ ChunkerConfig = CHUNKERS.make_config(
 
 __all__ = [
     "ChunkerBase",
+    "Chunk",
     "CHUNKERS",
     "ChunkerConfig",
     "CharChunker",

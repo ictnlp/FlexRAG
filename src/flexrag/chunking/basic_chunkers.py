@@ -48,7 +48,7 @@ class CharChunker(ChunkerBase):
         self.overlap = cfg.overlap
         return
 
-    def chunk(self, text: str) -> list[Chunk]:
+    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
         chunks = []
         for i in range(0, len(text), self.chunk_size - self.overlap):
             chunks.append(
@@ -58,6 +58,8 @@ class CharChunker(ChunkerBase):
                     end=min(len(text), i + self.chunk_size),
                 )
             )
+        if return_str:
+            return [chunk.text for chunk in chunks]
         return chunks
 
 
@@ -108,7 +110,7 @@ class TokenChunker(ChunkerBase):
             )
         return
 
-    def chunk(self, text: str) -> list[Chunk]:
+    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
         tokens = self.tokenizer.tokenize(text)
         chunks = []
         current_index = 0
@@ -125,6 +127,8 @@ class TokenChunker(ChunkerBase):
                 tokens[i + self.chunk_size - self.overlap : i + self.chunk_size]
             )
             current_index += len(text) - len(overlap_text)
+        if return_str:
+            return [chunk.text for chunk in chunks]
         return chunks
 
 
@@ -194,7 +198,7 @@ class RecursiveChunker(ChunkerBase):
             )
         return
 
-    def chunk(self, text: str) -> list[Chunk]:
+    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
         texts = self._recursive_chunk(text, 0)
         chunks = []
         current_index = 0
@@ -207,6 +211,8 @@ class RecursiveChunker(ChunkerBase):
                 )
             )
             current_index += len(text)
+        if return_str:
+            return [chunk.text for chunk in chunks]
         return chunks
 
     def _recursive_chunk(self, text: str, level: int) -> list[str]:
@@ -301,7 +307,7 @@ class SentenceChunker(ChunkerBase):
         self.long_sentence_counter = 0
         return
 
-    def chunk(self, text: str) -> list[Chunk]:
+    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
         sentences = self.splitter.split(text)
         if self.max_tokens != float("inf"):
             token_counts = [len(self.tokenizer.tokenize(s)) for s in sentences]
@@ -347,4 +353,6 @@ class SentenceChunker(ChunkerBase):
             start_index += len(text) - overlap_length
             start_pointer = new_start
             end_pointer = start_pointer
+        if return_str:
+            return [chunk.text for chunk in chunks]
         return chunks

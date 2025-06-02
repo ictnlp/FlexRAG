@@ -8,7 +8,12 @@ from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, conf
 from flexrag.utils.configure import extract_config
 from flexrag.utils.dataclasses import Context, RetrievedContext
 
-from .retriever_base import RETRIEVERS, EditableRetriever, EditableRetrieverConfig
+from .retriever_base import (
+    RETRIEVERS,
+    EditableRetriever,
+    EditableRetrieverConfig,
+    batched_cache,
+)
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.elastic")
 
@@ -138,7 +143,8 @@ class ElasticRetriever(EditableRetriever):
         return
 
     @TIME_METER("elastic_search", "search")
-    def search_batch(
+    @batched_cache
+    def search(
         self,
         query: list[str],
         search_method: str = "full_text",
