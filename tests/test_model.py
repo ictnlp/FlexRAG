@@ -152,8 +152,8 @@ class TestGenerator:
     @pytest.mark.gpu
     @pytest.mark.asyncio
     async def test_hf(self):
-        if not torch.cuda.is_available():
-            pytest.skip("HFGenerator requires GPU for inference")
+        # if not torch.cuda.is_available():
+        #     pytest.skip("HFGenerator requires GPU for inference")
         generator = HFGenerator(
             HFGeneratorConfig(
                 model_path="Qwen/Qwen3-0.6B",

@@ -1,6 +1,6 @@
 import copy
-import os
 import re
+from pathlib import Path
 
 import numpy as np
 
@@ -40,9 +40,7 @@ class RankGPTRanker(RankerBase):
         self.generator = GENERATORS.load(cfg)
 
         # load prompt
-        prompt_path = os.path.join(
-            os.path.dirname(__file__), "ranker_prompts", "rankgpt_prompt.json"
-        )
+        prompt_path = Path(__file__).parent / "ranker_prompts" / "rankgpt_prompt.json"
         self.prompt = ChatPrompt.from_json(prompt_path)
 
         # set basic arguments

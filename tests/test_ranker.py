@@ -1,5 +1,6 @@
 import pytest
 
+from flexrag.models import OpenAIGeneratorConfig
 from flexrag.ranker import (
     CohereRanker,
     CohereRankerConfig,
@@ -73,35 +74,45 @@ class TestRanker:
 
     @pytest.mark.gpu
     @pytest.mark.asyncio
-    async def test_rank_gpt(self):
-        ranker = RankGPTRanker(RankGPTRankerConfig())
+    async def test_rank_gpt(self, mock_openai_client):
+        ranker = RankGPTRanker(
+            RankGPTRankerConfig(
+                generator_type="openai",
+                openai_config=OpenAIGeneratorConfig(
+                    model_name="gpt-4",
+                ),
+            )
+        )
         r1 = ranker.rank(self.query, self.candidates)
         r2 = await ranker.async_rank(self.query, self.candidates)
         self.valid_result(r1, r2)
         return
 
-    @pytest.mark.gpu
     @pytest.mark.asyncio
     async def test_rank_hf_cross(self):
-        ranker = HFCrossEncoderRanker(HFCrossEncoderRankerConfig())
+        ranker = HFCrossEncoderRanker(
+            HFCrossEncoderRankerConfig(model_path="cross-encoder/ms-marco-MiniLM-L6-v2")
+        )
         r1 = ranker.rank(self.query, self.candidates)
         r2 = await ranker.async_rank(self.query, self.candidates)
         self.valid_result(r1, r2)
         return
 
-    @pytest.mark.gpu
     @pytest.mark.asyncio
     async def test_rank_hf_seq2seq(self):
-        ranker = HFSeq2SeqRanker(HFSeq2SeqRankerConfig())
+        ranker = HFSeq2SeqRanker(
+            HFSeq2SeqRankerConfig(model_path="unicamp-dl/InRanker-base")
+        )
         r1 = ranker.rank(self.query, self.candidates)
         r2 = await ranker.async_rank(self.query, self.candidates)
         self.valid_result(r1, r2)
         return
 
-    @pytest.mark.gpu
     @pytest.mark.asyncio
     async def test_rank_hf_colbert(self):
-        ranker = HFColBertRanker(HFColBertRankerConfig())
+        ranker = HFColBertRanker(
+            HFColBertRankerConfig(model_path="colbert-ir/colbertv2.0")
+        )
         r1 = ranker.rank(self.query, self.candidates)
         r2 = await ranker.async_rank(self.query, self.candidates)
         self.valid_result(r1, r2)

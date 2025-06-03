@@ -1,3 +1,4 @@
+import re
 from typing import Optional
 
 import numpy as np
@@ -11,13 +12,23 @@ def mock_openai_client(mocker):
     def create_mock_chat_completion(model, messages, **kwargs):
         """Mock chat completion response."""
         n = kwargs.get("n", 1)
+
         mock_response = mocker.MagicMock()
         mock_response.choices = []
-
-        for i in range(n):
-            choice = mocker.MagicMock()
-            choice.message.content = f"Mocked response {i+1} for model {model}"
-            mock_response.choices.append(choice)
+        if (messages[0]["role"] == "system") and ("RankGPT" in messages[0]["content"]):
+            # for rankgpt, return a mocked response with passage numbers
+            passage_num = int(re.match(".*(\d+)", messages[1]["content"]).group(1))
+            mocked_content = " > ".join([f"[{i + 1}]" for i in range(passage_num)])
+            for i in range(n):
+                choice = mocker.MagicMock()
+                choice.message.content = mocked_content
+                mock_response.choices.append(choice)
+        else:
+            # for normal chat completions, return a mocked response
+            for i in range(n):
+                choice = mocker.MagicMock()
+                choice.message.content = f"Mocked response {i+1} for model {model}"
+                mock_response.choices.append(choice)
 
         return mock_response
 
