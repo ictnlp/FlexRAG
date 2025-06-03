@@ -2,7 +2,6 @@ import re
 
 import numpy as np
 import pytest
-import torch
 
 from flexrag.models import (
     AnthropicGenerator,
@@ -20,8 +19,6 @@ from flexrag.models import (
     HFGeneratorConfig,
     JinaEncoder,
     JinaEncoderConfig,
-    LlamacppGenerator,
-    LlamacppGeneratorConfig,
     OllamaEncoder,
     OllamaEncoderConfig,
     OllamaGenerator,
@@ -160,13 +157,6 @@ class TestGenerator:
                 device_id=[0],
             )
         )
-        await self.valid_chat_function(generator)
-        await self.valid_generate_function(generator)
-        return
-
-    @pytest.mark.asyncio
-    async def test_llamacpp(self, mock_llamacpp_client):
-        generator = LlamacppGenerator(LlamacppGeneratorConfig(model_path=""))
         await self.valid_chat_function(generator)
         await self.valid_generate_function(generator)
         return

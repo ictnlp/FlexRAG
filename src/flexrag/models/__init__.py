@@ -12,7 +12,6 @@ from .hf_model import (
     HFVLMGeneratorConfig,
 )
 from .jina_model import JinaEncoder, JinaEncoderConfig
-from .llamacpp_model import LlamacppGenerator, LlamacppGeneratorConfig
 from .model_base import (
     ENCODERS,
     GENERATORS,
@@ -71,8 +70,6 @@ __all__ = [
     "OpenAIEncoderConfig",
     "VLLMGenerator",
     "VLLMGeneratorConfig",
-    "LlamacppGenerator",
-    "LlamacppGeneratorConfig",
     "JinaEncoder",
     "JinaEncoderConfig",
     "CohereEncoder",

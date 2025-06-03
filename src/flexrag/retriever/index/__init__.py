@@ -10,8 +10,6 @@ RetrieverIndexConfig = RETRIEVER_INDEX.make_config(
 
 
 __all__ = [
-    "AnnoyIndex",
-    "AnnoyIndexConfig",
     "BM25Index",
     "BM25IndexConfig",
     "FaissIndex",
