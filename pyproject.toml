@@ -33,6 +33,7 @@ dependencies = [
     "colorama",
     "torch==2.7.0",
     "pandas",
+    "sentencepiece",
     # metrics
     "rouge",
     "sacrebleu>=2.4.2",
