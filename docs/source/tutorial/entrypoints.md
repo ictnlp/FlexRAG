@@ -5,33 +5,33 @@ FlexRAG entrypoints refer to a series of command-line executable programs provid
 In this section, we will introduce all FlexRAG entrypoints and their corresponding configuration structures.
 
 ### Preparing the Retriever Index
-This entrypoint is used to prepare the retriever index. You can use this entrypoint by running `python -m flexrag.entrypoints.prepare_index`.
-The defination of the configuration structure for the `prepare_index` entrypoint is as follows:
+This entrypoint is used to prepare the retriever index. You can use this entrypoint by running `python -m flexrag.entrypoints.prepare_retriever`.
+The defination of the configuration structure for the `prepare_retriever` entrypoint is as follows:
 
 ```{eval-rst}
-.. autoclass:: flexrag.entrypoints.prepare_index::Config
+.. autoclass:: flexrag.entrypoints.prepare_retriever::Config
     :members:
     :noindex:
     :show-inheritance:
 ```
 
 ### Rebuilding the Retriever Index
-This entrypoint is used to rebuild the index for the `DenseRetriever`. You can use this entrypoint by running `python -m flexrag.entrypoints.rebuid_index`.
-The defination of the configuration structure for the `rebuid_index` entrypoint is as follows:
+This entrypoint is used to add the index for the `FlexRetriever`. You can use this entrypoint by running `python -m flexrag.entrypoints.add_index`.
+The defination of the configuration structure for the `add_index` entrypoint is as follows:
 
 ```{eval-rst}
-.. autoclass:: flexrag.entrypoints.rebuild_index::DenseRetrieverConfig
+.. autoclass:: flexrag.entrypoints.add_index::Config
     :members:
     :noindex:
     :show-inheritance:
 ```
 
 ### Evaluating the Assistant
-This entrypoint is used to evaluate the assistant on a given dataset. You can use this entrypoint by running `python -m flexrag.entrypoints.run_assistant`.
-The defination of the configuration structure for the `run_assistant` entrypoint is as follows:
+This entrypoint is used to evaluate the assistant on a given dataset. You can use this entrypoint by running `python -m flexrag.entrypoints.eval_assistant`.
+The defination of the configuration structure for the `eval_assistant` entrypoint is as follows:
 
 ```{eval-rst}
-.. autoclass:: flexrag.entrypoints.run_assistant::Config
+.. autoclass:: flexrag.entrypoints.eval_assistant::Config
     :members:
     :noindex:
     :show-inheritance:
@@ -106,7 +106,7 @@ modular_config:
 
 Then, you can run the following command to use the configuration file:
 ```bash
-python -m flexrag.entrypoints.run_assistant \
+python -m flexrag.entrypoints.eval_assistant \
     --config-file config.yaml
 ```
 

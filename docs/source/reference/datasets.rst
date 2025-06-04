@@ -48,6 +48,10 @@ This module provides a set of classes and functions for loading and processing d
 .. RAG Datasets
 .. _RAGEvalDatasetConfig:
 
+.. autoclass:: flexrag.datasets.RAGEvalData
+    :members:
+    :inherited-members:
+
 .. autoclass:: flexrag.datasets.RAGEvalDatasetConfig
     :members:
     :inherited-members:
@@ -69,6 +73,10 @@ This module provides a set of classes and functions for loading and processing d
     :show-inheritance:
 
 .. Retrieval Datasets
+.. autoclass:: flexrag.datasets.IREvalData
+    :members:
+    :inherited-members:
+
 .. autoclass:: flexrag.datasets.MTEBDatasetConfig
     :members:
     :inherited-members:

@@ -5,7 +5,8 @@ Retrievers are used to retrieve data from the local knowledge base or the web.
 
 The Retriever Interface
 -----------------------
-``RetrieverBase`` is the base class for all retrievers, including the subclasses of ``EditableRetriever`` and ``WebRetrieverBase``.
+``RetrieverBase`` is the base class for all retrievers,
+including the subclasses of ``EditableRetriever`` and ``WebRetrieverBase``.
 
 
 .. autoclass:: flexrag.retriever.RetrieverBaseConfig
@@ -22,15 +23,16 @@ The Retriever Interface
 
 RetrieverConfig is the general configuration for all registered retrievers.
 You can load any retriever by specifying the retriever name in the configuration.
-For example, to load the ``BM25S`` retriever, you can use the following configuration:
+For example, to load the pre-built ``FlexRetriever`` retriever,
+you can use the following configuration:
 
 .. code-block:: python
 
-    from flexrag.retriever import RetrieverConfig, RETRIEVERS, BM25SRetrieverConfig
+    from flexrag.retriever import RetrieverConfig, RETRIEVERS, FlexRetrieverConfig
 
     config = RetrieverConfig(
-        retriever_type='bm25s',
-        bm25s_config=BM25SRetrieverConfig(
+        retriever_type='flex',
+        bm25s_config=FlexRetrieverConfig(
             database_path='<path_to_database>',
         )
     )
@@ -64,7 +66,6 @@ Editable Retriever
     :members:
     :show-inheritance:
 
-
 .. LocalRetriever
 .. autoclass:: flexrag.retriever.LocalRetrieverConfig
     :members:
@@ -74,22 +75,12 @@ Editable Retriever
     :members:
     :show-inheritance:
 
-
-.. BM25S Retriever
-.. autoclass:: flexrag.retriever.BM25SRetrieverConfig
+.. FlexRetriever
+.. autoclass:: flexrag.retriever.FlexRetrieverConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.retriever.BM25SRetriever
-    :members:
-    :show-inheritance:
-
-.. Dense Retriever
-.. autoclass:: flexrag.retriever.DenseRetrieverConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.retriever.DenseRetriever
+.. autoclass:: flexrag.retriever.FlexRetriever
     :members:
     :show-inheritance:
 
@@ -102,27 +93,18 @@ Editable Retriever
     :members:
     :show-inheritance:
 
-Dense Index
------------
-``DenseIndex`` is used in ``DenseRetriever`` to store and retrieve dense embeddings.
+Retriever Index
+---------------
+``RetrieverIndex`` is used in ``FlexRetriever`` to store and retrieve dense embeddings.
 
-.. autoclass:: flexrag.retriever.index.DenseIndexBase
+.. RetrieverIndex Interface
+.. autoclass:: flexrag.retriever.index.RetrieverIndexBase
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.retriever.index.DenseIndexBaseConfig
+.. autoclass:: flexrag.retriever.index.RetrieverIndexBaseConfig
     :members:
     :inherited-members:
-
-.. Annoy Index
-.. autoclass:: flexrag.retriever.index.AnnoyIndexConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.retriever.index.AnnoyIndex
-    :members:
-    :show-inheritance:
-
 
 .. Faiss Index
 .. autoclass:: flexrag.retriever.index.FaissIndexConfig
@@ -133,13 +115,30 @@ Dense Index
     :members:
     :show-inheritance:
 
-
 .. ScaNN Index
 .. autoclass:: flexrag.retriever.index.ScaNNIndexConfig
     :members:
     :inherited-members:
 
 .. autoclass:: flexrag.retriever.index.ScaNNIndex
+    :members:
+    :show-inheritance:
+
+.. BM25 Index
+.. autoclass:: flexrag.retriever.index.BM25IndexConfig
+    :members:
+    :inherited-members:
+
+.. autoclass:: flexrag.retriever.index.BM25Index
+    :members:
+    :show-inheritance:
+
+.. MultiFieldIndex
+.. autoclass:: flexrag.retriever.index.MultiFieldIndexConfig
+    :members:
+    :inherited-members:
+
+.. autoclass:: flexrag.retriever.index.MultiFieldIndex
     :members:
     :show-inheritance:
 

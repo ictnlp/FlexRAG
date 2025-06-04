@@ -20,7 +20,7 @@ class CohereEncoderConfig(EncoderBaseConfig):
     :type model: str
     :param input_type: Specifies the type of input passed to the model.
         Required for embedding models v3 and higher. Default is "search_document".
-            Available options are "search_document", "search_query", "classification", "clustering", "image".
+        Available options are "search_document", "search_query", "classification", "clustering", "image".
     :type input_type: str
     :param embedding_size: The size of the embedding. Default is "1536".
         Available options are "256", "512", "1024", "1536".

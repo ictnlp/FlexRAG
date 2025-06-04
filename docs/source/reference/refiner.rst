@@ -5,7 +5,7 @@ It can be used to rearrange the contexts, summarize them, or extract the most re
 
 The Context Refiner Interface
 -----------------------------
-The `RefinerBase` is the base class for all refiners. 
+The `RefinerBase` is the base class for all refiners.
 It provides the basic interface for refining the contexts retrieved by the retriever.
 
 .. autoclass:: flexrag.context_refine.RefinerBase

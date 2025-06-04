@@ -85,6 +85,9 @@ dev = [
     "pytest-mock",
     "sphinx",
     "sphinx-autobuild",
+    "sphinx-book-theme",
+    "sphinx-copybutton",
+    "sphinx-intl",
     "myst-parser",
     "rstcheck",
     "doc8",
@@ -108,7 +111,7 @@ where = ["src"]
 ignore_directives = ["autoclass", "automodule", "autofunction", "autosummary"]
 
 [tool.doc8]
-max_line_length = 88
+ignore = ["D001"]
 
 [tool.pytest.ini_options]
 markers = ["gpu: mark test as requiring GPU"]
