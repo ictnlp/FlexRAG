@@ -46,7 +46,7 @@ class LineDelimitedDatasetConfig:
         >>> items = [i for i in dataset]
     """
 
-    file_paths: list[str | PathLike]
+    file_paths: list[str]
     data_ranges: list[list[int, int]] = field(default_factory=list)
     encoding: str = "utf-8"
 
@@ -60,8 +60,8 @@ class LineDelimitedDataset(IterableDataset):
         for p in cfg.file_paths:
             if isinstance(p, str):
                 paths = [Path(p_) for p_ in glob(p)]
-            elif isinstance(p, PathLike):
-                paths = [Path(p)]
+            # elif isinstance(p, PathLike):
+            #     paths = [Path(p)]
             else:
                 raise TypeError(f"Unsupported file path type: {type(p)}")
             if len(paths) == 0:

@@ -8,7 +8,7 @@ from typing import Any, Generator, Iterable, Optional
 
 import numpy as np
 from huggingface_hub import HfApi
-from omegaconf import DictConfig, OmegaConf
+from omegaconf import OmegaConf
 
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import (
@@ -37,7 +37,7 @@ else:
     RETRIEVAL_CACHE = LRUPersistentCache(maxsize=cache_size, cache_path=cache_path)
 
 
-# TODO: fix this
+# FIXME: fix this
 def batched_cache(func):
     """The helper function to cache the retrieval results in batch.
     You can use this function to decorate the `search` method of the retriever class to cache the retrieval results in batch.

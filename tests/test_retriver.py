@@ -32,12 +32,12 @@ class TestRetrievers:
 
         # load corpus
         cfg1 = RAGCorpusDatasetConfig(
-            file_paths=[Path(__file__).parent / "testcorp" / "testcorp.jsonl"],
+            file_paths=[str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")],
             data_ranges=[[0, 10000]],
             id_field="id",
         )
         cfg2 = RAGCorpusDatasetConfig(
-            file_paths=[Path(__file__).parent / "testcorp" / "testcorp.jsonl"],
+            file_paths=[str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")],
             data_ranges=[[10000, 20000]],
             id_field="id",
         )
@@ -80,12 +80,12 @@ class TestRetrievers:
     def test_flex_retriever(self, mock_openai_client):
         # load datasets
         cfg1 = RAGCorpusDatasetConfig(
-            file_paths=[Path(__file__).parent / "testcorp" / "testcorp.jsonl"],
+            file_paths=[str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")],
             data_ranges=[[0, 1000]],
             id_field="id",
         )
         cfg2 = RAGCorpusDatasetConfig(
-            file_paths=[Path(__file__).parent / "testcorp" / "testcorp.jsonl"],
+            file_paths=[str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")],
             data_ranges=[[1000, 2000]],
             id_field="id",
         )

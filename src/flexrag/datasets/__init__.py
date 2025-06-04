@@ -24,6 +24,7 @@ __all__ = [
     "RAGEvalDatasetConfig",
     "RAGEvalDataset",
     "RAGEvalData",
+    "RAGMultipleChoiceData",
     "RAGCorpusDatasetConfig",
     "RAGCorpusDataset",
     "MTEBDataset",
