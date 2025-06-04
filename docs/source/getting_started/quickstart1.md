@@ -22,7 +22,7 @@ The `ModularAssistant` is composed of four key components: a retriever, a rerank
 
 Each component can be configured independently, allowing you to easily customize your RAG assistant by adjusting the settings for each one.
 
-## Deploying the GUI application
+## Deploying a GUI application
 The easiest way to run a RAG assistant is to use FlexRAG's entrypoints to start a GUI application. You can run the following command to start a GUI application with the `ModularAssistant`. For convenience, a BM25 retriever based on Wikipedia knowledge base provided by FlexRAG and a generator from OpenAI are used here. You need to replace `$OPENAI_KEY` here with your OpenAI access key or set the corresponding variable in the shell.
 
 ```bash
@@ -47,13 +47,13 @@ Then you can visit the GUI application at `http://localhost:7860` in your browse
 
 ```{eval-rst}
 .. note::
-    In this example, we employ the pre-built BM25 retriever based on the Wikipedia knowledge base. You can also use other retrievers provided by FlexRAG or build your own retriever. For more information, please refer to the [Preparing the Retriever](../tutorial/preparing_retriever.md) section.
+    In this example, we employ the pre-built BM25 retriever based on the Wikipedia knowledge base. You can also use other retrievers provided by FlexRAG or build your own retriever. For more information, please refer to the :doc:`../tutorial/preparing_retriever` section.
 ```
 
 ## Evaluating the RAG assistant
 FlexRAG also offers convenient command-line tools to assist you in evaluating your RAG assistant. You can easily evaluate your RAG assistant on a variety of knowledge-intensive tasks. The following command let you evaluate the above assistant on the *Natural Questions (NQ)* dataset:
 ```bash
-python -m flexrag.entrypoints.run_assistant \
+python -m flexrag.entrypoints.eval_assistant \
     name=nq \
     split=test \
     assistant_type=modular \
@@ -64,10 +64,8 @@ python -m flexrag.entrypoints.run_assistant \
     modular_config.openai_config.api_key=$OPENAI_KEY \
     modular_config.do_sample=False \
     eval_config.metrics_type=[retrieval_success_rate,generation_f1,generation_em] \
-    eval_config.retrieval_success_rate_config.context_preprocess.processor_type=[simplify_answer] \
     eval_config.retrieval_success_rate_config.eval_field=text \
-    eval_config.response_preprocess.processor_type=[simplify_answer] \
-    log_interval=10
+    log_interval=100
 ```
 
 As before, it is also necessary to replace $OPENAI_KEY with your OpenAI access key here.
@@ -76,7 +74,8 @@ In the command above, the parameters `name=nq` and `split=test` specify that the
 
 ```{eval-rst}
 .. note::
-    For more information about the RAG evaluation, please refer to the {any}`RAGEvalDatasetConfig` section.
+    | For more information about the RAG evaluation tasks, please refer to the :class:`~flexrag.datasets.RAGEvalDatasetConfig` class.
+    | For more information about the evaluation metrics, please refer to the :doc:`../reference/metrics` section.
 ```
 
 ## Running the RAG assistan directly
@@ -113,7 +112,7 @@ In the command above, we use the `answer` method to pose a question to the assis
 
 ```{eval-rst}
 .. note::
-    For more information about the ModularAssistant, please refer to the {any}`ModularAssistant` section.
+    For more information about the RAG Assistant class, please refer to the :doc:`../reference/assistant` section.
 ```
 
 ## Developing your own RAG assistant

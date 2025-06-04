@@ -63,10 +63,10 @@ html_theme_options = {
 }
 
 # -- Options for autodoc -----------------------------------------------------
-
 autodoc_mock_imports = [
     "gradio",  # as gradio has a lot of dependencies, we mock it to speed up building the docs.
 ]
+autodoc_typehints = "none"
 
 
 # -- Options for copybutton --------------------------------------------------
