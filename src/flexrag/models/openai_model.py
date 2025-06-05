@@ -240,11 +240,13 @@ class OpenAIGenerator(GeneratorBase):
 class OpenAIEncoderConfig(OpenAIConfig, EncoderBaseConfig):
     """Configuration for OpenAI Encoder.
 
-    :param is_azure: Whether the model is hosted on Azure. Default is False.
-    :type is_azure: bool
+    :param embedding_size: The size of the embedding vector.
+        If None, it will be determined from the model.
+        Default is None.
+    :type embedding_size: Optional[int]
     """
 
-    dimension: Optional[int] = None
+    embedding_size: Optional[int] = None
 
 
 @ENCODERS("openai", config_class=OpenAIEncoderConfig)
@@ -274,7 +276,7 @@ class OpenAIEncoder(EncoderBase):
 
         # set logger
         self.model_name = cfg.model_name
-        self.dimension = cfg.dimension
+        self.dimension = cfg.embedding_size
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)
