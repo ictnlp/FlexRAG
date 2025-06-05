@@ -5,7 +5,6 @@ from typing import Annotated, Optional
 import httpx
 import numpy as np
 from numpy import ndarray
-from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER, Choices, configure
 
@@ -28,7 +27,9 @@ class CohereEncoderConfig(EncoderBaseConfig):
     :type embedding_size: str
     :param base_url: The base URL of the API. Default is None.
     :type base_url: Optional[str]
-    :param api_key: The API key to use. Default is os.environ.get("COHERE_API_KEY", MISSING).
+    :param api_key: The API key for the Cohere API.
+        If not provided, it will use the environment variable `COHERE_API_KEY`.
+        Defaults to None.
     :type api_key: str
     :param proxy: The proxy to use. Default is None.
     :type proxy: Optional[str]
@@ -47,7 +48,7 @@ class CohereEncoderConfig(EncoderBaseConfig):
     ] = "search_document"
     embedding_size: Annotated[str, Choices("256", "512", "1024", "1536")] = "1536"
     base_url: Optional[str] = None
-    api_key: str = os.environ.get("COHERE_API_KEY", MISSING)
+    api_key: Optional[str] = None
     proxy: Optional[str] = None
 
 
@@ -60,8 +61,14 @@ class CohereEncoder(EncoderBase):
             httpx_client = httpx.Client(proxies=cfg.proxy)
         else:
             httpx_client = None
+        api_key = cfg.api_key or os.getenv("COHERE_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "API key for Cohere is not provided. "
+                "Please set it in the configuration or as an environment variable 'COHERE_API_KEY'."
+            )
         self.client = ClientV2(
-            api_key=cfg.api_key,
+            api_key=api_key,
             base_url=cfg.base_url,
             httpx_client=httpx_client,
         )

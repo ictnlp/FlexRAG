@@ -7,7 +7,7 @@ from hydra.core.config_store import ConfigStore
 from pydantic import BaseModel, Field
 
 from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
-from flexrag.utils import LOGGER_MANAGER, configure
+from flexrag.utils import LOGGER_MANAGER, configure, extract_config
 
 app = FastAPI()
 
@@ -68,6 +68,7 @@ async def search(args: SearchRequest):
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(cfg: Config):
+    cfg = extract_config(cfg, Config)
     global retriever
     retriever = FlexRetriever(cfg)
     uvicorn.run(app, host=cfg.host, port=cfg.port)

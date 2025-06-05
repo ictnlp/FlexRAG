@@ -42,7 +42,7 @@ class TestRanker:
 
     @pytest.mark.asyncio
     async def test_rank_cohere(self, mock_cohere_client):
-        ranker = CohereRanker(CohereRankerConfig())
+        ranker = CohereRanker(CohereRankerConfig(api_key="test"))
         r1 = ranker.rank(self.query, self.candidates)
         r2 = await ranker.async_rank(self.query, self.candidates)
         self.valid_result(r1, r2)
@@ -50,7 +50,7 @@ class TestRanker:
 
     @pytest.mark.asyncio
     async def test_rank_jina(self, mock_jina_client):
-        ranker = JinaRanker(JinaRankerConfig())
+        ranker = JinaRanker(JinaRankerConfig(api_key="test"))
         r1 = ranker.rank(self.query, self.candidates)
         r2 = await ranker.async_rank(self.query, self.candidates)
         self.valid_result(r1, r2)
@@ -58,7 +58,7 @@ class TestRanker:
 
     @pytest.mark.asyncio
     async def test_rank_mixedbread(self, mock_mixedbread_client):
-        ranker = MixedbreadRanker(MixedbreadRankerConfig())
+        ranker = MixedbreadRanker(MixedbreadRankerConfig(api_key="test"))
         r1 = ranker.rank(self.query, self.candidates)
         r2 = await ranker.async_rank(self.query, self.candidates)
         self.valid_result(r1, r2)
@@ -66,7 +66,7 @@ class TestRanker:
 
     @pytest.mark.asyncio
     async def test_rank_voyage(self, mock_voyage_client):
-        ranker = VoyageRanker(VoyageRankerConfig())
+        ranker = VoyageRanker(VoyageRankerConfig(api_key="test"))
         r1 = ranker.rank(self.query, self.candidates)
         r2 = await ranker.async_rank(self.query, self.candidates)
         self.valid_result(r1, r2)
@@ -80,6 +80,7 @@ class TestRanker:
                 generator_type="openai",
                 openai_config=OpenAIGeneratorConfig(
                     model_name="gpt-4",
+                    api_key="test",
                 ),
             )
         )

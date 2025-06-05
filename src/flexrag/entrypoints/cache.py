@@ -3,15 +3,14 @@ from typing import Annotated
 
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import MISSING
 
 from flexrag.retriever.retriever_base import RETRIEVAL_CACHE
-from flexrag.utils import Choices, configure
+from flexrag.utils import Choices, configure, extract_config
 
 
 @configure
 class Config:
-    export_path: str = MISSING
+    export_path: str
     action: Annotated[str, Choices("clear", "export", "_")] = "_"
 
 
@@ -21,6 +20,7 @@ cs.store(name="default", node=Config)
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(config: Config):
+    config = extract_config(config, Config)
     match config.action:
         case "clear":
             RETRIEVAL_CACHE.clear()

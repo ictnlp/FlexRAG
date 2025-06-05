@@ -1,4 +1,4 @@
-from .configure import Choices, Register, configure, data
+from .configure import Choices, Register, configure, data, extract_config
 from .default_vars import __VERSION__, FLEXRAG_CACHE_DIR
 from .logging import LOGGER_MANAGER, SimpleProgressLogger
 from .misc import load_user_module
@@ -15,6 +15,7 @@ __all__ = [
     "Register",
     "configure",
     "data",
+    "extract_config",
     "__VERSION__",
     "FLEXRAG_CACHE_DIR",
     "LOGGER_MANAGER",

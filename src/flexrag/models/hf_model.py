@@ -5,7 +5,6 @@ from typing import Annotated, Optional
 import numpy as np
 import torch
 import torch.nn.functional as F
-from omegaconf import MISSING
 from PIL.Image import Image
 from PIL.ImageFile import ImageFile
 from torch.nn.parallel import DataParallel as DP
@@ -263,7 +262,7 @@ class HFModelConfig:
     :type load_dtype: str
     """
 
-    model_path: str = MISSING
+    model_path: Optional[str] = None
     tokenizer_path: Optional[str] = None
     trust_remote_code: bool = False
     device_id: list[int] = field(default_factory=list)

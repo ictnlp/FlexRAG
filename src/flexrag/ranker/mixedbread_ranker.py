@@ -1,9 +1,9 @@
 import asyncio
+import os
 from typing import Optional
 
 import httpx
 import numpy as np
-from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER, configure
 
@@ -16,7 +16,9 @@ class MixedbreadRankerConfig(RankerBaseConfig):
 
     :param model: the model name of the ranker. Default is "mxbai-rerank-base-v2".
     :type model: str
-    :param api_key: the API key for the Mixedbread ranker. Required.
+    :param api_key: the API key for the Mixedbread ranker.
+        If not provided, it will use the environment variable `MIXEDBREAD_API_KEY`.
+        Defaults to None.
     :type api_key: str
     :param base_url: the base URL of the Mixedbread ranker. Default is None.
     :type base_url: Optional[str]
@@ -26,7 +28,7 @@ class MixedbreadRankerConfig(RankerBaseConfig):
 
     model: str = "mxbai-rerank-base-v2"
     base_url: Optional[str] = None
-    api_key: str = MISSING
+    api_key: Optional[str] = None
     proxy: Optional[str] = None
 
 
@@ -42,8 +44,15 @@ class MixedbreadRanker(RankerBase):
             httpx_client = httpx.Client(proxies=cfg.proxy)
         else:
             httpx_client = None
+
+        api_key = cfg.api_key or httpx_client or os.getenv("MIXEDBREAD_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "API key for Mixedbread is not provided. "
+                "Please set it in the configuration or as an environment variable 'MIXEDBREAD_API_KEY'."
+            )
         self.client = Mixedbread(
-            api_key=cfg.api_key, base_url=cfg.base_url, http_client=httpx_client
+            api_key=api_key, base_url=cfg.base_url, http_client=httpx_client
         )
         self.model = cfg.model
         return

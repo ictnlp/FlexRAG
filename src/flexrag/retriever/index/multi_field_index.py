@@ -4,7 +4,6 @@ from collections import defaultdict
 from typing import Annotated, Any, Generator, Iterable
 
 import numpy as np
-from omegaconf import OmegaConf
 
 from flexrag.utils import LOGGER_MANAGER, Choices, SimpleProgressLogger, configure
 from flexrag.utils.configure import extract_config
@@ -351,8 +350,7 @@ class MultiFieldIndex:
 
         # serialize the configuration
         config_path = os.path.join(index_path, "multi_field_index_config.yaml")
-        with open(config_path, "w", encoding="utf-8") as f:
-            OmegaConf.save(self.cfg, f)
+        self.cfg.dump(config_path)
 
         # serialize the context_id mapping
         context_mapping_path = os.path.join(
@@ -379,9 +377,7 @@ class MultiFieldIndex:
         assert os.path.exists(
             config_path
         ), f"Configuration file not found in {index_path}."
-        cfg = OmegaConf.load(config_path)
-        cfg = OmegaConf.merge(MultiFieldIndexConfig, cfg)
-
+        cfg = MultiFieldIndexConfig.load(config_path)
         return MultiFieldIndex(cfg, index)
 
     @property

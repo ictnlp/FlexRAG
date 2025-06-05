@@ -2,11 +2,14 @@ import json
 import keyword
 import os
 import types
+from copy import deepcopy
 from dataclasses import field, fields, is_dataclass
+from pathlib import Path
 from typing import Annotated, Callable, Generic, Optional, Type, TypeVar
 
+import yaml
 from huggingface_hub import HfApi
-from omegaconf import MISSING, DictConfig, ListConfig, OmegaConf
+from omegaconf import DictConfig, ListConfig, OmegaConf
 from pydantic import ConfigDict, Field
 from pydantic.dataclasses import ConfigDict, dataclass
 
@@ -17,18 +20,19 @@ T = TypeVar("T")
 
 def extract_config(config, config_cls: Type[T]) -> T:
     """
-    Extracts the configuration from a pydantic dataclass.
+    Extracts the configuration from a pydantic dataclass, omegaconf.DictConfig or dict.
     """
     if isinstance(config, DictConfig):
         config = OmegaConf.to_container(config, resolve=True)
     if isinstance(config, dict):
-        return config_cls(**config)
+        config = config_cls(**config)
     elif is_dataclass(config):
         field_names = {f.name for f in fields(config_cls)}
         kwargs = {name: getattr(config, name) for name in field_names}
-        return config_cls(**kwargs)
+        config = config_cls(**kwargs)
     else:
         raise TypeError(f"Expected {config_cls}, got {type(config)}")
+    return config
 
 
 def make_dataclass(
@@ -123,7 +127,36 @@ _T = TypeVar("_T")
 
 def _create_pydantic_dataclass(config: ConfigDict) -> Callable[[Type[_T]], Type[_T]]:
     def decorator(cls: Type[_T]) -> Type[_T]:
-        return dataclass(config=config)(cls)  # type: ignore
+        cls = dataclass(config=config)(cls)
+
+        def dumps(self) -> str:
+            """Dump the dataclass to a YAML string."""
+            return OmegaConf.to_yaml(self, resolve=True)
+
+        def dump(self, path: str | Path):
+            """Dump the dataclass to a YAML file."""
+            path = Path(path)
+            path.write_text(self.dumps(), encoding="utf-8")
+
+        @classmethod
+        def loads(cls, s: str) -> _T:
+            """Load the dataclass from a YAML string."""
+            data = yaml.safe_load(s)
+            if not isinstance(data, dict):
+                raise ValueError("YAML string must represent a dictionary.")
+            return cls(**data)
+
+        @classmethod
+        def load(cls, path: str | Path) -> _T:
+            """Load the dataclass from a YAML file."""
+            path = Path(path)
+            return cls(**OmegaConf.to_container(OmegaConf.load(path)))
+
+        setattr(cls, "dumps", dumps)
+        setattr(cls, "dump", dump)
+        setattr(cls, "loads", loads)
+        setattr(cls, "load", load)
+        return cls
 
     return decorator
 
@@ -242,14 +275,14 @@ class Register(Generic[RegistedType]):
     def make_config(
         self,
         allow_multiple: bool = False,
-        default: Optional[str] = MISSING,
+        default: Optional[str] = None,
         config_name: str = None,
     ):
         """Make a config class for the registered items.
 
         :param allow_multiple: Whether to allow multiple items to be selected, defaults to False.
         :type allow_multiple: bool, optional
-        :param default: The default item to select, defaults to MISSING(???).
+        :param default: The default item to select, defaults to None.
         :type default: Optional[str], optional
         :param config_name: The name of the config class, defaults to None.
         :type config_name: str, optional
@@ -259,25 +292,31 @@ class Register(Generic[RegistedType]):
         choice_name = f"{self.name}_type"
         config_name = f"{self.name}_config" if config_name is None else config_name
         if allow_multiple:
-            config_fields = [
-                (
-                    choice_name,
-                    list[Annotated[str, Choices(*self.names)]],
-                    field(default_factory=list),
-                )
-            ]
+            if self.allow_load_from_repo:
+                config_fields = [(choice_name, list[str], field(default_factory=list))]
+            else:
+                config_fields = [
+                    (
+                        choice_name,
+                        list[Annotated[str, Choices(*self.names)]],
+                        field(default_factory=list),
+                    )
+                ]
         else:
-            config_fields = [
-                (
-                    choice_name,
-                    Optional[Annotated[str, Choices(*self.names)]],
-                    field(default=default),
-                )
-            ]
+            if self.allow_load_from_repo:
+                config_fields = [(choice_name, Optional[str], field(default=default))]
+            else:
+                config_fields = [
+                    (
+                        choice_name,
+                        Optional[Annotated[str, Choices(*self.names)]],
+                        field(default=default),
+                    )
+                ]
         config_fields += [
             (
                 f"{self[name]['short_names'][0]}_config",
-                self[name]["config_class"],
+                Optional[self[name]["config_class"]],
                 field(default_factory=self._items[name]["config_class"]),
             )
             for name in self.mainnames
@@ -377,6 +416,32 @@ class Register(Generic[RegistedType]):
                 loaded.append(load_item(str(name)))
             return loaded
         return load_item(str(choice))
+
+    def squeeze(self, config_instance):
+        """Convert the nused fields to None."""
+        new_instance = deepcopy(config_instance)
+        choice = getattr(new_instance, f"{self.name}_type", None)
+        if choice is None:
+            selected_fields = []
+        elif isinstance(choice, list):
+            selected_fields = []
+            for choice_item in choice:
+                cfg_name = f"{self[str(choice_item)]['short_names'][0]}_config"
+                if getattr(new_instance, cfg_name, None) is not None:
+                    selected_fields.append(cfg_name)
+        else:
+            cfg_name = f"{self[str(choice)]['short_names'][0]}_config"
+            if getattr(new_instance, cfg_name, None) is not None:
+                selected_fields = [cfg_name]
+
+        for field in fields(new_instance):
+            if field.name == f"{self.name}_type":
+                continue
+            if field.name in selected_fields:
+                continue
+            if field.name.endswith("_config"):
+                setattr(new_instance, field.name, None)
+        return new_instance
 
     def __len__(self) -> int:
         return len(self._items)

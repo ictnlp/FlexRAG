@@ -1,8 +1,6 @@
 from dataclasses import field
 from typing import Optional
 
-from omegaconf import MISSING
-
 from .configure import data
 
 
@@ -38,6 +36,6 @@ class RetrievedContext(Context):
     :type score: float
     """
 
-    retriever: str = MISSING
-    query: str = MISSING
+    retriever: str = ""
+    query: str = ""
     score: float = 0.0

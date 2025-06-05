@@ -1,7 +1,8 @@
 import asyncio
+import os
+from typing import Optional
 
 import numpy as np
-from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER, configure
 
@@ -14,7 +15,9 @@ class VoyageRankerConfig(RankerBaseConfig):
 
     :param model: the model name of the ranker. Default is "rerank-2".
     :type model: str
-    :param api_key: the API key for the Voyage ranker. Required.
+    :param api_key: the API key for the Voyage ranker.
+        If not provided, it will use the environment variable `VOYAGE_API_KEY`.
+        Defaults to None.
     :type api_key: str
     :param timeout: the timeout for the request. Default is 3.0.
     :type timeout: float
@@ -23,7 +26,7 @@ class VoyageRankerConfig(RankerBaseConfig):
     """
 
     model: str = "rerank-2"
-    api_key: str = MISSING
+    api_key: Optional[str] = None
     timeout: float = 3.0
     max_retries: int = 3
 
@@ -36,8 +39,14 @@ class VoyageRanker(RankerBase):
         super().__init__(cfg)
         from voyageai import Client
 
+        api_key = cfg.api_key or os.getenv("VOYAGE_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "API key for Voyage is not provided. "
+                "Please set it in the configuration or as an environment variable 'VOYAGE_API_KEY'."
+            )
         self.client = Client(
-            api_key=cfg.api_key, max_retries=cfg.max_retries, timeout=cfg.timeout
+            api_key=api_key, max_retries=cfg.max_retries, timeout=cfg.timeout
         )
         self.model = cfg.model
         return

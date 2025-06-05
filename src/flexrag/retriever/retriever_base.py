@@ -8,7 +8,6 @@ from typing import Any, Generator, Iterable, Optional
 
 import numpy as np
 from huggingface_hub import HfApi
-from omegaconf import OmegaConf
 
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
 from flexrag.utils import (
@@ -439,15 +438,11 @@ class LocalRetriever(EditableRetriever):
         return repo_url
 
     @staticmethod
-    def load_from_local(
-        repo_path: str = None, retriever_config: LocalRetrieverConfig = None
-    ) -> "LocalRetriever":
+    def load_from_local(repo_path: str = None) -> "LocalRetriever":
         """Load a retriever from the local disk.
 
         :param repo_path: The path to the local database. Default: None.
         :type repo_path: str
-        :param retriever_config: Additional configuration for the retriever. Default: None.
-        :type retriever_config: LocalRetrieverConfig
         :return: The loaded retriever.
         :rtype: LocalRetriever
         """
@@ -460,14 +455,7 @@ class LocalRetriever(EditableRetriever):
 
         # prepare the configuration
         config_path = os.path.join(repo_path, "config.yaml")
-        with open(config_path, "r", encoding="utf-8") as f:
-            local_cfg = OmegaConf.load(f)
-        local_cfg = OmegaConf.merge(config_cls(), local_cfg)
-        cfg: LocalRetrieverConfig
-        if retriever_config is None:
-            cfg = local_cfg
-        else:
-            cfg = OmegaConf.merge(local_cfg, retriever_config)
+        cfg: LocalRetrieverConfig = config_cls.load(config_path)
         cfg.retriever_path = repo_path
 
         # load the retriever

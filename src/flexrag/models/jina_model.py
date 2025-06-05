@@ -4,7 +4,6 @@ from typing import Annotated, Optional
 import httpx
 import numpy as np
 from numpy import ndarray
-from omegaconf import MISSING
 
 from flexrag.utils import TIME_METER, Choices, configure
 
@@ -20,6 +19,8 @@ class JinaEncoderConfig(EncoderBaseConfig):
     :param base_url: The base URL of the Jina embeddings API. Default is "https://api.jina.ai/v1/embeddings".
     :type base_url: str
     :param api_key: The API key for the Jina embeddings API.
+        If not provided, it will use the environment variable `JINA_API_KEY`.
+        Defaults to None.
     :type api_key: str
     :param embedding_size: The dimension of the embeddings. Default is 1024.
     :type embedding_size: int
@@ -32,7 +33,7 @@ class JinaEncoderConfig(EncoderBaseConfig):
 
     model: str = "jina-embeddings-v3"
     base_url: str = "https://api.jina.ai/v1/embeddings"
-    api_key: str = os.environ.get("JINA_API_KEY", MISSING)
+    api_key: Optional[str] = None
     embedding_size: int = 1024
     task: Optional[
         Annotated[
@@ -53,11 +54,17 @@ class JinaEncoderConfig(EncoderBaseConfig):
 class JinaEncoder(EncoderBase):
     def __init__(self, cfg: JinaEncoderConfig):
         super().__init__(cfg)
+        api_key = cfg.api_key or os.getenv("JINA_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "API key for Jina embeddings is not provided. "
+                "Please set it in the configuration or as an environment variable 'JINA_API_KEY'."
+            )
         # prepare client
         self.client = httpx.Client(
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {cfg.api_key}",
+                "Authorization": f"Bearer {api_key}",
             },
             proxy=cfg.proxy,
             base_url=cfg.base_url,
@@ -66,7 +73,7 @@ class JinaEncoder(EncoderBase):
         self.async_client = httpx.AsyncClient(
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {cfg.api_key}",
+                "Authorization": f"Bearer {api_key}",
             },
             proxy=cfg.proxy,
             base_url=cfg.base_url,

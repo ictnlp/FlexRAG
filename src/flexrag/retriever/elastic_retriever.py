@@ -2,7 +2,6 @@ import logging
 from typing import Iterable, Optional
 
 from elasticsearch import Elasticsearch
-from omegaconf import MISSING
 
 from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, configure
 from flexrag.utils.configure import extract_config
@@ -40,7 +39,7 @@ class ElasticRetrieverConfig(EditableRetrieverConfig):
 
     host: str = "http://localhost:9200"
     api_key: Optional[str] = None
-    index_name: str = MISSING
+    index_name: Optional[str] = None
     custom_properties: Optional[dict] = None
     verbose: bool = False
     retry_times: int = 3
@@ -57,6 +56,7 @@ class ElasticRetriever(EditableRetriever):
         # set basic args
         self.host = cfg.host
         self.api_key = cfg.api_key
+        assert cfg.index_name is not None, "`index_name` must be provided"
         self.index_name = cfg.index_name
         self.verbose = cfg.verbose
         self.retry_times = cfg.retry_times

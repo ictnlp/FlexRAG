@@ -1,6 +1,4 @@
-from typing import Annotated, Generator, Iterable
-
-from omegaconf import MISSING
+from typing import Annotated, Generator, Iterable, Optional
 
 from flexrag.utils import (
     LOGGER_MANAGER,
@@ -21,7 +19,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.typesense")
 class TypesenseRetrieverConfig(EditableRetrieverConfig):
     """Configuration class for TypesenseRetriever.
 
-    :param host: Host of the Typesense server. Required.
+    :param host: Host of the Typesense server. Default: "localhost".
     :type host: str
     :param port: Port of the Typesense server. Default: 8108.
     :type port: int
@@ -36,11 +34,11 @@ class TypesenseRetrieverConfig(EditableRetrieverConfig):
     :type timeout: float
     """
 
-    host: str = MISSING
+    host: str = "localhost"
     port: int = 8108
     protocol: Annotated[str, Choices("https", "http")] = "http"
-    api_key: str = MISSING
-    index_name: str = MISSING
+    api_key: Optional[str] = None
+    index_name: Optional[str] = None
     timeout: float = 200.0
 
 
@@ -49,9 +47,12 @@ class TypesenseRetriever(EditableRetriever):
     def __init__(self, cfg: TypesenseRetrieverConfig) -> None:
         super().__init__(cfg)
         self.cfg = extract_config(cfg, TypesenseRetrieverConfig)
-        import typesense
+        assert self.cfg.api_key is not None, "`api_key` must be provided"
+        assert self.cfg.index_name is not None, "`index_name` must be provided"
 
         # load database
+        import typesense
+
         self.typesense = typesense
         self.client = typesense.Client(
             {

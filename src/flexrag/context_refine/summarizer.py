@@ -4,7 +4,6 @@ from string import Template
 from typing import Optional
 
 import numpy as np
-from omegaconf import MISSING
 
 from flexrag.models import ENCODERS, GENERATORS, EncoderConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
@@ -87,7 +86,7 @@ class AbstractiveSummarizerConfig(GeneratorConfig):
     chat_prompt: Optional[ChatPrompt] = None
     substitute: bool = True
     concatenate_contexts: bool = False
-    refined_field: str = MISSING
+    refined_field: Optional[str] = None
 
 
 @REFINERS("abstractive_summarizer", config_class=AbstractiveSummarizerConfig)
@@ -104,6 +103,7 @@ class AbstractiveSummarizer(RefinerBase):
         self.chat_prompt = cfg.chat_prompt
         self.substitute = cfg.substitute
         self.concatenate = cfg.concatenate_contexts
+        assert cfg.refined_field is not None, "The refined_field must be provided."
         self.refined_field = cfg.refined_field
         return
 
@@ -192,7 +192,7 @@ class RecompExtractiveSummarizerConfig(EncoderConfig):
     preserved_sents: int = 5
     concatenate_contexts: bool = False
     substitute: bool = False
-    refined_field: str = MISSING
+    refined_field: Optional[str] = None
 
 
 @REFINERS("extractive_summarizer", config_class=RecompExtractiveSummarizerConfig)
@@ -205,6 +205,7 @@ class RecompExtractiveSummarizer(RefinerBase):
         self.concatenate = cfg.concatenate_contexts
         self.top_k = cfg.preserved_sents
         self.substitute = cfg.substitute
+        assert cfg.refined_field is not None, "The refined_field must be provided."
         self.refined_field = cfg.refined_field
         return
 

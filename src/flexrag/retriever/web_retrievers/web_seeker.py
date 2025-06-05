@@ -3,7 +3,6 @@ from abc import ABC, abstractmethod
 from typing import Annotated, Optional
 
 import httpx
-from omegaconf import MISSING
 
 from flexrag.utils import Choices, Register, configure
 
@@ -168,10 +167,12 @@ class GoogleEngineConfig:
     """The configuration for the ``GoogleEngine``.
 
     :param subscription_key: The subscription key for the Google Search API.
-        Default is os.environ.get("GOOGLE_SEARCH_KEY", "EMPTY").
+        If not provided, it will use the environment variable `GOOGLE_SEARCH_KEY`.
+        Defaults to None.
     :type subscription_key: str
     :param search_engine_id: The search engine id for the Google Search API.
-        Default is os.environ.get("GOOGLE_SEARCH_ENGINE_ID", "EMPTY").
+        If not provided, it will use the environment variable `GOOGLE_SEARCH_ENGINE_ID`.
+        Defaults to None.
     :type search_engine_id: str
     :param endpoint: The endpoint for the Google Search API.
         Default is "https://customsearch.googleapis.com/customsearch/v1".
@@ -182,8 +183,8 @@ class GoogleEngineConfig:
     :type timeout: float
     """
 
-    subscription_key: str = os.environ.get("GOOGLE_SEARCH_KEY", "EMPTY")
-    search_engine_id: str = os.environ.get("GOOGLE_SEARCH_ENGINE_ID", "EMPTY")
+    subscription_key: Optional[str] = None
+    search_engine_id: Optional[str] = None
     endpoint: str = "https://customsearch.googleapis.com/customsearch/v1"
     proxy: Optional[str] = None
     timeout: float = 3.0
@@ -198,8 +199,18 @@ class GoogleEngine(WebSeekerBase):
 
     def __init__(self, cfg: GoogleEngineConfig):
         super().__init__()
-        self.subscription_key = cfg.subscription_key
-        self.engine_id = cfg.search_engine_id
+        self.subscription_key = cfg.subscription_key or os.getenv("GOOGLE_SEARCH_KEY")
+        if not self.subscription_key:
+            raise ValueError(
+                "Subscription key for Google Search API is not provided. "
+                "Please set it in the configuration or as an environment variable 'GOOGLE_SEARCH_KEY'."
+            )
+        self.engine_id = cfg.search_engine_id or os.getenv("GOOGLE_SEARCH_ENGINE_ID")
+        if not self.engine_id:
+            raise ValueError(
+                "Search engine ID for Google Search API is not provided. "
+                "Please set it in the configuration or as an environment variable 'GOOGLE_SEARCH_ENGINE_ID'."
+            )
         self.client = httpx.Client(
             base_url=cfg.endpoint,
             timeout=cfg.timeout,
@@ -243,7 +254,8 @@ class SerpApiConfig:
     """The configuration for the ``SerpApi``.
 
     :param api_key: The API key for the SerpApi.
-        Default is os.environ.get("SERP_API_KEY", MISSING).
+        If not provided, it will use the environment variable `SERPAPI_API_KEY`.
+        Defaults to None.
     :type api_key: str
     :param engine: The search engine to use. Default is "google".
         Available choices are "google", "bing", "baidu", "yandex", "yahoo", "google_scholar", "duckduckgo".
@@ -254,7 +266,7 @@ class SerpApiConfig:
     :type language: str
     """
 
-    api_key: str = os.environ.get("SERP_API_KEY", MISSING)
+    api_key: Optional[str] = None
     engine: Annotated[
         str,
         Choices(
@@ -278,14 +290,20 @@ class SerpApi(WebSeekerBase):
 
     def __init__(self, cfg: SerpApiConfig):
         super().__init__()
+        api_key = cfg.api_key or os.getenv("SERPAPI_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "API key for SerpApi is not provided. "
+                "Please set it in the configuration or as an environment variable 'SERPAPI_API_KEY'."
+            )
         try:
             import serpapi
 
-            self.client = serpapi.Client(api_key=cfg.api_key)
+            self.client = serpapi.Client(api_key=api_key)
         except ImportError:
             raise ImportError("Please install serpapi with `pip install serpapi`.")
 
-        self.api_key = cfg.api_key
+        self.api_key = api_key
         self.engine = cfg.engine
         self.gl = cfg.country
         self.hl = cfg.language

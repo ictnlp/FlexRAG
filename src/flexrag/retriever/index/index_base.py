@@ -6,7 +6,6 @@ from uuid import uuid4
 
 import numpy as np
 from huggingface_hub import HfApi
-from omegaconf import OmegaConf
 
 from flexrag.models import ENCODERS, EncoderConfig
 from flexrag.utils import (
@@ -230,9 +229,7 @@ class RetrieverIndexBase(ABC):
         assert os.path.exists(
             config_path
         ), f"Configuration file {config_path} does not exist."
-        with open(config_path, "r", encoding="utf-8") as f:
-            local_cfg = OmegaConf.load(f)
-        cfg = OmegaConf.merge(config_cls, local_cfg)
+        cfg = config_cls.load(config_path)
         cfg.index_path = index_path
 
         # load the index

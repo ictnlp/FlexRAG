@@ -9,7 +9,7 @@ import PIL.Image
 from hydra.core.config_store import ConfigStore
 
 from flexrag.assistant import ASSISTANTS
-from flexrag.utils import LOGGER_MANAGER, configure, load_user_module
+from flexrag.utils import LOGGER_MANAGER, configure, extract_config, load_user_module
 
 # load user modules before loading config
 for arg in sys.argv:
@@ -48,6 +48,8 @@ user_path = Path(__file__).parents[0] / "assets" / "user.png"
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(config: Config):
+    config = extract_config(config, Config)
+    logger.debug(f"Configs:\n{config.dumps()}")
     # load assistant
     assistant = ASSISTANTS.load(config)
 

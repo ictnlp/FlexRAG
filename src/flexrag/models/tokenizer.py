@@ -2,8 +2,6 @@ from abc import ABC, abstractmethod
 from functools import partial
 from typing import Generic, Optional, TypeVar
 
-from omegaconf import MISSING
-
 from flexrag.utils import Register, configure
 
 TokenType = TypeVar("TokenType")
@@ -57,7 +55,7 @@ class HuggingFaceTokenizerConfig:
     :type tokenizer_path: str
     """
 
-    tokenizer_path: str = MISSING
+    tokenizer_path: Optional[str] = None
 
 
 @TOKENIZERS("hf", config_class=HuggingFaceTokenizerConfig)
@@ -67,6 +65,7 @@ class HuggingFaceTokenizer(TokenizerBase[int]):
     def __init__(self, cfg: HuggingFaceTokenizerConfig) -> None:
         from transformers import AutoTokenizer
 
+        assert cfg.tokenizer_path is not None, "`tokenizer_path` must be provided"
         self.tokenizer = AutoTokenizer.from_pretrained(cfg.tokenizer_path)
         return
 

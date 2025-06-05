@@ -4,7 +4,6 @@ from collections import defaultdict
 from typing import Annotated, Any, Generator, Iterable, Optional
 
 from jinja2 import Template
-from omegaconf import OmegaConf
 
 from flexrag.database import (
     LMDBRetrieverDatabase,
@@ -499,8 +498,7 @@ class FlexRetriever(LocalRetriever):
         # save the configuration
         cfg_path = os.path.join(retriever_path, "config.yaml")
         if not os.path.exists(cfg_path):
-            with open(cfg_path, "w", encoding="utf-8") as f:
-                OmegaConf.save(self.cfg, f)
+            self.cfg.dump(cfg_path)
         id_path = os.path.join(retriever_path, "cls.id")
         if not os.path.exists(id_path):
             with open(id_path, "w", encoding="utf-8") as f:

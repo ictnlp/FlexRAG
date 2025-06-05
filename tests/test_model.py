@@ -118,7 +118,9 @@ class TestGenerator:
 
     @pytest.mark.asyncio
     async def test_openai(self, mock_openai_client):
-        generator = OpenAIGenerator(OpenAIGeneratorConfig(model_name="gpt-3.5-turbo"))
+        generator = OpenAIGenerator(
+            OpenAIGeneratorConfig(model_name="gpt-3.5-turbo", api_key="test")
+        )
         await self.valid_chat_function(generator)
         await self.valid_generate_function(generator)
         return
@@ -163,7 +165,9 @@ class TestGenerator:
 
     @pytest.mark.asyncio
     async def test_anthropic(self, mock_anthropic_client):
-        generator = AnthropicGenerator(AnthropicGeneratorConfig())
+        generator = AnthropicGenerator(
+            AnthropicGeneratorConfig(model_name="claude-3-7-sonnet")
+        )
         await self.valid_chat_function(generator)
         return
 
@@ -192,7 +196,8 @@ class TestEncode:
         encoder = OpenAIEncoder(
             OpenAIEncoderConfig(
                 model_name="text-embedding-3-small",
-                dimension=512,
+                api_key="test",
+                embedding_size=512,
             )
         )
         await self.run_encoder(encoder)
@@ -241,6 +246,7 @@ class TestEncode:
             JinaEncoderConfig(
                 model="jina-embeddings-v3",
                 embedding_size=768,
+                api_key="test",
             )
         )
         await self.run_encoder(encoder)
@@ -248,6 +254,6 @@ class TestEncode:
 
     @pytest.mark.asyncio
     async def test_cohere(self, mock_cohere_client):
-        encoder = CohereEncoder(CohereEncoderConfig(model="embed-v4.0"))
+        encoder = CohereEncoder(CohereEncoderConfig(model="embed-v4.0", api_key="test"))
         await self.run_encoder(encoder)
         return

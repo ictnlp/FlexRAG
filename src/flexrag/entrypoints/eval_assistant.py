@@ -6,7 +6,6 @@ from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import OmegaConf
 
 from flexrag.assistant import ASSISTANTS
 from flexrag.database.serializer import json_dump
@@ -16,6 +15,7 @@ from flexrag.utils import (
     LOGGER_MANAGER,
     SimpleProgressLogger,
     configure,
+    extract_config,
     load_user_module,
 )
 from flexrag.utils.dataclasses import RetrievedContext
@@ -44,6 +44,7 @@ logger = LOGGER_MANAGER.get_logger("run_assistant")
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(config: Config):
+    config = extract_config(config, Config)
     # load dataset
     testset = RAGEvalDataset(config)
 
@@ -65,11 +66,10 @@ def main(config: Config):
         log_path = os.devnull
 
     # save config and set logger
-    with open(config_path, "w", encoding="utf-8") as f:
-        OmegaConf.save(config, f)
+    config.dump(config_path)
     handler = logging.FileHandler(log_path)
     LOGGER_MANAGER.add_handler(handler)
-    logger.debug(f"Configs:\n{OmegaConf.to_yaml(config)}")
+    logger.debug(f"Configs:\n{config.dumps()}")
 
     # search and generate
     p_logger = SimpleProgressLogger(logger, interval=config.log_interval)

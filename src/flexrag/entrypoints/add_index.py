@@ -1,16 +1,17 @@
+from typing import Optional
+
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import MISSING
 
 from flexrag.retriever import FlexRetriever
 from flexrag.retriever.index import MultiFieldIndexConfig, RetrieverIndexConfig
-from flexrag.utils import configure
+from flexrag.utils import configure, extract_config
 
 
 @configure
 class Config(RetrieverIndexConfig, MultiFieldIndexConfig):
-    index_name: str = MISSING
-    retriever_path: str = MISSING
+    index_name: Optional[str] = None
+    retriever_path: Optional[str] = None
     rebuild: bool = False
 
 
@@ -20,6 +21,9 @@ cs.store(name="default", node=Config)
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(cfg: Config):
+    cfg = extract_config(cfg, Config)
+    assert cfg.index_name is not None, "index_name must be provided"
+    assert cfg.retriever_path is not None, "retriever_path must be provided"
     retriever: FlexRetriever = FlexRetriever.load_from_local(cfg.retriever_path)
 
     # remove index

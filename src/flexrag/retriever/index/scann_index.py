@@ -1,11 +1,12 @@
 import os
 import re
 import shutil
+from copy import deepcopy
 from typing import Any, Iterable
 
 import numpy as np
-from omegaconf import OmegaConf
 
+from flexrag.models import ENCODERS
 from flexrag.utils import LOGGER_MANAGER, configure
 from flexrag.utils.configure import extract_config
 
@@ -161,9 +162,12 @@ class ScaNNIndex(DenseIndexBase):
         logger.info(f"Serializing index to {self.cfg.index_path}")
 
         # save the configuration
+        cfg = deepcopy(self.cfg)
+        cfg.query_encoder_config = ENCODERS.squeeze(cfg.query_encoder_config)
+        cfg.passage_encoder_config = ENCODERS.squeeze(cfg.passage_encoder_config)
+        cfg.index_path = ""
         config_path = os.path.join(self.cfg.index_path, "config.yaml")
-        with open(config_path, "w", encoding="utf-8") as f:
-            OmegaConf.save(self.cfg, f)
+        cfg.dump(config_path)
         id_path = os.path.join(self.cfg.index_path, "cls.id")
         with open(id_path, "w", encoding="utf-8") as f:
             f.write(self.__class__.__name__)

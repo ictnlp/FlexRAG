@@ -4,7 +4,6 @@ from typing import Annotated, Any, Iterable, Optional
 
 import bm25s
 import numpy as np
-from omegaconf import OmegaConf
 
 from flexrag.utils import LOGGER_MANAGER, Choices, configure
 from flexrag.utils.configure import extract_config
@@ -159,8 +158,7 @@ class BM25Index(RetrieverIndexBase):
 
         # save the configuration
         config_path = os.path.join(self.cfg.index_path, "config.yaml")
-        with open(config_path, "w", encoding="utf-8") as f:
-            OmegaConf.save(self.cfg, f)
+        self.cfg.dump(config_path)
         id_path = os.path.join(self.cfg.index_path, "cls.id")
         with open(id_path, "w", encoding="utf-8") as f:
             f.write(self.__class__.__name__)

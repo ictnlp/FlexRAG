@@ -6,7 +6,6 @@ from typing import Optional
 
 import httpx
 import numpy as np
-from omegaconf import MISSING
 from openai import AzureOpenAI, OpenAI
 
 from flexrag.prompt import ChatPrompt
@@ -45,7 +44,7 @@ class OpenAIConfig:
     """
 
     is_azure: bool = False
-    model_name: str = MISSING
+    model_name: Optional[str] = None
     base_url: Optional[str] = None
     api_key: str = os.environ.get("OPENAI_API_KEY", "EMPTY")
     api_version: str = "2024-07-01-preview"
@@ -90,6 +89,7 @@ class OpenAIGenerator(GeneratorBase):
 
         # set logger
         self.allow_parallel = cfg.allow_parallel
+        assert cfg.model_name is not None, "`model_name` must be provided"
         self.model_name = cfg.model_name
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
@@ -275,6 +275,7 @@ class OpenAIEncoder(EncoderBase):
             )
 
         # set logger
+        assert cfg.model_name is not None, "`model_name` must be provided"
         self.model_name = cfg.model_name
         self.dimension = cfg.embedding_size
         if not cfg.verbose:

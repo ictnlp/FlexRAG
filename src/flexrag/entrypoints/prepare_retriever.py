@@ -13,7 +13,7 @@ from flexrag.retriever import (
     TypesenseRetriever,
     TypesenseRetrieverConfig,
 )
-from flexrag.utils import LOGGER_MANAGER, Choices, configure
+from flexrag.utils import LOGGER_MANAGER, Choices, configure, extract_config
 
 logger = LOGGER_MANAGER.get_logger("flexrag.prepare_index")
 
@@ -36,6 +36,7 @@ cs.store(name="default", node=Config)
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(cfg: Config):
+    cfg = extract_config(cfg, Config)
     # load retriever
     match cfg.retriever_type:
         case "flex":
