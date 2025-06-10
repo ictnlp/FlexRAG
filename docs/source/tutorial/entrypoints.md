@@ -4,8 +4,8 @@ FlexRAG entrypoints refer to a series of command-line executable programs provid
 ## Provided Entrypoints
 In this section, we will introduce all FlexRAG entrypoints and their corresponding configuration structures.
 
-### Preparing the Retriever Index
-This entrypoint is used to prepare the retriever index. You can use this entrypoint by running `python -m flexrag.entrypoints.prepare_retriever`.
+### Adding Passages to the Retriever
+This entrypoint is used to add the passage to the retriever. You can use this entrypoint by running `python -m flexrag.entrypoints.prepare_retriever`.
 The defination of the configuration structure for the `prepare_retriever` entrypoint is as follows:
 
 ```{eval-rst}
@@ -15,7 +15,7 @@ The defination of the configuration structure for the `prepare_retriever` entryp
     :show-inheritance:
 ```
 
-### Rebuilding the Retriever Index
+### Adding the Index for FlexRetriever
 This entrypoint is used to add the index for the `FlexRetriever`. You can use this entrypoint by running `python -m flexrag.entrypoints.add_index`.
 The defination of the configuration structure for the `add_index` entrypoint is as follows:
 
@@ -63,72 +63,74 @@ The defination of the configuration structure for the `cache` entrypoint is as f
 If you wish to disable the Cache during retrieval, you can set the environment variable by `export DISABLE_CACHE=True`.
 ```
 
+### Deploying the Retriever as a Service
+FlexRAG also provides an entrypoint to deploy the retriever as a service. This is helpful when you want to use the retriever to fine-tune your own RAG assistant or when you want to use the retriever in a production demonstration.
+You can use this entrypoint by running `python -m flexrag.entrypoints.serve_retriever`.
+The defination of the configuration structure for the `deploy` entrypoint is as follows:
+
+```{eval-rst}
+.. autoclass:: flexrag.entrypoints.serve_retriever::Config
+    :members:
+    :noindex:
+    :show-inheritance:
+```
+
 
 ## Configuration Management
 FlexRAG employs `dataclass` and [hydra-core](https://github.com/facebookresearch/hydra) for configuration management, which brings remarkable clarity to the complex configurations within the RAG pipeline. Moreover, you can pass parameters to the FlexRAG's entrypoints either via the command line or through configuration files. This section will illustrate how to utilize both methods to convey parameters to the FlexRAG entry point.
 
 ### Passing Configuration via Command Line
-Configurations can be passed via the command line using the `<config_key>=<config_value>` format. For example, you can run the following command to set the configuration for a *modular assistant* with a *dense retriever* and an *OpenAI generator*:
+Configurations can be passed via the command line using the `<config_key>=<config_value>` format. For example, you can run the following command to set the configuration for a *ModularAssistant* with a *FlexRetriever* and an *OpenAIGenerator*:
 ```bash
+RETRIEVER_PATH=<path_to_retriever>
+
 python -m flexrag.entrypoints.run_interactive \
     assistant_type=modular \
     modular_config.used_fields=[title,text] \
-    modular_config.retriever_type=dense \
-    modular_config.dense_config.top_k=5 \
-    modular_config.dense_config.database_path=${DB_PATH} \
-    modular_config.dense_config.query_encoder_config.encoder_type=hf \
-    modular_config.dense_config.query_encoder_config.hf_config.model_path='facebook/contriever-msmarco' \
-    modular_config.dense_config.query_encoder_config.hf_config.device_id=[0] \
-    modular_config.response_type=short \
+    modular_config.retriever_type=flex \
+    modular_config.flex_config.top_k=5 \
+    modular_config.flex_config.retriever_path=${RETRIEVER_PATH} \
+    modular_config.flex_config.used_indexes=[bm25] \
+    modular_config.response_type=original \
     modular_config.generator_type=openai \
     modular_config.openai_config.model_name='gpt-4o-mini' \
-    modular_config.openai_config.api_key=$OPENAI_KEY \
+    modular_config.openai_config.api_key=${OPENAI_KEY} \
     modular_config.do_sample=False
 ```
 
 ### Passing Configuration via Configuration File
 Configurations can also be passed via a `YAML` file. For example, you can create a `config.yaml` file with the following content:
 ```yaml
+# The `defaults` option specifies the default configuration to be used.
+# This three lines cannot be omitted.
+defaults:
+    - default
+    - _self_
+
+# The configuration passed to the entrypoint.
 assistant_type: modular
 modular_config:
-  used_fields: [title, text]
-  retriever_type: dense
-  dense_config:
-    top_k: 5
-    database_path: ${DB_PATH}
-    query_encoder_config:
-      encoder_type: hf
-      hf_config:
-        model_path: facebook/contriever-msmarco
-        device_id: [0]
-    response_type: short
+    used_fields: [title, text]
+    retriever_type: flex
+    flex_config:
+        top_k: 5
+        retriever_path: <path_to_retriever>
+        used_indexes: [bm25]
+    response_type: original
+    generator_type: openai
+    openai_config:
+        model_name: "gpt-4o-mini"
+        api_key: <your_openai_key>
+    do_sample: False
 ```
 
 Then, you can run the following command to use the configuration file:
 ```bash
 python -m flexrag.entrypoints.eval_assistant \
-    --config-file config.yaml
+    --config-path '<parent_path_of_your_config_file>' \
+    --config-name config
 ```
 
 ```{tip}
 For more detailed usage, we recommend you to go through the [Hydra documentation](https://hydra.cc/docs/intro/) to get a better understanding of the concepts and features.
-```
-
-
-
-## Defining Your Own Configuration
-You can define your own configuration structure by creating a new `dataclass`. For example, you can define a new configuration structure for a custom assistant as follows:
-
-```python
-from dataclass import dataclass
-from omegaconf import MISSING
-
-from flexrag.retriever import DenseRetrieverConfig
-from flexrag.models import OpenAIGeneratorConfig
-
-
-@dataclass
-class CustomAssistantConfig(DenseRetrieverConfig, OpenAIGeneratorConfig):
-    prompt_path: str = MISSING
-
 ```

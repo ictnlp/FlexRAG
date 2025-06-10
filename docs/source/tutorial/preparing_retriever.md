@@ -1,5 +1,5 @@
 # Preparing the Retriever
-Retriever is one of the most important component in the RAG pipeline. It retrieves the top-k relevant contexts from the knowledge base for a given query. In FlexRAG, there are three types of retrievers: `WebRetriever`, `EditableRetriever`, and `LocalRetriever`. The relationship between these retrievers is shown in the following figure:
+Retriever is one of the most important component in the RAG pipeline. It retrieves the top-k relevant contexts from the knowledge base for a given query. In FlexRAG, there are three types of retrievers: `WebRetriever`, `APIBasedRetriever`, and {class}`~flexrag.retriever.FlexRetriever`. The relationship between these retrievers is shown in the following figure:
 
 ```{eval-rst}
 .. image:: ../../../assets/Retrievers.png
@@ -9,56 +9,39 @@ Retriever is one of the most important component in the RAG pipeline. It retriev
 ```
 
 The difference between these retrievers is as follows:
-- `WebRetriever`: A retriever that helps fetching contexts from the web, making it ideal for building personal RAG applications with good timeliness.
-- `EditableRetriever`: This retriever retrieves information from a knowledge base and allows easy customization through the `add_passages` method, offering great flexibility in building a tailored knowledge repository.
-- `LocalRetriever`: A variant of the `EditableRetriever`, the `LocalRetriever` stores its knowledge base locally, making it easy to load from local storage or the Hugging Face Hub. It offers the best reproducibility.
+- `WebRetriever`: The WebRetriever performs real-time information retrieval directly from the **internet**. It is designed to handle queries that require up-to-date or dynamic content, such as breaking news, current events, or newly published data. This retriever is ideal when static knowledge sources are insufficient.
+- `APIBasedRetriever`: The APIRetriever connects to external systems via **APIs** to retrieve structured or domain-specific data. It acts as a bridge to proprietary databases, enterprise systems, or third-party services, enabling seamless integration with existing data infrastructures. In FlexRAG, we provide two types of API-based retrievers: {class}`~flexrag.retriever.ElasticRetriever` and {class}`~flexrag.retriever.TypesenseRetriever`.
+- {class}`~flexrag.retriever.FlexRetriever`: The FlexRetriever is an advanced local retriever that supports both **MultiField** and **MultiIndex** retrieval capabilities. It allows each document to be parsed into multiple semantic fields (e.g., title, abstract, content), with dedicated indexes built per field. In addition, FlexRetriever enables hybrid search across multiple indexes, allowing for flexible, fine-grained retrieval strategies tailored to complex information needs. Furthermore, FlexRetriever supports both sparse and dense retrieval methods, making it suitable for a wide range of retrieval tasks. FlexRetriever is also fully **compatible with the Hugging Face ecosystem**, making it easy to publish, share, and reuse retrievers via the Hugging Face Hub. This integration empowers users to contribute and leverage community-built retrieval pipelines with minimal configuration.
 
-In this tutorial, we will show you how to load the retriever from the HuggingFace Hub or prepare your own retriever.
+In this tutorial, we will show you how to load the FlexRetriever from the HuggingFace Hub and prepare your own FlexRetriever.
 
-## Loading the predefined `LocalRetriever` from HuggingFace Hub
-FlexRAG implement two built-in `LocalRetriever`s, including the `DenseRetriever` which employs the semantic similarity between the query and the context to retrieve the top-k relevant contexts, and the `BM25SRetriever` which uses the BM25 algorithm to retrieve the top-k relevant contexts. In this tutorial, we will show you how to load any predefined retriever from the HuggingFace Hub.
+## Loading the predefined {class}`~flexrag.retriever.FlexRetriever` from HuggingFace Hub
+FlexRAG provides several predefined {class}`~flexrag.retriever.FlexRetriever`s that are built on various knowledge bases. These retrievers are available on the HuggingFace Hub and can be easily loaded for use in your applications. You can find the list of available retrievers in the [FlexRAG repository](https://huggingface.co/FlexRAG).
 
-```{eval-rst}
-.. note::
-    In [quickstart](../getting_started/quickstart1.md), we provide several examples that employ the predefined `LocalRetriever`. FlexRAG provides several predefined retrievers, which can be accessed from the [HuggingFace Hub](https://huggingface.co/collections/ICTNLP/flexrag-retrievers-67b5373b70123669108a2e59).
-```
-
-### Loading the `LocalRetriever` using FlexRAG's entrypoints
-The simplest way to load a predefined retriever in a RAG application is by using FlexRAG's entry points. To load the `BM25SRetriever` built on the *wiki2021_atlas* dataset in the GUI application, simply run the following command:
-
-```bash
-python -m flexrag.entrypoints.run_interactive \
-    assistant_type=modular \
-    modular_config.retriever_type='FlexRAG/wiki2021_atlas_bm25s' \
-    modular_config.response_type=original \
-    modular_config.generator_type=openai \
-    modular_config.openai_config.model_name='gpt-4o-mini' \
-    modular_config.openai_config.api_key=$OPENAI_KEY \
-    modular_config.do_sample=False
-```
-
-In the command above, we specify the retriever to be loaded by setting `modular_config.retriever_type='FlexRAG/wiki2021_atlas_bm25s'`. FlexRAG will automatically download this retriever from the HuggingFace Hub and utilize it within the current entrypoint program.
-
-### Loading the `LocalRetriever` in your own code
-Another way to load a predefined retriever is by importing FlexRAG as a library. For example, to load the `DenseRetriever` built on the *wiki2021_atlas* dataset in your own code, you can run the following code:
+You can load a predefined retriever by using the `load_from_hub` function from the {class}`~flexrag.retriever.FlexRetriever` class. For example, to load the retriever built on the *enwiki_2021_atlas* dataset, you can run the following code:
 
 ```python
-from flexrag.retriever import LocalRetriever
+from flexrag.retriever import FlexRetriever
 
-retriever = LocalRetriever.load_from_hub(repo_id='FlexRAG/wiki2021_atlas_bm25s')
+retriever = FlexRetriever.load_from_hub(repo_id='FlexRAG/wiki2021_atlas_bm25s')
 passages = retriever.search('What is the capital of France?')
 ```
 
-In this code snippet, we utilize the `LocalRetriever.load_from_hub` function to download and load the retriever from the HuggingFace Hub.
+You can also specify the `top_k` parameter to retrieve the top-k passages for a given query. For example, to retrieve the top 5 passages, you can run the following code:
 
-## Preparing Your Own `EditableRetriever`
-FlexRAG provides several `EditableRetriever` retrievers, including `DenseRetriever`, `BM25SRetriever`, `ElasticRetriever` and `TypesenseRetriever`. In this section, we will show you how to build your own retriever for the RAG application.
-
-### Downloading the Knowledge Base
-```{eval-rst}
-You can check the [Preparing the Knowledge Base](./preparing_corpus.md) documentation for how to prepare the knowledge base.
+```python
+passages = retriever.search('What is the capital of France?', top_k=5)
 ```
 
+```{eval-rst}
+.. note::
+    In :doc:`../getting_started/quickstart1`, we provide several examples that employ the predefined retriever.
+```
+
+## Preparing Your Own {class}`~flexrag.retriever.FlexRetriever`
+In addition to using the predefined retrievers, you can also prepare your own {class}`~flexrag.retriever.FlexRetriever` based on your knowledge base. This section will guide you through the process of preparing a {class}`~flexrag.retriever.FlexRetriever` using a knowledge base.
+
+### Downloading the Knowledge Base
 Before preparing your retriever, you need to prepare the knowledge base. In this example, we will use the Wikipedia knowledge base provided by the [DPR project](https://github.com/facebookresearch/DPR). You can download the knowledge base by running the following command:
 
 ```bash
@@ -68,7 +51,13 @@ wget https://dl.fbaipublicfiles.com/dpr/wikipedia_split/psgs_w100.tsv.gz
 gzip -d psgs_w100.tsv.gz
 ```
 
-You may also utilize your own knowledge base. FlexRAG supports knowledge bases saved in *line-delimited file formats* (such as *.csv, *.jsonl, or *.tsv), where each line represents a piece of knowledge, and each piece can contain multiple fields (such as id, text, etc.). You can store your knowledge base across multiple files or within a single file. In this case, the Wikipedia knowledge base provides three fields: `id`, `title`, and `text`, where the `text` field contains a text chunk of the Wikipedia page, `title` contains the title of the corresponding Wikipedia page, and `id` contains the unique identifier of the knowledge piece. You can check the first line of the knowledge base by running the following command:
+```{eval-rst}
+.. note::
+    You may also utilize your own knowledge base. FlexRAG supports knowledge bases saved in *line-delimited file formats* (such as \*.csv, \*.jsonl, or \*.tsv), where each line represents a piece of knowledge, and each piece can contain multiple fields (such as id, text, etc.). You can store your knowledge base across multiple files or within a single file.
+    You can check the :doc:`./preparing_corpus` documentation for how to prepare the knowledge base.
+```
+
+In this case, the Wikipedia knowledge base provides three fields: `id`, `title`, and `text`, where the `text` field contains a text chunk of the Wikipedia page, `title` contains the title of the corresponding Wikipedia page, and `id` contains the unique identifier of the knowledge piece. You can check the first line of the knowledge base by running the following command:
 
 ```bash
 head -n 5 psgs_w100.tsv
@@ -83,152 +72,193 @@ id      text    title
 ...
 ```
 
-### Preparing the Sparse Retriever
-After preparing the knowledge base, you can proceed to build the index for it. This section will demonstrate how to construct a sparse index using the BM25 algorithm. In FlexRAG, the `BM25SRetriever` is a sparse retriever based on the BM25 algorithm. You can execute the following command to build the sparse index for it:
+### Adding the Documents to the Retriever
+After preparing the knowledge base, you can add the documents to the retriever. In FlexRAG, you can use the `add_passages` function to add the documents to the retriever. The `add_passages` function takes a iterator of `Context` as input, where each Context represents a piece of knowledge. The {class}`~flexrag.utils.dataclasses.Context` class has the following fields:
+- `context_id`: the unique identifier of the knowledge piece;
+- `data`: a dictionary containing all the information of the knowledge piece, such as `title`, `text`, etc.;
+- `source` (optional): the source of the knowledge piece, which can be used to track the origin of the knowledge piece;
+- `metadata` (optional): additional metadata of the knowledge piece, which can be used to store additional information about the knowledge piece.
 
-```bash
-CORPUS_PATH='[psgs_w100.tsv]'
-CORPUS_FIELDS='[title,text]'
-DB_PATH=<path_to_database>
+You can use the {class}`~flexrag.datasets.RAGCorpusDataset` class to load the knowledge base and convert it into a iterator of `Context`. The `RAGCorpusDataset` class takes a configuration object as input, which specifies the file paths of the knowledge base, the fields to be saved, and the unique identifier field. The following code snippet demonstrates how to prepare the retriever using the Wikipedia knowledge base:
 
-python -m flexrag.entrypoints.prepare_index \
-    file_paths=$CORPUS_PATH \
-    saving_fields=$CORPUS_FIELDS \
-    id_field='id' \
-    retriever_type=bm25s \
-    bm25s_config.database_path=$DB_PATH \
-    bm25s_config.indexed_fields=$CORPUS_FIELDS \
-    reinit=True
+```python
+from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
+from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
+
+RETRIEVER_PATH = "<path_to_retriever>"  # path to save the retriever
+CORPUS_PATH = ["psgs_w100.tsv"]
+
+
+def add_passages():
+    corpus = RAGCorpusDataset(
+        RAGCorpusDatasetConfig(
+            file_paths=CORPUS_PATH,
+            saving_fields=["title", "text"],
+            id_field="id",
+        )
+    )
+    retriever = FlexRetriever(
+        FlexRetrieverConfig(
+            log_interval=100000,
+            batch_size=4096,
+            retriever_path=RETRIEVER_PATH,
+        )
+    )
+    retriever.add_passages(passages=corpus)
+    return
+
+add_passages()
 ```
 
-In this script, we specify the use of the `BM25SRetriever` with the command-line parameter `retriever_type=bm25s`, and set the input file as *psgs_w100.tsv* using the parameter `file_paths=[psgs_w100.tsv]`. Next, the `saving_fields=$CORPUS_FIELDS` parameter is specified to read the `title` and `text` fields from the knowledge base, and the `bm25s_config.indexed_fields=$CORPUS_FIELDS` parameter is used to build an index based on the `title` and `text` fields. Meanwhile, the parameter `id_field='id'` specifies that the `id` field in the knowledge base serves as the unique identifier for each piece of knowledge (this parameter is optional). Finally, the parameter `bm25s_config.database_path=$DB_PATH` indicates that the prepared retriever will be stored at the `<path_to_database>` location.
-
-### Preparing the Dense Retriever
-You can also build a dense retriever by specifying `retriever_type=dense` when constructing the retriever. A dense retriever finds the most relevant documents by computing the semantic similarity between a query and the documents being searched. The query and documents are encoded by a query encoder and a document encoder, respectively, to obtain their corresponding dense vectors.  
-
-To further improve retrieval efficiency, a vector index needs to be built for the dense vectors. Therefore, when constructing the retriever, you need to specify the appropriate document encoder and the relevant parameters for building the vector index.  
-
-You can run the following command to build a dense retriever using Wikipedia as the knowledge base:
+We also provide a command-line tool to foster the preparation of the retriever. You can run the following command to add the documents to the retriever:
 
 ```bash
 CORPUS_PATH='psgs_w100.tsv'
 CORPUS_FIELDS='[title,text]'
-DB_PATH=<path_to_database>
+RETRIEVER_PATH="<path_to_retriever>"
 
-python -m flexrag.entrypoints.prepare_index \
+python -m flexrag.entrypoints.prepare_retriever \
     file_paths=[$CORPUS_PATH] \
     saving_fields=$CORPUS_FIELDS \
     id_field='id' \
-    retriever_type=dense \
-    dense_config.database_path=$DB_PATH \
-    dense_config.encode_fields='[text]' \
-    dense_config.passage_encoder_config.encoder_type=hf \
-    dense_config.passage_encoder_config.hf_config.model_path='facebook/contriever-msmarco' \
-    dense_config.passage_encoder_config.hf_config.device_id=[0,1,2,3] \  # optional
-    dense_config.index_type=faiss \
-    dense_config.batch_size=2048 \
+    retriever_type=flex \
+    flex_config.retriever_path=$RETRIEVER_PATH \
     reinit=True
 ```
 
-In this command, we specify the use of a dense retriever with the parameter retriever_type=dense and designate Wikipedia as the knowledge base using `file_paths=[$CORPUS_PATH]`. Similar to before, we specify saving the `title` and `text` fields while using the `id` field as the unique identifier for each piece of knowledge.
+### Adding Indexes to the Retriever
+Before using the retriever, you need to build the indexes for the knowledge base. For FlexRetriever, you can build the indexes using the `add_index` method. By specifying the `index_name`, `index_config`, and the `indexed_fields_config` parameter, you can create an index for the knowledge base.
 
-The key difference here is that we explicitly define multiple parameters under `dense_config` in the command-line arguments. These parameters instruct FlexRAG on how to configure the dense retriever. Specifically:
-- `dense_config.database_path=$DB_PATH` sets the path where the retriever will be stored.
-- `dense_config.encode_fields='[text]'` specifies that the text field will be encoded into semantic vectors and indexed.
-- `dense_config.passage_encoder_config.encoder_type=hf` indicates that we are using an encoder from Hugging Face.
-- `dense_config.passage_encoder_config.hf_config.model_path='facebook/contriever-msmarco'` explicitly defines `facebook/contriever-msmarco` as the encoder to be used.
-- Finally, `dense_config.index_type=faiss` specifies that Faiss will be used to build the vector index.
+
+```python
+from flexrag.retriever import FlexRetriever
+from flexrag.retriever.index import MultiFieldIndexConfig, RetrieverIndexConfig
+
+RETRIEVER_PATH = "<path_to_retriever>"  # path to the retriever
+
+
+def add_bm25_index():
+    retriever = FlexRetriever.load_from_local(RETRIEVER_PATH)
+    retriever.add_index(
+        index_name="bm25",
+        index_config=RetrieverIndexConfig(
+            index_type="bm25",
+        ),
+        indexed_fields_config=MultiFieldIndexConfig(
+            indexed_fields=["title", "text"],
+            # concatenate the `title` and `text` fields for indexing
+            merge_method="concat",
+        ),
+    )
+    return
+
+
+add_bm25_index()
+```
+
+In this example, we create a BM25 index for the `title` and `text` fields of the knowledge base. The `merge_method` parameter specifies how to merge the fields for indexing. In this case, we concatenate the `title` and `text` fields into a single field for indexing.
+
+You can also build a dense index by specifying `index_type=faiss`. A dense index finds the most relevant documents by computing the semantic similarity between a query and the documents being searched. The query and documents are encoded by a query encoder and a passage encoder, respectively, to obtain their corresponding dense vectors. You can run the following code to build a dense index using Wikipedia as the knowledge base:
+
+```python
+from flexrag.models import EncoderConfig, HFEncoderConfig
+from flexrag.retriever import FlexRetriever
+from flexrag.retriever.index import (
+    MultiFieldIndexConfig,
+    RetrieverIndexConfig,
+    FaissIndexConfig,
+)
+
+RETRIEVER_PATH = "<path_to_retriever>"  # path to the retriever
+
+
+def add_faiss_index():
+    retriever = FlexRetriever.load_from_local(RETRIEVER_PATH)
+    retriever.add_index(
+        index_name="contriever",
+        index_config=RetrieverIndexConfig(
+            index_type="faiss",  # specify the index type
+            faiss_config=FaissIndexConfig(
+                # let FaissIndex determine the index configuration automatically
+                # you can also specify a specific index type like "Flat", "IVF", etc.
+                index_type="auto",
+                index_train_num=-1,  # use all available data for training
+                query_encoder_config=EncoderConfig(
+                    encoder_type="hf",  # specify using Hugging Face model
+                    hf_config=HFEncoderConfig(
+                        # specify the Contriever model
+                        # you can also choose other models
+                        model_path="facebook/contriever-msmarco",  
+                        # use the first GPU for query encoding
+                        # if you do not want to use GPU, set device_id to []
+                        device_id=[4],  
+                    ),
+                ),
+                passage_encoder_config=EncoderConfig(
+                    encoder_type="hf",
+                    hf_config=HFEncoderConfig(
+                        model_path="facebook/contriever-msmarco",
+                        device_id=[0, 1, 2, 3],  # use four GPUs for data parallelism
+                    ),
+                ),
+            ),
+        ),
+        indexed_fields_config=MultiFieldIndexConfig(
+            indexed_fields=["title", "text"],
+            merge_method="concat",  # concatenate the `title` and `text` fields for indexing
+        ),
+    )
+    return
+
+
+add_faiss_index()
+```
+
+In the above code, we create a Faiss index for the `title` and `text` fields of the knowledge base. The `index_type` parameter specifies the type of index to be built, which is set to `faiss`. The `faiss_config` parameter specifies the configuration for the Faiss index, including the query encoder and passage encoder configurations. In this case, we use the `facebook/contriever-msmarco` model as the encoder.
 
 ```{note}
 In the above script, we specify the `device_id` as `[0,1,2,3]` to use 4 GPUs for encoding the text field. This configuration will speed up the encoding process. If you do not have multiple GPUs, you can simply set `device_id=[0]` to use a single GPU or `device_id=[]` to use CPU.
 ```
 
+FlexRAG also provides a command-line tool to prepare the retriever. You can run the following command to build the retriever:
+
+```bash
+RETRIEVER_PATH="<path_to_retriever>"  # path to the retriever
+
+python -m flexrag.entrypoints.add_index \
+    retriever_path=$RETRIEVER_PATH \
+    index_name=bm25 \
+    rebuild=False \
+    indexed_fields=["title","text"] \
+    merge_method="concat"
+```
+
+
 ### Using the Retriever
-After preparing the retriever, you can use it in the RAG application or other tasks. For example, you can use the `DenseRetriever` to retrieve the top 5 passages for a given query:
+After preparing the retriever, you can use it in your RAG application or other tasks. For example, you can use the `FlexRetriever` to retrieve the top 5 passages for a given query:
 
 ```python
-from flexrag.retriever import DenseRetriever, DenseRetrieverConfig
-from flexrag.models import EncoderConfig, HFEncoderConfig
+from flexrag.retriever import FlexRetriever
 
-cfg = DenseRetrieverConfig(
-    database_path='<path_to_database>',
-    top_k=5,
-    query_encoder_config=EncoderConfig(
-        encoder_type='hf',
-        hf_config=HFEncoderConfig(
-            model_path='facebook/contriever-msmarco',
-            device_id=[0]
-        )
-    )
-)
-retriever = DenseRetriever(cfg)
-passages = retriever.search('What is the capital of France?')[0]
+
+retriever = FlexRetriever.load_from_local("<path_to_retriever>")
+passages = retriever.search('What is the capital of France?', top_k=5)[0]
 print(passages)
 ```
 
-You can also evaluate your retriever using FlexRAG's predefined `ASSISTANT` in any RAG tasks. For example, to evaluate the `BM25SRetriever` on the test set of the *Natural Questions* dataset, you can run the following script:
-
-```bash
-OUTPUT_PATH=<path_to_output>
-DB_PATH=<path_to_database>
-OPENAI_KEY=<your_openai_key>
-
-python -m flexrag.entrypoints.run_assistant \
-    name=nq \
-    split=test \
-    output_path=${OUTPUT_PATH} \
-    assistant_type=modular \
-    modular_config.used_fields=[title,text] \
-    modular_config.retriever_type=bm25s \
-    modular_config.bm25s_config.top_k=10 \
-    modular_config.bm25s_config.database_path=${DB_PATH} \
-    modular_config.response_type=short \
-    modular_config.generator_type=openai \
-    modular_config.openai_config.model_name='gpt-4o-mini' \
-    modular_config.openai_config.api_key=$OPENAI_KEY \
-    modular_config.do_sample=False \
-    eval_config.metrics_type=[retrieval_success_rate,generation_f1,generation_em] \
-    eval_config.retrieval_success_rate_config.context_preprocess.processor_type=[simplify_answer] \
-    eval_config.retrieval_success_rate_config.eval_field=text \
-    eval_config.response_preprocess.processor_type=[simplify_answer]
-```
-
 ### Uploading the Retriever to the HuggingFace Hub
-To share your retriever with the community, you can upload it to the HuggingFace Hub. For example, to upload the `DenseRetriever` to the HuggingFace Hub, you can run the following code:
+To share your retriever with the community, you can upload it to the HuggingFace Hub. For example, to upload the `FlexRetriever` to the HuggingFace Hub, you can run the following code:
 
 ```python
-from flexrag.retrievers import DenseRetriever, DenseRetrieverConfig
-from flexrag.models import EncoderConfig, HFEncoderConfig
+from flexrag.retrievers import FlexRetriever
 
-cfg = DenseRetrieverConfig(
-    database_path='<path_to_database>',
-    top_k=5,
-    query_encoder_config=EncoderConfig(
-        encoder_type='hf',
-        hf_config=HFEncoderConfig(
-            model_path='facebook/contriever-msmarco',
-            device_id=[0]
-        )
-    ),
-    passage_encoder_config=EncoderConfig(
-        encoder_type='hf',
-        hf_config=HFEncoderConfig(
-            model_path='facebook/contriever-msmarco',
-            device_id=[0]
-        )
-    )
-)
-retriever = DenseRetriever(cfg)
+
+retriever = FlexRetriever.load_from_local("<path_to_retriever>")
 retriever.save_to_hub(repo_id="<your-repo-id>", token="<your-hf-token>")
 ```
 
 In this code, you need to specify the `repo_id` and `token` to upload the retriever to the HuggingFace Hub. You can find the `token` in your HuggingFace [account settings](https://huggingface.co/settings/tokens). After uploading the retriever, you can share the retriever with the community by sharing the link to the HuggingFace Hub.
 
 ```{important}
-To make your shared `DenseRetriever` accessible to the community, you need to make sure the query encoder and the passage encoder are **configured** and **accessible** to the public. In this example, the `facebook/contriever-msmarco` model is hosted on the HuggingFace Hub, so users can access the model without any additional configuration. If you use a custom model, uploading your model to the HuggingFace Hub is recommended.
+To make your shared `FlexRetriever` accessible to the community, you need to make sure the query encoder and the passage encoder are **configured** and **accessible** to the public. In this example, the `facebook/contriever-msmarco` model is hosted on the HuggingFace Hub, so users can access the model without any additional configuration. If you use a custom model, uploading your model to the HuggingFace Hub is recommended.
 ```
-
-<!-- ## Evaluating the Retriever via `MTEB` Retrieval tasks
-FlexRAG offers a set of predefined tasks designed to evaluate the retriever. Unlike the `MTEB` Benchmark, which focuses solely on evaluating the encoding part of the retrieval process, FlexRAG assesses the entire retrieval pipeline, including both the encoding and indexing stages.
-
-You can evaluate your retriever using the `MTEB` retrieval tasks by running the following command: -->

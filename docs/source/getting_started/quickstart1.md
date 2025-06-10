@@ -23,12 +23,12 @@ The `ModularAssistant` is composed of four key components: a retriever, a rerank
 Each component can be configured independently, allowing you to easily customize your RAG assistant by adjusting the settings for each one.
 
 ## Deploying a GUI application
-The easiest way to run a RAG assistant is to use FlexRAG's entrypoints to start a GUI application. You can run the following command to start a GUI application with the `ModularAssistant`. For convenience, a BM25 retriever based on Wikipedia knowledge base provided by FlexRAG and a generator from OpenAI are used here. You need to replace `$OPENAI_KEY` here with your OpenAI access key or set the corresponding variable in the shell.
+The easiest way to run a RAG assistant is to use FlexRAG's entrypoints to start a GUI application. You can run the following command to start a GUI application with the `ModularAssistant`. In the following command, a retriever based on Wikipedia knowledge base provided by FlexRAG and a generator from OpenAI are used to build a typical RAG pipeline. Make sure to replace `$OPENAI_KEY` with your OpenAI access key.
 
 ```bash
 python -m flexrag.entrypoints.run_interactive \
     assistant_type=modular \  # Specifies the assistant type
-    modular_config.retriever_type='FlexRAG/wiki2021_atlas_bm25s' \  # Specifies the retriever
+    modular_config.retriever_type='FlexRAG/enwiki_2021_atlas' \  # Specifies the retriever
     modular_config.response_type=original \
     modular_config.generator_type=openai \
     modular_config.openai_config.model_name='gpt-4o-mini' \
@@ -47,7 +47,7 @@ Then you can visit the GUI application at `http://localhost:7860` in your browse
 
 ```{eval-rst}
 .. note::
-    In this example, we employ the pre-built BM25 retriever based on the Wikipedia knowledge base. You can also use other retrievers provided by FlexRAG or build your own retriever. For more information, please refer to the :doc:`../tutorial/preparing_retriever` section.
+    In this example, we employ the pre-built ``FlexRetriever`` based on the Wikipedia knowledge base. You can also use other retrievers provided by FlexRAG or build your own retriever. For more information, please refer to the :doc:`../tutorial/preparing_retriever` section.
 ```
 
 ## Evaluating the RAG assistant
@@ -57,7 +57,7 @@ python -m flexrag.entrypoints.eval_assistant \
     name=nq \
     split=test \
     assistant_type=modular \
-    modular_config.retriever_type="FlexRAG/wiki2021_atlas_bm25s" \
+    modular_config.retriever_type="FlexRAG/enwiki_2021_atlas" \
     modular_config.response_type=short \
     modular_config.generator_type=openai \
     modular_config.openai_config.model_name='gpt-4o-mini' \
@@ -89,7 +89,7 @@ from flexrag.models import OpenAIGeneratorConfig
 def main():
     cfg = ModularAssistantConfig(
         response_type="original",
-        retriever_type="FlexRAG/wiki2021_atlas_bm25s",
+        retriever_type="FlexRAG/enwiki_2021_atlas",
         generator_type="openai",
         openai_config=OpenAIGeneratorConfig(
             model_name="gpt-4o-mini",

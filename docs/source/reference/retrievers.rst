@@ -32,8 +32,8 @@ you can use the following configuration:
 
     config = RetrieverConfig(
         retriever_type='flex',
-        bm25s_config=FlexRetrieverConfig(
-            database_path='<path_to_database>',
+        flex_config=FlexRetrieverConfig(
+            retriever_path='<path_to_retriever>',
         )
     )
     retriever = RETRIEVERS.load(config)
