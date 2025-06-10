@@ -27,4 +27,5 @@ beautifulsoup4
 datasets
 pytrec_eval
 colorama
+faiss-cpu
 # gradio>=5.8.0
