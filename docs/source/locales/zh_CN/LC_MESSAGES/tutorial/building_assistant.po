@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-21 20:53+0800\n"
+"POT-Creation-Date: 2025-06-10 14:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -21,53 +21,54 @@ msgstr ""
 "Generated-By: Babel 2.16.0\n"
 
 #: ../../source/tutorial/building_assistant.md:1
-#: 36248a4c934f4f73a748ccd14e6711ed
-msgid "Building your own RAG Assistant"
+#: 0f6d1f0717284febaf4ff24e6660edef
+msgid "Building Your Own RAG Assistant"
 msgstr "构建您自己的 RAG 助手"
 
 #: ../../source/tutorial/building_assistant.md:2
-#: 1a71ddb80cd247f6b6970e6411b2da4b
+#: e43e2086c8454eb6be293de9d13f89f4
 msgid ""
-"FlexRAG provides a flexible and modularized framework for building RAG "
+"FlexRAG provides a flexible and modularized components for building RAG "
 "assistants. You can build your own RAG assistant by defining your own "
 "`Assistant` class and registering it with the `ASSISTANTS` decorator."
 msgstr ""
-"FlexRAG 提供了一套灵活的模块化框架用于构建 RAG 助手。您可以通过继承 `Assistant` 类并将其注册到 `ASSISTANTS`"
-" 装饰器中来构建您自己的 RAG 助手"
+"FlexRAG 提供了一套灵活的模块化组件用于构建 RAG 助手。您可以通过继承 `Assistant` 类并将其注册到 `ASSISTANTS`"
+" 装饰器中来构建您自己的 RAG 助手。"
 
 #: ../../source/tutorial/building_assistant.md:4
-#: 26da70ff665a43b8861ababf9a205bfe
+#: 7f06d37e6fe24cceb9f4cd45acf730b1
 msgid "Define the Assistant Class"
 msgstr "定义您的 RAG 助手"
 
 #: ../../source/tutorial/building_assistant.md:5
-#: f3085dc8c18d4b4d8c3a945c256d3b61
+#: 5494490e008a41e89e640e5fe75bb0b4
 msgid ""
 "To build your RAG assistant, you can create a Python script file and "
 "import the necessary FlexRAG modules. Below is an example of how to "
 "construct a RAG assistant. In this example, we define a RAG assistant "
-"named `SimpleAssistant` by inheriting from the `AssistantBase` class. "
-"This assistant includes a dense retriever (`DenseRetriever`) and a "
-"generator (`OpenAIGenerator`). Whenever a user asks a question, "
-"`SimpleAssistant` uses `DenseRetriever` to retrieve relevant documents "
+"named `SimpleAssistant` by inheriting from the "
+"{class}`~flexrag.assistant.AssistantBase` class. This assistant includes "
+"a retriever ({class}`~flexrag.retriever.FlexRetriever`) and a generator "
+"({class}`~flexrag.models.OpenAIGenerator`). Whenever a user asks a "
+"question, `SimpleAssistant` uses "
+"{class}`~flexrag.retriever.FlexRetriever` to retrieve relevant documents "
 "from the database, then concatenates these documents into the prompt and "
-"utilizes `OpenAIGenerator` to generate the final response."
+"utilizes {class}`~flexrag.models.OpenAIGenerator` to generate the final "
+"response."
 msgstr ""
-"为了构建您的 RAG 助手，您可以创建一个 Python 脚本文件并导入必要的 "
-"FlexRAG 模块。下面是一个如何构建 RAG 助手的示例。"
-"在示例中，我们通过继承 `Assistant` 类定义了一个名为 `SimpleAssistant` 的 RAG"
-" 助手，该助手包含了一个稠密检索器 `DenseRetriever` 和一个生成器 "
-"`OpenAIGenerator`。每当用户提出一个问题时，`SimpleAssistant` 都使用 "
-"`DenseRetriever` 在数据库中检索相关文档，随后将相关文档拼接到 prompt 中，使用"
-" `OpenAIGenerator` 来生成最终回复。"
+"为了构建您的 RAG 助手，您可以创建一个 Python 脚本文件并导入必要的 FlexRAG 模块。下面是一个如何构建 RAG "
+"助手的示例。在示例中，我们通过继承 {class}`~flexrag.assistant.AssistantBase` 类定义了一个名为 `SimpleAssistant` 的 RAG "
+"助手，该助手包含了一个检索器 ({class}`~flexrag.retriever.FlexRetriever`) 和一个生成器 ({class}`~flexrag.models.OpenAIGenerator`)"
+"。每当用户提出一个问题时，`SimpleAssistant` 都使用 {class}`~flexrag.retriever.FlexRetriever` "
+"在数据库中检索相关文档，随后将相关文档拼接到 prompt 中，使用 {class}`~flexrag.models.OpenAIGenerator` 来生成最终回复。"
 
 #: ../../source/tutorial/building_assistant.md:41
-#: 7bd62251643a4bc598abde2b40c62a61
-msgid "Running your own RAG Application"
-msgstr "运行您的 RAG 应用"
+#: 89781210a1684aa3b9ae27af315dfaa2
+msgid "Evaluating your own RAG Application"
+msgstr "评估您的 RAG 应用"
 
 #: ../../source/tutorial/building_assistant.md:42
-#: 450ad66743cd4d03878590f3dfe2226a
+#: bb57bb255f7f47f9adeff37e635dc0f5
 msgid ""
 "After defining the `SimpleAssistant` class and registering it with the "
 "`ASSISTANTS` decorator, you can evaluate your assistant using FlexRAG's "
@@ -78,14 +79,14 @@ msgstr ""
 "`user_module=<your_module_path>`就可以使用 FlexRAG 内置的工具来评估您的 RAG 助手。"
 
 #: ../../source/tutorial/building_assistant.md:44
-#: 8ad9f5f1105345af91d17dfdec1ef675
+#: 11f1159bb2de4fffb2109aa9c7f3cdb0
 msgid ""
 "For example, you can evaluate your assistant on the *Natural Questions* "
 "dataset using the following command:"
 msgstr "举例来说，您可以通过下面的命令在 *Natural Questions* 数据集上评估您的 RAG 助手："
 
-#: ../../source/tutorial/building_assistant.md:69
-#: a580d73b63f046439e188baf083607d8
+#: ../../source/tutorial/building_assistant.md:65
+#: 2801cdeb2e2842fb8260fe1fcb03b926
 msgid ""
 "In [FlexRAG_Examples](https://github.com/ictnlp/FlexRAG_Examples) "
 "repository, we provide several detailed examples of how to build a RAG "

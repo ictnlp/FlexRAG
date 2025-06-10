@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-21 20:53+0800\n"
+"POT-Creation-Date: 2025-06-10 14:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -21,12 +21,12 @@ msgstr ""
 "Generated-By: Babel 2.16.0\n"
 
 #: ../../source/tutorial/preparing_web_retriever.md:1
-#: 385c0e667b3e463d800fdfd5a98482dd
+#: 9e883c9f7bc84f3fb3c95b21f4ef707d
 msgid "Advance: Acquiring Information from the Web"
 msgstr "高级教程：从互联网上获取相关信息"
 
 #: ../../source/tutorial/preparing_web_retriever.md:2
-#: 477a9069155044d4aae8aa298d083e9f
+#: ac0ef473aa0a49a89058bc76688733ae
 msgid ""
 "`WebRetriever` is a special type of retriever that is used to retrieve "
 "resource from the web. The resource could be retrieved by using existing "
@@ -36,19 +36,17 @@ msgid ""
 "access, making it particularly suitable for building personal agents."
 msgstr ""
 "网络检索器 `WebRetriever` "
-"是一类特殊的检索器，这种检索器可以从互联网上获取信息。"
-"具体来说，可以是利用搜索引擎（如谷歌、必应等）来检索网页并读取相关信息，也可以是通过点击、跳转等操作自动浏览网页并获取相关信息。"
-"由于可以访问互联网，网络检索器在时效性和检索信息的广度上具有显著的优势，这使得网络检索器非常适合用于构建您的个人助手。"
+"是一类特殊的检索器，这种检索器可以从互联网上获取信息。具体来说，可以是利用搜索引擎（如谷歌、必应等）来检索网页并读取相关信息，也可以是通过点击、跳转等操作自动浏览网页并获取相关信息。由于可以访问互联网，网络检索器在时效性和检索信息的广度上具有显著的优势，这使得网络检索器非常适合用于构建您的个人助手。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:5
-#: b44c5bda4ef04c5597799b1cbd913269
+#: 137f37f8c81c473990e0d25068f7ec7b
 msgid ""
 "In this tutorial, we will show you how to load / build the `WebRetriever`"
 " for your project."
 msgstr "在本教程中，我们奖项您展示如何在您的项目中加载或构建网络检索器。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:10
-#: f72bc1d7679941849e4f03548c970382
+#: 8f1db9db850b47dd8de31dab457cab2c
 msgid ""
 "Since using computer programs to obtain internet information may be "
 "illegal in certain circumstances, or some websites may employ anti-"
@@ -57,12 +55,12 @@ msgid ""
 msgstr "由于使用计算机程序从互联网上获取信息有可能违反部分地区法律，或部分网站使用了反爬虫技术来阻止您的访问，请您确保您在使用网络检索器时的合法性。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:13
-#: ffaf098fbb214eb1b2627ac1024ae761
+#: 8432c0e372b445bb91363081330fb5ed
 msgid "Using FlexRAG's Predefined WebRetriever"
 msgstr "使用 FlexRAG 内置的网络检索器"
 
 #: ../../source/tutorial/preparing_web_retriever.md:14
-#: 91661c965e264891bbf9818e58e6fc39
+#: 41c6dbce8b1b4740b6a635033ed92acb
 msgid ""
 "The easiest way to use the `WebRetriever` is to use the predefined "
 "`WebRetriever` provided by FlexRAG. FlexRAG provides two predefined "
@@ -70,36 +68,40 @@ msgid ""
 msgstr "使用网络检索器最简单的方式就是直接使用 FlexRAG 中内置的网络检索器。FlexRAG 中内置了以下两种网络检索器："
 
 #: ../../source/tutorial/preparing_web_retriever.md:16
-#: 3cf21273ea8b4011929d59b75d985ba4
+#: bbae0fed45a04fc29451067943d0682d
 msgid ""
-"`SimpleWebRetriever` which retrieves most relevant webpages using "
-"existing search engine and convert the HTML content into a LLM friendly "
-"format using the `WebReader`."
+"{class}`~flexrag.retriever.SimpleWebRetriever` which retrieves most "
+"relevant webpages using existing search engine and convert the HTML "
+"content into a LLM friendly format using the `WebReader`."
 msgstr ""
-"简单网络检索器 `SimpleWebRetriever`：该检索器通过互联网搜索引擎来获取相关信息，并通过网页读取器 `WebReader` 来将"
+"简单网络检索器 {class}`~flexrag.retriever.SimpleWebRetriever` ："
+"该检索器通过互联网搜索引擎来获取相关信息，并通过网页读取器 `WebReader` 来将"
 " HTML 内容转化为对大模型友好的内容。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:17
-#: 02e1f08861e44b409e2067736bc595e3
+#: e44a28cb7c4a4123bfcec4a50521dfbc
 msgid ""
-"`WikipediaRetriever` which retrieves information from Wikipedia directly."
-" This retriever is adapted from the `ReACT` project."
-msgstr "维基百科检索器 `WikipediaRetriever`：该检索器直接通过维基百科检索相应的实体，该检索器是从 `ReACT` 项目中获取的灵感。"
+"{class}`~flexrag.retriever.WikipediaRetriever` which retrieves "
+"information from Wikipedia directly. This retriever is adapted from the "
+"`ReACT` project."
+msgstr "维基百科检索器 {class}`~flexrag.retriever.WikipediaRetriever` ："
+"该检索器直接通过维基百科检索相应的实体，该检索器是从 `ReACT` 项目中获取的灵感。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:19
-#: ac479958760549dd9611802cf4dbe249
+#: 7c21360caa0b4516a69058dcbd536011
 msgid ""
-"In this tutorial, we will show you how to use the `SimpleWebRetriever` to"
-" retrieve information from the web."
-msgstr "在这篇教程中，我们将会向您展示如何使用 `SimpleWebRetriever` 来从互联网上获取信息。"
+"In this tutorial, we will show you how to use the "
+"{class}`~flexrag.retriever.SimpleWebRetriever` to retrieve information "
+"from the web."
+msgstr "在这篇教程中，我们将会向您展示如何使用 {class}`~flexrag.retriever.SimpleWebRetriever` 来从互联网上获取信息。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:21
-#: 64bab12b9b894846bddf517e69ad1384
+#: 10f8cd74f98c4a85a25afa24f17e8a8c
 msgid "Retrieving the Snippet Using the Existing Search Engine"
 msgstr "使用搜索引擎获取最相关片段"
 
 #: ../../source/tutorial/preparing_web_retriever.md:22
-#: 768d2a38142e4ad192550bb451518825
+#: 94bace5f2b524af6995da8a9dcfa5f87
 msgid ""
 "Most web search engines provide a snippet of the webpage in the search "
 "result. This snippet is usually a short description of the webpage that "
@@ -112,7 +114,7 @@ msgstr ""
 " FlexRAG 中，您可以使用下面的代码来载入一个网络检索器，该检索器将会为您的查询搜索5个最相关的网页，同时返回相应的片段。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:36
-#: f9972e7190304e66adddc58f55dbae19
+#: ab4db0c721654f0db9593e031c71a8f3
 msgid ""
 "In the code above, we utilized *DuckDuckGo* as the search engine. FlexRAG"
 " also provides interfaces for other search engines for your convenience. "
@@ -123,12 +125,12 @@ msgstr ""
 "{any}`SearchEngineConfig` 获取更多详细信息。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:38
-#: d2ac1830c05c4da79568d0a5bdac20bb
+#: 40b370171de14fab917a7e1908e0fbd4
 msgid "Retrieving the Full Web Page Content"
 msgstr "获取完整网页信息"
 
 #: ../../source/tutorial/preparing_web_retriever.md:39
-#: 0e082767af79407fb608ebaf9cbc8212
+#: 5ef0b10d61ab4e9f92d35c128a934877
 msgid ""
 "However, the snippet provided by the search engine might be too "
 "simplistic to generate a good response. In such cases, you may want to "
@@ -148,49 +150,58 @@ msgstr ""
 "这一模块来将复杂的网页转换为大模型友好的内容。下面的例子向您展示了如何使用网页读取器来获取完整的网页信息："
 
 #: ../../source/tutorial/preparing_web_retriever.md:60
-#: 553883993a154401a2434728e13dd74b
+#: d198be2b51cb43d69dd37f1dfa19bf31
 msgid ""
-"In the code above, we used the `JinaReader`, a service provided by Jina "
-"AI that can extract information from the HTML webpage, to extract "
-"information from the HTML webpage. You can get the API key from the [Jina"
-" AI website](https://jina.ai/)."
+"In the code above, we used the "
+"{class}`~flexrag.retriever.web_retrievers.JinaReader`, a service provided"
+" by Jina AI that can extract information from the HTML webpage, to "
+"extract information from the HTML webpage. You can get the API key from "
+"the [Jina AI website](https://jina.ai/)."
 msgstr ""
-"在这段代码中，我们使用了 `JinaReader` 作为我们的网页读取器，`JinaReader` 是一个由 Jina AI 公司提供的 API "
+"在这段代码中，我们使用了 {class}`~flexrag.retriever.web_retrievers.JinaReader` 作为我们的网页读取器，"
+"这是一个由 Jina AI 公司提供的 API "
 "服务，该服务可以帮助您将 HTML 页面转换为大模型友好的文本。您可以从 [Jina AI 官网](https://jina.ai/)中获取您的 "
 "API 密钥。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:62
-#: 5737d4503f3f473d901eb023449005be
+#: 3f4036f7eff447e8948e04d0b5d74d35
 msgid ""
 "FlexRAG also provides other `WebReader`s, such as the "
-"`ScreenshotWebReader`, which captures webpage screenshots, and the "
-"`JinaReaderLM`, which uses a local model. For more details, please refer "
-"to the {any}`WebReaderConfig`'s documentation."
+"{class}`~flexrag.retriever.web_retrievers.ScreenshotWebReader`, which "
+"captures webpage screenshots, and the "
+"{class}`~flexrag.retriever.web_retrievers.JinaReaderLM`, which uses a "
+"local model. For more details, please refer to the "
+"{class}`~flexrag.retriever.web_retrievers.WebReaderConfig`'s "
+"documentation."
 msgstr ""
-"FlexRAG 也提供了其它类型的网页读取器，比如获取网页截图的 `ScreenshotWebReader` 和使用本地模型的 "
-"`JinaReaderLM`。您可以访问 {any}`WebReaderConfig` 文档以获取更多有关网页读取器的信息。"
+"FlexRAG 也提供了其它类型的网页读取器，比如获取网页截图的 "
+"{class}`~flexrag.retriever.web_retrievers.ScreenshotWebReader` 和使用本地模型的 "
+"{class}`~flexrag.retriever.web_retrievers.JinaReaderLM`。"
+"您可以访问 {class}`~flexrag.retriever.web_retrievers.WebReaderConfig` 文档以获取更多有关网页读取器的信息。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:64
-#: 472e2e81ab6c42c08837654b1813402d
+#: 9a36c06c6d6b4398894b8652e0b5799d
 msgid "Retrieving the Screenshots of the Web Page"
 msgstr "获取网页截图"
 
 #: ../../source/tutorial/preparing_web_retriever.md:65
-#: 5410c57eaf68454e87d60fd2e469f848
+#: 8ef1a10552ba4725a17c5a5418995805
 msgid ""
 "With the significant advancements in Visual Large Models (VLMs) for "
 "processing image information, even complex images like webpage "
 "screenshots can now be handled effectively. As a result, FlexRAG provides"
 " a unique web reader that converts web pages into screenshots. The "
-"following code demonstrates how to use `ScreenshotWebReader` to convert "
-"web pages retrieved by *DuckDuckGo* into screenshots."
+"following code demonstrates how to use "
+"{class}`~flexrag.retriever.web_retrievers.ScreenshotWebReader` to convert"
+" web pages retrieved by *DuckDuckGo* into screenshots."
 msgstr ""
-"由于现在的视觉大模型（VLM）在处理图像信息方面取得了长足进步，即使是网页截图这样复杂的图片也可以被妥善处理。因此 "
-"FlexRAG 也提供给了一个独特的网页读取器用于将网页转换为截图。下面的代码将向您展示如何使用 "
-"`ScreenshotWebReader` 将 *DuckDuckGo* 检索到的网页转换为截图。"
+"由于现在的视觉大模型（VLM）在处理图像信息方面取得了长足进步，即使是网页截图这样复杂的图片也可以被妥善处理。因此 FlexRAG "
+"也提供给了一个独特的网页读取器用于将网页转换为截图。"
+"下面的代码将向您展示如何使用 {class}`~flexrag.retriever.web_retrievers.ScreenshotWebReader` 将 "
+"*DuckDuckGo* 检索到的网页转换为截图。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:80
-#: 58e6b0c5ccaa43aba8d7281e392519cf
+#: 257c6088673a43338dc3e8d752f16e71
 msgid ""
 "After running the code above, you will get the screenshot of the top 5 "
 "webpages. The screenshot will be stored as a `PIL.Image.Image` object in "
@@ -200,7 +211,7 @@ msgstr ""
 "`RetrievedContext` 中。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:84
-#: 948f2d76f06f4a47a9436b37bb283a5f
+#: 977a33046a3144828ab104a8a66fbfb6
 msgid ""
 "The screenshot feature requires the ``playwright`` package. Please make "
 "sure you have installed the ``playwright`` package before using the "
@@ -208,12 +219,12 @@ msgid ""
 msgstr "网页截图这一功能需要安装 ``playwright``。请确保您在使用该功能前安装了 ``playwright``。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:87
-#: a0fafaf0536d4a7ebc000baa9fc376b9
+#: 494f6902faa943ca82da9039462d401c
 msgid "Building Your Own WebRetriever"
 msgstr "定义您自己的网络检索器"
 
 #: ../../source/tutorial/preparing_web_retriever.md:88
-#: db9ba005486b4d36a16549c78744888a
+#: 833cea1839e74a329f5d8124dc9be1ca
 msgid ""
 "If you want to build your own `WebRetriever`, you can inherit the "
 "`WebRetriever` class and implement the `search` method. Of course, you "
@@ -224,45 +235,45 @@ msgstr ""
 "FlexRAG 中提供的大量网络访问的工具来定义您的网络检索器。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:90
-#: d71ef7f3565c41469f2792544bad3940
+#: 352a7248c1d5406bac41ba022f635496
 msgid "FlexRAG's WebRetriever utilities"
 msgstr "FlexRAG 中的网络检索工具"
 
 #: ../../source/tutorial/preparing_web_retriever.md:91
-#: 6a1e86d588104ac38747d048749aa368
+#: f6e63e8a49cb4845963f390ddae2ef99
 msgid ""
 "FlexRAG provides several utilities to help you build your own "
 "`WebRetriever`:"
 msgstr "FlexRAG 提供了大量工具来帮助您构建您的网络检索器："
 
 #: ../../source/tutorial/preparing_web_retriever.md:92
-#: 33336bcaaa1a453dab0e4365d963b5e4
+#: 6d37e32118c84a259dea2eeb996bfcb3
 msgid ""
 "`WebSeeker`: A utility class that helps you to retrieve web resources "
 "based on the search query."
 msgstr "互联网资源搜索器 `WebSeeker`：一个用于根据查询来寻找相关网络资源的模块。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:93
-#: 5a74ff5ad5d04772aacd3a9add4f7b11
+#: e05c41b57b6541e1a07ab2be08287838
 msgid ""
 "`WebReader`: A utility class that helps you to extract information from "
 "the raw web resources."
 msgstr "网页读取器 `WebReader`：一个用于从原始网页中提取有效信息的模块。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:94
-#: 8c594cd2bc5542439226a390971810b0
+#: 50c96c8372fd41889877865fc560f006
 msgid ""
 "`WebDownloader`: A utility class that helps you to download the web "
 "resources."
 msgstr "网络下载器 `WebDownloader`：一个用于下载网络资源的模块。"
 
 #: ../../source/tutorial/preparing_web_retriever.md:97
-#: 12d6448cce2745f5b6a16ebb127d491e
+#: cfd862ea64f74d8e85d5fde5f41eda56
 msgid "Retrievers"
 msgstr "检索器"
 
 #: ../../source/tutorial/preparing_web_retriever.md:103
-#: 25ef44b64231468cb0efc1777362cfb1
+#: 6ebe8460b897428ca72116bcb14d24d8
 msgid ""
 "For more details, please refer to the {ref}`Web Seeker` , {ref}`Web "
 "Reader` , and {ref}`Web Downloader` 's documentation."

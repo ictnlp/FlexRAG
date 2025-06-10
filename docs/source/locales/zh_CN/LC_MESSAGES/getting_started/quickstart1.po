@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-23 18:18+0800\n"
+"POT-Creation-Date: 2025-06-10 14:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -21,12 +21,12 @@ msgstr ""
 "Generated-By: Babel 2.16.0\n"
 
 #: ../../source/getting_started/quickstart1.md:1
-#: ad3e41fc7a9548bcae231edb5ef8aa86
+#: 0f3440d7ec874c66b03a9d408704cc0e
 msgid "Quickstart: Deploying and Evaluating RAG Assistant with FlexRAG"
 msgstr "快速入门：部署和评估您的 RAG 助手"
 
 #: ../../source/getting_started/quickstart1.md:2
-#: 0ca3fc4fdea14c24a155d6f17454d874
+#: c4f5db5b854a474aac70fa12c1a3c5a2
 msgid ""
 "This quickstart guide will help you deploy or evaluate the RAG assistant "
 "with FlexRAG. FlexRAG provides multiple ways to develop and evaluate your"
@@ -39,7 +39,7 @@ msgstr ""
 "助手。"
 
 #: ../../source/getting_started/quickstart1.md:4
-#: 93731b6577794f349388111fa9fc558e
+#: 300f65599e314d2b887dfaf4a164d656
 msgid ""
 "In FlexRAG, a RAG assistant is similar to a traditional chatbot but can "
 "generate responses by leveraging an external knowledge base. As a result,"
@@ -51,121 +51,132 @@ msgstr ""
 "RAG 助手中，如判断何时需要检索，如何进行检索，以及如何处理检索得到的文档。"
 
 #: ../../source/getting_started/quickstart1.md:6
-#: ebf7490b2229437db9862235319b7457
+#: a516d8b46c5241bc872c07c23f1cfad4
 msgid ""
 "FlexRAG provides several built-in RAG assistants, including "
-"`BasicAssistant`, `ModularAssistant`, `ChatQAAssistant`, .etc. You can "
-"run these assistants with FlexRAG's entrypoints. In this guide, we will "
-"show you how to run the `ModularAssistant`, as it offers a wide range of "
-"configuration options."
+"{class}`~flexrag.assistant.BasicAssistant`, "
+"{class}`~flexrag.assistant.ModularAssistant`, "
+"{class}`~flexrag.assistant.ChatQAAssistant`, .etc. You can run these "
+"assistants with FlexRAG's entrypoints. In this guide, we will show you "
+"how to run the {class}`~flexrag.assistant.ModularAssistant`, as it offers"
+" a wide range of configuration options."
 msgstr ""
 "FlexRAG 提供了一些内置的 RAG 助手，包括 "
-"`BasicAssistant`、`ModularAssistant`、`ChatQAAssistant` 等。您可以直接通过 FlexRAG "
-"的入口点来运行这些 RAG 助手。由于 `ModularAssistant` "
+"{class}`~flexrag.assistant.BasicAssistant`、"
+"{class}`~flexrag.assistant.ModularAssistant`、"
+"{class}`~flexrag.assistant.ChatQAAssistant` 等。"
+"您可以直接通过 FlexRAG 的入口点来运行这些 RAG 助手。"
+"由于 {class}`~flexrag.assistant.ModularAssistant` "
 "较为灵活且提供了大量的可更改选项，因此在本指南中，我们会向您展示如何运行该助手。"
 
 #: ../../source/getting_started/quickstart1.md:8
-#: ec79bf422ac64488a0edffd5705f609b
-msgid "The basic structure of the `ModularAssistant` is as follows:"
-msgstr "`ModularAssistant` 的基本结构如下图所示："
+#: 74aa405d7e5c426a852c7fee219384f1
+msgid ""
+"The basic structure of the {class}`~flexrag.assistant.ModularAssistant` "
+"is as follows:"
+msgstr "{class}`~flexrag.assistant.ModularAssistant` 的基本结构如下图所示："
 
 #: ../../source/getting_started/quickstart1.md:11
-#: 0b0bb5e5a9804ac5982c458b8d0a1f62
+#: a9e396e285cc4af7ae6c01de3a85faaf
 msgid "ModularAssistant"
 msgstr "ModularAssistant"
 
 #: ../../source/getting_started/quickstart1.md:17
-#: 8f643c3ea6b140aaa9629c3a7831caf4
+#: 9faf21a6782145dc80335973c69dca47
 msgid ""
-"The `ModularAssistant` is composed of four key components: a retriever, a"
-" reranker, a context refiner, and a generator."
-msgstr "`ModularAssistant` 由四个主要部件组成，分别是一个检索器，一个重排器，一个上下文精炼器和一个生成器。"
+"The {class}`~flexrag.assistant.ModularAssistant` is composed of four key "
+"components: a retriever, a reranker, a context refiner, and a generator."
+msgstr "{class}`~flexrag.assistant.ModularAssistant` 由四个主要部件组成，"
+"分别是一个检索器，一个重排器，一个上下文精炼器和一个生成器。"
 
 #: ../../source/getting_started/quickstart1.md:18
-#: 3fb4ca99cd3d4658a23e949ca04e48bd
+#: fd05489393494a36ad1a0dd39676b812
 msgid "The **retriever** fetches relevant passages from the knowledge base."
-msgstr "**检索器**用于从知识库中检索和用户输入相关的文档。"
+msgstr "**检索器** 用于从知识库中检索和用户输入相关的文档。"
 
 #: ../../source/getting_started/quickstart1.md:19
-#: 3032330919ac4b65bcb17fbc3ab72553
+#: c9bb6eb02af74570aee71418371502e7
 msgid ""
 "The **reranker** reorders the retrieved passages for better relevance, "
 "which is optional."
-msgstr "**重排器**用于将检索器检索到的文档按照和用户输入的相关度进行更准确的重排。"
+msgstr "**重排器** 用于将检索器检索到的文档按照和用户输入的相关度进行更准确的重排。"
 
 #: ../../source/getting_started/quickstart1.md:20
-#: edc402b9c56d4853bb8060b7def77de7
+#: 22fa072f35444c79b1b7c6bd66f59b29
 msgid ""
 "The **context refiner** optimizes the context for the generator, which is"
 " optional."
-msgstr "**上下文精炼器**用于将检索到的文档进行进一步地精炼以更好地适配生成器，这一组件是可选的。"
+msgstr "**上下文精炼器** 用于将检索到的文档进行进一步地精炼以更好地适配生成器，这一组件是可选的。"
 
 #: ../../source/getting_started/quickstart1.md:21
-#: 48156260825340a19a44432b47ba1ffb
-msgid "The **generator** creates the final response based on the refined context."
-msgstr "**生成器**用于根据检索到的上下文生成最终的回复。"
+#: 5ae373d648d44d47b497876ab4b0f87c
+msgid ""
+"The **generator** creates the final response based on the (refined) "
+"context."
+msgstr "**生成器** 用于根据检索（精炼）到的上下文生成最终的回复。"
 
 #: ../../source/getting_started/quickstart1.md:23
-#: 6df7c335979e4fdbab991db4935f2a66
+#: b58bfa3abb164d68834a97f596bda4ce
 msgid ""
 "Each component can be configured independently, allowing you to easily "
 "customize your RAG assistant by adjusting the settings for each one."
-msgstr "在 `ModularAssistant` 中，每个组件都可以独立地配置，这将允许您通过改变配置来轻松地定制您的 RAG 助手。"
+msgstr "每个组件都可以独立地配置，这将允许您通过改变配置来轻松地定制您的 RAG 助手。"
 
 #: ../../source/getting_started/quickstart1.md:25
-#: ae7a43b32b4745c88b0ec7290648e681
-msgid "Deploying the GUI application"
+#: 90ee13c67d084bcca8c3fd2aa569d947
+msgid "Deploying a GUI application"
 msgstr "部署 GUI 应用"
 
 #: ../../source/getting_started/quickstart1.md:26
-#: 744300a4ef7744b4b6abe91067af8a48
+#: e48f38a095c54a2e83fb0307de5f34b9
 msgid ""
 "The easiest way to run a RAG assistant is to use FlexRAG's entrypoints to"
 " start a GUI application. You can run the following command to start a "
-"GUI application with the `ModularAssistant`. For convenience, a BM25 "
-"retriever based on Wikipedia knowledge base provided by FlexRAG and a "
-"generator from OpenAI are used here. You need to replace `$OPENAI_KEY` "
-"here with your OpenAI access key or set the corresponding variable in the"
-" shell."
+"GUI application with the {class}`~flexrag.assistant.ModularAssistant`. In"
+" the following command, a retriever based on Wikipedia knowledge base "
+"provided by FlexRAG and a generator from OpenAI are used to build a "
+"typical RAG pipeline. Make sure to replace `$OPENAI_KEY` with your OpenAI"
+" access key."
 msgstr ""
 "运行 RAG 助手最简单的方式就是使用 FlexRAG 内置的入口点来运行 GUI 应用。您可以通过下面的命令来运行一个模块化 RAG 助手 "
-"`ModularAssistant`。为了方便，这里使用了 FlexRAG 提供的基于维基百科的 BM25 检索器，以及来自 OpenAI "
+"{class}`~flexrag.assistant.ModularAssistant`。"
+"为了方便，这里使用了 FlexRAG 提供的基于维基百科的检索器，以及来自 OpenAI "
 "的生成器。您需要将这里的 `$OPENAI_KEY` 替换为您的 OpenAI 访问密钥，或在 shell 中设置相应的变量。"
 
 #: ../../source/getting_started/quickstart1.md:39
-#: 5dd6896013564324bd87ff79160d1d24
+#: 58d6f51d6a6643a1bb2890d785b8c081
 msgid ""
 "Then you can visit the GUI application at `http://localhost:7860` in your"
 " browser. You will see a simple interface where you can input your "
 "question and get the response from the RAG assistant."
 msgstr ""
 "运行上述命令后，您就可以通过浏览器访问 `http://localhost:7860` 来浏览您的 GUI "
-"应用。您将会看到一个如下图所示的界面，您可以键入您的问题，该 RAG 助手将根据维基百科中的信息来生成相应的恢复。"
+"应用。您将会看到一个如下图所示的界面，您可以键入您的问题，该 RAG 助手将根据维基百科中的信息来生成相应的回复。"
 
 #: ../../source/getting_started/quickstart1.md:42
-#: 0de9dd02d7a74956b960c92b9cc37781
+#: 74ece1660fef424cbcdab969c9a3dfaa
 msgid "GUI"
 msgstr "GUI"
 
 #: ../../source/getting_started/quickstart1.md:50
-#: ecfd772c3f67418fb6fc64a2ada26b07
+#: 8d4284635f1144559344733b55826981
 msgid ""
-"In this example, we employ the pre-built BM25 retriever based on the "
+"In this example, we employ the pre-built ``FlexRetriever`` based on the "
 "Wikipedia knowledge base. You can also use other retrievers provided by "
 "FlexRAG or build your own retriever. For more information, please refer "
-"to the [Preparing the Retriever](../tutorial/preparing_retriever.md) "
-"section."
+"to the :doc:`../tutorial/preparing_retriever` section."
 msgstr ""
-"在这个例子中，我们使用了一个基于维基百科知识库的 BM25 检索器，您也可以使用 FlexRAG 提供的其它检索器或构建您自己的检索器。您可以访问"
+"在这个例子中，我们使用了一个基于维基百科知识库的 ``FlexRetriever`` 检索器，"
+"您也可以使用 FlexRAG 提供的其它检索器或构建您自己的检索器。您可以访问"
 " [准备检索器](../tutorial/preparing_retriever.md) 一节以获取更多相关信息。"
 
 #: ../../source/getting_started/quickstart1.md:53
-#: 3fc8ddc45a034df6ade2062cddfb2807
+#: ae629005e46d43b59ce4f53fbdaf553d
 msgid "Evaluating the RAG assistant"
 msgstr "评估您的 RAG 助手"
 
 #: ../../source/getting_started/quickstart1.md:54
-#: a7b931e9066744ca8a3bdad88cf72769
+#: 5f71d3aef91e4f15bca755a357e1bfe2
 msgid ""
 "FlexRAG also offers convenient command-line tools to assist you in "
 "evaluating your RAG assistant. You can easily evaluate your RAG assistant"
@@ -173,17 +184,17 @@ msgid ""
 " evaluate the above assistant on the *Natural Questions (NQ)* dataset:"
 msgstr ""
 "FlexRAG 提供了方便的命令行工具来协助您评估您的 RAG 助手，您可以轻松地在多种知识密集型任务上评估您的 RAG 助手。下面的命令将会 "
-"*Natural Questions (NQ)* 数据集上评估一个模块化 RAG 助手 `ModularAssistant`"
+"*Natural Questions (NQ)* 数据集上评估这个模块化 RAG 助手 `ModularAssistant`"
 
-#: ../../source/getting_started/quickstart1.md:73
-#: c5d767e4667046968bb95d6063979eb5
+#: ../../source/getting_started/quickstart1.md:71
+#: d4ce9542ab7e4753805443d8245cbca2
 msgid ""
 "As before, it is also necessary to replace $OPENAI_KEY with your OpenAI "
 "access key here."
 msgstr "正如此前，您依然需要将 $OPENAI_KEY 替换为您的 OpenAI API 密钥。"
 
-#: ../../source/getting_started/quickstart1.md:75
-#: 62ea7fae42014e20816d85302a0836e2
+#: ../../source/getting_started/quickstart1.md:73
+#: 5a3fce298634446697374d7ede1bd0a8
 msgid ""
 "In the command above, the parameters `name=nq` and `split=test` specify "
 "that the evaluation is to be conducted on the test set of the *NQ* "
@@ -194,39 +205,50 @@ msgid ""
 "generation are to be calculated."
 msgstr ""
 "在上面的命令中 `name=nq` 和 `split=test` 这两个参数指出我们将在 *NQ* "
-"数据集的测试集上进行评估。`eval_config.metrics_type=[retrieval_success_rate,generation_f1,generation_em]`这一参数指出我们将使用*检索成功率*、*响应F1值*以及*响应的完全匹配*来作为评价指标。"
+"数据集的测试集上进行评估。"
+"`eval_config.metrics_type=[retrieval_success_rate,generation_f1,generation_em]`这一参数指出"
+"我们将使用 *检索成功率* 、 *响应F1值* 以及 *响应的完全匹配* 来作为评价指标。"
 
-#: ../../source/getting_started/quickstart1.md:79
-#: 93a751e89a2e4b9e97075cf29b00d3ce
+#: ../../source/getting_started/quickstart1.md a248bc924a614434a164d723c3c8db88
 msgid ""
-"For more information about the RAG evaluation, please refer to the "
-"{any}`RAGEvalDatasetConfig` section."
-msgstr "如需获取更多有关 RAG 评估方面的信息，请参考 {any}`RAGEvalDatasetConfig` 小节。"
+"For more information about the RAG evaluation tasks, please refer to the "
+":class:`~flexrag.datasets.RAGEvalDatasetConfig` class."
+msgstr "如需获取更多有关 RAG 评估方面的信息，请参考 :class:`~flexrag.datasets.RAGEvalDatasetConfig` 文档。"
 
-#: ../../source/getting_started/quickstart1.md:82
-#: 47266269a5884e088d6884ba80e37957
+#: ../../source/getting_started/quickstart1.md 6bde99e597b24a50ae84aeb804d25ea5
+msgid ""
+"For more information about the evaluation metrics, please refer to the "
+":doc:`../reference/metrics` section."
+msgstr "如需获取更多有关 RAG 评估方面的信息，请参考 :doc:`../reference/metrics` 小节。"
+
+#: ../../source/getting_started/quickstart1.md:81
+#: 8be0ff1dd40a4ca78c3e21e89b8be2ae
 msgid "Running the RAG assistan directly"
 msgstr "在其它代码中应用 RAG 助手"
 
-#: ../../source/getting_started/quickstart1.md:83
-#: 28bdf12518114015bfd602d63a2661d6
+#: ../../source/getting_started/quickstart1.md:82
+#: 205d4b5e1c1c4cadb3b0897c4c4bf1c4
 msgid ""
 "You can also run the RAG assistant directly in your Python code. The "
-"following code snippet demonstrates how to run the `ModularAssistant` "
-"with the BM25 retriever and the OpenAI generator:"
+"following code snippet demonstrates how to run the "
+"{class}`~flexrag.assistant.ModularAssistant` with a "
+"{class}`~flexrag.retriever.FlexRetriever` and an "
+"{class}`~flexrag.models.OpenAIGenerator`:"
 msgstr ""
-"您也可以直接在您的代码中运行 RAG 助手。下面的代码片段将会向您展示如何运行一个采用 BM25 检索器和 OpenAI 生成器的模块化 RAG "
-"助手："
+"您也可以直接在您的代码中运行 RAG 助手。"
+"下面的代码片段将会向您展示如何运行一个采用 {class}`~flexrag.retriever.FlexRetriever` 检索器"
+"和 {class}`~flexrag.models.OpenAIGenerator` 生成器的模块化 RAG "
+"助手 {class}`~flexrag.assistant.ModularAssistant` ："
 
-#: ../../source/getting_started/quickstart1.md:110
-#: b73852378934440d802d576758f799fc
+#: ../../source/getting_started/quickstart1.md:109
+#: 4c1b35d723b04696874b835ab839b769
 msgid ""
 "Similar to before, you need to replace `<your-api-key>` in the code above"
 " with your API key."
 msgstr "正如此前，您需要将 `<your-api-key>` 替换为您的 API 密钥。"
 
-#: ../../source/getting_started/quickstart1.md:112
-#: da542a8ddeb147de812f45facaf3932d
+#: ../../source/getting_started/quickstart1.md:111
+#: 3ef55e4cd5ac4eba9bc10ed6b27db0f3
 msgid ""
 "In the command above, we use the `answer` method to pose a question to "
 "the assistant and receive three return values: `response`, `contexts`, "
@@ -239,30 +261,32 @@ msgstr ""
 "`metadata`。其中，`response` 是该助手的最终回复，而 `contexts` 是助手检索到的相关文档，`metadata` "
 "包含来自生成过程的附加信息。"
 
-#: ../../source/getting_started/quickstart1.md:116
-#: 02d5982d9df949ba918f733cfda62e13
+#: ../../source/getting_started/quickstart1.md:115
+#: 89ab9936a4734b30bb8c579e1e8a0f59
 msgid ""
-"For more information about the ModularAssistant, please refer to the "
-"{any}`ModularAssistant` section."
-msgstr "如需获取更多有关 `ModularAssistant` 方面的信息，请参考 {any}`ModularAssistant` 小节。"
+"For more information about the RAG Assistant class, please refer to the "
+":doc:`../reference/assistant` section."
+msgstr "如需获取更多有关 RAG 助手方面的信息，请参考 :doc:`../reference/assistant` 小节。"
 
-#: ../../source/getting_started/quickstart1.md:119
-#: 9b719d36704c4d38b048c57a7222000e
+#: ../../source/getting_started/quickstart1.md:118
+#: c910f7bd6915490687f222cb1b4770cd
 msgid "Developing your own RAG assistant"
 msgstr "构建您自己的 RAG 助手"
 
-#: ../../source/getting_started/quickstart1.md:120
-#: 0f6fce52d1d14d30b1ddfa994b13215a
+#: ../../source/getting_started/quickstart1.md:119
+#: a0d98cf71353461b8bd6ee6fa4babfb0
 msgid ""
 "You can also develop your own RAG assistant by inherit the "
-"`AssistantBase` class and registering it with the `ASSISTANTS` decorator."
-" Then you are able to run your own RAG assistant using FlexRAG's "
-"entrypoints by adding the `user_module=<your_module_path>` argument to "
-"the command. You can find more information in the [Developing your own "
-"RAG assistant](../tutorial/building_assistant.md) tutorial."
+"{class}`~flexrag.assistant.AssistantBase` class and registering it with "
+"the `ASSISTANTS` decorator. Then you are able to run your own RAG "
+"assistant using FlexRAG's entrypoints by adding the "
+"`user_module=<your_module_path>` argument to the command. You can find "
+"more information in the [Developing your own RAG "
+"assistant](../tutorial/building_assistant.md) tutorial."
 msgstr ""
-"您也可以通过继承 `AssistantBase` 类来构建您自己的 RAG 助手，并通过使用装饰器 `ASSISTANTS` 装饰您的类来注册该 "
-"RAG 助手。随后您就可以直接通过 FlexRAG 内置的入口点来运行 GUI 应用或评估您的 RAG "
+"您也可以通过继承 {class}`~flexrag.assistant.AssistantBase` 类来构建您自己的 RAG 助手，"
+"并通过使用装饰器 `ASSISTANTS` 装饰您的类来注册该 RAG 助手。"
+"随后您就可以直接通过 FlexRAG 内置的入口点来运行 GUI 应用或评估您的 RAG "
 "助手。更多关于如何构建您的助手，可以访问教程 [构建您自己的 RAG 助手](../tutorial/building_assistant.md)"
 " 以获取更多信息。"
 

@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-27 11:25+0800\n"
+"POT-Creation-Date: 2025-06-10 14:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -20,17 +20,17 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.16.0\n"
 
-#: ../../source/reference/datasets.rst:2 a08e51b1aeb24f3ab1067bbe614ae2be
+#: ../../source/reference/datasets.rst:2 66547337049341ac8751c7c961f0c9f3
 msgid "Datasets"
 msgstr ""
 
-#: ../../source/reference/datasets.rst:3 1afc23c7815d40eba8c81c2be4c14dcf
+#: ../../source/reference/datasets.rst:3 fdd1b8d4f8aa41508b57995d1fa15289
 msgid ""
 "This module provides a set of classes and functions for loading and "
 "processing datasets."
 msgstr ""
 
-#: 28ad80f46d1145b89af1a9b04dc8eccd flexrag.datasets.dataset.IterableDataset:1
+#: 59c8d47c9bcc43508402b9519ed37884 flexrag.datasets.dataset.IterableDataset:1
 #: of
 msgid ""
 "Bases: :py:class:`~collections.abc.Iterable`\\ "
@@ -39,76 +39,76 @@ msgid ""
 "[:py:obj:`~flexrag.datasets.dataset.ItemTypeI`]"
 msgstr ""
 
-#: 10370dce157240aba9462d42a2ac0710 flexrag.datasets.dataset.IterableDataset:1
+#: 98db9ab4b0424d5f8605713e76b90709 flexrag.datasets.dataset.IterableDataset:1
 #: of
 msgid "IterableDataset is a BaseClass for datasets that can be iterated over."
 msgstr ""
 
-#: b562d6d8de2d4511b2668c01d83e810a flexrag.datasets.dataset.IterableDataset:3
+#: 927b0cb34c934a0ebce9fa08e053a037 flexrag.datasets.dataset.IterableDataset:3
 #: of
 msgid "The subclasses of IterableDataset should implement the following methods:"
 msgstr ""
 
-#: 7b305e687c3545439aed9f88b8c5fbcc d06cfb5fc122462db4825b2ec310745e
+#: 351182a626e84cf3ac8eb959334ec1d6 8eecc679ac5c4d259ef7590095bc4a04
 #: flexrag.datasets.dataset.IterableDataset:8
 #: flexrag.datasets.dataset.MappingDataset:10 of
 msgid "The following methods are implemented automatically:"
 msgstr ""
 
-#: 1e7fd4bd86204ca98331de715b479eef 4f31644052494f27b1f82acec766d790
+#: 45c5744bebca414ebe41140b42f874f9 c66803fe51374702a2f50e6d7aad573f
 #: flexrag.datasets.dataset.IterableDataset:13
 #: flexrag.datasets.dataset.MappingDataset:19 of
 msgid "For example:"
 msgstr ""
 
-#: d8558af0f763414d867c78361255681e flexrag.datasets.dataset.MappingDataset:1
+#: 1c7b8a2b2ece4d95be40b1a848dd989a flexrag.datasets.dataset.MappingDataset:1
 #: of
 msgid ""
 "Bases: :py:class:`~typing.Generic`\\ "
 "[:py:obj:`~flexrag.datasets.dataset.ItemTypeM`]"
 msgstr ""
 
-#: ab9f73c729e845c29e3a59e6fd99e7b8 flexrag.datasets.dataset.MappingDataset:1
+#: 9f83807a41134ed5ae51400075815e8f flexrag.datasets.dataset.MappingDataset:1
 #: of
 msgid ""
 "MappingDataset is a BaseClass for datasets that can be indexed by "
 "integers."
 msgstr ""
 
-#: 69ba715315324e58b88901d5283de176 flexrag.datasets.dataset.MappingDataset:3
+#: 5b338416cffb489ca4a7756bbcfdafc9 flexrag.datasets.dataset.MappingDataset:3
 #: of
 msgid "The subclasses of MappingDataset should implement the following methods:"
 msgstr ""
 
-#: 90d84ce959df4f5091455e47ef3bfb70 flexrag.datasets.dataset.ChainDataset:1 of
+#: 8d46ead099da474e899c1acf69486474 flexrag.datasets.dataset.ChainDataset:1 of
 msgid ""
 "Bases: :py:class:`~flexrag.datasets.dataset.IterableDataset`\\ "
 "[:py:obj:`~flexrag.datasets.dataset.ItemTypeChain`]"
 msgstr ""
 
-#: 1be773fa7f604657b91c4e2aa613f493 flexrag.datasets.dataset.ChainDataset:1 of
+#: 38c41aa63e3e4317ba8e6ec7fbee2f9c flexrag.datasets.dataset.ChainDataset:1 of
 msgid "ChainDataset concatenates multiple IterableDatasets."
 msgstr ""
 
-#: 406cca2da7664ac89d3c8d16f09aab70 flexrag.datasets.dataset.ConcatDataset:1 of
+#: 02fc3a6d6d4244728523296336666915 flexrag.datasets.dataset.ConcatDataset:1 of
 msgid ""
 "Bases: :py:class:`~flexrag.datasets.dataset.MappingDataset`\\ "
 "[:py:obj:`~flexrag.datasets.dataset.ItemTypeConcat`]"
 msgstr ""
 
-#: 245fb233c841458a8c2c77d48574b442 flexrag.datasets.dataset.ConcatDataset:1 of
+#: 64e095555549459ba29e08aec32f1d5d flexrag.datasets.dataset.ConcatDataset:1 of
 msgid "ConcatDataset concatenates multiple MappingDatasets."
 msgstr ""
 
-#: cae2e384e85f44b89f7f5127f345a933 d3903b1f25d246b79fa7effffe980413
-#: fb8158b9f30e4c7183d4dbbc7ec0458a
+#: 2c669f0395a040e5949972a80f88da38 32701ae6c1f342e3813cf5f0b1975683
+#: e6c164b5527241db82689261f1ab3904
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:1
 #: flexrag.datasets.line_delimited_dataset.LineDelimitedDatasetConfig:1
 #: flexrag.datasets.retrieval_dataset.MTEBDatasetConfig:1 of
 msgid "Bases: :py:class:`object`"
 msgstr ""
 
-#: 7e0c7d8ac248473f88c5f11427f41c90
+#: d98b915e245a428da7e6bbaf05ab1fe3
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:1 of
 msgid ""
 "The configuration for the ``HFDataset``. The ``HFDataset`` is a wrapper "
@@ -116,73 +116,72 @@ msgid ""
 "``datasets`` library to load the dataset."
 msgstr ""
 
-#: ../../source/reference/datasets.rst 13492c2800074ee2826d72b86963a707
-#: 40c6b99c7cad4427a48814a3b805459b 63acfb19e6ee4f81956fc01b481b06b1
-#: d9223d71695a451fbbbda2426d519525 flexrag.datasets.hf_dataset.HFDatasetConfig
-#: flexrag.datasets.line_delimited_dataset.LineDelimitedDatasetConfig
-#: flexrag.datasets.rag_dataset.RAGCorpusDatasetConfig of
+#: ../../source/reference/datasets.rst 0343d369c1d44f70b9ab5f8f7df87870
+#: 20fad2a5c54c4bbea7898585ddc513a4 75a9863807654010a26449bff6025c5a
+#: aac77709e9b6490eb523bd9f356ba35e e7a6faf16e654fa48ba5b5e9448f6714
+#: f3173c08bcaa48bf82ce3e3787e7b7e6
 msgid "Parameters"
 msgstr ""
 
-#: 8b277032b3394ff2abbfccd0a4a72cec
+#: e2db82a39752499496ecf27ddab23dac
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:4 of
 msgid "Path or name of the dataset."
 msgstr ""
 
-#: 1eb24c5b576945aa9e7fee915bc1c806
+#: ae308fdd705140c88da18a826b950fee
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:6 of
 msgid "Defining the name of the dataset configuration."
 msgstr ""
 
-#: 520c05fc7b874744a25708d136353365
+#: 8ebc0e7a2125456b919c28520fdb0697
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:8 of
 msgid "Defining the ``data_dir`` of the dataset configuration."
 msgstr ""
 
-#: 3af993f64abd422697afb3b1c8ccc4f6
+#: f194aa404b2d4982a66754db6dc10e35
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:10 of
 msgid "Paths to source data files."
 msgstr ""
 
-#: 64dac61a0a164984ba8e20699795c66d
+#: 93fca21a265f4d7b86ebf71a41e76baa
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:12 of
 msgid "Which split of the data to load."
 msgstr ""
 
-#: 7b3d55295fa74c7697e2f09b536f5267
+#: 3b932050985c444bba40b5628e726646
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:14 of
 msgid "Directory to read/write data."
 msgstr ""
 
-#: aa7214d56dbd4bdab9602980c77efa86
+#: 9d9d2ca83d554f90bfc6917794be8cb7
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:16 of
 msgid ""
 "Optional string or boolean to use as Bearer token for remote files on the"
 " Datasets Hub."
 msgstr ""
 
-#: 6d6c06a934f34e5ea7b4ba3df935868f
+#: 348c393eac404e6a91e111ab0cbbb31b
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:18 of
 msgid ""
 "Whether or not to allow for datasets defined on the Hub using a dataset "
 "script."
 msgstr ""
 
-#: 0312fd2ab101493990232dbb0795c68a
+#: 51929ce828e64759b228d15336838082
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:21 of
 msgid ""
 "For example, you can load the dataset from the HuggingFace by running the"
 " following code:"
 msgstr ""
 
-#: e8e7d8fde6ed454bb83bd30a928cf13c
+#: 05fddab92ea84b6289d3620c282cd142
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:29 of
 msgid ""
 "You can also load the dataset from a local repository by specifying the "
 "path:"
 msgstr ""
 
-#: f836a62b6b8d4c299cae9effaf4fe519
+#: 03735410c7eb459cafcbc6b58b898153
 #: flexrag.datasets.hf_dataset.HFDatasetConfig:37 of
 msgid ""
 "For more information about the parameters, please refer to the "
@@ -190,27 +189,63 @@ msgid ""
 "https://huggingface.co/docs/datasets/main/en/package_reference/loading_methods#datasets.load_dataset"
 msgstr ""
 
-#: 4b61fdb9890f4a30a2e3ab5cbe918c99 flexrag.datasets.hf_dataset.HFDataset:1 of
+#: 041de05368304169a9bd9ec2147a048c 3cdaeb6626194ef1a16a3a2dbd18776f
+#: 92e2164676704e6b93978c6aa12344cb a07095ea160d41e893f66799d847195f
+#: cf06eb01f7ff46d0ac996746d8bfca50 d53ca1c5326641d4b46ba07660904696
+#: fe4c407a494549978b974775945f8353
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dump:1
+#: of
+msgid "Dump the dataclass to a YAML file."
+msgstr ""
+
+#: 1f903c65a65d4303b3b6b554ff9726de 48e342a87db74af1bb3ca6551bc8b8c5
+#: 6ddc011248b3491fb4f625d590eb7a5f 78f740e721c3482ab68abc1097e5887d
+#: 7b06b2dab2c34405850f8fcaad24f05b acd288b4e0d14f1da77d3425ce462edd
+#: b9a9945a782f4209b8a94f36e8e06cac
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dumps:1
+#: of
+msgid "Dump the dataclass to a YAML string."
+msgstr ""
+
+#: 0591748f0ac1486e9d2d0ba7e892ee1d 08bb6fe5e8d846c7987b23cc22de5dc5
+#: 10e81e408bea4f40b3b385af09e821db 84dfa02767a041108be5f2b299596340
+#: bfafafe40edc499db12c44887a5dab2c de0af8ac3cc6489d866dc6b7cebbf717
+#: efcc90e7d8ad4d89bac46778199d786f
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.load:1
+#: of
+msgid "Load the dataclass from a YAML file."
+msgstr ""
+
+#: 48494fc407464ad19620abfb6c9943d6 4882a11736484acba2d1d83a7dd23d1c
+#: 9403fef2870d47938466c740e9057126 9aaadd11f8574243bedc3eee76c7ec7b
+#: bf48d267c1e040109c09c878219323ce cd9158c5356b42ff997e320c8c550cba
+#: d5e5b8b4ad2a41fc94813ec149affeee
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.loads:1
+#: of
+msgid "Load the dataclass from a YAML string."
+msgstr ""
+
+#: de4347acf27842f9ba70d6960668efbb flexrag.datasets.hf_dataset.HFDataset:1 of
 msgid "Bases: :py:class:`~flexrag.datasets.dataset.MappingDataset`"
 msgstr ""
 
-#: 9c56f0ee84f14fbc8ceb12355bd01319 flexrag.datasets.hf_dataset.HFDataset:1 of
+#: 1663ad41d0734a9b88794254656bdf65 flexrag.datasets.hf_dataset.HFDataset:1 of
 msgid "HFDataset is a dataset that wraps the HaggingFace ``datasets`` library."
 msgstr ""
 
-#: 39fe8bd3794843b7a6bb36e3ea583735
+#: f23c24eb82d84bc7891b724f306a7700
 #: flexrag.datasets.line_delimited_dataset.LineDelimitedDatasetConfig:1 of
 msgid "The configuration for ``LineDelimitedDataset``."
 msgstr ""
 
-#: 6bdbf84a973940a88d9542937ae6ca52
+#: ff9ac03ff6b440f596d79b199ed71d3c
 #: flexrag.datasets.line_delimited_dataset.LineDelimitedDatasetConfig:3 of
 msgid ""
 "The paths to the line delimited files. It supports unix style path "
 "pattern."
 msgstr ""
 
-#: 7a69e1d049754cfdae38ad39edae2d60
+#: dcc63cb0bb384d9a90bd5b3967dc63eb
 #: flexrag.datasets.line_delimited_dataset.LineDelimitedDatasetConfig:6 of
 msgid ""
 "The data ranges to load from the files. The format is a list of "
@@ -218,37 +253,65 @@ msgid ""
 "to the end of the file. If not specified, it will read the whole file."
 msgstr ""
 
-#: 11c33ef00f4d404f8245c289d0a43291
+#: d355ad1839fd43b994adb3bc1648b71c
 #: flexrag.datasets.line_delimited_dataset.LineDelimitedDatasetConfig:11 of
 msgid "The encoding of the files."
 msgstr ""
 
-#: f36689bfaa5343ec96b7eabebfaced77
+#: 60207b08bbdd42cc94dab0782aad8408
 #: flexrag.datasets.line_delimited_dataset.LineDelimitedDatasetConfig:14 of
 msgid "Example 1: Loading specific lines from given files."
 msgstr ""
 
-#: 4d35d8ed7ea74f5eabb8dcba0d74bf13
+#: d993016a18024f3590e7b5022e7a2381
 #: flexrag.datasets.line_delimited_dataset.LineDelimitedDatasetConfig:24 of
 msgid "Example 2: Loading multiple files using unix style path pattern."
 msgstr ""
 
-#: 56311f4de828462887233b8ee0ceeba9
+#: c89f1e8858f24576b897a5e4143953c0
 #: flexrag.datasets.line_delimited_dataset.LineDelimitedDataset:1 of
 msgid "Bases: :py:class:`~flexrag.datasets.dataset.IterableDataset`"
 msgstr ""
 
-#: 4c1f210d044646c5ab1a41c31908b082
+#: b824cc7841724da6a069debb499f96e2
 #: flexrag.datasets.line_delimited_dataset.LineDelimitedDataset:1 of
 msgid "The iterative dataset for loading line delimited files (csv, tsv, jsonl)."
 msgstr ""
 
-#: 78fe8d18ca434d869bc7cfe1825801e7
+#: 0b5aadcc63894d9a870c7f867af942cb flexrag.datasets.rag_dataset.RAGEvalData:1
+#: of
+msgid "The dataclass for konwledge intensive QA task."
+msgstr ""
+
+#: 0b31f2dda8dc403b9ce5f8e2d02ffd64 9cb087d1013148acbc3ab14c702a923d
+#: flexrag.datasets.rag_dataset.RAGEvalData:3
+#: flexrag.datasets.retrieval_dataset.IREvalData:3 of
+msgid "The question for evaluation. Required."
+msgstr ""
+
+#: 28c4ae34dcd2425ab63acfd15c7c258a 687cb59a36694b5fa7ba16b72d3a52b2
+#: flexrag.datasets.rag_dataset.RAGEvalData:5
+#: flexrag.datasets.retrieval_dataset.IREvalData:5 of
+msgid "The contexts related to the question. Default: None."
+msgstr ""
+
+#: d51b659624a340d6870d2b9d59dd4c16 flexrag.datasets.rag_dataset.RAGEvalData:7
+#: of
+msgid "The golden answers for the question. Default: None."
+msgstr ""
+
+#: 511d95bee9cc4590aa7f9507d9ee0003 92ca9ab278e64b1489d66bb6934fd2e2
+#: flexrag.datasets.rag_dataset.RAGEvalData:9
+#: flexrag.datasets.retrieval_dataset.IREvalData:7 of
+msgid "The metadata of the evaluation data. Default: {}."
+msgstr ""
+
+#: d556f985ec1b4b72b0610e66c7b84e34
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:1 of
 msgid "Bases: :py:class:`~flexrag.datasets.hf_dataset.HFDatasetConfig`"
 msgstr ""
 
-#: 14106f1ec58b43ccb8b1dc43ae912a48
+#: d0260a451b6d4e5fb767cc4fc94e2cdc
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:1 of
 msgid ""
 "The configuration for ``RAGEvalDataset``. This dataset helps to load the "
@@ -257,14 +320,14 @@ msgid ""
 "``__iter__`` method will yield `RAGEvalData` objects."
 msgstr ""
 
-#: fc094acb0fd0444e93a49fec99ea5298
+#: 900f02a0ab064381a7edaddfb817c60b
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:5 of
 msgid ""
 "For example, you can load the `test` set of the `NaturalQuestions` "
 "dataset by running the following code:"
 msgstr ""
 
-#: cb6b73095bde4959b584d9fc66675265
+#: ae042895aa4c4332a86bba22293cbfa7
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:17 of
 msgid ""
 "You can also load the dataset from a local repository by specifying the "
@@ -272,204 +335,204 @@ msgid ""
 "command:"
 msgstr ""
 
-#: c0388a9263234a62aa00be187c4528dd
+#: 688583cdb38e4479a3c09e4a320752ef
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:23 of
 msgid "Then you can load the dataset by running the following code:"
 msgstr ""
 
-#: 6913b8c3f8e04edaa3d490bf6185007c
+#: 42ec5c381040498491da80903419f4ef
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:36 of
 msgid "Available datasets include:"
 msgstr ""
 
-#: e670bab1be1d4f9a937c8910fa653064
+#: 197ff17ac0344b8995c418f82d71f190
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:38 of
 msgid "2wikimultihopqa: dev, train"
 msgstr ""
 
-#: 39b6b698a2864d69add1a1672e68e7f1
+#: 52ffe9cdc0d34e418926ca38e86e74df
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:39 of
 msgid "ambig_qa: dev, train"
 msgstr ""
 
-#: 0b74d86b8ef04bcd9383212c05de0179
+#: db841f2f468c4612afbef1eb01e23db1
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:40 of
 msgid "arc: dev, test, train"
 msgstr ""
 
-#: 110a43ad32ad4176bd1f1cde127a86b3
+#: e1e702977f3b400d8f9db1cc6eff5fa9
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:41 of
 msgid "asqa: dev, train"
 msgstr ""
 
-#: 1ca88f0492324d03a57f256ad3ebd10b
+#: ea1cfc3f784a4b89895e6d78ea575d0c
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:42 of
 msgid "ay2: dev, train"
 msgstr ""
 
-#: ef18fe3fb8964dbbb73d0da1c47c66bf
+#: 2231e5a484ae45c3a4ff368df923282e
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:43 of
 msgid "bamboogle: test"
 msgstr ""
 
-#: 104ea28fd66a47b1945a8f185a29aa87
+#: 1d524e07b5204b5f8eefb9172b39bb61
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:44 of
 msgid "boolq: dev, train"
 msgstr ""
 
-#: 477c889c2f224cfcaab877f063de7b85
+#: 8e214fde34764e33b47204b029a57ff3
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:45 of
 msgid "commonsenseqa: dev, train"
 msgstr ""
 
-#: beb7eb6ac8f84e7aa44ef3d075f5d801
+#: 38ef414ee58b46b2a1932f557485a9b5
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:46 of
 msgid "curatedtrec: test, train"
 msgstr ""
 
-#: f8c1e24e085642afb59c25c48729a501
+#: b21ae33f5fb94210b6644bb5399087af
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:47 of
 msgid "eli5: dev, train"
 msgstr ""
 
-#: 0b445ddbde5b4bb9af5bde588db5fcb9
+#: 577039d1811641f2b503d5fab9e3264a
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:48 of
 msgid "fermi: dev, test, train"
 msgstr ""
 
-#: 0956e317bd63473aae5f33e3b00cb356
+#: f888983ac30d4110bab55d2fe0efd015
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:49 of
 msgid "fever: dev, train"
 msgstr ""
 
-#: ed64255931fc40e5a5c6c982475d04ed
+#: b5c927a3153c41f69291044ef6c5e82f
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:50 of
 msgid "hellaswag: dev, train"
 msgstr ""
 
-#: 4b9bc100063e47cd8c5918ec5e7fad1e
+#: d691a167fff647c487a46087f64809f9
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:51 of
 msgid "hotpotqa: dev, train"
 msgstr ""
 
-#: 20f65d4ff61743d4a37acf360f657b93
+#: b1a6ede1a0c1487c86a003a43eb54b78
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:52 of
 msgid "mmlu: 5_shot, dev, test, train"
 msgstr ""
 
-#: 25ae50ae72ec4d87b53cfc31e755369a
+#: 460c6e1d52234a7487f46e9e1d7afcfb
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:53 of
 msgid "msmarco-qa: dev, train"
 msgstr ""
 
-#: ed5e5f28f1ce47c0b16fba228249fbfa
+#: dc51de95d7674d2f967ab4d9a9cbb5e8
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:54 of
 msgid "musique: dev, train"
 msgstr ""
 
-#: 3707d835af2447f1aff449b0fdca42e3
+#: 40148e14ce4f47199615453bc8792b24
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:55 of
 msgid "narrativeqa: dev, test, train"
 msgstr ""
 
-#: f3ac8bfb078f4ddc8d5fa764a103f133
+#: cd9c96b84350472fbc5f620e56f1b96c
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:56 of
 msgid "nq: dev, test, train"
 msgstr ""
 
-#: deeb6bd7f33446d981f13526a46cd29c
+#: caa37aeae9b64b8d9ded41cf42b64886
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:57 of
 msgid "openbookqa: dev, test, train"
 msgstr ""
 
-#: 84251797f6b6415b99124bd7fea1ebd2
+#: d94a7359e0024c3cb0a2cace54a09ef6
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:58 of
 msgid "piqa: dev, train"
 msgstr ""
 
-#: 3f9154cf318842bfac4675cf00cd323d
+#: 7b4afe5242c547cb9dc7dd0b19619bd2
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:59 of
 msgid "popqa: test"
 msgstr ""
 
-#: c927b0e699784d6c90160dc74f7376d5
+#: 465531c5a1b544ab96ee659f5159d685
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:60 of
 msgid "quartz: dev, test, train"
 msgstr ""
 
-#: d985e8fa5b4d4a0992a71bd922978b7a
+#: f7b022438c1e44188768b888bf406ef2
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:61 of
 msgid "siqa: dev, train"
 msgstr ""
 
-#: c4298c8021d34cd6a00fa9998cd60a00
+#: 0279aa97c3aa4f3083bb970ae144b0a1
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:62 of
 msgid "squad: dev, train"
 msgstr ""
 
-#: 63572f964f93448781f71b738b0b6ece
+#: 0530ae4e99b1459783596b5c2279e2a9
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:63 of
 msgid "t-rex: dev, train"
 msgstr ""
 
-#: dc5dbb1e2ab44df7b17be86d470daa7b
+#: 92599eac708e4dff97ccda38ba55dd03
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:64 of
 msgid "triviaqa: dev, test, train"
 msgstr ""
 
-#: 4546e5b2dea04160b8e81bd6180c2efa
+#: 1ab89ea56d00498898c5f75649206b73
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:65 of
 msgid "truthful_qa: dev"
 msgstr ""
 
-#: fe416f5faebe423fb3bd460093f1ad60
+#: d680d0b90e3545c399363ac3db8517eb
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:66 of
 msgid "web_questions: test, train"
 msgstr ""
 
-#: e6a67bcc3eb746bd8bf048f5fb1800fe
+#: 725a0a51b0b447a4b48b4525c0d91963
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:67 of
 msgid "wikiasp: dev, test, train"
 msgstr ""
 
-#: bd8a46bcf2fb4701a1b48df0f340ccfa
+#: 8c18b32f1b444808830bf2d570c73e3c
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:68 of
 msgid "wikiqa: dev, test, train"
 msgstr ""
 
-#: ac0494e9b3f44b58bd457984c3189f21
+#: 1e21a8a883454f3da8a2ee6e82686b70
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:69 of
 msgid "wned: dev"
 msgstr ""
 
-#: 7403dd7191e14e1ca73bf995e37b7e53
+#: 6e68728ebd894d79b0015b56c42660b1
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:70 of
 msgid "wow: dev, train"
 msgstr ""
 
-#: 45b876f2b06d4571adb4d31fb9fd75e4
+#: d4c0cd6d637f4fdb91f714e687a9e940
 #: flexrag.datasets.rag_dataset.RAGEvalDatasetConfig:71 of
 msgid "zero-shot_re: dev, train"
 msgstr ""
 
-#: 428650e9f3c1452abb11277d82b5aefc
+#: b5dd6aaf1be048ce87ccb8ea21795858
 #: flexrag.datasets.rag_dataset.RAGEvalDataset:1 of
 msgid "Bases: :py:class:`~flexrag.datasets.hf_dataset.HFDataset`"
 msgstr ""
 
-#: d4c35a4c60ea4377b732897e135dd426
+#: b114b8e8250347e6803c812170d21325
 #: flexrag.datasets.rag_dataset.RAGEvalDataset:1 of
 msgid "The dataset for loading RAG evaluation data."
 msgstr ""
 
-#: 82bdbd048b2447fdabf5c62085d3c499
+#: ffff5c2f630f48208e008c753e67b9ae
 #: flexrag.datasets.rag_dataset.RAGCorpusDatasetConfig:1 of
 msgid ""
 "Bases: "
 ":py:class:`~flexrag.datasets.line_delimited_dataset.LineDelimitedDatasetConfig`"
 msgstr ""
 
-#: 00fbe11c27e041a7b5f8132dbbe412be
+#: c23ad5d65c6948dbb4f0d6dad9d6d3c8
 #: flexrag.datasets.rag_dataset.RAGCorpusDatasetConfig:1 of
 msgid ""
 "The configuration for ``RAGCorpusDataset``. This dataset helps to load "
@@ -477,28 +540,28 @@ msgid ""
 "will yield `Context` objects."
 msgstr ""
 
-#: 7053cd9fdfa04d768b3f2ac0e1e00bf7
+#: ee22b78a16634eb693e5770a9b1c2a04
 #: flexrag.datasets.rag_dataset.RAGCorpusDatasetConfig:5 of
 msgid ""
 "The fields to save in the context. If not specified, all fields will be "
 "saved."
 msgstr ""
 
-#: 35e4764b0ae942b3bf5a626831cfc902
+#: ea838fc86a7a419d96d4c7bf36237a7e
 #: flexrag.datasets.rag_dataset.RAGCorpusDatasetConfig:7 of
 msgid ""
 "The field to use as the context_id. If not specified, the ordinal number "
 "will be used."
 msgstr ""
 
-#: 6af9fab99b8542339a9db250a19b5be4
+#: 49f1bee166aa46bdb6892ac9977e18ff
 #: flexrag.datasets.rag_dataset.RAGCorpusDatasetConfig:9 of
 msgid ""
 "The preprocessors for each field. Default is {}. The key is the field "
 "name, and the value is the `TextProcessPipelineConfig`."
 msgstr ""
 
-#: 8cdd163614574180b947eda313d911e8
+#: 5d533dbfee5349d79c65743ca38671e9
 #: flexrag.datasets.rag_dataset.RAGCorpusDatasetConfig:13 of
 msgid ""
 "For example, to load the corpus provided by the `Atlas "
@@ -506,14 +569,14 @@ msgid ""
 "corpus by running the following command:"
 msgstr ""
 
-#: 002f7b750ac64eb28c25503dfe4d10af
+#: 0528fcf486494aa1a92bffefa3b3d87c
 #: flexrag.datasets.rag_dataset.RAGCorpusDatasetConfig:21 of
 msgid ""
 "Then you can use the following code to load the corpus with a length "
 "filter:"
 msgstr ""
 
-#: 20b9e580bdce479e9430cd7834f30de9
+#: 5301b3f3e4404499991f44ceb8096efb
 #: flexrag.datasets.rag_dataset.RAGCorpusDatasetConfig:47 of
 msgid ""
 "The above code will load the corpus data from the provided files and "
@@ -522,65 +585,70 @@ msgid ""
 "out."
 msgstr ""
 
-#: dff11955ac2d4a8ea19778e8d52b9169
+#: 30af5eed154d4e0ea6d2a450edca1e00
 #: flexrag.datasets.rag_dataset.RAGCorpusDataset:1 of
 msgid ""
 "Bases: "
 ":py:class:`~flexrag.datasets.line_delimited_dataset.LineDelimitedDataset`"
 msgstr ""
 
-#: 61875fe183074f7594c69f4f7f998d4e
+#: b6654e2ce37c475381d905c3c76a3036
 #: flexrag.datasets.rag_dataset.RAGCorpusDataset:1 of
 msgid "The dataset for loading pre-processed corpus data for RAG retrieval."
 msgstr ""
 
-#: ec929e4ddcde4a0bb7b78bff2d8c0642
+#: 0f1aa12233eb45bb80976641910731fc
+#: flexrag.datasets.retrieval_dataset.IREvalData:1 of
+msgid "The dataclass for Information Retrieval evaluation data."
+msgstr ""
+
+#: 61ecbb938a4544c595a962fe40bb57b5
 #: flexrag.datasets.retrieval_dataset.MTEBDatasetConfig:1 of
 msgid ""
 "Configuration for loading `MTEB <https://huggingface.co/mteb>`_ Retrieval"
 " Dataset. The __getitem__ method will return `IREvalData` objects."
 msgstr ""
 
-#: 2e830bc1bbd64d30983abe510c057736
+#: 7daf5d66bc284adfbf4a4ff2d7373dd8
 #: flexrag.datasets.retrieval_dataset.MTEBDatasetConfig:4 of
 msgid ""
 "For example, to load the NQ dataset, you can download the test set by "
 "running the following command:"
 msgstr ""
 
-#: 0b3158839a354faba490f611f9764e5f
+#: e14e6c8ee9534293aa0dedc10f6a8ae2
 #: flexrag.datasets.retrieval_dataset.MTEBDatasetConfig:9 of
 msgid "Then you can use the following code to load the dataset:"
 msgstr ""
 
-#: 0c5c0c51e20c414382752fcf96655b08
+#: 941e49195c8a412f8033d59927efba8a
 #: flexrag.datasets.retrieval_dataset.MTEBDatasetConfig:18 of
 msgid "Path to the data directory. Required."
 msgstr ""
 
-#: 98f2678462844c2cad1c7dcd7a75954c
+#: d3786b5ab02d497faf2fd3a04b7f89b7
 #: flexrag.datasets.retrieval_dataset.MTEBDatasetConfig:20 of
 msgid "Subset of the dataset to load. Required."
 msgstr ""
 
-#: 825cd52b7a4f4c6caf68338ac61db0fc
+#: 72b11a225c80488bae2733bde2206164
 #: flexrag.datasets.retrieval_dataset.MTEBDatasetConfig:22 of
 msgid "Encoding of the data files. Default is 'utf-8'."
 msgstr ""
 
-#: 970b18c4b4dd4a40b03ac1cd742edb20
+#: 7131b71a4e3d404885c3f500362159f5
 #: flexrag.datasets.retrieval_dataset.MTEBDatasetConfig:24 of
 msgid "Whether to load the corpus data. Default is False."
 msgstr ""
 
-#: f94d2e31c2004051b5258d4fe2a5ffb1
+#: c082a40bf8714a539da0bfce00ebf6f3
 #: flexrag.datasets.retrieval_dataset.MTEBDataset:1 of
 msgid ""
 "Bases: :py:class:`~flexrag.datasets.dataset.MappingDataset`\\ "
-"[:py:class:`~flexrag.common_dataclass.IREvalData`]"
+"[:py:class:`~flexrag.datasets.retrieval_dataset.IREvalData`]"
 msgstr ""
 
-#: 736506d3e1454128b21b78e540f1d3f4
+#: 5f49feb3ddf342d684e95aae267e7529
 #: flexrag.datasets.retrieval_dataset.MTEBDataset:1 of
 msgid "Dataset for loading MTEB Retrieval Dataset."
 msgstr ""
@@ -607,5 +675,10 @@ msgstr ""
 #~ "DocumentDataset is a dataset that "
 #~ "iterates over documents (PDFs, Words, "
 #~ "HTMLs, etc.)."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Bases: :py:class:`~flexrag.datasets.dataset.MappingDataset`\\"
+#~ " [:py:class:`~flexrag.common_dataclass.IREvalData`]"
 #~ msgstr ""
 

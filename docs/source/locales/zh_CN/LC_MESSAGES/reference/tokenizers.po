@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"POT-Creation-Date: 2025-06-10 14:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -20,33 +20,33 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.16.0\n"
 
-#: ../../source/reference/tokenizers.rst:2 2bb65de079c640669d0e1e26ebaf5755
+#: ../../source/reference/tokenizers.rst:2 18e7e19d75d74ada8d21a542dd7882c6
 msgid "Tokenizer"
 msgstr ""
 
-#: ../../source/reference/tokenizers.rst:3 2e32cf8bcf5b491c86dcab1cbac9d739
+#: ../../source/reference/tokenizers.rst:3 96d490d716ea45d88707dd872613ac51
 msgid ""
 "This module is a simple wrapper around other tokenizers. It provides a "
 "simple and consistent interface for tokenizing a text into tokens (maybe "
 "string or int)."
 msgstr ""
 
-#: ../../source/reference/tokenizers.rst:7 fbcf37eeef7b44869045ba779efa7fb6
+#: ../../source/reference/tokenizers.rst:7 e968984efbec461ea829c886da0b6da6
 msgid "The Tokenizer Interface"
 msgstr ""
 
-#: ../../source/reference/tokenizers.rst:8 823bf52f908f4104bc62bb2d8c65ef5a
+#: ../../source/reference/tokenizers.rst:8 76b725943a3d4e5787a9ad3989b8b26e
 msgid "``TokenizerBase`` is the base class for all tokenizers."
 msgstr ""
 
-#: 37e684fe39b14197ba36468923fb91c9 flexrag.models.tokenizer.TokenizerBase:1 of
+#: 43095918b16b4db994177e6844c74205 flexrag.models.tokenizer.TokenizerBase:1 of
 msgid ""
 "TokenizerBase is an abstract class that defines the interface for all "
 "tokenizers. These tokenizers are useful in the `text_processing` module "
 "and the `chunking` module."
 msgstr ""
 
-#: b8f34317a11b4fd19105013d9dd851d4 flexrag.models.tokenizer.TokenizerBase:4 of
+#: 5d88139fe156408092b9953a7e98b129 flexrag.models.tokenizer.TokenizerBase:4 of
 msgid ""
 "The subclasses should implement the `tokenize` and `detokenize` methods "
 "to convert text to tokens and vice versa. The `reversible` property "
@@ -54,9 +54,9 @@ msgid ""
 " original text."
 msgstr ""
 
-#: 6be1692b8d894f16919ac4fdb77d7b97 714b070982c8439883544dff6e7443d1
-#: 7bd98941ae724c9385d7878c8d35f4e6 db01be3893284a2d961a594eb31ab266
-#: e8d416cb44b54c66931b3843d5df06c3 fe83f5706e4a43bc8487ee12bbbed217
+#: 51b919821e9e47aea87b94e6adcab00c 5cd5741aa31d4cd19686e42a7ec6011e
+#: 998084fd263642c2bf6ab93db0fde294 a2b2fa876772448082534080c316c194
+#: ce2b85211e954df3af791f3d6daf9d08 e99dcf1935f64da1b4e1f2ab9fe2e92d
 #: flexrag.models.tokenizer.HuggingFaceTokenizer.detokenize:1
 #: flexrag.models.tokenizer.JiebaTokenizer.detokenize:1
 #: flexrag.models.tokenizer.MosesTokenizer.detokenize:1
@@ -66,22 +66,21 @@ msgstr ""
 msgid "Detokenize the tokens back to text."
 msgstr ""
 
-#: ../../source/reference/tokenizers.rst 11911879d25b421987d489b92602de40
-#: 1c78e46497c04a8c9fe79b2572f67c73 2f2fd822fb454fc09094386d3d3e3400
-#: 42ea67810b774a609aa35c08d786f3ae 529efb63fe5b4faeb7afc6451100ad10
-#: 695fae7f028247768cfac25a215ed409 806f25a8b72749f4b55b313e50b65539
-#: 9af619c9db5b404aa27780a719bb4921 ab8e1aad2e4c478aabcb91dfa38a7ef7
-#: ab98b379de2140359458e1b35668d924 bc3992dd602246438bb096b53bb2e060
-#: d210918d0ce84aab95a86c3adaee1b83 e0f793c70f4540baa2d27cbe18d8319c
-#: e51af862acdb467db2e194d802fa45f0 ec6798224dbc4ed7b0c624c971fd7805
-#: f4854c8de99d4bfa8314287f7ed0eb02 f7bda39b89684c5f90c3dfcba2b2cf8f
-#: flexrag.models.tokenizer.TikTokenTokenizerConfig of
+#: ../../source/reference/tokenizers.rst 0e83d5b417344880a86ee822a9b09c34
+#: 137e0ab17f0648338a9fed543be68c61 212a86c9e81f4885a82e6ff6357f3fa8
+#: 2e04ad01a98e474d88da7a8e5aacce4d 2ed9581597a4420695ea3f82ea822b22
+#: 339daedf93ce422da79feef61671d661 583f67533022486195c4834931484f92
+#: 5c16c2c0b7124aacaf35ec77a336c1a1 6916087bfaab44dfb98ff1dcb365b94a
+#: 79137e0a45f9472a83bcf03c7e9da04a 82764f26a9914131b2fb6c4bcc729c27
+#: 92365af39ca146268d1f2339750e55c5 ceb2924ff6274b559817f9753e9747dc
+#: dea1b92b9b7344bcb5a40a8848ae05df e2265d128f1041cda6ebb04aba2e4752
+#: f675d9f73d344f6782e6bbd65419a41e fca50c741df4494fa52000b3568d4538
 msgid "Parameters"
 msgstr ""
 
-#: 0647a103817a4635b6a7a5b4303ebcb7 0df7684d1bd44b9580c37cb461506826
-#: bdd9f4d74a904c6880a6ba6cfeaa5276 ca2fad500e074b09a0b1346609887fde
-#: e85cd901b48646eebce1abd7f51f90a6 fc422fd1bb1d4a7983cb68d957b0d289
+#: 1956e21b505e4422a852b6d8e9dc56f4 9b2609c9e0b748fcb8b3bc8d93a407a8
+#: aa8fd56cda444492b35f6fe1ba0c0cd8 ab57f956695b49a4a1c5dce549901be8
+#: c74c7a64b4df43faaee043dde30e2817 cf34f90499cb49d09c556677dd6e503e
 #: flexrag.models.tokenizer.HuggingFaceTokenizer.detokenize:3
 #: flexrag.models.tokenizer.JiebaTokenizer.detokenize:3
 #: flexrag.models.tokenizer.MosesTokenizer.detokenize:3
@@ -91,19 +90,19 @@ msgstr ""
 msgid "The tokens to detokenize."
 msgstr ""
 
-#: ../../source/reference/tokenizers.rst 2211c44340d24079b23b088285abed30
-#: 2ff3f3348d1b453495e04fd8f3f73fa9 38fe68c893df4379837dc1c3aec205b3
-#: 4514e4fbe934422c81a8be2306239c75 531e8b2a322e43079a0c8eb0ea047426
-#: 6220143ce9cc40c880df6fe718acd0c9 b4cb027542754d70b7e5e691a0813ac0
-#: b8d4c582030348498b6afab04bd30bb9 c0d29dfde90e469197e91a0901d62c72
-#: cbaf7af845df4d5b9d065d8020d3395f d95f541b12ca4747b4440143a106d38b
-#: f1935021bce8492ebaa65e37c5917502
+#: ../../source/reference/tokenizers.rst 0077628916cd441dae915e4cf40cac4b
+#: 042a7125bb014f9a80f7e059bacaea91 1bc1aee358bf4d5b967a416f2d4b39de
+#: 2b7604be62b24231a6351e3b6c5dc7fc 2e661d68833f447d926f82f3332e4297
+#: 30d1d29f139b429ab3f86367920f73ea 41ba90932dd445c1833bbbaac47cbb7e
+#: 5856c169962c4dc9970f89857bc79988 7291d80cc7124aa5961fb2e04fcf8bb8
+#: 927b4493745d4b75b4c2862fda72d063 96b7fe4d58d7413f9726507d3ea3fc94
+#: dd6d614f79ba44d086437a06b87e016d
 msgid "Returns"
 msgstr ""
 
-#: 144bc45a59c549ee9efc30046dc52e1f 26012a10dcbd49a1b9ecc4a81d749876
-#: 2c99e8be99be48d49363e0bd168510eb 6d1494f14b814ca4b81363ab06ca1c70
-#: ce61f62559bd48f4822746773decc28f f8126cf9183444f7ad3dc164e9a4ab90
+#: 0da75ac6086f423e832acd7cab642d66 39b75ecb581248b895b55f080b05ef9d
+#: 4ddcb8b9375d4719a075ab7060773636 67aa6d4c397046c4bfdde8ad23605507
+#: a7ec414ae61640be8c488cf47a41cf33 b977a7f458044f9ba172bf8a71d9848f
 #: flexrag.models.tokenizer.HuggingFaceTokenizer.detokenize:5
 #: flexrag.models.tokenizer.JiebaTokenizer.detokenize:5
 #: flexrag.models.tokenizer.MosesTokenizer.detokenize:5
@@ -113,26 +112,26 @@ msgstr ""
 msgid "The detokenized text."
 msgstr ""
 
-#: ../../source/reference/tokenizers.rst 071df2a12ccb4020b30233782708cd28
-#: 15cfe4850ef24b28800018257210b37d 3088cc7db42d4a38970793d0e2535276
-#: 370d13319e0641819b0f59f64c1301af 541f8c45121c4ac996c849b83e7f8512
-#: 7fd44d404d7648de98896fd25bcb8213 8e32b83026dd459a90388bd111c56ad6
-#: c57a5b57b3ed431ba28fd2b51a48f21f d890b0127c6949cfa6b99b86c2ec4306
-#: da52dd92bcaf40f1966e82f82c2d5068 f2bbacfbefb34c27a113962fa6f46179
-#: fe55d88b6b444322a9f9acada905716c
+#: ../../source/reference/tokenizers.rst 2230dda9746842d7a64edf271c1ba71f
+#: 53c0ba4f076f4d8287cc9355cd4bf130 5ea85bc14830443cadd956055a994706
+#: 726111cf68a647409bbddbddcee3e781 9b821205173c4b82a42a2f4680d18b9d
+#: bc224bc5458d4cea859c63f21f6af063 be89bcc09e0741139ff3b740c825eb32
+#: cb8e9086b05649d2894f18c54a53ad25 e584b7ccf3764faf8a09d699e7282bb3
+#: ef12f729e8d34bf9a3bf7c3103065465 f95f155fe0654c4594133142535ac3de
+#: fa9a38e4cc83435781f21604b585ecaf
 msgid "Return type"
 msgstr ""
 
-#: 31a209ca93c1495f8dfeaa6e653e1ad8
+#: e58e33b7156e482ca3729788fca21586
 #: flexrag.models.tokenizer.TokenizerBase.reversible:1 of
 msgid ""
 "Return True if the tokenizer can detokenize the tokens back to the "
 "original text."
 msgstr ""
 
-#: 2fe58007dc2d48e7a2da1d0ee3ebb27e 317d21d103c14c7f80160b3d72446096
-#: 5320bcbf972b4e93bbb39ab8d2d6be03 5af6b1de27c74765be631cf700244eea
-#: ee0063487fb647e685114f2cda7fd838 f4d46d902b204aec9b488f907d2ea7e3
+#: 398b0c62fd354a439c11e25b29571db6 5f73fef639a84987a8f5ea5dc4bbf9a5
+#: 7fb9e29124254a1b885d39c6a349a5e2 800659499c29462391707da1662f16f6
+#: 9226a679e8f147bf8ac045a607a297c1 afdaf1fb9c5240b896ebf92d630924a7
 #: flexrag.models.tokenizer.HuggingFaceTokenizer.tokenize:1
 #: flexrag.models.tokenizer.JiebaTokenizer.tokenize:1
 #: flexrag.models.tokenizer.MosesTokenizer.tokenize:1
@@ -142,9 +141,9 @@ msgstr ""
 msgid "Tokenize the given text into tokens."
 msgstr ""
 
-#: 12d6161dc9fd4686bf4d502ab9ea22a1 4ea647ee1c494a919a0ad0e861855035
-#: 78f4a62dea294434a3ab9ce2b093a289 a07305a0e0194f95b6eafa84a29defa5
-#: d72eee6ddc3d4160bcd279a536e7b541 de8bc7783f7e4be08f97828a64365104
+#: 4676c814132643aba2cd9565d3071598 5929ffbbb6584184a023ba9c226a5406
+#: 6362026572d347ac8dca00d05841036a 6364777a91b54f2689dd5c7127c3b7c6
+#: 829f2fb891104736afb710e78a108f97 b3c9e59c7ac84b269da0c7cd2ac56985
 #: flexrag.models.tokenizer.HuggingFaceTokenizer.tokenize:3
 #: flexrag.models.tokenizer.JiebaTokenizer.tokenize:3
 #: flexrag.models.tokenizer.MosesTokenizer.tokenize:3
@@ -154,9 +153,9 @@ msgstr ""
 msgid "The text to tokenize."
 msgstr ""
 
-#: 51c01f9b62124d5eab4f634ed34eb8b0 80b8c2b64b874cf08707e7662501a141
-#: 8e7f9a4825ff49369fac38a459350e2f a17360aa30b347be81089e2056724ce2
-#: b8511fc42351495b953f1b8704937d0b f9290bf4e75f42958d8aa2ff058f4e4e
+#: 360c56cb645249d6b840ebcdce268cce 76f96b81579c47debac9e980c4f0686d
+#: 7f22c19443e04e499df9fcb99137798d 8c7f4847b96549c9ba2acff3b39754ac
+#: bbd24e9005ae42ce8bd549f391b7f155 f994b1c8717145c2b5dd505551b378b7
 #: flexrag.models.tokenizer.HuggingFaceTokenizer.tokenize:5
 #: flexrag.models.tokenizer.JiebaTokenizer.tokenize:5
 #: flexrag.models.tokenizer.MosesTokenizer.tokenize:5
@@ -166,25 +165,57 @@ msgstr ""
 msgid "The tokens of the text."
 msgstr ""
 
-#: ../../source/reference/tokenizers.rst:16 f8eaa009d6ff496ea97b5cfd184518f9
+#: ../../source/reference/tokenizers.rst:16 31762e3fba8a4f5d82c20d41ee7ecccc
 msgid "Tokenizers"
 msgstr ""
 
-#: ../../source/reference/tokenizers.rst:17 94cca0283ad84aec87b7cd745c581829
+#: ../../source/reference/tokenizers.rst:17 f0bff3445be04572adc8c11f25e4935b
 msgid "The wrapped tokenizers."
 msgstr ""
 
-#: 42ccf26b85304cd0ada81e8439d4646d
+#: 43fcf120801a4a81888ca797990da41c
 #: flexrag.models.tokenizer.HuggingFaceTokenizerConfig:1 of
 msgid "Configuration for HuggingFaceTokenizer."
 msgstr ""
 
-#: e1018f46d2e94c3ca5b409e39f936fda
+#: 2d355dc31d784ef59d32ce4c7e10179f
 #: flexrag.models.tokenizer.HuggingFaceTokenizerConfig:3 of
 msgid "The path to the HuggingFace tokenizer."
 msgstr ""
 
-#: 38745a434aa04fcead4d1bb1bf60f865 cda98575799449db8184b27b5bb07aa6
+#: 1ee228014e664d3d8b96ce3e82619e75 5c83cb77b0c24ad485b3aebf2ae4a882
+#: 644516380d1a488caa0e5d9ec0a04e02 b07c814644c44a729029a6b1a5425e04
+#: edc63ded1ea44d48ab802f2086913532
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dump:1
+#: of
+msgid "Dump the dataclass to a YAML file."
+msgstr ""
+
+#: 79f483f8e6c7443f9cbbdcb045251478 971a0fd5b4a6417e81c8f97f144c492d
+#: a3d2b7cb749e4d4fbe287507dc8bda3a c2b087bf1f7643719b245f14efe59617
+#: e9efa6724dc34028beb86a0f7eb75cce
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dumps:1
+#: of
+msgid "Dump the dataclass to a YAML string."
+msgstr ""
+
+#: 0164fda1ee124a37a6039f99601c8c60 68f277a5ab994697b20b93113b09d310
+#: 7e4a3464b7b74689a37039e10dd0922d 89eef9a02a764420a4f2cc53afa9a9a7
+#: b815319789834c70b87137b98fcf12bb
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.load:1
+#: of
+msgid "Load the dataclass from a YAML file."
+msgstr ""
+
+#: 09582cb88c404e1db37294d890445c60 7e9425123a8844b4bfabb368cf62663f
+#: 8add7bd9e86247babb1a3600559da102 cbf1c891f9454b59a444084e5859a827
+#: d0c51b55f29b4e82a6d65a804ce9ffcd
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.loads:1
+#: of
+msgid "Load the dataclass from a YAML string."
+msgstr ""
+
+#: 30eb312aea1049e2b281df488d196f7d e4a3cd76a1fd406ebeb6a417d9be89a4
 #: flexrag.models.tokenizer.HuggingFaceTokenizer:1
 #: flexrag.models.tokenizer.TikTokenTokenizer:1 of
 msgid ""
@@ -192,60 +223,60 @@ msgid ""
 "[:py:class:`int`]"
 msgstr ""
 
-#: 8891db5f61d340a0bc5dca73ec0b4221
+#: 0a1fda58fa644cc3bcd623a41e139713
 #: flexrag.models.tokenizer.HuggingFaceTokenizer:1 of
 msgid "A wrapper for HuggingFace tokenizers."
 msgstr ""
 
-#: 3d9c9514563045d38e779449f96f2331
+#: e25a355ff3634a3b9219cf8ad6dc67fb
 #: flexrag.models.tokenizer.HuggingFaceTokenizer.reversible:1 of
 msgid "Most HuggingFace tokenizers that employs BPE/SPM model are reversible."
 msgstr ""
 
-#: d7042d2ac9844e66a61b077d66748a9c
+#: 87c9708768564b4d836f899a20cffa97
 #: flexrag.models.tokenizer.TikTokenTokenizerConfig:1 of
 msgid "Configuration for TikTokenTokenizer."
 msgstr ""
 
-#: 117625c9f6e64c1fb8cef59e9148143f
+#: 329b070e7b754030948012c729e4c777
 #: flexrag.models.tokenizer.TikTokenTokenizerConfig:3 of
 msgid "Load the tokenizer by the name. Default is None."
 msgstr ""
 
-#: 250bb5ceb79c4745b41cb0c28985d932
+#: 85314704891846d3a9b11f5b9782c3bf
 #: flexrag.models.tokenizer.TikTokenTokenizerConfig:5 of
 msgid ""
 "Load the tokenizer by the corresponding OpenAI's model. Default is \"gpt-"
 "4o\"."
 msgstr ""
 
-#: 54e028503b03498faad128bbcab27ac3
+#: 169fb780089a43a094099c664ed0116d
 #: flexrag.models.tokenizer.TikTokenTokenizerConfig:8 of
 msgid "At least one of tokenizer_name or model_name must be provided."
 msgstr ""
 
-#: 29fb7733b90c4e3e897cdfd86caaecd9
+#: e2f58eb7333c4fe5939d7b573b76379d
 #: flexrag.models.tokenizer.TikTokenTokenizer:1 of
 msgid "A wrapper for TikToken tokenizers."
 msgstr ""
 
-#: 433b8957a3db40fba5eebb013cedf61d
+#: f0ec2c3fcb014a79bc2e195af0090280
 #: flexrag.models.tokenizer.TikTokenTokenizer.reversible:1 of
 msgid "TikTokenTokenizer is reversible."
 msgstr ""
 
-#: 5b04303a1c134b5eb6e82c5b10516888
+#: 3676c91dee314d868e35b84a54ba6a7f
 #: flexrag.models.tokenizer.MosesTokenizerConfig:1 of
 msgid "Configuration for MosesTokenizer."
 msgstr ""
 
-#: 9a196b96a8da462f834e973eea0f85b1
+#: 53601628c3a54e86ac659aa84fc23bbc
 #: flexrag.models.tokenizer.MosesTokenizerConfig:3 of
 msgid "The language code for the tokenizer. Default is \"en\"."
 msgstr ""
 
-#: 000f91f1e95b4be1a383e8bc65c3946b de6d9a6919ab41d4a13fdd147a5eb992
-#: fb932546da12442386831c44540d3b08 flexrag.models.tokenizer.JiebaTokenizer:1
+#: 1273b70711854daea8006c0aab480fec 2c91f8e4f3e44d6195f3d20b90f35243
+#: 6f00d66366d94ea3b5eb06cf389a7d7d flexrag.models.tokenizer.JiebaTokenizer:1
 #: flexrag.models.tokenizer.MosesTokenizer:1
 #: flexrag.models.tokenizer.NLTKTokenizer:1 of
 msgid ""
@@ -253,56 +284,56 @@ msgid ""
 "[:py:class:`str`]"
 msgstr ""
 
-#: 3a7c88dbeab7448c95821d2d7e221af1 flexrag.models.tokenizer.MosesTokenizer:1
+#: 57ecd3d9e3b448b6b1a189e72c5bcb97 flexrag.models.tokenizer.MosesTokenizer:1
 #: of
 msgid "A wrapper for SacreMoses tokenizers."
 msgstr ""
 
-#: 34864c079547435091f37cf40f9a54cf
+#: 58d8f989b0a6496292c6a6438713c74a
 #: flexrag.models.tokenizer.MosesTokenizer.reversible:1 of
 msgid "MosesTokenizer is not reversible as it may lose sapces and punctuations."
 msgstr ""
 
-#: 576812dd82c342f18cfc42fad1e27c93
+#: f3259cc1540e491bb132b0832ac52ea1
 #: flexrag.models.tokenizer.NLTKTokenizerConfig:1 of
 msgid "Configuration for NLTKTokenizer."
 msgstr ""
 
-#: 2ab763493a604bdbaf33e378ace36490
+#: 82eafa948942491fb0dc9a9339910872
 #: flexrag.models.tokenizer.NLTKTokenizerConfig:3 of
 msgid "The language to use for the tokenizer. Default is \"english\"."
 msgstr ""
 
-#: dbba15ee49c64791914b3b69e9134a6b flexrag.models.tokenizer.NLTKTokenizer:1 of
+#: 6e46a07273fd4f778e15c21bf81c43ec flexrag.models.tokenizer.NLTKTokenizer:1 of
 msgid "A wrapper for NLTK tokenizers."
 msgstr ""
 
-#: 27ea8cc77aab4f82b2833b868e3f5bf4
+#: d73e098a045c4b608f197e60425928ce
 #: flexrag.models.tokenizer.NLTKTokenizer.reversible:1 of
 msgid "NLTKTokenizer is not reversible as it may lose sapces."
 msgstr ""
 
-#: 3646ccfe0a274d048650ba78f8166dc7
+#: 2a8c988adb794d7096368e34ce93295a
 #: flexrag.models.tokenizer.JiebaTokenizerConfig:1 of
 msgid "Configuration for JiebaTokenizer."
 msgstr ""
 
-#: f253e3cc1c2542f1ad31ad27a7457d35
+#: bac7e66651c14d64a95baa5d7b3eaca3
 #: flexrag.models.tokenizer.JiebaTokenizerConfig:3 of
 msgid "Whether to use the Hidden Markov Model. Default is True."
 msgstr ""
 
-#: 8a994cf94ef54800aa00b6001019fce0
+#: c2f8dcdd69a046319ee2bb95840f5763
 #: flexrag.models.tokenizer.JiebaTokenizerConfig:5 of
 msgid "Whether to use the full mode. Default is False."
 msgstr ""
 
-#: f0c58b0763ba48ffae142e16fe6f6e1b flexrag.models.tokenizer.JiebaTokenizer:1
+#: e637e9e08bbf49efa1fc2cccbe413d8c flexrag.models.tokenizer.JiebaTokenizer:1
 #: of
 msgid "A wrapper for Jieba tokenizers."
 msgstr ""
 
-#: eed9b6a1846d43dab13ff217b0e981e2
+#: c7e54ec3964e4094a601f9b90459ebc4
 #: flexrag.models.tokenizer.JiebaTokenizer.reversible:1 of
 msgid "JiebaTokenizer is reversible."
 msgstr ""

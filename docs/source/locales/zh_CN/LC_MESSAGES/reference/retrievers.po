@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"POT-Creation-Date: 2025-06-10 14:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -20,440 +20,532 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.16.0\n"
 
-#: ../../source/reference/retrievers.rst:2 35b77a14f04741e5a9e979a99a14cc0d
+#: ../../source/reference/retrievers.rst:2 427f62398a324258aedb301e44ab988d
 msgid "Retrievers"
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:3 0178de0762bc49f6ad3ce9b7e362cb7a
+#: ../../source/reference/retrievers.rst:3 ce70814f3f694833a74c2aa02b0853bf
 msgid ""
 "Retrievers are used to retrieve data from the local knowledge base or the"
 " web."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:7 0cc243c08fa241839fd8c6e7f9269623
+#: ../../source/reference/retrievers.rst:7 94db85512d77493cb314e527a9b63a0b
 msgid "The Retriever Interface"
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:8 28d5bf37e7054450bd4e4af1967d72fd
+#: ../../source/reference/retrievers.rst:8 70b7e492daf64e7bb237e80f680b8ccf
 msgid ""
 "``RetrieverBase`` is the base class for all retrievers, including the "
 "subclasses of ``EditableRetriever`` and ``WebRetrieverBase``."
 msgstr ""
 
-#: d1085423a9a84b6ca382c09e7f013c41
+#: 92d383447cf74d198b2332b053180d83
 #: flexrag.retriever.retriever_base.RetrieverBaseConfig:1 of
 msgid "Base configuration class for all retrievers."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst 0653f23d93ae4cba83b92973f0d25593
-#: 0a53267f435243f99aa34f3560418885 0e31dfece6a34ba090219263d6f783ef
-#: 12244c065aaf4c5d984d8e37c8afa143 17266e7856534ae795f1c0ad9a96ad97
-#: 19cd799798a74ccbb27b04d47e87aa3d 1cbccc7d566944779d1215dfbc7984e2
-#: 25c07fae91cd491ebaf12044a0d4bc03 284f7ef04c0f4dbb81a9e311b9a8db45
-#: 29fe736f1fdc44afbc35e2540bcb2765 2a86155daddb49ac8986084b56566eb0
-#: 2d81425f15cf4867a804691dca6372dd 2dcb1992a6304b4a88581e4cbffce415
-#: 2e4ac16b62c04a478429fffd1cf8df99 302f7c5b3ed14aa88443478157be801f
-#: 34ee279206084b39aa3eaa92d9da21bf 394b2845f214414095601947b29910cb
-#: 39fe736876d6414ab9a3922d70715860 3faaa3c11b14436b838cd7673927b30c
-#: 4101e324b6904f31b27fb2ccf5dffb9d 4535ee25579749cb8eacf4115af60169
-#: 4a90b139410b472f853f605506ff71ca 4d831f97badf4e7ea15ad250ea545122
-#: 4e86cb7e99c848c6a30b65e645e083d7 4fc7562bdbdc47079c37763f2ee57fd9
-#: 568626069f6e44dfb307c03804c99336 61f1bfe5759549f9aa45cde25df16b3c
-#: 626e6a6700dd40e5a1b5711ea72a0734 6384948613954cbc98f6a860f2779402
-#: 66c24e61116b423baf358bb551c3c6aa 74f83cab0a80493988c975f81df6addf
-#: 760eb93f465c451cbebed27fb6f80350 7768f15917ab49a3b5106219474f6a00
-#: 81ec0401b98c4bc89a96f12211f76df5 82af6d344bb647698634bbf0f0d5511a
-#: 83cae51b94e54ae5a0a6856c462a750d 86a468f9c4f4474081e214df7b26b41a
-#: 8a373d1fbafe4fdd82e6bb5ed14ecf2d 8c2b17288c654d4194b5a546bb81a66e
-#: 8e6020278ca44bedbb0423f171443843 8f4c054fdbb94d048f0e7b3a942b7002
-#: 9bdcc66a18134916bbc53fe6e95520b7 9c0b4002b1954ee6807917702ae92626
-#: 9ed963e724474e08a8e8f3f6c22b40da a07d3dda5d8b4acea90ec9fd1e7b7c98
-#: a4fa9c82a5914ec1aa49259f642d4a5c a5c350b6e4f248df8ca89217d4ada85d
-#: a60ae5bba5914c09ba0598e187ad575d a7a1660867144558a6ed38b557fd271d
-#: b7d07f4b409e49a4aa259304e2bae005 b88a5a7ba50b4913877540dd0cf1d2fb
-#: bcffce61c4d749e9b0a7d7502ac24c2c be9a75bf3dbb4a5fbb11e9bc1242b84b
-#: c107f70bf8c245a89a722d912b3cf9ba c574674027a34797979c82ae1922bfc9
-#: ca3e768b23284818b32a4a23d12c9e37 cb089b487ca04eef9361e19716803693
-#: ce1381e57113410285896fde927542a8 cf3e91b54e59424e99b0f6d95d20edec
-#: d0a90dd4337e4a6e92ff2af37f507fa9 d2eb1a67274644a4964eb039875336e8
-#: d48d1d7c3a0e4c5ea524ab1f1da36d4a e242545d0d6141ea99fd04b764905d48
-#: e5f7bb0c404443d3a4b505a7403389ce e888b257d6ef470f8e6ef8211d49ccec
-#: e9536c1990a84b788babdcc92dd8a720 f1594f5e58134e8b85a467c20c93f148
-#: f801d67795ff40b2ac3b5014bc120326 f8c1c55f11064b30a9de290e9edcb013
-#: f9fad57c728b44cb83d074e8debce9b7 fbb96db245804ec59266768349222709
+#: ../../source/reference/retrievers.rst 0237aeccfb23451a964f053f16cfa3e1
+#: 02592bf212a7408299e16813f9c032cf 07287e68dc334aa7bf5253a44d95fa0a
+#: 07c23d3b225f43688819d786b856cdc3 099ed74af2094fc196b0cc94bccd69f1
+#: 0cc5020441a74756bf659164e890b39f 11bf3996323448cf9dd9d38a8f5b5e64
+#: 13431af85e084522a1a2a38f242de926 197bc63562d64fc3b96994a96373dda6
+#: 1a2221099d4c4a9782e32887d3bfad05 201a81a6b0f440439447e8e29e7056d7
+#: 204f6dfb546d4a12b35a7e96ea990d07 216e9115447e47b08f4293e44fef2180
+#: 233c382e005c4d6880e4fd9c8a209d34 23fbabf8899741ab81bac4dfd21d69fa
+#: 245a517937da4b54b5f3414408616804 2700b7aca87f43b58ed5479f843c8816
+#: 2849c201a7a64d8a99818d9c4d29ad61 294a2c41f4f34f9a824ec1a41b48b5fe
+#: 2dbd8e9c291540a4ae3581f027bf6585 2fa46b902a0442caa68c3209f24db286
+#: 325b13af903d484e87c63f332c983ed1 32751d9dfc3e49e6ad1e7d934e4c4a3a
+#: 32b1bcce574347b8a5dbb24fff3c3e43 33e061632a554fcca9920d1442c97dfc
+#: 35950f52f75a4397866eb6c49002ec9b 3b622b44a00a4e829fe912215f7d4cbf
+#: 3c9a1b947d1f4b158073253c7bf81325 3ca91987988e4ebb8c494f695716a598
+#: 3ce8affe851948f2957f24f2c37e479d 3f6a6ca49fa74cbbba94856f3732a9af
+#: 423b8aeb410c4127a4794b042104f16b 455bf12bae104b0eb88338daa8470abf
+#: 45a83ebc974a41b18d42d15ff09f8635 46c4b8d39da64d98b7b87cdcc52dc868
+#: 46c98375ddcd4cf4b9589237a5777254 47fdc658c9a44b4a89d74c02ed26a08f
+#: 4880d10b1f294665bf240d62d9180ae7 4bf4d409c3c247f09cdee6d48e19b912
+#: 577cbf0154cf4d1292c1ccedfe361fbf 584b1d7b781c4001957cdd3ec6652e57
+#: 5c6b844f0b844630939700823bf48f01 5d22ecb38133467ab0897e96ee5a15dd
+#: 624f7c5736bd4952ba65833fefcd9903 67888a0706cd4ee195125f21ee75ce6b
+#: 6834743d35ed48ae93afdcbc7d743b54 69a3728bd8cd4bc5a44c421dd4eeeeca
+#: 69ded9cc2e3942ea9782dd1c5b98801c 6a3bf444c5074e72985ba1938952f1f6
+#: 6b28f1e8fa60457c99674da277d0c0fb 6e3d173a304d43148b022ce453dfd938
+#: 747d1d4057944bf890c12f2d1fd6080c 80f6ffbcf5ef49b2af2985466ebc0066
+#: 8111b3b2850044529cca27f76d55b3df 84dfe356a7aa416aa229209558552e7c
+#: 895f553299e1431eaf0f507a1ebc1308 92474a67fb0a42f19623a827daaf6977
+#: 977c4b2c7e8540ddbb9166562c91545a 9f623143d81d4b7f8581e694c91347d2
+#: 9fe75d6550a04a39818bc84594545bbe a10032a2212349d6be58752a33f34115
+#: a2ccb71313454489a40547b963f0a357 a328964c21554688b3ba0fccb0bf5ffa
+#: a3ef5448443a462b9e3755b11e24c1e9 a94992ea126e4f16a5c4bec0a8d02eb9
+#: b3665dc6cc3e4bc998d5b36491bfebff b817607496da460b849b92248d284af9
+#: b85567bd70d64e14ae9f6b70bf0b7b51 ba2bd6efed4c4611873b93e1f53b7e35
+#: c2506b089ee04e7f8fbd751b32facb45 c73ca774e77f4c3da550648f70198b37
+#: c8341f3d8a414a87bbe3b7eea59e1413 d535e25ad7a74f5d8105dd8df29cc934
+#: d93236adae8b486bb6137efc680de078 daa4839b22504a4d8ee354cab18954f1
+#: e1788fb39cd9494cb847fa91b3f3b6bf ed999643654e4551836604a245c04fb2
+#: ee68aebee30246d489ee437817b86daa fae9aefed1ba45968420027359f60c0f
+#: fb3639ed3e204ff9ae691e4ab96e693f fbdf0f33108448ebb818517a147c9b8b
+#: fc90c65e28044ff0967bdfcdf5138530 feb78e1e2a594e53863b4a0e2c202eff
+#: ff00931b1f6e49488f8217f577cec614 ffe0d9f3ea0d479296d5983cf83bf986
 msgid "Parameters"
 msgstr ""
 
-#: 3b9994a2040846ae9eef86871c721c40
+#: 096625b315a54461adcff1ca0a633683
 #: flexrag.retriever.retriever_base.RetrieverBaseConfig:3 of
 msgid "The interval of logging. Default: 100."
 msgstr ""
 
-#: 66f557f9c072443c8c09e35f644e81a2
+#: c21dd8f6fbaa43c7bd483a034b2450e3
 #: flexrag.retriever.retriever_base.RetrieverBaseConfig:5 of
 msgid "The number of retrieved documents. Default: 10."
 msgstr ""
 
-#: dd6b1ae7fbbc4b3cb489b3cfc5201d8c
+#: 3265bae7e72e48b8ad96662820a1f216
+#: flexrag.retriever.retriever_base.RetrieverBaseConfig:7 of
+msgid "The batch size for retrieval. Default: 32."
+msgstr ""
+
+#: 172b88d8841542978c9566e1cbb55455
+#: flexrag.retriever.retriever_base.RetrieverBaseConfig:9 of
+msgid "The text process pipeline for query. Default: TextProcessPipelineConfig."
+msgstr ""
+
+#: ../../../docstring 1c912edff58f4225a7266dc0ead7665f
+#: 1ca5a654c5224964900b93e7f6bbd439 25b3a15fef004157b3873608e7a6992b
+#: 3c5ec577a3e94f53bd31658a9ab4bfb6 3ccf1de81336479daaf954f7e4dacd8c
+#: 3d889f95ebfa4f849cb9970dfd4af89a 3e095556732946ed97004421552bdd04
+#: 41fbe9d3c15f4b4b88ee2cb731fdc4c5 58fc2c4b0988454bb12d59079215b768
+#: 72ca73fafb6746a8914cdd3386878fbb 760cf8d3f21a4d0eb09412fda4e16e0d
+#: 774a314e84c34d359bcdc2056de3a1a5 83e9ec06bd63403fb6346d38a952280b
+#: 99de19fec317437cbdbefa2eb8b199ba aa5671c547f54e588e5b27b5f9b61615
+#: af1cd0abeffd439888255c4d879bb6cb b45662e10dd9497ca7a2e10ae43d07a0
+#: b644488bccf84c10a276f6d3c99c39c1 cfefdfc09a1e43428fd1bf6bfdb983e2
+#: d160e966e38646ef91e76b02e5ff59c1 d26268edc09b43daa7a94bdd95cc3c6c
+#: d740c9e0ca654d65b3e6b9254aa6b237 d949ef19b93745d290af1b5603bd7f27
+#: e5ed0fca097a4b999d64d534bc7616ec f948b6836044468796e592a14ca86eed
+#: fce607f02d06497d855e6aef849c7a89
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dump:1
+#: of
+msgid "Dump the dataclass to a YAML file."
+msgstr ""
+
+#: ../../../docstring 00e11835e9aa4662aeb88e344d916680
+#: 06abd3a1101e4811a1d06776e7325221 0b2e01c9a3a24865a72b8fca01042a56
+#: 19d6cbf597984161b807895e47ed061f 22b17e6b4a774feda8304e4b77beb00d
+#: 235d006d60d648708ce6f36fa9e4e19f 3d97fa1c6b9f4e7c8cadacb0f256ca8e
+#: 412ff8927e27417eadcbd8b0cfb29d7c 4b0ece3a939640ba939ec140087a037d
+#: 4ec37ee4d3e744bc8738de0efb55da07 5427ba4a8b3c465aab5b3d9880255947
+#: 78992bc101644ff6b58f60c1104c07ef 95e79d1b7df34203867435f1278d8d31
+#: 96cd3274726a41048189909b821060ce 9a9070ba407248bbbcca4b121881fbd7
+#: aba3dcf4018d45a68424dc8c289e31e7 b58dfeb953d64592bcdec2b78099fdb2
+#: b9cf7fe0be214f33a151436898258e2b c61df001dfb34100834a751be4b92d64
+#: ca73fd8d00e7440fbf2d693aef966db1 ce1a3420f5ae405788b79070cb2a7841
+#: d6bfef2d94e645eda26707783b50ac9c d81d9584cd4f44bcba5e271a3fb06bb1
+#: e6e9654adb384c9ba1146273512ac96d edd140585f9148da92736c8f035e360b
+#: f524caf8bcb64457b340f86d8b72714d
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dumps:1
+#: of
+msgid "Dump the dataclass to a YAML string."
+msgstr ""
+
+#: ../../../docstring 0b1d237fcfbf4aab830ddff8a0910dff
+#: 0caba5e67e8e407481a89f739fed9859 2521d5a0ffe6428083d73d0afcd99f75
+#: 383b3ab24d98473a84a6e2b364bcf2ae 3af1305ec5004ce5899af51df0993157
+#: 4588eab64c614d37bbfd38bb2f12a5d7 4f728afbedfe447b83e93af6f1d6abec
+#: 54dda1f5d87b4c0f9a5b95e29accadb4 55cb1a8dded5436b846845a31f8fa74e
+#: 5bfef3d40b7b4844bb1064604498eb2c 6ee622a0b1ec4020905ce49111a3a2c8
+#: 7829ca91db86488497a1b3039c3920be 7a6248a1c1cb40dfbafd3f3c09e3454b
+#: 7a64dca5ab494a1284665eb7643f11af 7fa6ce48fd2f403e891477d3cb727c35
+#: 8a6c401b041f4094be07ade2327cedef 9a06a37076e74d558159cebec9fecb2f
+#: 9a0ecb07bd574655a88aeb259a7518b1 a89f7206437341ce98e040386817da41
+#: aeda18a31cc241eb985cbe406736119a be159d69d800414ca20d376a36817964
+#: c33e5d671a4b4d1a91fa6e0eee402094 d40660d50ef54c37aa3e448cf3cf3683
+#: e0539e30f4a2467292382ea08771dc83 ebc71f9454584a60953958af94374cb0
+#: f0a77cb88bd04b17900cffef8a26e518
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.load:1
+#: of
+msgid "Load the dataclass from a YAML file."
+msgstr ""
+
+#: ../../../docstring 0031dca3b17f415ea5402901d3d50695
+#: 05f1bfb82d904c9eb1423fa4da7de54b 17e6f90b45214af093361c1d3945bac3
+#: 39f23a9d00134aee88169fe6e972379c 3f02d2481eca4c5a98b73abb6593adb7
+#: 4a86111bb3af4874a77f27674f398473 614d6a07e1d04fa5bbc9b034fbaf44eb
+#: 68b8cf9834154551b7c12f392fce1cfb 70fe6c94d64b4def96c3cf3521dfb89b
+#: 8f630ed7bf3a43ffb96f1f55fe5583db 951e143dea60493c8f011abb00234502
+#: 9d960b8a2bac4c31b65ab7b4fa810fad a57244dd54df47b18cc4c448060d9853
+#: abe01c3fb6ad4fd8b0a53d69d7b14fb5 af9f1666258c4057bfe676d13f598707
+#: b28b26abcf804af49f99f2aa019f6c17 bb88f91ece6e4a9b966e2a1e033919bd
+#: c8de20fc4cdc4a8cbc26ad167b08e543 c9252cd4b96d485893de329e5cce2e43
+#: d67ab7b9a0d045128704dcd8f9158bf8 d8499e47231a488aa13d6caa223890fe
+#: de5467a71efc424cbf702ef32116e77e def00df6dfca4e65b6ed4ca701ec1eed
+#: e0c35d5bef2343479ce8c6848f9d7a63 edbf1da6f72d438fbb4ab67440390013
+#: fa012c8038fc4780b4ad2e0840e2e9b8
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.loads:1
+#: of
+msgid "Load the dataclass from a YAML string."
+msgstr ""
+
+#: 31278d04fd8146e1a3b86b85c26aefe5
 #: flexrag.retriever.retriever_base.RetrieverBase:1 of
 msgid ""
 "The base class for all retrievers. The subclasses should implement the "
 "``search`` method and the ``fields`` property."
 msgstr ""
 
-#: 007d5062890e481599734692e23ef041 7bbfc4b206f24a7293bee438551af177
+#: 482c9ad11dda4203bd32eeeb90f7f87a 95cfcc239fa142c5b0940bfb5b7ddf46
 #: flexrag.retriever.retriever_base.RetrieverBase.async_search:1 of
 msgid "Search queries asynchronously."
 msgstr ""
 
-#: 0fa3c07d568041b6abce81d12f85d17d 20daeec8bebf4cabb4765d9d9deb0106
-#: 34369fda4d3b41b9ae07b7685119e848 61ff6838a02f41aa8b19bba0eaf021df
-#: 67097d72a3764fc69bdbbd77954937cd 6c03f7a943e648789333f225d1bc23af
-#: 6e9c1aed53084588a3667a5ed39a9626 b34a560d0ebe46d8a744fa8ec56c2285
-#: flexrag.retriever.BM25SRetriever.fields:1
-#: flexrag.retriever.DenseRetriever.fields:1
-#: flexrag.retriever.ElasticRetriever.fields:1
+#: 2a06d57cdac94a458e1adeb71b2ae599 5735c06a868447abb4d913e99d8bcd3e
+#: 68e458f2f36b43db8b92a1dd70299995 a2c136951f1b43ab993372e7da7ad256
+#: c10c2db47db941c1aae042eb3d0ec6b7 cc9bb8e6c2e1423eaac69e51e14e013b
+#: f88df98330b645248edce6da73cf0a51 flexrag.retriever.ElasticRetriever.fields:1
+#: flexrag.retriever.FlexRetriever.fields:1
 #: flexrag.retriever.RetrieverBase.fields:1
+#: flexrag.retriever.SimpleWebRetriever.fields:1
 #: flexrag.retriever.TypesenseRetriever.fields:1
 #: flexrag.retriever.WikipediaRetriever.fields:1
-#: flexrag.retriever.web_retrievers.SimpleWebRetriever.fields:1
 #: flexrag.retriever.web_retrievers.WebRetrieverBase.fields:1 of
 msgid "The fields of the retrieved data."
 msgstr ""
 
-#: 235a54b4cf97400b974b4d1b5a23cd8c 412b8922e88f4ab2b9dc258c2b1cf580
-#: 5499dd89adb64ddcb4968d85917a16c3 721f37f24cb8438a97bbb5a412e490c2
+#: ../../../docstring 0eb3c1cdfd084c7d91ed2830323665b3
+#: 8d49ba6c371b4f1cbc17785383ae2f26 b7c4a5eb053f45bd81c932487becfb0b
+#: c76e7fea6e214b86a1c73278522a4868 e79c26ee774a4e0b9580e881cc8f6544
+#: eb2e99db56c5420eb239157722a0b89a f56649fa63474e6fb36f4b8c7c416828
+#: flexrag.retriever.hyde_retriever.HydeRetriever.search:1
 #: flexrag.retriever.retriever_base.RetrieverBase.search:1
-#: flexrag.retriever.retriever_base.batched_cache.<locals>.wrapper:1
 #: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetriever.search:1
-#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:1 of
-msgid "Search queries."
+#: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:1
+#: of
+msgid "Search a batch of queries."
 msgstr ""
 
-#: 4941fa5f493444b89208ca7bafde4b52 80be229318004dd2b7d02ed963a4f664
-#: 8a0b793ec6e842d7b708f9e0c76a34be 8b954789e72b4e0ea9c23607298c03f2
-#: 8c0ace28f5a9422b906dd56d81036d2e 8f6acc9ab38e43db9de902cd6b35427e
-#: bc1d68ec997f4d8b86711cfcb82ad623 da21e3c9ed624f388582c198d1ec26a7
-#: eab5200ff71744388ba652938025ba52 f209ff4fdeb5483a86aa2332d9d06e2d
-#: flexrag.retriever.retriever_base.EditableRetriever.search_batch:3
+#: ../../../docstring 0c84eb2be98c48d89b0222ee6a6f6521
+#: 2106efd664bd4054802b586932df06a6 3a15d637518745ddaa04c31624119d40
+#: 57e4183cc0c74f3d9899a0b2c111f716 75842156ac4b433a91b7ae7ff10057c3
+#: dfe5e31f7cf04b198c98e698d871051c f16cd8db6f3a42999076a291a95e5a50
+#: flexrag.retriever.hyde_retriever.HydeRetriever.search:3
 #: flexrag.retriever.retriever_base.RetrieverBase.search:3
-#: flexrag.retriever.retriever_base.batched_cache.<locals>.wrapper:3
 #: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetriever.search:3
-#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:3 of
+#: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:3
+#: of
 msgid "Queries to search."
 msgstr ""
 
-#: afc0577a0d0442578998efbb804ce557 bf23881cbe5044a19caa62c8a828238d
-#: d9c97ee02aab4c78a4989ea40ddc6221 ff665c7bed7e459ebeabc9355694d661
+#: ../../../docstring 00aaf85f77364e648888a1f6685c432d
+#: 00ca80efeb874cf7a758fb6b75a1b77e 05108d87690b42ce81ac0e2f08a06067
+#: 5259e73405a14eb9b79853a048874710 83101ce5bb2141e9bb9a951a235b29eb
+#: dbd5743d6b054878a1dde6c78d0ec591 ea81f2c6c5e74e0a9651608ad883e8f9
+#: flexrag.retriever.hyde_retriever.HydeRetriever.search:5
 #: flexrag.retriever.retriever_base.RetrieverBase.search:5
-#: flexrag.retriever.retriever_base.batched_cache.<locals>.wrapper:5
 #: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetriever.search:5
-#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:5 of
+#: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:5
+#: of
 msgid "Keyword arguments, contains other search arguments."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst 03d0ed659d3541fb8cd541f8ac6967a8
-#: 0bdaa5ae3b6140fd86f7310ca200d912 267edf07167145bb9006341de1d87eb3
-#: 270cf670de0541c489c683df85a5f81f 2a10e900cac94fd7b412e5f03281edca
-#: 32324379f6044059adc76ab3e0a939d0 3af5a1a1e3fc4b1f8057664b5ef7a6be
-#: 4ddb58211a9b43888836fe18be8ac7a5 51cbe540062f469887a7b806a37d415f
-#: 55785b3d86fa459a9fb862dd16d0feaa 5d40ba5224dc4488bec9aaaee9ce338d
-#: 5e6fcbaaf21942f0b527fecfd72de991 6487cf4bb7e043a9bdcc776686f6864b
-#: 682f8a5039b24a36a2473234b83e6997 6cec6bc2a15c487cb43bbe133938269b
-#: 7559d73c7f364e44aad97e2ce493e73e 76001dfd8b5b4ee78b2b2100e559438c
-#: 7ec6936513224efdbfe4b22b19c9ac01 7f77e19a3a5846049cf6bca96ba82b2f
-#: 8089ed614a7e47548518882274fac291 86cbe26d7c7141d09f0981b35cd451b7
-#: 8c36bd0a0bb048fe882672d2e03db0b5 9a37c97a15f94f2a9d725ccac34e00f3
-#: a234eaaf5ade4b4a86790027ae89c381 a5db5523cdfd49359145e52337c97432
-#: ae7d0c49dea14e14be5c3c1693c950c3 b0ebb7034e74442ea719bd4df53f9ce8
-#: b46fe310d60648f8b41753af60a6aa18 b9d9f9bc18a8473ba5de07eee74d5a9b
-#: bb3a43472ddd42708758127857f25c8b c43110b1e040414d99d63b4a6ec0e13a
-#: c86084b70a374542ab3fd2abed2b66d7 ca3861dc48b54267afbc0608fddaccfb
-#: cd50a34d68864bf0acc01daf0a8bc218 d73f81759f9e4a308a1e1959b3cfdf49
-#: e4a801959d234b8d828ad949525000d5 e4f37847c1054efabb06d93694409763
-#: edcf858ff23b4245a6c2f819c71d2a42 f030e2937c3a44b89b92fbbb99d26bdf
-#: f53c17fe575b4e249368d05c2dc52ae8
+#: ../../source/reference/retrievers.rst 1ee3c1332b234631910fef417caaa082
+#: 223152fb461c4d98986384757004fccf 224156b457704f56818cb87f9a5ad088
+#: 263136cd5992424ab87e728dd176f0a6 286329edc4cc4151b19364b4dce5ff39
+#: 2a8a5a99a7f24a0cad0bde80bde26cdf 2b0e636016ea4bca9b40d6f6d3e35f72
+#: 2d9df79d2fc348e9b2a6c33610ff3c88 34ba86dad50249f7908c9687fd62e0b3
+#: 3ad69ba0cd3343b88282dcba95ae106a 3f709a9e2a4c4e188a02bc04fc7878df
+#: 439a93ecd4b54e999f893b60c28d01d4 44b403b2006e4f2cb9102878e5e3137b
+#: 44f7b92e77e1407daeb7e3fd908e99fe 49dbf39d580545dd9dc3c47cf108921c
+#: 4ebca4028a96409fbcf5cd3d7d7a3f5d 55297cfbfe6d40f1a7145691f157fec0
+#: 552f1d57ca4d41f4a790322178cf4c33 5aa307a385874e0cbd4f99bcdb0c4dd3
+#: 5de34b58a0c5421aa2abfc41e05cfb96 698dbc64ddb2482e8f6b2e2bb5925b21
+#: 6b4510730a2b42f39de0a522a3cd760e 73f9186c9e5f45dfbda3903142891acd
+#: 74038f6a815849578d4f7ad227175668 792801556a954e758625d15d3c91043d
+#: 803f9cdb170744209348f7d488e642fa 85356eb028fa4159a9b595884a729e82
+#: 8697b987afae4606b77dffe178647120 8be8cc99b0594f0f9feee76ada13b77e
+#: 8d2221feed294d5297f4a4136ef11e1a 93ec8585c51c4e55b7279906c3998cb2
+#: 99a2135260f5400dbfd9665c77f020fb 9ddb8612182c40a2a552a82335416b12
+#: 9df8516c51d840ea810ccb13618c4dec a363c69b4b744247bdeab5e84d516e81
+#: a862d9d7caed4090a91fbe0db4348ac0 af0cae72e53e445fb2e805ed03c202dc
+#: b157e08bef6e4b87b83aa5ca784118fb b339bc6651154f1bb3aa49054d6419bc
+#: bae0f489a75843efb7978e3117227c86 c47aab547ae844cfa25c49b09b4fd2a0
+#: c712229817f84e06ad9ab9bbc986be1c c996f3a7b656417ba09a1bd6cd910520
+#: d53759c57b2743bbbe809a0bf0ddedc1 d7612bdbf512414cbcf1a0505ac75014
+#: db0bca097b3441e3acff79e5c6acdb51 dd0dd99d165f431fbdf5b2038a1f26c4
+#: df1973119b404913a911a195f1e1bc1d e2374a65c44c4800a35d7e2bdae0ffb7
+#: f1027c1c06d04b4b97e6c5b2b48306bc f1ac50e952824291a72f2081e22fbb5e
+#: ffd78ecd871144178d928a6b1dc226ea
 msgid "Returns"
 msgstr ""
 
-#: 06ce559ec1f74707a9b1ce477771b8c3 1d5e435f29094038aff4db93055e300b
-#: 202c374f75b54bd28e29e8ccf32f04b2 526d8bfd75164911ab027254e761d2d0
-#: 784f672fbb494b47bf44fb4953cabda2 928b019a541b4f908245d2bd21415067
-#: 958b510392344099b72f48a6019f6ec8 bb7f5e51be814a1ab9e1d5f05d7bbb15
-#: d188f89af58e482fa2dd8896210004bd d91cd0f0d35e4f5290538d653b3dda7e
-#: flexrag.retriever.retriever_base.EditableRetriever.search_batch:5
+#: ../../../docstring 1f7b881bffab4afbb6c4e93e97413815
+#: 3acbbda890d34070aae14a45e925cca6 4d74b6eac4394dd6a8dfeb63085251b8
+#: 6aca5c11341b460d90cc5c8ab31718b9 b01e18dcb67e4604bc0ba5135c809f22
+#: d799f4c92fda48d0b807c7382d46b5ce feaf166b767448a6a1c1a634199fb37a
+#: flexrag.retriever.hyde_retriever.HydeRetriever.search:7
 #: flexrag.retriever.retriever_base.RetrieverBase.search:7
-#: flexrag.retriever.retriever_base.batched_cache.<locals>.wrapper:7
 #: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetriever.search:7
-#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:5
-#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:7 of
+#: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:7
+#: of
 msgid "A batch of list that contains k RetrievedContext."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst 00884cf64c4241b0b20209155ac9ba9f
-#: 03d6f287b55a44359c0880a2818324ea 0c0edc084be4462e8dc2bfa99faa2299
-#: 10fc68ba6889495ba717574aa6343118 110bc56cfc0f4fabbd1526f6f8efddd6
-#: 16568445bdfd4783ac95a0e7446f4989 216093c8279d49a4985d3e2833f32c7f
-#: 330ad27a281c4c39b9598e14c8762969 3d1aea86f94a45479a05837868eccacc
-#: 3d489041b9e3477fba7b4ed6e494030f 40b06eccfc7d41259aa88ce27f52788e
-#: 50197cf191cb409fbad043cdee7db388 50704fbd0ea6428aac3cb0a513821ee1
-#: 5244df7812e347208a51c3c51ab5a803 69a8c693afba47feb2b4616ee29ad034
-#: 8ce5053166cb42b8bb1335c9f24dc217 99244c9e42a14517a0100eebe29c317f
-#: abe349580bc344c197a724ef0541beb5 b4e24a1251314b218805509aebaa0a39
-#: b842d03c68c24a3f8ea2d94e73b839df be1f1443c3394e29b374c610f3fcb003
-#: c17f6cd62d314e879cee21d968b42bd8 c6b5bd7200e048898edaedfc4f6e55b8
-#: c7faccb3e5c7409e8e5edb56c3f65efe dbf6b49dd8e047a4869f3f5bc94e5085
-#: e57118b63092432d8035f93a72f62ac3
+#: ../../source/reference/retrievers.rst 007b0e91fef34fed82efaf149efdadea
+#: 065ac0e1ab9e4dc0a2f71126d31a9134 0b89144f87874775b7e9be037b87ad06
+#: 0d4dc49cdfe24b20a019514004962858 0dc5b4a935f44c91a3c027ff77d8df03
+#: 17f445d886254c8ba3fb7e033a85fb34 1ed261aea9834ef9bad63f05ccaaf988
+#: 2735bb08d6534889b7270e1e71a0076c 39091d4084044af589e425209e50725b
+#: 3fe4cdcef8ab4bee9bc272e08f594d76 44822ecc4b644d3b85ea9b6954bc92ca
+#: 5c82d9879e7e441f8b380c1ab326e76a 63b5164021004cc68af1801f52eae64a
+#: 6590392dbc09487c9dd47835b1769eca 68f31641afdf4a7da842ce57ed59e8b2
+#: 75572e8c5a6e48cca31259501bb012b6 8cae377d362e446bb9388bd3a524bb56
+#: 972959983a10442da0ac089189b03412 a0138543154f4799ba730de0281edb94
+#: a3c3e2956ef74dedaaf4fb8d5f2eda22 a53f8eb249b04baf9efc0ec9854fbbde
+#: aadcee16b1904dd39edd4d42e243ddfb addc6f4403674a9a8209464857414f3b
+#: b1209516c797478197d23f43518777b2 b4081f1602e04cf4834e109a30774769
+#: bd15aec642034404954908e20b88de89 c37f85eff71f40ffa4f84a242dbae076
+#: c3c3ebd66b36431bbad6302ddacc41ca c46e2f78c2a6444997467eb165f6b672
+#: c65d99c1629c43d6b61ab589821f9c09 c81227b195f54b9d97727122e6446eb5
+#: d0ed76425332439695244b70dfa7e020 db8525f3757b49be939cc05ecb0da152
+#: df2a0ed8d2df43a6a9f8d5ac21313a4f e48cd95d92b84d57bf689f166197d8c8
 msgid "Return type"
 msgstr ""
 
-#: 73ffe411e54a4f9da03e468df05b1b77 cf6ad7992e62467aaef9b1da685a1098
+#: 1991705d49734b46ab9aaf3c5a56d51d f883c416389344acac8e01da4cd3ae20
 #: flexrag.retriever.retriever_base.RetrieverBase.test_speed:1 of
 msgid "Test the speed of the retriever."
 msgstr ""
 
-#: 1d8360bcb7d147a9baad91f8fe312280 bf0b3fc64b984b2dac06873399410cce
+#: 591c606a4d7c43d49180c1cc4b30f3c6 9564f1bd24714d75bd02f4a03371f47f
 #: flexrag.retriever.retriever_base.RetrieverBase.test_speed:3 of
 msgid "The number of samples to test."
 msgstr ""
 
-#: c96e61ca31ad4e14be7a296aceaf1358 ded0b1e870bc4d32bdcf13f4afbeefc8
+#: 289941d0c17942ea86049ec6821782a3 f932417020e340eab966eb43e78bd6c4
 #: flexrag.retriever.retriever_base.RetrieverBase.test_speed:5 of
 msgid "The number of times to test."
 msgstr ""
 
-#: f67059ea0613445e9d11c514edad056a f714a11d43424a179708e7cd31f6e4fe
+#: 2686044143844cc7b9aee19afea407e0 4629ede551664e5e98a61deeba44e259
 #: flexrag.retriever.retriever_base.RetrieverBase.test_speed:7 of
 msgid "The time consumed for retrieval."
 msgstr ""
 
-#: 9a75ef55444c4dabb800ad7e9c701c72 of types.RetrieverConfig:1
+#: ee76af89d8b54b548cb268d2ff085e89 of types.RetrieverConfig:1
 msgid "Configuration class for retriever (name: RetrieverConfig, default: None)."
 msgstr ""
 
-#: f68fc1bcc37e4127880a1ef710eb9bb3 of types.RetrieverConfig:3
+#: 130c60f5d2dd4b3592f55f00355e9b8f of types.RetrieverConfig:3
 msgid "The retriever type to use."
 msgstr ""
 
-#: 9cda6c54992c4761ab2d4ad67efd1fac of types.RetrieverConfig:5
-msgid "The config for BM25SRetriever."
-msgstr ""
-
-#: f830e33040714646b73736fae70a65bf of types.RetrieverConfig:7
-msgid "The config for DenseRetriever."
-msgstr ""
-
-#: adbd735b36cf48e49f31e6d9f273ff3d of types.RetrieverConfig:9
+#: 2f1757c30cf74de7803aac0a5a4ce170 of types.RetrieverConfig:5
 msgid "The config for ElasticRetriever."
 msgstr ""
 
-#: 08e73069f2ae465994f0a06d7469afbd of types.RetrieverConfig:11
-msgid "The config for TypesenseRetriever."
+#: 3ead5fe798a442d8bff856b982e1141e of types.RetrieverConfig:7
+msgid "The config for FlexRetriever."
 msgstr ""
 
-#: bdbeedd6dd974e739d6fae8b69325aa3 of types.RetrieverConfig:13
-msgid "The config for SimpleWebRetriever."
-msgstr ""
-
-#: a8e1cdf7507841c4ab0174c6fa687472 of types.RetrieverConfig:15
-msgid "The config for WikipediaRetriever."
-msgstr ""
-
-#: 801ef6866eb840eb9da8930d69baec1b of types.RetrieverConfig:17
+#: 06f8a329ad1d4f549ab91dbc1dc2164b of types.RetrieverConfig:9
 msgid "The config for HydeRetriever."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:23 4742146ea98948bfae3cd165002e8a60
+#: 97ac5e1cec6d4aa3b41a308e08d6d079 of types.RetrieverConfig:11
+msgid "The config for TypesenseRetriever."
+msgstr ""
+
+#: 97acbf0d0803443fb84479d6398e4575 of types.RetrieverConfig:13
+msgid "The config for SimpleWebRetriever."
+msgstr ""
+
+#: 1590279f52b74ac491eac50defa0640c of types.RetrieverConfig:15
+msgid "The config for WikipediaRetriever."
+msgstr ""
+
+#: ../../source/reference/retrievers.rst:24 bc7419bda15441e586c744d9d6efa91e
 msgid ""
 "RetrieverConfig is the general configuration for all registered "
 "retrievers. You can load any retriever by specifying the retriever name "
-"in the configuration. For example, to load the ``BM25S`` retriever, you "
-"can use the following configuration:"
+"in the configuration. For example, to load the pre-built "
+"``FlexRetriever`` retriever, you can use the following configuration:"
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:40 a7cfc379b37749ad9fc7bf3a3a884d3b
+#: ../../source/reference/retrievers.rst:42 b12250bea91d4d978338d44d86f257af
 msgid "Editable Retriever"
 msgstr ""
 
-#: 4fefe8ae388e4da9977c3b3d76f1711b
+#: b270e5fd739d43558bc3bf842594e2c3
 #: flexrag.retriever.retriever_base.EditableRetrieverConfig:1 of
 msgid "Configuration class for LocalRetriever."
 msgstr ""
 
-#: e88cf3bef96742d294b1fc2bcacfb9c5
-#: flexrag.retriever.retriever_base.EditableRetrieverConfig:3 of
-msgid "The batch size for retrieval. Default: 32."
-msgstr ""
-
-#: 7d483d1fe07448489c3eee19f73c2fd4
-#: flexrag.retriever.retriever_base.EditableRetrieverConfig:5 of
-msgid "The text process pipeline for query. Default: TextProcessPipelineConfig."
-msgstr ""
-
-#: 3f46122b27434b8795b1df6de2305f95 f7becbeb64c141499303916f07f1666d
+#: 454d37a42b624d42b71d1b11f1c3e9ab ea80f61d8af94428be3c821670cf0832
 #: flexrag.retriever.retriever_base.EditableRetriever:1
 #: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetriever:1 of
 msgid "Bases: :py:class:`~flexrag.retriever.retriever_base.RetrieverBase`"
 msgstr ""
 
-#: 8221073814a843a1baea1af99e42afc9
+#: ac4c8252152e46e49a3e20124ad5bc88
 #: flexrag.retriever.retriever_base.EditableRetriever:1 of
 msgid ""
 "The base class for all `editable` retrievers. In FlexRAG, the "
 "``EditableRetriever`` is a concept referring to a retriever that includes"
-" the ``add_passages`` and ``clean`` methods, allowing you to build the "
+" the ``add_passages`` and ``clear`` methods, allowing you to build the "
 "retriever using your own knowledge base. FlexRAG provides following "
-"editable retrievers: ``BM25SRetriever``, ``DenseRetriever``, "
-"``ElasticRetriever``, ``TypesenseRetriever``, and ``HydeRetriever``."
+"editable retrievers: ``FlexRetriever``, ``ElasticRetriever``, "
+"``TypesenseRetriever``, and ``HydeRetriever``. The subclasses should "
+"implement the ``add_passages``, ``clear``, and ``__len__`` methods."
 msgstr ""
 
-#: 2a18be70c4be4f9c865148a5c8fcee5c 4f860d88f44a4bb3b7e0aff634631230
-#: 815e2acede4246ebb8407a1de34ea88a 89bb9549042f42758ab4c71920a9625a
-#: 8f366243ef444d80854924ecf25836d0
+#: 008891a46d19435f8749d5f9dabb1212 85c64e37db0f421b85ae47893d703ca1
+#: d4ffcae6de4b41a59c56a9d1db06315a e574dab93be244ad9a26c7a56a100c03
 #: flexrag.retriever.retriever_base.EditableRetriever.add_passages:1
-#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:1 of
+#: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:1
+#: of
 msgid "Add passages to the retriever database."
 msgstr ""
 
-#: 20eee15c02a24fe18f09863a5a9f16c5 a76060ece1f14d6787cd5312e9029c2c
-#: b20685be717945079c35e1050136fe2a b8d61326641d44d696b6593bece8fdff
-#: e8bf01178d214716824586bff38e9b40
+#: 4f354178be424fc98768cee9adbbcd4e 6dfc58cf248740268607ae20f7fa028a
+#: 74b8a74f694d48e3a93e09209c7dc1a2 7591fa25f6f04736996b57995537d9da
 #: flexrag.retriever.retriever_base.EditableRetriever.add_passages:3
-#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:3 of
+#: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:3
+#: of
 msgid "The passages to add."
 msgstr ""
 
-#: 07998cd0e0184544acdc2fc9691b3627 269a926b6c494c9db2f065328a36c828
-#: 2e2d3a64146f4e648081ed3e45dc0fa9 4f1427c1cc764eaeaf4854654e2f1dbd
-#: 6b6b392e2e584ad3896f95d5385de8b8 6cb125dbce974518b891e52db2138fb3
-#: 8bce5d74a2b24c46809419459c12adb4 9405da43b6a743439bdc9fc1c48f00e8
-#: 983f4a90cfe74ef896bd647c6bd73787 9d9517475e9946858126947cd8e39f85
-#: a833c5fbe1d2436e9741a90e4b4e6256 ba5825642a8a47d18e5799969eace1f9
-#: dac6e6dc035744f1a9295c4514eec92c fd366356688345c0beaa75abc972164c
-#: flexrag.retriever.index.annoy_index.AnnoyIndex.add_embeddings_batch:7
-#: flexrag.retriever.index.annoy_index.AnnoyIndex.build_index:6
-#: flexrag.retriever.index.faiss_index.FaissIndex.add_embeddings_batch:7
+#: 002f97d200924ee3894359d56d822def 078569195c08447cb7344701773bfa83
+#: 1ed331b868fe41ca9558101239eb2d9f 3297d6c3cc6f43779cd56487ae216c03
+#: 34ac60acd0c54a1fbbe2ae4428917202 406a06afddec4911b73160f927200d13
+#: 5908143ae49c43cc9967611c8eb073cb 6398fb7808ef4870aef8101e73af0d01
+#: 681b0b18e0594749bed7a32fd13d8908 70c94a3abb32428dafa3a056d3cfd949
+#: 8c50426f262a4843a410c648e1983e5e 94088ab8926c4705996e2c7f9b5330db
+#: a2ea92489fb44bf4b1e14e9788a28c48 a8cc4e467c9242b0a20b36924bc41a90
+#: ac1b847f53f946259da0cfb3b6b76832 be7607a7356742fea8b56083117545bc
+#: c00a5c31ef3845f49ed88f0cceaea6be df3e7e2c89ef4459bf78b8efb44e2335
+#: e818dd4c292b4e79b556dd6b0ecdcbac f778846a0e5741b0bf7cbe51ae583a24
+#: flexrag.retriever.flex_retriever.FlexRetriever.remove_index:6
+#: flexrag.retriever.flex_retriever.FlexRetriever.save_to_local:5
+#: flexrag.retriever.index.bm25_index.BM25Index.build_index:6
+#: flexrag.retriever.index.bm25_index.BM25Index.insert:7
+#: flexrag.retriever.index.faiss_index.FaissIndex.add_embeddings:5
 #: flexrag.retriever.index.faiss_index.FaissIndex.build_index:6
-#: flexrag.retriever.index.index_base.DenseIndexBase.add_embeddings:6
-#: flexrag.retriever.index.index_base.DenseIndexBase.add_embeddings_batch:7
-#: flexrag.retriever.index.index_base.DenseIndexBase.build_index:6
-#: flexrag.retriever.index.scann_index.ScaNNIndex.add_embeddings_batch:7
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.build_index:6
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.insert:7
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.insert_batch:10
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.build_index:8
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.insert:9
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.insert_batch:12
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.save_to_local:5
+#: flexrag.retriever.index.scann_index.ScaNNIndex.add_embeddings:5
 #: flexrag.retriever.index.scann_index.ScaNNIndex.build_index:6
 #: flexrag.retriever.retriever_base.EditableRetriever.add_passages:5
-#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:5 of
+#: flexrag.retriever.retriever_base.LocalRetriever.save_to_local:5
+#: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:5
+#: of
 msgid "None"
 msgstr ""
 
-#: 11c2118c2dcc45a2b0e7e7037e768baa 307c598f3b9c42b389d24999f3c91b68
-#: 91755e698d1441829a3095baac81078c a1f8a07384a74fef914429d8e9ca8cd6
-#: daf7a5e3104e4a1eab5a43d6c72a77a7
-#: flexrag.retriever.bm25s_retriever.BM25SRetriever.clean:1
-#: flexrag.retriever.dense_retriever.DenseRetriever.clean:1
-#: flexrag.retriever.elastic_retriever.ElasticRetriever.clean:1
-#: flexrag.retriever.retriever_base.EditableRetriever.clean:1
-#: flexrag.retriever.typesense_retriever.TypesenseRetriever.clean:1 of
-msgid "Clean the retriever database."
+#: 435aeca2a2de49c78d1c4ba83dee41db 5cb25f32dc3c40239b6880b09c34aed1
+#: a6e6feac5d0b40bba9226f4eb2f6c16c a95a47f9028d419cb631e629178480ca
+#: flexrag.retriever.elastic_retriever.ElasticRetriever.clear:1
+#: flexrag.retriever.flex_retriever.FlexRetriever.clear:1
+#: flexrag.retriever.retriever_base.EditableRetriever.clear:1
+#: flexrag.retriever.typesense_retriever.TypesenseRetriever.clear:1 of
+msgid "Clear the retriever database."
 msgstr ""
 
-#: 0e6be2199ea14a5ebc4ec2bb160576c3 495a14a8e8dd45ab975a4986bfe7be2e
-#: 666500a451eb4e5ea8380266b4fe1fa8 7f2f88f1cb35419aa2361a31a8bdd3a9
-#: b21206783b364486805bd7564190bcd9 dab4aca900d64c90846b97b89daa84e1
-#: flexrag.retriever.retriever_base.EditableRetriever.search_batch:1
-#: flexrag.utils._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:1 of
-msgid "Search queries using local retriever."
-msgstr ""
-
-#: 983ede034b5b43deb0ad60b594d2878c
+#: d27aa79169de46f49d702ce10faf2593
 #: flexrag.retriever.elastic_retriever.ElasticRetrieverConfig:1 of
 msgid "Configuration class for ElasticRetriever."
 msgstr ""
 
-#: 0182b67e4b0840138d9e6d06567006f0
+#: cf8713b03b6d449f8c36e9358fee4a0e
 #: flexrag.retriever.elastic_retriever.ElasticRetrieverConfig:3 of
 msgid "Host of the ElasticSearch server. Default: \"http://localhost:9200\"."
 msgstr ""
 
-#: bec57424fc1c423683f9e8fd54226859
+#: 4af4ff4ca7b64bcfad58d673a8a186fd
 #: flexrag.retriever.elastic_retriever.ElasticRetrieverConfig:5 of
 msgid "API key for the ElasticSearch server. Default: None."
 msgstr ""
 
-#: f336ddc68fde464884c0fe29fb5119d2
+#: 5d7fdd462cff422bacaaef27ab266dae
 #: flexrag.retriever.elastic_retriever.ElasticRetrieverConfig:7 of
 msgid "Name of the index. Required."
 msgstr ""
 
-#: 73c3a828ace54388b4c3a8c032a63217
+#: c4872a42508144b5b448c14151c0515b
 #: flexrag.retriever.elastic_retriever.ElasticRetrieverConfig:9 of
 msgid "Custom properties for building the index. Default: None."
 msgstr ""
 
-#: 221cee6a8b8f47dfb6c87cab48ef8b54
+#: 8e1e378790294cddaa97c1fd0a7ae4ea
 #: flexrag.retriever.elastic_retriever.ElasticRetrieverConfig:11 of
 msgid "Enable verbose logging mode. Default: False."
 msgstr ""
 
-#: d08db6691fac4987ba679e4818ae42d6
+#: 8abe23b99365434a930e30049b28eeed
 #: flexrag.retriever.elastic_retriever.ElasticRetrieverConfig:13 of
 msgid "Number of retry times. Default: 3."
 msgstr ""
 
-#: 0f6868c92f9548fba60bc6e93f869649
+#: 1a68fa35d421456bb752a0be8c8fb2b4
 #: flexrag.retriever.elastic_retriever.ElasticRetrieverConfig:15 of
 msgid "Delay time for retry. Default: 0.5."
 msgstr ""
 
-#: 39c90bf2af9948b5a554e538951a520a a4cdfafbde834e168232098c09b68337
-#: eaebffeb37b94c3a862c72d9068336ba
+#: 71e60f3616784f7d8fe3cee1d655292c c556814521e3477bbf9318ae17e11c4a
+#: f098dae6112d467d9724d825024a5f1d
 #: flexrag.retriever.elastic_retriever.ElasticRetriever:1
 #: flexrag.retriever.retriever_base.LocalRetriever:1
 #: flexrag.retriever.typesense_retriever.TypesenseRetriever:1 of
 msgid "Bases: :py:class:`~flexrag.retriever.retriever_base.EditableRetriever`"
 msgstr ""
 
-#: a9802f7164dc47729fe643cbc3e8ee61
+#: 707c4ddfb3f14870ad59ef5f0ca42ea1
 #: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:1 of
 msgid "Configuration class for TypesenseRetriever."
 msgstr ""
 
-#: f05ed7b7b48845b9a8f6a53ac0f82657
+#: 998e3ec420ab40b9bf8555d825422b39
 #: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:3 of
-msgid "Host of the Typesense server. Required."
+msgid "Host of the Typesense server. Default: \"localhost\"."
 msgstr ""
 
-#: 685bc879ed38424eb8a4d56e110562b7
+#: 6763d83ecc2f46a682c50fd218227ef5
 #: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:5 of
 msgid "Port of the Typesense server. Default: 8108."
 msgstr ""
 
-#: 464802e5a6c94467ac6a58ce0c9035b0
+#: f553b70b51014ff4921d59eac266716c
 #: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:7 of
 msgid ""
 "Protocol of the Typesense server. Default: \"http\". Available options: "
 "\"https\", \"http\"."
 msgstr ""
 
-#: 6a7d323b64324060ae925efe18bb0b08
+#: 747162c6b58849c0884aa0fc51acc7d9
 #: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:10 of
 msgid "API key for the Typesense server. Required."
 msgstr ""
 
-#: 238ce2816b3c4ce0a03a66940d8563a2
+#: e46fd8cb3f4749b5a8af9dac5c799be2
 #: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:12 of
 msgid "Name of the Typesense collection. Required."
 msgstr ""
 
-#: 90bffead11b94cbc9b35a3eb4bd00f47
+#: f60141dbe2fb44218de8afede6f6ba6f
 #: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:14 of
 msgid "Timeout for the connection. Default: 200.0."
 msgstr ""
 
-#: 05624e0afca54fe0bcc44dd95950aa30
+#: a46bcde5db814e55b0af690e5a9ab98b
 #: flexrag.retriever.retriever_base.LocalRetrieverConfig:1 of
 msgid "The configuration class for LocalRetriever."
 msgstr ""
 
-#: ef4eb865f30842ada8353385d6a8e7a9
+#: ca6f9bb4285f4b5394004289921da4bf
 #: flexrag.retriever.retriever_base.LocalRetrieverConfig:3 of
 msgid ""
 "The path to the local database. Default: None. If specified, all "
@@ -461,12 +553,12 @@ msgid ""
 "disk. If not specified, the retriever will be kept in memory."
 msgstr ""
 
-#: 9fb03dfd219c4026a6c50a8efc7a9876
+#: a93a2d223ce44654b73c3df0f1a4cc8d
 #: flexrag.retriever.retriever_base.LocalRetriever:1 of
 msgid "The base class for all `local` retrievers."
 msgstr ""
 
-#: 118424ab48a04154a515346179b57592
+#: 4cf122e412ff40cfa2c58dbda10bd7ae
 #: flexrag.retriever.retriever_base.LocalRetriever:3 of
 msgid ""
 "In FlexRAG, the ``LocalRetriever`` is a concept referring to a retriever "
@@ -477,33 +569,28 @@ msgid ""
 "HuggingFace Hub."
 msgstr ""
 
-#: 27c50a60c72440c1a0b44d300556bef0
+#: 3d25d6bbf67a4932bd8cafce40ac7348
 #: flexrag.retriever.retriever_base.LocalRetriever:7 of
 msgid ""
-"FlexRAG provides following local retrievers: ``BM25SRetriever``, "
-"``DenseRetriever``, and ``HydeRetriever``."
+"FlexRAG provides following local retrievers: ``FlexRetriever``, and "
+"``HydeRetriever``."
 msgstr ""
 
-#: 70126681a46b4dcaad1a8a31c0ecc6ae
+#: faa386424df74ae4a2e7fcfe24d66fa2
 #: flexrag.retriever.retriever_base.LocalRetriever:9 of
 msgid ""
 "For example, to load a retriever hosted on the HuggingFace Hub, you can "
 "run the following code:"
 msgstr ""
 
-#: 6d3c794e8a3745488d04cbaf274e713f
+#: acc4fe354e914516a0361bdc14f6622a
 #: flexrag.retriever.retriever_base.LocalRetriever:17 of
-msgid "You can also override the configuration when loading the retriever:"
-msgstr ""
-
-#: e54898594f764a849c8ab6ed50cbecfe
-#: flexrag.retriever.retriever_base.LocalRetriever:26 of
 msgid ""
 "To save a retriever to the HuggingFace Hub, you can run the following "
 "code:"
 msgstr ""
 
-#: 92ee18f251494c4b8ab7376307dcec15
+#: 3564d6f561e1481d9c09326e71b77982
 #: flexrag.retriever.retriever_base.LocalRetriever.detach:1 of
 msgid ""
 "Detach the retriever from the local database. After detaching, the "
@@ -511,104 +598,174 @@ msgid ""
 "applied to the disk."
 msgstr ""
 
-#: b8ae9aed87194ec3ac65e1e6d5d8f5e3
-#: flexrag.retriever.bm25s_retriever.BM25SRetrieverConfig:1 of
-msgid "Configuration class for BM25SRetriever."
+#: 13d0baaf2f234cb1a935799aad988dbf
+#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:1 of
+msgid "Load a retriever from the HuggingFace Hub."
 msgstr ""
 
-#: 774f017266de4cbd87da006ef86ce9f6
-#: flexrag.retriever.bm25s_retriever.BM25SRetrieverConfig:3 of
+#: 6bb46feb6c43464395ff0c46eb3d6839 a9f4fd4a62de4f92bb58c755d4f57564
+#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:3
+#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:3 of
+msgid "The repo id of the retriever on the HuggingFace Hub."
+msgstr ""
+
+#: 941ea393f11340008f0dbe0e390f5256
+#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:5 of
+msgid "The revision of the retriever on the HuggingFace Hub. Default: None."
+msgstr ""
+
+#: 2d26b09b214f44b286410bb0dd4ec7b6 7a0b851852bb4d4fb0c9d4a1d988bcc2
+#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:7
+#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:5 of
+msgid "The token to access the HuggingFace Hub. Default: None."
+msgstr ""
+
+#: de188131df1d4892beda58d75eaf5533
+#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:9 of
+msgid "The cache directory to store the retriever. Default: FLEXRAG_CACHE_DIR."
+msgstr ""
+
+#: b461743ffb0b408b9a4cf0e902c14c63
+#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:11 of
+msgid "Additional arguments for the retriever."
+msgstr ""
+
+#: 8f49f6f59105491d930083ff80714f08 c3a70dc7e80b4809acba4f5c4d26a73b
+#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:13
+#: flexrag.retriever.retriever_base.LocalRetriever.load_from_local:5 of
+msgid "The loaded retriever."
+msgstr ""
+
+#: 3a8753b724df41179eefeb73701621d0
+#: flexrag.retriever.retriever_base.LocalRetriever.load_from_local:1 of
+msgid "Load a retriever from the local disk."
+msgstr ""
+
+#: 209651ade9d8485f99b1c6f6636972a3 43f7c3bbbe7e42a1b8ad0b185a5eddbc
+#: c70f6aa3d14b417dbe3934f07887a7f8
+#: flexrag.retriever.flex_retriever.FlexRetriever.save_to_local:3
+#: flexrag.retriever.retriever_base.LocalRetriever.load_from_local:3
+#: flexrag.retriever.retriever_base.LocalRetriever.save_to_local:3 of
+msgid "The path to the local database. Default: None."
+msgstr ""
+
+#: 4a9179eee3b94196867366f95a2d8a22
+#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:1 of
+msgid "Save the retriever to the HuggingFace Hub."
+msgstr ""
+
+#: 8e0bd36d753b4dc58273dc4302e38671
+#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:7 of
 msgid ""
-"BM25S method. Default: \"lucene\". Available options: \"atire\", "
-"\"bm25l\", \"bm25+\", \"lucene\", \"robertson\"."
+"The commit message for the retriever. Default: \"Update FlexRAG "
+"retriever\"."
 msgstr ""
 
-#: c446df2c06f3415b9c511cabfb230247
-#: flexrag.retriever.bm25s_retriever.BM25SRetrieverConfig:6 of
+#: 210dffc178454a5b9c2f3ea356ee0e42
+#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:9 of
+msgid "The markdown readme file for the retriever. Default: None."
+msgstr ""
+
+#: 762a1d6b5209443ab580ef0c906d3dd9
+#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:11 of
+msgid "Whether to create a private repo. Default: False."
+msgstr ""
+
+#: b06198881b1a4928a1f8b5cdf574c247
+#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:13 of
+msgid "Additional arguments for uploading the retriever."
+msgstr ""
+
+#: ae876c0aa1954e1cbc43bd57203ba576
+#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:15 of
+msgid "The repo url of the retriever."
+msgstr ""
+
+#: 2cd8e8d740c34d35a050318c25766923 7eb77f7f6eac459ab0ecc972aa91b2d9
+#: flexrag.retriever.flex_retriever.FlexRetriever.save_to_local:1
+#: flexrag.retriever.retriever_base.LocalRetriever.save_to_local:1 of
+msgid "Save the retriever to the local disk."
+msgstr ""
+
+#: e25973f3da174e2f96f87e857683611b
+#: flexrag.retriever.flex_retriever.FlexRetrieverConfig:1 of
+msgid "Configuration class for FlexRetriever."
+msgstr ""
+
+#: 9363c0264bb149e4923f5f5c52c7d532
+#: flexrag.retriever.flex_retriever.FlexRetrieverConfig:3 of
 msgid ""
-"IDF method. Default: None. Available options: \"atire\", \"bm25l\", "
-"\"bm25+\", \"lucene\", \"robertson\"."
+"Method to merge the scores of multiple indexes. Available choices are "
+"\"rrf\" and \"linear\". Default is \"rrf\". * \"rrf\": Reciprocal Rank "
+"Fusion (RRF) method. * \"linear\": Linear combination of the scores."
 msgstr ""
 
-#: 9832dcf77f694f6a9fb8a77e97f1a081
-#: flexrag.retriever.bm25s_retriever.BM25SRetrieverConfig:9 of
+#: ad9b4b2afa1a41a89736950e7c093aac
+#: flexrag.retriever.flex_retriever.FlexRetrieverConfig:8 of
 msgid ""
-"Backend for BM25S. Default: \"auto\". Available options: \"numpy\", "
-"\"numba\", \"auto\"."
+"List of weights for each index. Default is None. If None, all indexes "
+"will be treated equally. This option is used in both \"rrf\" and "
+"\"linear\" methods."
 msgstr ""
 
-#: 6a74942725a84f2facae18c9dbf8e532
-#: flexrag.retriever.bm25s_retriever.BM25SRetrieverConfig:12 of
-msgid "BM25S parameter k1. Default: 1.5."
+#: 20f386f16e99461c965d5e8f3066b466
+#: flexrag.retriever.flex_retriever.FlexRetrieverConfig:12 of
+msgid ""
+"List of indexes to use for retrieval. Default is None. If None, all "
+"indexes will be used."
 msgstr ""
 
-#: 01d1e25b83ae4ad5b96d515f1a5e3577
-#: flexrag.retriever.bm25s_retriever.BM25SRetrieverConfig:14 of
-msgid "BM25S parameter b. Default: 0.75."
+#: 2a6458980216484db2be3bf018c63901
+#: flexrag.retriever.flex_retriever.FlexRetrieverConfig:15 of
+msgid ""
+"Base for the RRF method. Default is 60. This option is only used when "
+"`indexes_merge_method` is \"rrf\"."
 msgstr ""
 
-#: ab177d8aadf848569d2e01987962042b
-#: flexrag.retriever.bm25s_retriever.BM25SRetrieverConfig:16 of
-msgid "BM25S parameter delta. Default: 0.5."
-msgstr ""
-
-#: d6084de41e4b44feb974b9f07ca2ac5d
-#: flexrag.retriever.bm25s_retriever.BM25SRetrieverConfig:18 of
-msgid "Language for Tokenization. Default: \"english\"."
-msgstr ""
-
-#: 65a8b86691a1411bac57ac5ab2772919
-#: flexrag.retriever.bm25s_retriever.BM25SRetrieverConfig:20 of
-msgid "Fields to be indexed. None stands for all fields. Default: None."
-msgstr ""
-
-#: 7040916e090a4edabd7714a91ffcb461 d2cb4771803c4adb8404bf28d9eff612
-#: flexrag.retriever.bm25s_retriever.BM25SRetriever:1
-#: flexrag.retriever.dense_retriever.DenseRetriever:1 of
+#: 0dc9a7e2add94d588e35c95128d251a0
+#: flexrag.retriever.flex_retriever.FlexRetriever:1 of
 msgid "Bases: :py:class:`~flexrag.retriever.retriever_base.LocalRetriever`"
 msgstr ""
 
-#: 5a751f70a7a845e68e1a82b2ba8752d1
-#: flexrag.retriever.bm25s_retriever.BM25SRetriever:1 of
+#: 55ffe22c3edc446692cb0960c19557b8
+#: flexrag.retriever.flex_retriever.FlexRetriever:1 of
 msgid ""
-"BM25SRetriever is a retriever that retrieves passages using the BM25 "
-"algorithm. The implementation is based on the `bm25s "
-"<https://github.com/xhluca/bm25s>`_ project."
+"FlexRetriever is a retriever implemented by FlexRAG team. FlexRetriever "
+"supports multi-index and multi-field retrieval."
 msgstr ""
 
-#: d1c77ba4d2de414e811ee14b4abcb157
-#: flexrag.retriever.dense_retriever.DenseRetrieverConfig:1 of
-msgid "Configuration class for DenseRetriever."
-msgstr ""
-
-#: 1609402e16634fb3b2a2ef09c5a9bc70
-#: flexrag.retriever.dense_retriever.DenseRetrieverConfig:3 of
-msgid "Configuration for the query encoder. Default: None."
-msgstr ""
-
-#: 67fcb977ce1f4c4497d5e2d8d66cab33
-#: flexrag.retriever.dense_retriever.DenseRetrieverConfig:5 of
-msgid "Configuration for the passage encoder. Default: None."
-msgstr ""
-
-#: a463c5322bca4e0a901b719b8232ea1b
-#: flexrag.retriever.dense_retriever.DenseRetrieverConfig:7 of
-msgid "Fields to be encoded. None stands for all fields. Default: None."
-msgstr ""
-
-#: 5a8dd8145fa2401e8e15fdd857c61c70
-#: flexrag.retriever.dense_retriever.DenseRetriever:1 of
+#: d313b592f31a47c093980f0adf040b43
+#: flexrag.retriever.flex_retriever.FlexRetriever.detach:1 of
 msgid ""
-"DenseRetriever is a retriever that retrieves the most relevant passages "
-"based on semantic embeddings."
+"Detach the retriever from the local disk to memory. This function will "
+"not delete the database or the indexes."
 msgstr ""
 
-#: dee06a44d60c4652b4b9cc7c89bfd5e9
+#: 458172a5e05f4923b8f295bc03df16b5
+#: flexrag.retriever.flex_retriever.FlexRetriever.remove_index:1 of
+msgid "Remove an index from the retriever."
+msgstr ""
+
+#: 151ad4dfed3347feb60162008384cb3c
+#: flexrag.retriever.flex_retriever.FlexRetriever.remove_index:3 of
+msgid "Name of the index."
+msgstr ""
+
+#: ../../source/reference/retrievers.rst e64f626f21834785a7dc48b13c9d916f
+msgid "Raises"
+msgstr ""
+
+#: 5cf9c16b260344b9a17bb216f55f8149
+#: flexrag.retriever.flex_retriever.FlexRetriever.remove_index:5 of
+msgid "If the index name does not exist."
+msgstr ""
+
+#: ../../../docstring 71f07782b25444eea5d91e1f898fdf24
 #: flexrag.retriever.hyde_retriever.HydeRetrieverConfig:1 of
 msgid "Configuration class for HydeRetriever."
 msgstr ""
 
-#: 497da499c27340a480c6caeca7cf74a0
+#: ../../../docstring b4779f1629ef47e7a0e32f0c83d816f8
 #: flexrag.retriever.hyde_retriever.HydeRetrieverConfig:3 of
 msgid ""
 "Task for rewriting the query. Default: \"WEB_SEARCH\". Available options:"
@@ -616,404 +773,667 @@ msgid ""
 "\"DBPEDIA_ENTITY\", \"TREC_NEWS\", \"MR_TYDI\"."
 msgstr ""
 
-#: 59f6fa4a48c145fd88903b5e4e2c790d
+#: ../../../docstring 303ec235dd264997b0764e608096f29e
 #: flexrag.retriever.hyde_retriever.HydeRetrieverConfig:6 of
 msgid "Language for rewriting. Default: \"en\"."
 msgstr ""
 
-#: e43e74332c0d46998765c3be3732d721
+#: ../../../docstring e2350a935389466cbaa116938d01d4f9
 #: flexrag.retriever.hyde_retriever.HydeRetriever:1 of
-msgid "Bases: :py:class:`~flexrag.retriever.dense_retriever.DenseRetriever`"
+msgid "Bases: :py:class:`~flexrag.retriever.flex_retriever.FlexRetriever`"
 msgstr ""
 
-#: 5c1658c7dad04cb4b233d07d426875d3
+#: ../../../docstring 0e0fdfc99b74404884ae2466bca3dee2
 #: flexrag.retriever.hyde_retriever.HydeRetriever:1 of
 msgid "HydeRetriever is a retriever that rewrites the query before searching."
 msgstr ""
 
-#: 81ba997813f14c0a85ec928cbdcdfc29
+#: ../../../docstring dacf056fb3424df1a2390178f0945594
 #: flexrag.retriever.hyde_retriever.HydeRetriever:3 of
 msgid ""
 "The original paper is available at https://aclanthology.org/2023.acl-"
 "long.99/."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:106 5f68ada5dedd48c0aba4a8a2ab907598
-msgid "Dense Index"
+#: ../../source/reference/retrievers.rst:97 48c4aad47aaf49a281b15771f9dcbaff
+msgid "Retriever Index"
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:107 cd257f18424d47508c5575ebb172a596
+#: ../../source/reference/retrievers.rst:98 08b03f9a12db4af089851a3b4c8f31d8
 msgid ""
-"``DenseIndex`` is used in ``DenseRetriever`` to store and retrieve dense "
-"embeddings."
+"``RetrieverIndex`` is used in ``FlexRetriever`` to store and retrieve "
+"dense embeddings."
 msgstr ""
 
-#: a9eb503b048740faa41f29b8bf5cd262
-#: flexrag.retriever.index.index_base.DenseIndexBase:1 of
-msgid "The base class for all dense indexes."
-msgstr ""
-
-#: 3aa727b567d64f38b8dfbc7b5c6c3ba9
-#: flexrag.retriever.index.index_base.DenseIndexBase.add_embeddings:1 of
+#: 96108f7a22104627ba9bc4419b025b94
+#: flexrag.retriever.index.index_base.RetrieverIndexBase:1 of
 msgid ""
-"Add embeddings to the index. This method will add embeddings to the index"
-" in batches and automatically perform the `serialize` method when the "
+"The base class for all retriever indexes. This class provides the basic "
+"interface for building, adding, and searching the index."
+msgstr ""
+
+#: d7ffd7371b6442ab98236a1de7998893
+#: flexrag.retriever.index.index_base.RetrieverIndexBase:4 of
+msgid ""
+"The subclass should implement the following methods: - `build_index`: "
+"Build the index from the data. - `insert`: Add a batch of data to the "
+"index. - `search`: Search for the top_k most similar data indices to the "
+"query. - `serialize`: Serialize the index to the disk. - `clear`: Clear "
+"the index and remove the serialized index files. - `__len__`: Return the "
+"number of data in the index. - `is_addable`: Return whether the index is "
+"addable."
+msgstr ""
+
+#: 93230d262a4d46f68f4b8154b23b9313 9f1ebdc1f9534190be83bf450d2cb868
+#: a428cc7436ad457a8fdb80ddb08de4bc c5bcb9feb7354a268faf721651970e11
+#: d38c1670daa6496da416101edc5acb01
+#: flexrag.retriever.index.bm25_index.BM25Index.build_index:1
+#: flexrag.retriever.index.faiss_index.FaissIndex.build_index:1
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.build_index:1
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.build_index:1
+#: flexrag.retriever.index.scann_index.ScaNNIndex.build_index:1 of
+msgid ""
+"Build the index. The index will be serialized automatically if the "
 "`index_path` is set."
 msgstr ""
 
-#: 3451f879d3df4b5097e3d2f2ead733b4 38e05f0c98594a8299f442e16cbd5897
-#: 9ce6da1caecc486285c2da38e41c655d a7b08fcdd6b84d2bb547590def3ed146
-#: f5d0771426294023bfef32fc92570489
-#: flexrag.retriever.index.annoy_index.AnnoyIndex.add_embeddings_batch:5
-#: flexrag.retriever.index.faiss_index.FaissIndex.add_embeddings_batch:5
-#: flexrag.retriever.index.index_base.DenseIndexBase.add_embeddings:4
-#: flexrag.retriever.index.index_base.DenseIndexBase.add_embeddings_batch:5
-#: flexrag.retriever.index.scann_index.ScaNNIndex.add_embeddings_batch:5 of
-msgid "The embeddings to add."
-msgstr ""
-
-#: 130b1cd3d936408eb5b2034a4d002280 3a7161678a6a41a1a80df2d1bcdf37d1
-#: 3b0310bc5a9b4727b59a3f61b2006d29 f68b39ea481d40e686e10fd025cd0bd7
-#: flexrag.retriever.index.annoy_index.AnnoyIndex.add_embeddings_batch:1
-#: flexrag.retriever.index.faiss_index.FaissIndex.add_embeddings_batch:1
-#: flexrag.retriever.index.index_base.DenseIndexBase.add_embeddings_batch:1
-#: flexrag.retriever.index.scann_index.ScaNNIndex.add_embeddings_batch:1 of
-msgid ""
-"Add a batch of embeddings to the index. This method will not serialize "
-"the index automatically. Thus, you should call the `serialize` method "
-"after adding all embeddings."
-msgstr ""
-
-#: 154bc5659fc742998cf4aae373923fc8 2c0a46fcd8774e6ea083f52722e5e60a
-#: 2fc89d20520b4cbebf4624e7fe0a9514 ec0ac397f61b4c8dabd1e4f68348016c
-#: flexrag.retriever.index.annoy_index.AnnoyIndex.build_index:1
-#: flexrag.retriever.index.faiss_index.FaissIndex.build_index:1
-#: flexrag.retriever.index.index_base.DenseIndexBase.build_index:1
-#: flexrag.retriever.index.scann_index.ScaNNIndex.build_index:1 of
-msgid ""
-"Build the index with embeddings. The index will be serialized "
-"automatically if the `index_path` is set."
-msgstr ""
-
-#: 320d5e160da4487aa10db016611744b3 66f2ec1254b44f2292d5ca9019cfeae6
-#: 96ad6d8742fd414389adfac6de109b79 c3c74e4eb5944bf18996705c60203d10
-#: flexrag.retriever.index.annoy_index.AnnoyIndex.build_index:4
+#: 0f7f041911744d608535a197affb168c 362f8145bee2428c82363bc3d5f2b432
+#: 586d4e00a8a747bd9eaa4059595954a0 8dea7873dceb4388a807ad9482f3c1c9
+#: cbb879e7e6bc4802ad52bbfcab786a92
+#: flexrag.retriever.index.bm25_index.BM25Index.build_index:4
 #: flexrag.retriever.index.faiss_index.FaissIndex.build_index:4
-#: flexrag.retriever.index.index_base.DenseIndexBase.build_index:4
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.build_index:4
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.build_index:6
 #: flexrag.retriever.index.scann_index.ScaNNIndex.build_index:4 of
-msgid "The embeddings to build the index."
+msgid "The data to build the index."
 msgstr ""
 
-#: 4c0a7f2451db4318b991e152c67c3baa 8dfe3ef74e964996928c524f705d447c
-#: a199e27f0fba4df1a140c63ff29a14f0 c33c9fdfaa774d779f7a7afced618c17
-#: flexrag.retriever.index.annoy_index.AnnoyIndex.clean:1
-#: flexrag.retriever.index.faiss_index.FaissIndex.clean:1
-#: flexrag.retriever.index.index_base.DenseIndexBase.clean:1
-#: flexrag.retriever.index.scann_index.ScaNNIndex.clean:1 of
-msgid "Clean the index."
+#: 36a0efe63ef3410ea374c32a1501ac8e 76efdff81be44de79ca9203f58684ed1
+#: 828b45c96348451d8906bfc0e07214a9 a01efc8a326b42378a0bfbf0548ea760
+#: flexrag.retriever.index.bm25_index.BM25Index.clear:1
+#: flexrag.retriever.index.faiss_index.FaissIndex.clear:1
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.clear:1
+#: flexrag.retriever.index.scann_index.ScaNNIndex.clear:1 of
+msgid "Reset the index and remove the serialized index files."
 msgstr ""
 
-#: 2dd35622b28048378468bdd27d7850cd 5bedbec60384467a83d45282cd907667
-#: cceb9c93a8b444049c6a7855627755c7 d6041c39bda74510b70f0d36a6a9f9e5
-#: flexrag.retriever.index.annoy_index.AnnoyIndex.deserialize:1
-#: flexrag.retriever.index.faiss_index.FaissIndex.deserialize:1
-#: flexrag.retriever.index.index_base.DenseIndexBase.deserialize:1
-#: flexrag.retriever.index.scann_index.ScaNNIndex.deserialize:1 of
-msgid "Deserialize the index from self.index_path."
+#: 6fb1e90ef3c0436eb5924f904a5b229d ab45dc560b334e66a49ec9dadbefba43
+#: flexrag.retriever.index.BM25Index.infimum:1
+#: flexrag.retriever.index.RetrieverIndexBase.infimum:1 of
+msgid "Return the infimum of the similarity scores for the index."
 msgstr ""
 
-#: 32485803d3604b5eb3fd0492984bca1e 81f3784ca39f4654be3d9fb1cb207507
-#: bf5662f36cd34139ae38239146e00f36 f1d4c9f64b2a44bfbc79cf7b4a808a05
-#: flexrag.retriever.index.AnnoyIndex.embedding_size:1
-#: flexrag.retriever.index.DenseIndexBase.embedding_size:1
-#: flexrag.retriever.index.FaissIndex.embedding_size:1
-#: flexrag.retriever.index.ScaNNIndex.embedding_size:1 of
-msgid "Return the embedding size of the index."
+#: 7c530367dd65478493d7ecc80ebe3c37 ab95b8cbc1334b2c90af008e59bc3f63
+#: c2f065b7eeb649e3818c01e9a26d02a7
+#: flexrag.retriever.index.bm25_index.BM25Index.insert:1
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.insert:1
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.insert:1 of
+msgid "Add a batch of data to the index."
 msgstr ""
 
-#: 1c274ec52c664123a66956626bf15c89 2fb66f3855d94097b2bfcf7a495875cd
-#: f061d45cf7b14e32bba667ef9815735e ff075000339b4d50bcb474e9e540577b
-#: flexrag.retriever.index.AnnoyIndex.is_addable:1
-#: flexrag.retriever.index.DenseIndexBase.is_addable:1
-#: flexrag.retriever.index.FaissIndex.is_addable:1
-#: flexrag.retriever.index.ScaNNIndex.is_addable:1 of
-msgid "Return `True` if the index supports adding embeddings."
+#: 044b9e6eadee47d1a527afee0c251c03 636a12d7e1da49f899dd2fe10529a373
+#: 7a2283e1a50e45159e5e1d85b30ac541 c0b367bf685a4a6680cf0a9b8e910347
+#: e69d2be14d4d4cc4ac433037696bfa0a
+#: flexrag.retriever.index.bm25_index.BM25Index.insert:3
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.insert:3
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.insert_batch:4
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.insert:5
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.insert_batch:6 of
+msgid "The data to add."
 msgstr ""
 
-#: 3cf3dda630d148ef8c099209d52b0eeb 99bb42704e144219b2213559e7ab305c
-#: be98ab85c2034a39a382719133a6dc7c efe67efdb6384204ab6dced8b8954b67
-#: flexrag.retriever.index.annoy_index.AnnoyIndex.serialize:1
-#: flexrag.retriever.index.faiss_index.FaissIndex.serialize:1
-#: flexrag.retriever.index.index_base.DenseIndexBase.serialize:1
-#: flexrag.retriever.index.scann_index.ScaNNIndex.serialize:1 of
+#: 436f9ccb489a48fb8b50d9ab7eced34a 779b5b04517a45a9a485954ac9db9a3e
+#: 7817176f572144adbe5c7b947acaa87e 9e86fad5c8b443ac862d0a2c5174b91b
+#: ac82e87899314d6ebd28650b46cb9e4e
+#: flexrag.retriever.index.bm25_index.BM25Index.insert:5
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.insert:5
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.insert_batch:8
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.insert:7
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.insert_batch:10 of
+msgid "Whether to serialize the index after adding data. Defaults to True."
+msgstr ""
+
+#: 19d5a9781d6241d4a0899730c77873f6 3526388b7fd741fcbd26e668c809c730
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.insert_batch:1
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.insert_batch:1 of
+msgid ""
+"Add data to the index in batches. This method will automatically perform "
+"the `serialize` method if the `index_path` is set."
+msgstr ""
+
+#: 0ba49054694443469a41b42efdf9aae7 94cdc3b893774e22bb9cad2ec8822f8e
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.insert_batch:6
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.insert_batch:8 of
+msgid "The batch size to add data to the index. Defaults to self.batch_size."
+msgstr ""
+
+#: 52e399b795fe44d3af8db82dfacf09e9
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.load_from_local:1 of
+msgid "Load the index from the local path."
+msgstr ""
+
+#: 66b499bdfb924a8c9fddd24140a53e05
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.load_from_local:3 of
+msgid "The path to load the index."
+msgstr ""
+
+#: 3cffbf074c8a447384b12433f0c52552 97e6875e838d42769efcf6865f8d4039
+#: fe3e3801a2814c32b5e80d3c3d7bc359 ff2de464e8384e81b2f9fa9b9fa43933
+#: flexrag.retriever.index.bm25_index.BM25Index.save_to_local:1
+#: flexrag.retriever.index.faiss_index.FaissIndex.save_to_local:1
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.save_to_local:1
+#: flexrag.retriever.index.scann_index.ScaNNIndex.save_to_local:1 of
 msgid ""
 "Serialize the index to self.index_path. If the `index_path` is given, the"
 " index will be serialized to the `index_path`."
 msgstr ""
 
-#: 3020f5ab60e84e848c16dcb19406cd34 62d83a583387415cb396586fc6fd8794
-#: 64a7f1ecb18e468bbccc98d019fe9cef 8b88edad0b4d4c0dbad1295891e55d2a
-#: flexrag.retriever.index.annoy_index.AnnoyIndex.serialize:4
-#: flexrag.retriever.index.faiss_index.FaissIndex.serialize:4
-#: flexrag.retriever.index.index_base.DenseIndexBase.serialize:4
-#: flexrag.retriever.index.scann_index.ScaNNIndex.serialize:4 of
-msgid "The path to serialize the index. Defaults to None."
+#: 0a2b037bb24c47f6a8cf39eb66310769 2af5ca3193874654b08e462952752b69
+#: 42e5b4d136ba4aba9a909f0402bd4a29 b650a288626c4b098bd566b078333d53
+#: flexrag.retriever.index.bm25_index.BM25Index.save_to_local:4
+#: flexrag.retriever.index.faiss_index.FaissIndex.save_to_local:4
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.save_to_local:4
+#: flexrag.retriever.index.scann_index.ScaNNIndex.save_to_local:4 of
+msgid "The path to serialize the index. Defaults to self.index_path."
 msgstr ""
 
-#: 665ffcb9a2c047a9b1b4ce1570c56ef3
-#: flexrag.retriever.index.index_base.DenseIndexBase.test_accuracy:1 of
-msgid "Test the top-k accuracy of the index."
+#: 2be2f5f4010c4a5092d558ccf0e11ec6 4401d688442745e998561d9f1e0c3a0c
+#: 4639344863ec40d1997321b78d124dcf 7009184e40ea478286a107294ea7c77e
+#: eef619522e2c4b54a3102b082dca8e12
+#: flexrag.retriever.index.bm25_index.BM25Index.search:1
+#: flexrag.retriever.index.faiss_index.FaissIndex.search:1
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.search:1
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.search:1
+#: flexrag.retriever.index.scann_index.ScaNNIndex.search:1 of
+msgid "Search for the top_k most similar data indices to the query."
 msgstr ""
 
-#: bea4c2cf89144f23939e0aa8821414e2
-#: flexrag.retriever.index.index_base.DenseIndexBaseConfig:1 of
-msgid "The configuration for the `DenseIndexBase`."
+#: 3534caa9676a4d85bffb0fbc0ccd68a5 380db21c916a42908edb14e578ba2e62
+#: 3bc54e0251b048da964d20976f548373 6fb528dbdb14458a82f56144dc3ed77d
+#: e727ab5b8ab8473ab51c40465584602a e8f27cc210594750a75caa42556833fe
+#: flexrag.retriever.index.bm25_index.BM25Index.search:3
+#: flexrag.retriever.index.faiss_index.FaissIndex.search:3
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.search:3
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.search:3
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.search_batch:4
+#: flexrag.retriever.index.scann_index.ScaNNIndex.search:3 of
+msgid "The query data."
 msgstr ""
 
-#: 961f1fe528b445e09e2916496f2d3fc0
-#: flexrag.retriever.index.index_base.DenseIndexBaseConfig:3 of
-msgid ""
-"The distance function to use. Defaults to \"IP\". available choices are "
-"\"IP\" and \"L2\"."
+#: 34db06c1b4fa4091afe8defbfe3968db 47cfaa7b9b5d4a2b9de284f528149fd0
+#: 6734694d80b14b948b4b9230e6235529 7d9d7e8956bf4635a2622e1caedb9e8f
+#: b1e45fda068840a5863be3c745109293 b4eee8e8bd95460690410bf393c9b9ea
+#: flexrag.retriever.index.bm25_index.BM25Index.search:5
+#: flexrag.retriever.index.faiss_index.FaissIndex.search:5
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.search:5
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.search:5
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.search_batch:6
+#: flexrag.retriever.index.scann_index.ScaNNIndex.search:5 of
+msgid "The number of most similar data indices to return, defaults to 10."
 msgstr ""
 
-#: f528e5c4cf4144cebfae7b8fb2c0d3aa
-#: flexrag.retriever.index.index_base.DenseIndexBaseConfig:6 of
-msgid "The number of embeddings to train the index. Defaults to 1000000."
+#: 1dfc70f1224342b9927c111b92b1c4ff 580818967ab24048a34c912b541dc457
+#: 5c9e4e430ecf49f1901efd2ccec74bdb 632007ee3b734a7da902b168d3c2b35a
+#: 6dd148ec33a2458f9daf3ff19a579d96 bf9db1946d50468fb9ba64e3945c6ecf
+#: flexrag.retriever.index.bm25_index.BM25Index.search:7
+#: flexrag.retriever.index.faiss_index.FaissIndex.search:7
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.search:7
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.search:7
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.search_batch:10
+#: flexrag.retriever.index.scann_index.ScaNNIndex.search:7 of
+msgid "Additional search arguments."
 msgstr ""
 
-#: 63a31e2b39104bf88a6ce295fe027f43
-#: flexrag.retriever.index.index_base.DenseIndexBaseConfig of
+#: 09b500bea4a54453ac57c853d0d87041 2c87fac433c04dad864fb31dd51b344f
+#: 46e52b8778044137be35844b47ade06c 4a949275d8514c1d9c78fb4ad613c52d
+#: 6d58e64d2aab462787a2f20d8c5cb183 c2093a7a7f4f4773bc464eaaa0460ffe
+#: flexrag.retriever.index.bm25_index.BM25Index.search:9
+#: flexrag.retriever.index.faiss_index.FaissIndex.search:9
+#: flexrag.retriever.index.index_base.RetrieverIndexBase.search:9
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.search:9
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.search_batch:12
+#: flexrag.retriever.index.scann_index.ScaNNIndex.search:9 of
+msgid "The indices and scores of the top_k most similar data indices."
+msgstr ""
+
+#: 2e95376ca4cc4c6a8940174fb1c50959 2ef2988ac58842de9b2043486db1f800
+#: flexrag.retriever.index.BM25Index.supremum:1
+#: flexrag.retriever.index.RetrieverIndexBase.supremum:1 of
+msgid "Return the supremum of the similarity scores for the index."
+msgstr ""
+
+#: 10c459f81acf433c92f4d82e3fe3f3c6
+#: flexrag.retriever.index.index_base.RetrieverIndexBaseConfig:1 of
+msgid "The configuration for the `RetrieverIndexBase`."
+msgstr ""
+
+#: c049a54b1077430fb4f6a6f771cf5314
+#: flexrag.retriever.index.index_base.RetrieverIndexBaseConfig of
 msgid "log_interval"
 msgstr ""
 
-#: 88ad573b29164142a49f00cc89285ee2
-#: flexrag.retriever.index.index_base.DenseIndexBaseConfig:8 of
+#: db951d3dc1b740baa43fa01ef083af05
+#: flexrag.retriever.index.index_base.RetrieverIndexBaseConfig:3 of
 msgid "The interval to log the progress. Defaults to 10000."
 msgstr ""
 
-#: d45f6b8420e2462cbf3cb5fce88d2428
-#: flexrag.retriever.index.index_base.DenseIndexBaseConfig of
+#: 45e716f75ec149a5a283c65fa9c748a9
+#: flexrag.retriever.index.index_base.RetrieverIndexBaseConfig of
 msgid "batch_size"
 msgstr ""
 
-#: 439336b53ef1481987dce4c33752a0d4
-#: flexrag.retriever.index.index_base.DenseIndexBaseConfig:10 of
-msgid "The batch size to add embeddings. Defaults to 512."
+#: 46bbbf141f534578b78d3c9d6bd81ff8
+#: flexrag.retriever.index.index_base.RetrieverIndexBaseConfig:5 of
+msgid "The batch size to add data to the index. Defaults to 512."
 msgstr ""
 
-#: f4415237be6a4ce096600e73bda70e86
-#: flexrag.retriever.index.annoy_index.AnnoyIndexConfig:1 of
-msgid "The configuration for the `AnnoyIndex`."
-msgstr ""
-
-#: 214e7d3c5394452081afd4c6c4357369
-#: flexrag.retriever.index.annoy_index.AnnoyIndexConfig:3 of
+#: 702068bc27314e63913f9dd52e36a573
+#: flexrag.retriever.index.index_base.RetrieverIndexBaseConfig:7 of
 msgid ""
-"The distance function to use. Defaults to \"IP\". available choices are "
-"\"IP\", \"L2\", \"COSINE\", \"HAMMING\", and \"MANHATTAN\"."
+"The path to save the index. If not specified, the index will be kept in "
+"memory. Defaults to None."
 msgstr ""
 
-#: 1064d23833e2478891e831a8a48dd77f
-#: flexrag.retriever.index.annoy_index.AnnoyIndexConfig:6 of
-msgid "The number of trees to build the index. Defaults to -1."
+#: 9162b38c9b764957a734bef0280c4e63 of types.RetrieverIndexConfig:1
+msgid ""
+"Configuration class for index (name: RetrieverIndexConfig, default: "
+"faiss)."
 msgstr ""
 
-#: 32073e939f2e40579415e865963a3b8d
-#: flexrag.retriever.index.annoy_index.AnnoyIndexConfig:8 of
-msgid "The number of jobs to build the index. Defaults to -1."
+#: 7b6f59bc3b78480a8482cb22959fd0d7 of types.RetrieverIndexConfig:3
+msgid "The index type to use."
 msgstr ""
 
-#: 8fd50e4f21d54d50ae7ca6a1e441704d
-#: flexrag.retriever.index.annoy_index.AnnoyIndexConfig:10 of
-msgid "The number of neighbors to search. Defaults to -1."
+#: 5e61b07252e04a139e908d11449d33dc of types.RetrieverIndexConfig:5
+msgid "The config for BM25Index."
 msgstr ""
 
-#: 463a32b93f5449d9af32997d809b6d77
-#: flexrag.retriever.index.annoy_index.AnnoyIndexConfig:12 of
-msgid "Whether to build the index on disk. Defaults to False."
+#: 49c79ef3893f4874849fdf549dcf9ca2 of types.RetrieverIndexConfig:7
+msgid "The config for FaissIndex."
 msgstr ""
 
-#: 5272c88f814b496fb6e947ec7e788666 5f1c1333bd06458cbb2bfa23deca42db
-#: 8b5c11c7ae3f44239dd58c548a30125f
-#: flexrag.retriever.index.annoy_index.AnnoyIndex:1
+#: ad15b5e080db4feea9bceaf9c304d6b6 of types.RetrieverIndexConfig:9
+msgid "The config for ScaNNIndex."
+msgstr ""
+
+#: ../../source/reference/retrievers.rst:113 600356c82ce94738ba4922b7fe83a7da
+msgid ""
+"RetrieverConfig is the general configuration for all registered "
+"RetrieverIndexes. You can load any RetrieverIndex by specifying the "
+"``index_type`` in the configuration. For example, to load the "
+"``BM25Index``, you can use the following configuration:"
+msgstr ""
+
+#: e5c8188e160449d698178af6b2f14cfd
+#: flexrag.retriever.index.faiss_index.FaissIndexConfig:1 of
+msgid "The configuration for the `FaissIndex`."
+msgstr ""
+
+#: f10375f7e5504d05887e2fe02c5f3c11
+#: flexrag.retriever.index.faiss_index.FaissIndexConfig:3 of
+msgid ""
+"Building param: the type of the index. Defaults to \"auto\". available "
+"choices are \"FLAT\", \"IVF\", \"PQ\", \"IVFPQ\", and \"auto\". If set to"
+" \"auto\", the index will be set to "
+"\"IVF{n_list},PQ{embedding_size//2}x4fs\"."
+msgstr ""
+
+#: 0e0a2e4e97f54dc6997fa159dbb418d2
+#: flexrag.retriever.index.faiss_index.FaissIndexConfig:7 of
+msgid ""
+"Building param: the number of subquantizers. Defaults to 8. This "
+"parameter is only used when the index type is \"PQ\" or \"IVFPQ\"."
+msgstr ""
+
+#: 9c3b5f6dc1f84b91a1e589964fb51034
+#: flexrag.retriever.index.faiss_index.FaissIndexConfig:10 of
+msgid ""
+"Building param: the number of bits per subquantizer. Defaults to 8. This "
+"parameter is only used when the index type is \"PQ\" or \"IVFPQ\"."
+msgstr ""
+
+#: 5048aebc39f04079ac22c4751b89e345
+#: flexrag.retriever.index.faiss_index.FaissIndexConfig:13 of
+msgid ""
+"Building param: the number of cells. Defaults to 1000. This parameter is "
+"only used when the index type is \"IVF\" or \"IVFPQ\"."
+msgstr ""
+
+#: 1772d9f1983843bd97622b7d11f2d9ae
+#: flexrag.retriever.index.faiss_index.FaissIndexConfig:16 of
+msgid ""
+"Building param: the factory string to build the index. Defaults to None. "
+"If set, the `index_type` will be ignored."
+msgstr ""
+
+#: c9a62538f8bb4f009e017f65810ebc8d
+#: flexrag.retriever.index.faiss_index.FaissIndexConfig:19 of
+msgid ""
+"Building param: the number of data used to train the index. Defaults to "
+"-1. If set to -1, all data will be used to train the index."
+msgstr ""
+
+#: 6868a714d1424f8085dbc58fc896ff91
+#: flexrag.retriever.index.faiss_index.FaissIndexConfig:22 of
+msgid ""
+"Inference param: the number of probes. Defaults to None. If not set, the "
+"number of probes will be set to `n_list // 8`. This parameter is only "
+"used when the index type is \"IVF\" or \"IVFPQ\"."
+msgstr ""
+
+#: e570060c79d941edae96787faa92472b
+#: flexrag.retriever.index.faiss_index.FaissIndexConfig:26 of
+msgid ""
+"Inference param: the device(s) to use. Defaults to []. [] means CPU. If "
+"set, the index will be accelerated with GPU."
+msgstr ""
+
+#: 1e0427d37ca74472a8d75b2b04cd49f7
+#: flexrag.retriever.index.faiss_index.FaissIndexConfig:29 of
+msgid "Inference param: the k factor for search. Defaults to 10."
+msgstr ""
+
+#: 74f7b9f778884900998f41adf5f812cb
+#: flexrag.retriever.index.faiss_index.FaissIndexConfig:31 of
+msgid "Inference param: the polysemous hash table. Defaults to 0."
+msgstr ""
+
+#: c6be583f91ee4746bb15911a397e03db
+#: flexrag.retriever.index.faiss_index.FaissIndexConfig:33 of
+msgid "Inference param: the efSearch for HNSW. Defaults to 100."
+msgstr ""
+
+#: 0b44a4a5fefc4307a1a6fa586e40d1b9 8da75e82d668483dafc4e5859480d4fd
 #: flexrag.retriever.index.faiss_index.FaissIndex:1
 #: flexrag.retriever.index.scann_index.ScaNNIndex:1 of
 msgid "Bases: :py:class:`~flexrag.retriever.index.index_base.DenseIndexBase`"
 msgstr ""
 
-#: a7d687506adc4f6a941fff032f98ccad
-#: flexrag.retriever.index.annoy_index.AnnoyIndex:1 of
-msgid ""
-"AnnoyIndex is a wrapper for the `annoy "
-"<https://github.com/spotify/annoy>`_ library."
-msgstr ""
-
-#: 28737ceffa2848af89cd8088246f77c8
-#: flexrag.retriever.index.annoy_index.AnnoyIndex:3 of
-msgid ""
-"AnnoyIndex supports building index on disk, which is useful when the "
-"memory is limited. However, building index on disk is slower than "
-"building index in memory."
-msgstr ""
-
-#: 5859dd6824c84512b1e57c7d2a5662a0
-#: flexrag.retriever.index.faiss_index.FaissIndexConfig:1 of
-msgid "The configuration for the `FaissIndex`."
-msgstr ""
-
-#: 56d033cdfde240f7af64e849f1bfa263
-#: flexrag.retriever.index.faiss_index.FaissIndexConfig:3 of
-msgid ""
-"The type of the index. Defaults to \"auto\". available choices are "
-"\"FLAT\", \"IVF\", \"PQ\", \"IVFPQ\", and \"auto\". If set to \"auto\", "
-"the index will be set to \"IVF{n_list},PQ{embedding_size//2}x4fs\"."
-msgstr ""
-
-#: 80d5a492602e43febb0b81240d95ce5a
-#: flexrag.retriever.index.faiss_index.FaissIndexConfig:7 of
-msgid "The number of subquantizers. Defaults to 8."
-msgstr ""
-
-#: ae51390f61f74166aadb81f0dc1db24c
-#: flexrag.retriever.index.faiss_index.FaissIndexConfig:9 of
-msgid "The number of bits per subquantizer. Defaults to 8."
-msgstr ""
-
-#: ebb452e6ad3247a68cd352964a450fa4
-#: flexrag.retriever.index.faiss_index.FaissIndexConfig:11 of
-msgid "The number of cells. Defaults to 1000."
-msgstr ""
-
-#: eaa5bfda720e4cceb8a109490b894fd3
-#: flexrag.retriever.index.faiss_index.FaissIndexConfig:13 of
-msgid ""
-"The factory string to build the index. Defaults to None. If set, the "
-"`index_type` will be ignored."
-msgstr ""
-
-#: 820ad2feb69b4fca993ef5005571d95d
-#: flexrag.retriever.index.faiss_index.FaissIndexConfig:16 of
-msgid "The number of probes. Defaults to 32."
-msgstr ""
-
-#: 39a45df89eef4282b16c99bd2ba62d52
-#: flexrag.retriever.index.faiss_index.FaissIndexConfig:18 of
-msgid ""
-"The device id to use. Defaults to []. [] means CPU. If set, the index "
-"will be accelerated with GPU."
-msgstr ""
-
-#: 65b4098b9057410e870be4514afe4d4c
-#: flexrag.retriever.index.faiss_index.FaissIndexConfig:21 of
-msgid "The k factor for search. Defaults to 10."
-msgstr ""
-
-#: b3c91a1dd3e645ac8d5b1d31fccf0f23
-#: flexrag.retriever.index.faiss_index.FaissIndexConfig:23 of
-msgid "The polysemous hash table. Defaults to 0."
-msgstr ""
-
-#: 5ccbec289f864a92ac2c845ad111fce4
-#: flexrag.retriever.index.faiss_index.FaissIndexConfig:25 of
-msgid "The efSearch for HNSW. Defaults to 100."
-msgstr ""
-
-#: e9ea157f32724702b5600938a567983a
+#: a246e38e012b4c1e857b0377335332a4
 #: flexrag.retriever.index.faiss_index.FaissIndex:1 of
 msgid ""
-"FaissIndex is a wrapper for the `faiss "
-"<https://github.com/facebookresearch/faiss>`_ library."
+"FaissIndex employs `faiss <https://github.com/facebookresearch/faiss>`_ "
+"library to build and search indexes with embeddings. FaissIndex supports "
+"both CPU and GPU acceleration. FaissIndex supports various index types, "
+"including FLAT, IVF, PQ, IVFPQ, and auto. FaissIndex provides a flexible "
+"and efficient way to build and search indexes with embeddings."
 msgstr ""
 
-#: 2682ee371f1a4448b267f49eadd12422
-#: flexrag.retriever.index.faiss_index.FaissIndex:3 of
-msgid ""
-"FaissIndex provides a flexible and efficient way to build and search "
-"indexes with embeddings."
+#: 1bb23895a2434658a5ca0c1a3eff8239 7f768b3944634a94b2e9b2344fa56820
+#: flexrag.retriever.index.faiss_index.FaissIndex.add_embeddings:1
+#: flexrag.retriever.index.scann_index.ScaNNIndex.add_embeddings:1 of
+msgid "A helper function that adds embeddings to the index."
 msgstr ""
 
-#: f96b010cb25f481d87cdcc6512c09a1b
+#: 0b9d22fa51bd4701bcb0141eca2183ef 1e5184d429d2406f9e8e8f0008966438
+#: flexrag.retriever.index.faiss_index.FaissIndex.add_embeddings:3
+#: flexrag.retriever.index.scann_index.ScaNNIndex.add_embeddings:3 of
+msgid "The embeddings to add."
+msgstr ""
+
+#: 546a75bb388446789e4a70882b3c72a0 62ad012bbe78443fa340b54336f255c3
+#: flexrag.retriever.index.FaissIndex.embedding_size:1
+#: flexrag.retriever.index.ScaNNIndex.embedding_size:1 of
+msgid "Return the embedding size of the index."
+msgstr ""
+
+#: dcb5f94d793c4b8f9fbe68d5a074e5a5
+#: flexrag.retriever.index.scann_index.ScaNNIndexConfig:1 of
+msgid "The configuration for the `ScaNNIndex`."
+msgstr ""
+
+#: e98bf2888c0d4a83ba75102f32b91194
+#: flexrag.retriever.index.scann_index.ScaNNIndexConfig:3 of
+msgid "The number of leaves in the tree. Defaults to 2000."
+msgstr ""
+
+#: 6df7dee4e27841dcbcb9ef04a5751cb6
+#: flexrag.retriever.index.scann_index.ScaNNIndexConfig:5 of
+msgid "The number of leaves to search. Defaults to 500."
+msgstr ""
+
+#: 80260bddd23d4c3bb3ce9314520053f9
+#: flexrag.retriever.index.scann_index.ScaNNIndexConfig:7 of
+msgid "The number of neighbors to search. Defaults to 10."
+msgstr ""
+
+#: b59fc041ba324fddb81caca6dd85e1c4
+#: flexrag.retriever.index.scann_index.ScaNNIndexConfig:9 of
+msgid "The anisotropic quantization threshold. Defaults to 0.2."
+msgstr ""
+
+#: 2eac5fbdf2294072bad22adedc846846
+#: flexrag.retriever.index.scann_index.ScaNNIndexConfig:11 of
+msgid "The number of dimensions per block. Defaults to 2."
+msgstr ""
+
+#: 54b49bb1eb8b4f62ae639400e26a7fb6
+#: flexrag.retriever.index.scann_index.ScaNNIndexConfig:13 of
+msgid "The number of threads to use. Defaults to 0 (auto)."
+msgstr ""
+
+#: eaba0823b1d04b4d9c6d23229166d5da
+#: flexrag.retriever.index.scann_index.ScaNNIndexConfig:15 of
+msgid "The number of samples to train the index. Defaults to 0 (all)."
+msgstr ""
+
+#: 6f3a9522c44f4eb499b7a52adf71f8c1
 #: flexrag.retriever.index.scann_index.ScaNNIndex:1 of
 msgid ""
 "ScaNNIndex is a wrapper for the `ScaNN <https://github.com/google-"
 "research/google-research/tree/master/scann>`_ library."
 msgstr ""
 
-#: 296c553a13594b01954ba5128b0cffe8
+#: b668ebecae8f47e99c51354d9e91914d
 #: flexrag.retriever.index.scann_index.ScaNNIndex:3 of
 msgid ""
 "ScaNNIndex runs on CPUs with both high speed and accuracy. However, it "
 "requires more memory than ``FaissIndex``."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:147 439a2004a5344fb4abc1c155d7932b36
+#: fc4e1dbd851c417482024aae0fed4b5c
+#: flexrag.retriever.index.bm25_index.BM25IndexConfig:1 of
+msgid "Configuration class for BM25Index."
+msgstr ""
+
+#: 31336df8766d468fbf094dae61663666
+#: flexrag.retriever.index.bm25_index.BM25IndexConfig:3 of
+msgid ""
+"BM25S method. Default: \"lucene\". Available options: \"atire\", "
+"\"bm25l\", \"bm25+\", \"lucene\", \"robertson\"."
+msgstr ""
+
+#: c19e7002ebb546769f4c7e9b43cec23a
+#: flexrag.retriever.index.bm25_index.BM25IndexConfig:6 of
+msgid ""
+"IDF method. Default: None. Available options: \"atire\", \"bm25l\", "
+"\"bm25+\", \"lucene\", \"robertson\"."
+msgstr ""
+
+#: c1870ddd438e4da6879b24b888c92f0c
+#: flexrag.retriever.index.bm25_index.BM25IndexConfig:9 of
+msgid ""
+"Backend for BM25S. Default: \"auto\". Available options: \"numpy\", "
+"\"numba\", \"auto\"."
+msgstr ""
+
+#: 84f081be000e4ffe85c3808b3a48d831
+#: flexrag.retriever.index.bm25_index.BM25IndexConfig:12 of
+msgid "BM25S parameter k1. Default: 1.5."
+msgstr ""
+
+#: bf229e4f7cdb4bee9565a1cb5e7816df
+#: flexrag.retriever.index.bm25_index.BM25IndexConfig:14 of
+msgid "BM25S parameter b. Default: 0.75."
+msgstr ""
+
+#: 3107c69b5f7d4ad3a0b52907d38707f0
+#: flexrag.retriever.index.bm25_index.BM25IndexConfig:16 of
+msgid "BM25S parameter delta. Default: 0.5."
+msgstr ""
+
+#: d093d3a3420046da9ac08590918cb227
+#: flexrag.retriever.index.bm25_index.BM25IndexConfig:18 of
+msgid "Language for Tokenization. Default: \"english\"."
+msgstr ""
+
+#: 651113a8690349fb868ab975be1d4f48
+#: flexrag.retriever.index.bm25_index.BM25Index:1 of
+msgid "Bases: :py:class:`~flexrag.retriever.index.index_base.RetrieverIndexBase`"
+msgstr ""
+
+#: a01a371b168f4309a3ef044e8b21d584
+#: flexrag.retriever.index.bm25_index.BM25Index:1 of
+msgid ""
+"BM25Index is a index that retrieves passages using the BM25 algorithm. "
+"The implementation is based on the `bm25s "
+"<https://github.com/xhluca/bm25s>`_ project."
+msgstr ""
+
+#: 52d08173a6744f369f613d59afebe2a9
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndexConfig:1 of
+msgid "Configuration for MultiFieldIndex."
+msgstr ""
+
+#: 38e049d79a1b498c8e5c7b61e7818304
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndexConfig:3 of
+msgid ""
+"Fields to be indexed. If more than one field is specified, each field "
+"will be processed separately and pointed to the same id."
+msgstr ""
+
+#: df3696d7707f40bca40d844d7c640ffe
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndexConfig:6 of
+msgid ""
+"The method to merge the scores of the same context id. Available options "
+"are \"max\", \"sum\", \"mean\", and \"concat\". \"max\" will take the "
+"maximum score of the same context id. \"sum\" will take the sum of the "
+"scores of the same context id. \"mean\" will take the average of the "
+"scores of the same context id. \"concat\" will concatenate the texts of "
+"each field and index them together. Note that \"concat\" is only "
+"available if all indexed fields are of type str. If only one field is "
+"specified, this argument will be ignored. Defaults to \"max\"."
+msgstr ""
+
+#: d7a2535cc4064ca192f3a3597d3d6002
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex:1 of
+msgid "Bases: :py:class:`object`"
+msgstr ""
+
+#: 1a185ea977bd4f4385f8e5fe364c6ff2
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex:1 of
+msgid "A wrapper index for multiple field contexts."
+msgstr ""
+
+#: 56ba0a6e853640e3b0b74dccb2548e57 706677d14095492fae398ffa44f9d8e1
+#: 853cea941b664ff0aef1ff99c5383f27
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.build_index:4
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.insert:3
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.insert_batch:4 of
+msgid "The context ids of the data."
+msgstr ""
+
+#: 31afcd09cbcd4bb6bf6ffed4e23cece3
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.clear:1 of
+msgid "Clear the index."
+msgstr ""
+
+#: f23e35eb688546f9919668ec942a7440
+#: flexrag.retriever.index.MultiFieldIndex.is_addable:1 of
+msgid "Check if the index is addable."
+msgstr ""
+
+#: c05c894ab9074429a69cd30077d1050d
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.save_to_local:1 of
+msgid "Serialize the index to the given path."
+msgstr ""
+
+#: 130668f9c6784081b03927db6dd9750a
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.save_to_local:3 of
+msgid ""
+"The path to save the index. If None, the index will be saved to "
+"self.index.cfg.index_path."
+msgstr ""
+
+#: 3790b22daddc41f89fee0accba28aed2
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.search_batch:1 of
+msgid ""
+"Search for the top_k most similar data indices to the query. This method "
+"will search the index in batches."
+msgstr ""
+
+#: b4e35e9f3d4941e4810628db99f39da0
+#: flexrag.retriever.index.multi_field_index.MultiFieldIndex.search_batch:8 of
+msgid "The batch size to search. Defaults to self.batch_size."
+msgstr ""
+
+#: ../../source/reference/retrievers.rst:166 e19c4703dfac4501b7a65d9897b0d5c7
 msgid "Web Retriever"
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:148 24d1d6a0dbf7436f9733f86174d960af
+#: ../../source/reference/retrievers.rst:167 d89da718e0d14de5bd5d45f1b780974e
 msgid ""
 "``WebRetriever`` is used to retrieve data from the web. Different from "
 "the ``EditableRetriever``, web retrievers can be used without building a "
 "knowledge base, as they retrieve data using web search engines."
 msgstr ""
 
-#: 744387d3a4904459b2b3c73bf47a9e7b
+#: f57c56b8fd984deba5f0a9782616bcec
 #: flexrag.retriever.web_retrievers.web_retriever.WebRetrieverBaseConfig:1 of
 msgid "The configuration for the ``WebRetrieverBase``."
 msgstr ""
 
-#: 88f387eb36974e7886e596290d034286
+#: 138e47a4b43743cfa73734af9d73df37
 #: flexrag.retriever.web_retrievers.web_retriever.WebRetrieverBaseConfig:3 of
 msgid "The number of times to retry. Default is 3."
 msgstr ""
 
-#: 3482814206c5466587bf7c42bdbb9d34
+#: 6631bb47d7d44ebf9a925d444f86c6ef
 #: flexrag.retriever.web_retrievers.web_retriever.WebRetrieverBaseConfig:5 of
 msgid "The delay between retries. Default is 0.5."
 msgstr ""
 
-#: 571321be1e5f4bebbecb28708adb19a5
+#: e2348a0a6c2842a0bfbddab14abe7bf4
 #: flexrag.retriever.web_retrievers.web_retriever.WebRetrieverBase:1 of
 msgid "The base class for the ``WebRetriever``."
 msgstr ""
 
-#: 701b571acd144ca6b5c51198c8a95725
+#: 77a9ee1ea47741b19758cacbbc8c0745
 #: flexrag.retriever.web_retrievers.web_retriever.WebRetrieverBase:3 of
 msgid ""
 "The WebRetriever is used to retrieve relevant information from the web. "
 "The subclasses should implement the ``search_item`` method."
 msgstr ""
 
-#: 6306891cd34c462b975faaad98043c3e d8060e1a5f9a4386bbcfdeddfd12fb61
+#: b06bd24c812d4e2f8f4a7dba8f7d0f8d e88bf508539a4052acbd36060833b26e
 #: flexrag.retriever.web_retrievers.web_retriever.SimpleWebRetriever.search_item:1
 #: flexrag.retriever.web_retrievers.web_retriever.WebRetrieverBase.search_item:1
 #: of
 msgid "Search the query from the web."
 msgstr ""
 
-#: 9b56724a77664a1f9b15ca1363e38d0e ecfc6c3f0801499cb208e39ba1e66bae
+#: 8d37ba422ece4a4c8fa155235f9f8752 fc212738b70249b49c4e599718468199
 #: flexrag.retriever.web_retrievers.web_retriever.SimpleWebRetriever.search_item:3
 #: flexrag.retriever.web_retrievers.web_retriever.WebRetrieverBase.search_item:3
 #: of
 msgid "The query to search."
 msgstr ""
 
-#: 73c8fbedead84c7284ad665623c647a1 a7c1c44736804e1aba57de5e9dad632c
+#: 24abcf38f0b04f63bbf8dc82f9f7ad78 a77b53fe0e294693972377964678f3af
 #: flexrag.retriever.web_retrievers.web_retriever.SimpleWebRetriever.search_item:5
 #: flexrag.retriever.web_retrievers.web_retriever.WebRetrieverBase.search_item:5
 #: of
 msgid "The number of documents to return."
 msgstr ""
 
-#: 7fc20c34ec58473ab38b60050d938d71 a47e77ef45a14556a71f93a0add0f93b
+#: 8d8cc2aa07e746a3a445cc512abc63c7 96af3ca4bf6749e798dd51afd7e6bf33
 #: flexrag.retriever.web_retrievers.web_retriever.SimpleWebRetriever.search_item:7
 #: flexrag.retriever.web_retrievers.web_retriever.WebRetrieverBase.search_item:7
 #: of
 msgid "The retrieved contexts."
 msgstr ""
 
-#: 0e0fd76fc81d4ad8b649740c0fa6aa6b
+#: 6a2a4e6ab34b4ad9998cb95a2de1c9a7
 #: flexrag.retriever.web_retrievers.utils.WebResource:1 of
 msgid ""
 "The web resource dataclass. ``WebResource`` is the fundamental component "
@@ -1026,62 +1446,62 @@ msgid ""
 "returns the ``RetrievedContext``."
 msgstr ""
 
-#: 41f01f2e2e714614a92702d4c843ec9e
+#: bc5344de8c1545159025fd7006519db7
 #: flexrag.retriever.web_retrievers.utils.WebResource:7 of
 msgid "The URL of the resource."
 msgstr ""
 
-#: 2903ee2b4cf4453f9862f6226ef02a95
+#: 6212219bc2824ec083159995ee158928
 #: flexrag.retriever.web_retrievers.utils.WebResource:9 of
 msgid "The query for the resource. Default is None."
 msgstr ""
 
-#: aa11c4e12c7642f28044ada06061cee1
+#: a4d374a1310a4d6a9e0744c163b1e8b7
 #: flexrag.retriever.web_retrievers.utils.WebResource:11 of
 msgid ""
 "The metadata of the resource, offen provided by the WebSeeker. Default is"
 " {}."
 msgstr ""
 
-#: 9c56f5e2e2434f1287814ae3aea6c930
+#: a9feec5df8424765aa0e8210f7134700
 #: flexrag.retriever.web_retrievers.utils.WebResource:13 of
 msgid ""
 "The content of the resource, offen filled by the WebDownloader. Default "
 "is None."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:162 d7bdab141ec84b829e9e3854534a04e2
+#: ../../source/reference/retrievers.rst:181 fd71cffd8c824d9087028721fc63a75b
 msgid ""
 "FlexRAG provides two simple web retrievers, ``SimpleWebRetriever`` and "
 "``WikipediaRetriever``."
 msgstr ""
 
-#: 1216e7c2d0b14224b10f4c3a03ba2a76
+#: f17431d2f7814485926a4da333000857
 #: flexrag.retriever.web_retrievers.web_retriever.SimpleWebRetrieverConfig:1 of
 msgid "The configuration for the ``SimpleWebRetriever``."
 msgstr ""
 
-#: 5e32b1f29da940ddad0027b673269d3a
+#: 3bc4ecd734a943dab991d5139b823ef3
 #: flexrag.retriever.web_retrievers.web_retriever.SimpleWebRetriever:1 of
 msgid ""
 "Bases: "
 ":py:class:`~flexrag.retriever.web_retrievers.web_retriever.WebRetrieverBase`"
 msgstr ""
 
-#: 1f4bdf7e757e46a48ed379778805863f
+#: 50fa86c70d384f1ea0c1a8c9b2880bec
 #: flexrag.retriever.web_retrievers.web_retriever.SimpleWebRetriever:1 of
 msgid ""
 "SimpleWebRetriever seeks most relevant web pages using existing search "
 "engine and reads the content using the WebReader."
 msgstr ""
 
-#: d4879260f1964b4387f12cf7b64245b5
+#: 3177dbc2ee9d4599a11c6666d89d85a4
 #: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetrieverConfig:1
 #: of
 msgid "The configuration for the ``WikipediaRetriever``."
 msgstr ""
 
-#: b6370b651764456b9423b4d54a4c65b4
+#: 9ef034933e9f47b1b3aa7ca3634bdb02
 #: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetrieverConfig:3
 #: of
 msgid ""
@@ -1089,30 +1509,30 @@ msgid ""
 "\"https://en.wikipedia.org/w/index.php?search=\"."
 msgstr ""
 
-#: 14cbc80e15a8451ab9b5956999b0a518 33f0b358f6374bc9936a384b7660a29b
-#: 3c794b4ea1e247459aef63fc9f044586 770d02191c914630bf2ee8911a58304b
-#: c7be5b1eaa7443bea200b9c2d7d163b1
+#: 69164938163e46f6b1ec1e06e928e7c8 6b513648ccd742ad941815f6a2b17f93
+#: b54f22fea1f040afa4bebe0327898672 e03e31583613474e9b1b1e0b33753cd9
+#: e0dab729a37b46f79693072de1f5ca54
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloaderConfig:14
 #: flexrag.retriever.web_retrievers.web_downloader.SimpleWebDownloaderConfig:3
 #: flexrag.retriever.web_retrievers.web_seeker.DuckDuckGoEngineConfig:3
-#: flexrag.retriever.web_retrievers.web_seeker.GoogleEngineConfig:12
+#: flexrag.retriever.web_retrievers.web_seeker.GoogleEngineConfig:14
 #: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetrieverConfig:6
 #: of
 msgid "The proxy to use. Default is None."
 msgstr ""
 
-#: f136d6177fa643d1b8419deb8cf009c4
+#: a3f1b10001fd4cf185f270f63a32535a
 #: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetriever:1 of
 msgid ""
 "WikipediaRetriever retrieves information from Wikipedia directly. Adapted"
 " from https://github.com/ysymyth/ReAct"
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:182 7f9664fd3a6f4c7d8d1f83bd2132a5f6
+#: ../../source/reference/retrievers.rst:201 0e4c4addb11e4e76b8cfaedbdcdce66d
 msgid "Web Seeker"
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:183 a3233e594c2041f0b6552b4fd6dcc567
+#: ../../source/reference/retrievers.rst:202 2815995c68184060ae50fa28328433aa
 msgid ""
 "``WebSeeker`` is used to search the resources from the web for the given "
 "query. The web resources could be sought by walking through a set of "
@@ -1120,7 +1540,7 @@ msgid ""
 "web seekers using existing search engines."
 msgstr ""
 
-#: 13e960291b904373acff871b8e4992bf
+#: ca9025686eb44d63bbbc936808c7483a
 #: flexrag.retriever.web_retrievers.web_seeker.WebSeekerBase:1 of
 msgid ""
 "The base class for the WebSeeker. The WebSeeker is used to seek the web "
@@ -1128,14 +1548,14 @@ msgid ""
 " through a set of given web pages, by using a search engine, etc."
 msgstr ""
 
-#: 7c6b6d316f7e491089a2637cd47ba454
+#: 69824c23cfd94c69b3830f33fe8048c4
 #: flexrag.retriever.web_retrievers.web_seeker.WebSeekerBase:5 of
 msgid "The subclasses should implement the ``seek`` method."
 msgstr ""
 
-#: 21eaae2eb685461884b74b0782ad9d71 6ed0aea7487b4106bddbf22b05150189
-#: 75059b89d5f1454fa28ddd63be53f059 ac5757df3f6547abb0f7b6b310614208
-#: eff53052906f49bd8862a323b531a9ed
+#: 110d7fca6fe8458799a5a8c9b5f12306 49bd3e945cdd49f2a528af342fdbf865
+#: 6cc94ba206ad40358d007adb47beaf16 bf94a34125e845ce995d3c977ad25280
+#: e2d9dbe7ac8144af874aa286b5a522d3
 #: flexrag.retriever.web_retrievers.web_seeker.BingEngine.seek:1
 #: flexrag.retriever.web_retrievers.web_seeker.DuckDuckGoEngine.seek:1
 #: flexrag.retriever.web_retrievers.web_seeker.GoogleEngine.seek:1
@@ -1144,9 +1564,9 @@ msgstr ""
 msgid "Seek the web resources."
 msgstr ""
 
-#: 1cdddffbc98f42ec85b67fc9a59bd6dd 58956ccd5b284abca73cf9074330037c
-#: af8a478633b4454d9d4832b49f652447 e11e4664a23946e9bb421bb8d5ffb94d
-#: e2475e5cf0bc46ab8c92e01c91022425
+#: 0868c720f396465d97ab59568e45a039 20dd5eaba72d430c9f69d85c1312e733
+#: 89a5b52c2d434df59a423c4448e07e34 d958ee581e254338a3f14de470caaad1
+#: ff0d3738c7e149a1b19acab679f90f58
 #: flexrag.retriever.web_retrievers.web_seeker.BingEngine.seek:3
 #: flexrag.retriever.web_retrievers.web_seeker.DuckDuckGoEngine.seek:3
 #: flexrag.retriever.web_retrievers.web_seeker.GoogleEngine.seek:3
@@ -1155,9 +1575,9 @@ msgstr ""
 msgid "The query to seek."
 msgstr ""
 
-#: 1347b1592ffc473f9bc6c01c5bbb086a 7c69674fea8a4e0baf4f33cd6f4d4af6
-#: 81fe6cd8a29d4356b80e4eaf680bcda3 8ce9fea2324d4f19bc20743f25745082
-#: bab590f8c4944361a2b0a177917fa7b2
+#: 19975127838740cb8e1727835a5b2c11 3cba799a1ec940569202834b95b8e6f8
+#: 75733db2e14f4b07b344fb1b69348346 8688c117edb24453a357dcff2a6831c4
+#: d364f2e163cc42648786035409454826
 #: flexrag.retriever.web_retrievers.web_seeker.BingEngine.seek:5
 #: flexrag.retriever.web_retrievers.web_seeker.DuckDuckGoEngine.seek:5
 #: flexrag.retriever.web_retrievers.web_seeker.GoogleEngine.seek:5
@@ -1166,9 +1586,9 @@ msgstr ""
 msgid "The number of resources to seek. Default is 10."
 msgstr ""
 
-#: 39d4e2b8dcd646e9a833106f9a3246fe 4bc1ecb29b314729afde2c59ab5f62ed
-#: 4f0c32da6d164f3bbbce5577208d68ac 74921c75ef8648dca617a2d78c9835a8
-#: 93f18f707bc0414e8e0ed224b4180e0c
+#: 228a658541034c0d8bc14b2196c68ee0 62b6528304284e41b5c4c7f4f9e077f1
+#: 6de4bdff5de44260b5b1dd4d1d9d2424 9303f29c66c64754a8180e94d7c6dad1
+#: d595bc57467b4a88975c815022a43d11
 #: flexrag.retriever.web_retrievers.web_seeker.BingEngine.seek:7
 #: flexrag.retriever.web_retrievers.web_seeker.DuckDuckGoEngine.seek:7
 #: flexrag.retriever.web_retrievers.web_seeker.GoogleEngine.seek:7
@@ -1177,9 +1597,9 @@ msgstr ""
 msgid "The additional keyword arguments."
 msgstr ""
 
-#: aa40d41600ff45e89497246bd5756e46 acfef52e875e4ab1af6a1a3ca4fe78a2
-#: b9c786ef0cd94d6eb07959952a5ff561 da036bd9eee94fd7b6f70687e31a8e88
-#: f45cc04c948647c7ae6342802b5d8c7d
+#: 3899f0743e4547cbbd61b575354e3a9b 9712507da6a44beb82fcdf823f8b5062
+#: a6e26bfedf3346f592887e4c65e4fcc9 a7ad6c01b864494ba12a44923c9f241e
+#: dbc5fc67396b42519e53ed8438863e47
 #: flexrag.retriever.web_retrievers.web_seeker.BingEngine.seek:8
 #: flexrag.retriever.web_retrievers.web_seeker.DuckDuckGoEngine.seek:8
 #: flexrag.retriever.web_retrievers.web_seeker.GoogleEngine.seek:8
@@ -1188,35 +1608,35 @@ msgstr ""
 msgid "The web resources."
 msgstr ""
 
-#: 4084d53760ea48799312c6559250a106 of types.WebSeekerConfig:1
-msgid "Configuration class for web_seeker (name: WebSeekerConfig, default: ???)."
+#: e326f632846a432c8e54af1cb5802ef2 of types.WebSeekerConfig:1
+msgid "Configuration class for web_seeker (name: WebSeekerConfig, default: None)."
 msgstr ""
 
-#: fbc80aaa2c334c24ba3ffdad62c2aabf of types.WebSeekerConfig:3
+#: 2b2efbe624154e868bcb7d968ee4d65b of types.WebSeekerConfig:3
 msgid "The web_seeker type to use."
 msgstr ""
 
-#: 04d0982632984b24906ec67b381ed6a7 97bfe0ca07e846a5806c6f4e8dac5f50 of
+#: f5b5a31ce1a442abb306c86a0e9d3f6f ff9352f698b3416e937efd7c81ff63b8 of
 #: types.SearchEngineConfig:5 types.WebSeekerConfig:5
 msgid "The config for BingEngine."
 msgstr ""
 
-#: 16c71757ffae4cda9ecb63a7d4502e4d d17f9b8f2eb6411cbe46c4400688f948 of
+#: b2fcb36d136e490d834270a1f3a37e32 ef9a8068cb0a4d47a45d7b2623087e5b of
 #: types.SearchEngineConfig:7 types.WebSeekerConfig:7
 msgid "The config for DuckDuckGoEngine."
 msgstr ""
 
-#: d4458ae9059e4a6db7a4de98e071bdf0 dba2b8df83f64ef29777e6d74fad6471 of
+#: 584a7ab81c69432486ce39fd36e2d211 8861e9895bcf4149affa453e48b732d9 of
 #: types.SearchEngineConfig:9 types.WebSeekerConfig:9
 msgid "The config for GoogleEngine."
 msgstr ""
 
-#: 94f5dc8a18ed48da915afc96b3ca82df cc6ae1327a55458c93d90f9e56d086fb of
+#: 489150937a0f4f33a6031a45199ea8e2 bac6e6c8eb974ee7bd48ae8c9100d0b3 of
 #: types.SearchEngineConfig:11 types.WebSeekerConfig:11
 msgid "The config for SerpApi."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:197 64f991e3ad4447b9970cdecdb9f3a0ba
+#: ../../source/reference/retrievers.rst:216 ba21450420fb424d88ee8115040c6667
 msgid ""
 "WebSeekerConfig is the general configuration for all registered "
 "WebSeekers. You can load any WebSeekers by specifying the "
@@ -1224,17 +1644,17 @@ msgid ""
 "``DuckDuckGoEngine``, you can use the following configuration:"
 msgstr ""
 
-#: dcf8e39255f04d8fa7c47234afcab562 of types.SearchEngineConfig:1
+#: 60952a41bb5641d9af8d75221a87b478 of types.SearchEngineConfig:1
 msgid ""
 "Configuration class for search_engine (name: SearchEngineConfig, default:"
-" ???)."
+" None)."
 msgstr ""
 
-#: 97de7572cf93466f8187ef2e1ed82228 of types.SearchEngineConfig:3
+#: 6b4e50063b814974bb1aa93ed06302a7 of types.SearchEngineConfig:3
 msgid "The search_engine type to use."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:216 e9a91b53b3ef4cd1b0c29a1cd3af18d3
+#: ../../source/reference/retrievers.rst:235 61ac2022cf434dfa9dea6f040a77b0f6
 msgid ""
 "SearchEngine is a type of WebSeeker that searches for web resources by "
 "leveraging existing search engines. SearchEngineConfig is the general "
@@ -1244,35 +1664,56 @@ msgid ""
 " the following configuration:"
 msgstr ""
 
-#: d9025f1f9fd9455e9dc922b007d23fb8
+#: f56d8e8ad9eb4d24a0c2bbe0e310526e
 #: flexrag.retriever.web_retrievers.web_seeker.BingEngineConfig:1 of
 msgid "The configuration for the ``BingSeeker``."
 msgstr ""
 
-#: 99231a66027043b69a289d75f6224eef
+#: 444e9f6a8557400c8d7a7dcb8ba7ceff
 #: flexrag.retriever.web_retrievers.web_seeker.BingEngineConfig:3 of
 msgid ""
 "The subscription key for the Bing Search API. Default is "
 "os.environ.get(\"BING_SEARCH_KEY\", \"EMPTY\")."
 msgstr ""
 
-#: 68369efe78d04d70aa5efafa337fe41b
+#: 7396537e8c9b4654a0e9ab54c0c1ec76
 #: flexrag.retriever.web_retrievers.web_seeker.BingEngineConfig:6 of
 msgid ""
 "The base_url for the Bing Search API. Default is "
 "\"https://api.bing.microsoft.com/v7.0/search\"."
 msgstr ""
 
-#: 0b39f4f0e524420ca3ae8bff1168d308 37f7436824264f3c8fafdb93d6e91bfa
-#: 3eb914edd0b54d3cad5c9480691691a4
+#: 2d19ef174b1d461fab3b3c8af5819226 480b9d50490a4b4ebac557ecea77e634
+#: 6671a69888bb4d8dbed91c29952607a5
 #: flexrag.retriever.web_retrievers.web_downloader.SimpleWebDownloaderConfig:5
 #: flexrag.retriever.web_retrievers.web_seeker.BingEngineConfig:9
-#: flexrag.retriever.web_retrievers.web_seeker.GoogleEngineConfig:14 of
+#: flexrag.retriever.web_retrievers.web_seeker.GoogleEngineConfig:16 of
 msgid "The timeout for the requests. Default is 3.0."
 msgstr ""
 
-#: 80d0ab889684494b86f9d062ec3dedda 90787e0238a243689aac1ead58fcb3cc
-#: c6ce881ac4934c34aaefa33349a37f5d ccfdb55c372449e4acd275de5a1da0ca
+#: da478c655cd844978e70be21be86489f
+#: flexrag.retriever.web_retrievers.web_seeker.BingEngineConfig:11 of
+msgid ""
+"The market to use. see https://learn.microsoft.com/en-us/bing/search-apis"
+"/bing-web-search/reference/market-codes for more information). Default is"
+" en-US."
+msgstr ""
+
+#: 52a2668f1b15442ab58f3027a5331bbd
+#: flexrag.retriever.web_retrievers.web_seeker.BingEngineConfig:15 of
+msgid "The language to use. Default is \"en\"."
+msgstr ""
+
+#: 4b0f7a6f6feb40a6a5117b0fd3cc2d02
+#: flexrag.retriever.web_retrievers.web_seeker.BingEngineConfig:17 of
+msgid ""
+"To get articles discovered by Bing during a specific timeframe, specify a"
+" date range in the form, YYYY-MM-DD..YYYY-MM-DD. For example, "
+"&freshness=2019-02-01..2019-05-30. Default is None."
+msgstr ""
+
+#: 4cf5e7ffe2b1426f86a0595c0855d7d6 6eb546852f064e7ebd8899e3b0897c0b
+#: a20f12a33bb543f5a982ac306bce92d3 abf58b74abd849bba8ccb65618954cef
 #: flexrag.retriever.web_retrievers.web_seeker.BingEngine:1
 #: flexrag.retriever.web_retrievers.web_seeker.DuckDuckGoEngine:1
 #: flexrag.retriever.web_retrievers.web_seeker.GoogleEngine:1
@@ -1282,157 +1723,157 @@ msgid ""
 ":py:class:`~flexrag.retriever.web_retrievers.web_seeker.WebSeekerBase`"
 msgstr ""
 
-#: 09d2ca5e3ea14500ae5af9c3742243f3
+#: a297f57206cc4b9fb76a04906c123817
 #: flexrag.retriever.web_retrievers.web_seeker.BingEngine:1 of
 msgid "The BingSeeker retrieves the web pages using the Bing Search API."
 msgstr ""
 
-#: 2b6122c712c84d84b4213286aaded4ba
+#: a76d82c342cc43cf9673d34434795431
 #: flexrag.retriever.web_retrievers.web_seeker.DuckDuckGoEngineConfig:1 of
 msgid "The configuration for the ``DuckDuckGoEngine``."
 msgstr ""
 
-#: 5eb09a2bc68b42b9b72a09ac1b8227d7
+#: 9814453ee3484882b97e8a4a1d1796a6
 #: flexrag.retriever.web_retrievers.web_seeker.DuckDuckGoEngine:1 of
 msgid ""
 "The DuckDuckGoEngine retrieves the web pages using the DuckDuckGo Search "
 "API."
 msgstr ""
 
-#: dde2cfbd6b63461ca5b18788eeab399b
+#: 09596e003ab2475d904ebb73467db581
 #: flexrag.retriever.web_retrievers.web_seeker.GoogleEngineConfig:1 of
 msgid "The configuration for the ``GoogleEngine``."
 msgstr ""
 
-#: 5062b85ad9ef4121948c928cb84d5023
+#: e584049545e54e189022903a18c15108
 #: flexrag.retriever.web_retrievers.web_seeker.GoogleEngineConfig:3 of
 msgid ""
-"The subscription key for the Google Search API. Default is "
-"os.environ.get(\"GOOGLE_SEARCH_KEY\", \"EMPTY\")."
+"The subscription key for the Google Search API. If not provided, it will "
+"use the environment variable `GOOGLE_SEARCH_KEY`. Defaults to None."
 msgstr ""
 
-#: e135a80bdd9d479cab5bc2d2a9271b0d
-#: flexrag.retriever.web_retrievers.web_seeker.GoogleEngineConfig:6 of
+#: 98b4bac468fe4ebfb0169930091f972c
+#: flexrag.retriever.web_retrievers.web_seeker.GoogleEngineConfig:7 of
 msgid ""
-"The search engine id for the Google Search API. Default is "
-"os.environ.get(\"GOOGLE_SEARCH_ENGINE_ID\", \"EMPTY\")."
+"The search engine id for the Google Search API. If not provided, it will "
+"use the environment variable `GOOGLE_SEARCH_ENGINE_ID`. Defaults to None."
 msgstr ""
 
-#: 3d688089878a443c94b6405f7e9c0e99
-#: flexrag.retriever.web_retrievers.web_seeker.GoogleEngineConfig:9 of
+#: fa3780a6577949988c400b29d070c831
+#: flexrag.retriever.web_retrievers.web_seeker.GoogleEngineConfig:11 of
 msgid ""
 "The endpoint for the Google Search API. Default is "
 "\"https://customsearch.googleapis.com/customsearch/v1\"."
 msgstr ""
 
-#: 181938d667e746f691e7e78166592234
+#: 767a567ca0da4122aa592f6de3eb9271
 #: flexrag.retriever.web_retrievers.web_seeker.GoogleEngine:1 of
 msgid ""
 "The GoogleEngine retrieves the web pages using the `Google Custom Search`"
 " API."
 msgstr ""
 
-#: 14bef8ae480a4363ac76ca565c545c82
+#: 1bee29e82d3a4e909d89a4d42f294d31
 #: flexrag.retriever.web_retrievers.web_seeker.SerpApiConfig:1 of
 msgid "The configuration for the ``SerpApi``."
 msgstr ""
 
-#: 0b4b4fc2baed48da83a6871d75eaf0dd
+#: 284751f10e1b48489bdfee4defb8e067
 #: flexrag.retriever.web_retrievers.web_seeker.SerpApiConfig:3 of
 msgid ""
-"The API key for the SerpApi. Default is os.environ.get(\"SERP_API_KEY\", "
-"MISSING)."
+"The API key for the SerpApi. If not provided, it will use the environment"
+" variable `SERPAPI_API_KEY`. Defaults to None."
 msgstr ""
 
-#: 59e61c23e694430b8c64b72cc26fead5
-#: flexrag.retriever.web_retrievers.web_seeker.SerpApiConfig:6 of
+#: 5c138ec6f83941a295bbb8c97a4254f5
+#: flexrag.retriever.web_retrievers.web_seeker.SerpApiConfig:7 of
 msgid ""
 "The search engine to use. Default is \"google\". Available choices are "
 "\"google\", \"bing\", \"baidu\", \"yandex\", \"yahoo\", "
 "\"google_scholar\", \"duckduckgo\"."
 msgstr ""
 
-#: 3c3054b7edf8404f88065a664407179c
-#: flexrag.retriever.web_retrievers.web_seeker.SerpApiConfig:9 of
+#: 792568b10f9c4fc38559e39bd7f080c7
+#: flexrag.retriever.web_retrievers.web_seeker.SerpApiConfig:10 of
 msgid "The country to search. Default is \"us\"."
 msgstr ""
 
-#: 807d24e54aa94c50bb13efffe4aaa434
-#: flexrag.retriever.web_retrievers.web_seeker.SerpApiConfig:11 of
+#: 55e7925b6acd4c1daa3224c10c87b6d1
+#: flexrag.retriever.web_retrievers.web_seeker.SerpApiConfig:12 of
 msgid "The language to search. Default is \"en\"."
 msgstr ""
 
-#: a5e525ee18a043a4aaebc089451ac895
+#: ff8d5e606c2a443193fd7bccd5f3744d
 #: flexrag.retriever.web_retrievers.web_seeker.SerpApi:1 of
 msgid ""
 "The SerpApi retrieves the web pages using the `SerpApi "
 "<https://serpapi.com/>_`."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:266 89a9381ea52f4e6e8eae2c05dcd9f59d
+#: ../../source/reference/retrievers.rst:285 301f6a184b8948c0bbad1105e60a6315
 msgid "Web Downloader"
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:267 17755994706b4a7aa4bd5f7faca32f15
+#: ../../source/reference/retrievers.rst:286 4183408e6f1d46eaa10eaf64f0314a74
 msgid "Web downloader is used to download data from the web."
 msgstr ""
 
-#: 72c145d770c14127953bbae4c0611d6b
+#: 832c69e1f99a4c3fa72de9e933dd4323
 #: flexrag.retriever.web_retrievers.web_downloader.WebDownloaderBaseConfig:1 of
 msgid "The configuration for the ``WebDownloaderBase``."
 msgstr ""
 
-#: d200c6a4cb5b4aa993344889dc26be7a
+#: 4444bb60426e40e3937f4d9b0a485bc8
 #: flexrag.retriever.web_retrievers.web_downloader.WebDownloaderBaseConfig:3 of
 msgid "Whether to allow parallel downloading. Default is True."
 msgstr ""
 
-#: 4e73294f7ef441628bc047b701423b84
+#: 4028ddd6a94747c1b902b7ac2397e38e
 #: flexrag.retriever.web_retrievers.web_downloader.WebDownloaderBase:1 of
 msgid "The base class for the ``WebDownloader``."
 msgstr ""
 
-#: 2c2949d4e9204280961a4149e988d776 682255ee649f488ead83686756c5b04a
+#: 83ad2dcaf130484fa76407f4c94ca165 84dd0a0dfb724d61bed6e23f9dc252da
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloader.async_download:1
 #: flexrag.retriever.web_retrievers.web_downloader.WebDownloaderBase.async_download:1
 #: of
 msgid "Download the web resources asynchronously."
 msgstr ""
 
-#: 2d17e0bd4ebb400d924faa7e350c7c43 d2b2b2d119ac494ba70c543d62805bc1
+#: 721169634ccf4431a008162d695e442f aa6c31396a9d4b0d8a442f8721e1775f
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloader.download:1
 #: flexrag.retriever.web_retrievers.web_downloader.WebDownloaderBase.download:1
 #: of
 msgid "Download the web resources."
 msgstr ""
 
-#: 07fd82fbf80b48d6a8d3270c18b4b271 55fb3000c795400788e17e2d50ca0b1b
+#: 3f3f4a4a75584c248271fca8bec1583a b4f143f73b74439a9df82c9a29af187b
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloader.download:3
 #: flexrag.retriever.web_retrievers.web_downloader.WebDownloaderBase.download:3
 #: of
 msgid "The resources to download."
 msgstr ""
 
-#: 11a65408a1384b3eb20b02c072352d96 f99c876b79144fccabf036b81a050f44
+#: 252461aae68740e2a2cee244cb0e9aa3 865102c05dd449ecb7cb62df4a48e680
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloader.download:5
 #: flexrag.retriever.web_retrievers.web_downloader.WebDownloaderBase.download:5
 #: of
 msgid "The downloaded web resources."
 msgstr ""
 
-#: df7625880ad347fc86f651187ba9ebb4
+#: 3bdaf2826d96496bb05537914f1861eb
 #: flexrag.retriever.web_retrievers.web_downloader.SimpleWebDownloaderConfig:1
 #: of
 msgid "The configuration for the ``SimpleWebDownloader``."
 msgstr ""
 
-#: d03cdb9034f84766a68643ea3130da99
+#: 7ad7a73f69754d67b0f648ed0159ef07
 #: flexrag.retriever.web_retrievers.web_downloader.SimpleWebDownloaderConfig:7
 #: of
 msgid "The headers to use. Default is None."
 msgstr ""
 
-#: 57ddf5636f1340eba17cb1e345b57319 b14b726b2a304a23b0ed6f0f7fd5c0e6
+#: 40ff6328ac34455db79db63253257741 cff9c8156b464d558d6f2a7448b6800b
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloader:1
 #: flexrag.retriever.web_retrievers.web_downloader.SimpleWebDownloader:1 of
 msgid ""
@@ -1440,24 +1881,24 @@ msgid ""
 ":py:class:`~flexrag.retriever.web_retrievers.web_downloader.WebDownloaderBase`"
 msgstr ""
 
-#: b1c3034a79424307826cda322eac4112
+#: d1ea38073d0f43f580b97cc49f7ff154
 #: flexrag.retriever.web_retrievers.web_downloader.SimpleWebDownloader:1 of
 msgid "Download the html content using httpx."
 msgstr ""
 
-#: a0e74df9f18b47b0a6b0c19d68702b87
+#: a1f5ef42802040d28f30ff60534aeee7
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloaderConfig:1
 #: of
 msgid "The configuration for the ``PlaywrightWebDownloader``."
 msgstr ""
 
-#: 03c8d3623ddd490dac024e54e28b899f
+#: 4988d91122f948fa9655ff633ed1fefd
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloaderConfig:3
 #: of
 msgid "Whether to run the browser in headless mode. Default is True."
 msgstr ""
 
-#: a853d9de53274e59b034d122155e0771
+#: ad1918743fe84fc7b12a0aae381e535a
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloaderConfig:5
 #: of
 msgid ""
@@ -1465,58 +1906,58 @@ msgid ""
 "`chromium`, `firefox`, `webkit`, and `msedge`."
 msgstr ""
 
-#: c0c969f2ac544c34b178a6dc7f0ec12b
+#: 5e53608b93764584b928229935b120d0
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloaderConfig:8
 #: of
 msgid "The device to emulate. Default is `Desktop Chrome`."
 msgstr ""
 
-#: 764d3bc6f58d4a02aeb52fd7e783e209
+#: 9e7d7fd5812a496db22eb4d69cbf52a9
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloaderConfig:10
 #: of
 msgid "The width of the emulate device. Default is None."
 msgstr ""
 
-#: 7c7048716e3e4e9aacc09ffb579288df
+#: c3048ae323d945008a3be0eff3cff65e
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloaderConfig:12
 #: of
 msgid "The height of the emulate device. Default is None."
 msgstr ""
 
-#: cc240617225a4b93a0b56449c0c9682f
+#: 2926494b5bba4939b3b4ff434e8a6eed
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloaderConfig:16
 #: of
 msgid "Whether to return the screenshot. Default is False."
 msgstr ""
 
-#: e49ece068570495f851ce39b1461fc87
+#: 604489154ca6426c964ccbace8a2fc1e
 #: flexrag.retriever.web_retrievers.web_downloader.PlaywrightWebDownloader:1 of
 msgid "Download the web resources using playwright."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:295 26ff26e0c8cf45379cbc4db407b13736
+#: ../../source/reference/retrievers.rst:314 77f6b765d7644e708612ba82a8be2505
 msgid "Web Reader"
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:296 49ab244e8d01419cb12f67b7209e5937
+#: ../../source/reference/retrievers.rst:315 639a1966789f485dab91069200e4a667
 msgid "Web reader is used to convert web data into LLM friendly format."
 msgstr ""
 
-#: 52b3ed3196b449e1bcec233ffdedd213
+#: 37272b26810c4b118e5ff58f50a90cf3
 #: flexrag.retriever.web_retrievers.web_reader.WebReaderBase:1 of
 msgid ""
 "The base class for the ``WebReader``. The WebReader is used to parse the "
 "web resources into a format that can be fed into the LLM."
 msgstr ""
 
-#: 542facebc93746c68a8af3c86e2a54d9
+#: a42dcdcccab643df93b71081fa0b0bb1
 #: flexrag.retriever.web_retrievers.WebReaderBase.fields:1 of
 msgid "The fields that the reader will return."
 msgstr ""
 
-#: 20fff185addb457281348c9bd5a42776 5b8611a935ab4b5193ec23aa82dbeaec
-#: 986e0553eade4b7cbe386725cc76c9c6 d1127bebcde7426e829cf68afca51a47
-#: e40ee737c2de42b8adbdd3b00e0f93c8
+#: 3240d4ce57784154ad022458476f25e4 6840209b6ac64e2b99c46afc6f610aea
+#: 7352d185ab8a4633b4e345dccaeb3287 85b10fe063954ce394ec8ffee66d03a3
+#: e4fdb7172e2a4d828a59ad8fc93457cd
 #: flexrag.retriever.web_retrievers.web_reader.JinaReader.read:1
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderLM.read:1
 #: flexrag.retriever.web_retrievers.web_reader.ScreenshotWebReader.read:1
@@ -1525,9 +1966,9 @@ msgstr ""
 msgid "Parse the retrieved contexts into LLM readable format."
 msgstr ""
 
-#: 0e6de784db1b43ba9409c4c2047c8fce 8c820ea6cc144d3ab73173f1f0c7cd57
-#: abd867d63a194369ae7398e7e850fda2 b919b6638219490bb8b215dc7479de13
-#: e5da07ae45ad4168b82e469b85700896
+#: 3db37270ae414b3f8c7f1c549ffeab41 4a05c48dc3584475a277307bba5ed291
+#: 829f0434d777482f8f6f603b0edeb98e b20c42cc16bb464ab8dae70b4daa4362
+#: cabe549b2e11485b9fc8c3ece9f7d360
 #: flexrag.retriever.web_retrievers.web_reader.JinaReader.read:3
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderLM.read:3
 #: flexrag.retriever.web_retrievers.web_reader.ScreenshotWebReader.read:3
@@ -1536,9 +1977,9 @@ msgstr ""
 msgid "Resources sought from the web."
 msgstr ""
 
-#: 43e61ae6e1044ed1a73f6a4889c5a00d 5efbfbab4efc4405bb466e4668e78571
-#: 9f87e210ac5d434ab1847ecf12f41072 b0ccafd23ed64242b0798b3c47514174
-#: ebe84107fda9433ca84f13c6c2100c65
+#: 1dc1e2ed652644608044e6f0442ac0e9 2bdf377573aa46909739290d0dea42f5
+#: 3e3865bf5bc4454eb489680984390a8f 48098687eb7447d09442f3dccedb00d8
+#: 5dc4d4270d634facad87c6a36641f861
 #: flexrag.retriever.web_retrievers.web_reader.JinaReader.read:5
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderLM.read:5
 #: flexrag.retriever.web_retrievers.web_reader.ScreenshotWebReader.read:5
@@ -1547,27 +1988,27 @@ msgstr ""
 msgid "Contexts that can be fed into the LLM."
 msgstr ""
 
-#: 43b68e00668a4f239f329abd1b543894 of types.WebReaderConfig:1
-msgid "Configuration class for web_reader (name: WebReaderConfig, default: ???)."
+#: 753d8027255f42fba67d26203e051aa3 of types.WebReaderConfig:1
+msgid "Configuration class for web_reader (name: WebReaderConfig, default: None)."
 msgstr ""
 
-#: 42d38ee4bfa84ec897c62222db9914ce of types.WebReaderConfig:3
+#: 007e823cedf64670ba2c575cd42713d8 of types.WebReaderConfig:3
 msgid "The web_reader type to use."
 msgstr ""
 
-#: c64de50da2b844eba18e9fcadebf06b9 of types.WebReaderConfig:5
+#: 2c039ae0e50541189935344b031bf7dd of types.WebReaderConfig:5
 msgid "The config for JinaReaderLM."
 msgstr ""
 
-#: b91872b6887a40cf93a8d9cf2e4e5279 of types.WebReaderConfig:7
+#: ad967771acbc406ebe02af5621072850 of types.WebReaderConfig:7
 msgid "The config for JinaReader."
 msgstr ""
 
-#: 9ad9bd0619124b7cb31c2381bb85923e of types.WebReaderConfig:9
+#: 72b55ab9c39d4f01bf6db729fe03b0ec of types.WebReaderConfig:9
 msgid "The config for ScreenshotWebReader."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:306 cd6570f3230c4807af5835cb28c6c632
+#: ../../source/reference/retrievers.rst:325 0c25debe5b754f85aec447cdf4053397
 msgid ""
 "WebReaderConfig is the general configuration for all registered "
 "WebReaders. You can load any WebReader by specifying the "
@@ -1575,30 +2016,30 @@ msgid ""
 "``JinaReader``, you can use the following configuration:"
 msgstr ""
 
-#: ccdcc9d4575e4e00a3c1fe89612a74c0
+#: 56252c9590ec4ffab2b92159b97c685c
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderConfig:1 of
 msgid "The configuration for the ``JinaReader``."
 msgstr ""
 
-#: db6fb57c73324a75b8597da8d47acb27
+#: b08f5b47f42c4fa2920682e4c3ce2fb5
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderConfig:3 of
 msgid "The base URL of the Jina Reader API. Default is \"https://r.jina.ai\"."
 msgstr ""
 
-#: 1e1906b411184ac3a9866b0a0bcde1a8
+#: e35e3fb0a65e47dd99c020a01af2d032
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderConfig:5 of
 msgid ""
-"The API key for the Jina Reader API. Default is "
-"os.environ.get(\"JINA_API_KEY\", MISSING)."
+"The API key for the Jina Reader API. If not provided, it will use the "
+"environment variable `JINA_API_KEY`. Defaults to None."
 msgstr ""
 
-#: 6489c69f658d4982acc30dc1f2ccbe5e
-#: flexrag.retriever.web_retrievers.web_reader.JinaReaderConfig:7 of
+#: 6fb393ea43b048169738df3f01f3fb95
+#: flexrag.retriever.web_retrievers.web_reader.JinaReaderConfig:9 of
 msgid "The proxy to use. Defaults to None."
 msgstr ""
 
-#: 23667241f12a4b25815feee3d5151f7d 41a056881f8a4b3f9285d24db169f829
-#: a069e94fa0364552bd7c07c194e47695
+#: 2548a8d1f5c646f7806cbacd19258af9 26e4c40d7b68478b8e6a83f722aba7e1
+#: 32f06a4bb859427da085fa7d37277c9a
 #: flexrag.retriever.web_retrievers.web_reader.JinaReader:1
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderLM:1
 #: flexrag.retriever.web_retrievers.web_reader.ScreenshotWebReader:1 of
@@ -1607,84 +2048,365 @@ msgid ""
 ":py:class:`~flexrag.retriever.web_retrievers.web_reader.WebReaderBase`"
 msgstr ""
 
-#: 32ff9a938f624f97aa171aae956bce3f
+#: 377fa6b0631649e698e59b5abc91f2c5
 #: flexrag.retriever.web_retrievers.web_reader.JinaReader:1 of
 msgid "The JinaReader parse the web pages using the Jina Reader API."
 msgstr ""
 
-#: 078246bcc1034ab3a11c08f6fff666bd
+#: 42e736f83e7d4c2c90ee39990bb3cc3f
 #: flexrag.retriever.web_retrievers.JinaReader.fields:1 of
 msgid "The ``JinaReader`` will return the ``processed_content`` field."
 msgstr ""
 
-#: c0f09e02e4094911969ec3cc92d5112b
+#: 52295c447bfb4d07be642fafc950b63f
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderLMConfig:1 of
 msgid "The configuration for the ``JinaReaderLM``."
 msgstr ""
 
-#: 62665394b4fd4cb48f3e787a11ed133b
+#: 1005fb83f02245559421b4ec71796428
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderLMConfig:3 of
 msgid "Whether to use the jinaai/ReaderLM-v2 prompt. Default is False."
 msgstr ""
 
-#: c1b293c0fae54171836ca69ceb1327d3
+#: c1e4b31a567640ee8cf0a63cead1cf24
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderLMConfig:5 of
 msgid "Whether to pre-clean the HTML content. Default is False."
 msgstr ""
 
-#: 3b0727a20a9d4064adf8d0c0859262bd
+#: 0bdf4dd174594e6684463a94badd5c2f
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderLMConfig:7 of
 msgid "Whether to clean the SVG content. Default is False."
 msgstr ""
 
-#: 028dfb2eb76a483fa86cfc166a12bb70
+#: 3818224336f349b287d181a22c75626e
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderLMConfig:9 of
 msgid "Whether to clean the base64 images. Default is False."
 msgstr ""
 
-#: b14dc56a6b1d424cbef4cd74eb3f1ea4
+#: f6359e6b859646449bb79f2fb39c4025
 #: flexrag.retriever.web_retrievers.web_reader.JinaReaderLM:1 of
 msgid ""
 "The JinaReaderLM downloads and parses the HTML content using the Jina "
 "ReaderLM model."
 msgstr ""
 
-#: 233d5d935e9f4fc59d5ccb907c957303
+#: ad76088ce36a4b92b040edc4c1566719
 #: flexrag.retriever.web_retrievers.JinaReaderLM.fields:1 of
 msgid ""
 "The ``JinaReaderLM`` will return the ``raw_content`` and "
 "``processed_content`` fields."
 msgstr ""
 
-#: 952fa3e6e4f9404c9ab93186e93f85fe
+#: 27707ed30b064bd5a6ae76c05b8740db
 #: flexrag.retriever.web_retrievers.web_reader.ScreenshotWebReader:1 of
 msgid "The ScreenshotWebReader reads the web pages by taking screenshots."
 msgstr ""
 
-#: 3b0ab0c1a99d41fd8a791bfb84235021
+#: 2f8decd38168463a808d5c0a3d1608f7
 #: flexrag.retriever.web_retrievers.ScreenshotWebReader.fields:1 of
 msgid "The ``ScreenshotWebReader`` will return the ``screenshot`` field."
 msgstr ""
 
-#: 4362dba1237c414d850e9d8282d6b057
+#: c898222ec5ef49ff8942c0d82aa51f6d
 #: flexrag.retriever.web_retrievers.web_reader.ScreenshotWebReaderConfig:1 of
 msgid "The configuration for the ``ScreenshotWebReader``."
 msgstr ""
 
-#: 2c3e4891f39945ca95f52f66d4f9601d
+#: c02e6e098a88420e8dee94c92adc7bbc
 #: flexrag.retriever.web_retrievers.web_reader.SnippetWebReader:1 of
 msgid "The SnippetWebReader will return the snippet of the resource directly."
 msgstr ""
 
-#: 404f0e830f694538be1d5f5e81cc2f4a
+#: 2b30372a5de7476ea6c273fd5cda734d
 #: flexrag.retriever.web_retrievers.web_reader.SnippetWebReader:3 of
 msgid ""
 "This is useful if the resources are retrieved by the ``SearchEngine``, "
 "and the snippets are sufficient for the LLM to generate the response."
 msgstr ""
 
-#: 2f969f12de3d4783a8ee391f314d6cd0
+#: 6b6775b3e2124bad9fc04c17525b8fa9
 #: flexrag.retriever.web_retrievers.SnippetWebReader.fields:1 of
 msgid "The ``SnippetWebReader`` will return the ``snippet`` field."
 msgstr ""
+
+#~ msgid "Search queries."
+#~ msgstr ""
+
+#~ msgid "The config for BM25SRetriever."
+#~ msgstr ""
+
+#~ msgid "The config for DenseRetriever."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "RetrieverConfig is the general configuration"
+#~ " for all registered retrievers. You "
+#~ "can load any retriever by specifying "
+#~ "the retriever name in the configuration."
+#~ " For example, to load the ``BM25S``"
+#~ " retriever, you can use the following"
+#~ " configuration:"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The base class for all `editable` "
+#~ "retrievers. In FlexRAG, the "
+#~ "``EditableRetriever`` is a concept referring"
+#~ " to a retriever that includes the "
+#~ "``add_passages`` and ``clean`` methods, "
+#~ "allowing you to build the retriever "
+#~ "using your own knowledge base. FlexRAG"
+#~ " provides following editable retrievers: "
+#~ "``BM25SRetriever``, ``DenseRetriever``, "
+#~ "``ElasticRetriever``, ``TypesenseRetriever``, and "
+#~ "``HydeRetriever``."
+#~ msgstr ""
+
+#~ msgid "Clean the retriever database."
+#~ msgstr ""
+
+#~ msgid "Search queries using local retriever."
+#~ msgstr ""
+
+#~ msgid "Host of the Typesense server. Required."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "FlexRAG provides following local retrievers:"
+#~ " ``BM25SRetriever``, ``DenseRetriever``, and "
+#~ "``HydeRetriever``."
+#~ msgstr ""
+
+#~ msgid "You can also override the configuration when loading the retriever:"
+#~ msgstr ""
+
+#~ msgid "Configuration class for BM25SRetriever."
+#~ msgstr ""
+
+#~ msgid "Fields to be indexed. None stands for all fields. Default: None."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "BM25SRetriever is a retriever that "
+#~ "retrieves passages using the BM25 "
+#~ "algorithm. The implementation is based "
+#~ "on the `bm25s <https://github.com/xhluca/bm25s>`_"
+#~ " project."
+#~ msgstr ""
+
+#~ msgid "Configuration class for DenseRetriever."
+#~ msgstr ""
+
+#~ msgid "Configuration for the query encoder. Default: None."
+#~ msgstr ""
+
+#~ msgid "Configuration for the passage encoder. Default: None."
+#~ msgstr ""
+
+#~ msgid "Fields to be encoded. None stands for all fields. Default: None."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "DenseRetriever is a retriever that "
+#~ "retrieves the most relevant passages "
+#~ "based on semantic embeddings."
+#~ msgstr ""
+
+#~ msgid "Bases: :py:class:`~flexrag.retriever.dense_retriever.DenseRetriever`"
+#~ msgstr ""
+
+#~ msgid "Dense Index"
+#~ msgstr ""
+
+#~ msgid ""
+#~ "``DenseIndex`` is used in ``DenseRetriever``"
+#~ " to store and retrieve dense "
+#~ "embeddings."
+#~ msgstr ""
+
+#~ msgid "The base class for all dense indexes."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Add embeddings to the index. This "
+#~ "method will add embeddings to the "
+#~ "index in batches and automatically "
+#~ "perform the `serialize` method when the"
+#~ " `index_path` is set."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Add a batch of embeddings to the"
+#~ " index. This method will not "
+#~ "serialize the index automatically. Thus, "
+#~ "you should call the `serialize` method"
+#~ " after adding all embeddings."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Build the index with embeddings. The "
+#~ "index will be serialized automatically "
+#~ "if the `index_path` is set."
+#~ msgstr ""
+
+#~ msgid "The embeddings to build the index."
+#~ msgstr ""
+
+#~ msgid "Clean the index."
+#~ msgstr ""
+
+#~ msgid "Deserialize the index from self.index_path."
+#~ msgstr ""
+
+#~ msgid "Return `True` if the index supports adding embeddings."
+#~ msgstr ""
+
+#~ msgid "The path to serialize the index. Defaults to None."
+#~ msgstr ""
+
+#~ msgid "Test the top-k accuracy of the index."
+#~ msgstr ""
+
+#~ msgid "The configuration for the `DenseIndexBase`."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The distance function to use. Defaults"
+#~ " to \"IP\". available choices are "
+#~ "\"IP\" and \"L2\"."
+#~ msgstr ""
+
+#~ msgid "The number of embeddings to train the index. Defaults to 1000000."
+#~ msgstr ""
+
+#~ msgid "The batch size to add embeddings. Defaults to 512."
+#~ msgstr ""
+
+#~ msgid "The configuration for the `AnnoyIndex`."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The distance function to use. Defaults"
+#~ " to \"IP\". available choices are "
+#~ "\"IP\", \"L2\", \"COSINE\", \"HAMMING\", and"
+#~ " \"MANHATTAN\"."
+#~ msgstr ""
+
+#~ msgid "The number of trees to build the index. Defaults to -1."
+#~ msgstr ""
+
+#~ msgid "The number of jobs to build the index. Defaults to -1."
+#~ msgstr ""
+
+#~ msgid "The number of neighbors to search. Defaults to -1."
+#~ msgstr ""
+
+#~ msgid "Whether to build the index on disk. Defaults to False."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "AnnoyIndex is a wrapper for the "
+#~ "`annoy <https://github.com/spotify/annoy>`_ library."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "AnnoyIndex supports building index on "
+#~ "disk, which is useful when the "
+#~ "memory is limited. However, building "
+#~ "index on disk is slower than "
+#~ "building index in memory."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The type of the index. Defaults to"
+#~ " \"auto\". available choices are \"FLAT\","
+#~ " \"IVF\", \"PQ\", \"IVFPQ\", and \"auto\"."
+#~ " If set to \"auto\", the index "
+#~ "will be set to "
+#~ "\"IVF{n_list},PQ{embedding_size//2}x4fs\"."
+#~ msgstr ""
+
+#~ msgid "The number of subquantizers. Defaults to 8."
+#~ msgstr ""
+
+#~ msgid "The number of bits per subquantizer. Defaults to 8."
+#~ msgstr ""
+
+#~ msgid "The number of cells. Defaults to 1000."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The factory string to build the "
+#~ "index. Defaults to None. If set, "
+#~ "the `index_type` will be ignored."
+#~ msgstr ""
+
+#~ msgid "The number of probes. Defaults to 32."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The device id to use. Defaults to"
+#~ " []. [] means CPU. If set, the"
+#~ " index will be accelerated with GPU."
+#~ msgstr ""
+
+#~ msgid "The k factor for search. Defaults to 10."
+#~ msgstr ""
+
+#~ msgid "The polysemous hash table. Defaults to 0."
+#~ msgstr ""
+
+#~ msgid "The efSearch for HNSW. Defaults to 100."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "FaissIndex is a wrapper for the "
+#~ "`faiss <https://github.com/facebookresearch/faiss>`_ "
+#~ "library."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "FaissIndex provides a flexible and "
+#~ "efficient way to build and search "
+#~ "indexes with embeddings."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Configuration class for web_seeker (name: "
+#~ "WebSeekerConfig, default: ???)."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Configuration class for search_engine (name:"
+#~ " SearchEngineConfig, default: ???)."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The subscription key for the Google "
+#~ "Search API. Default is "
+#~ "os.environ.get(\"GOOGLE_SEARCH_KEY\", \"EMPTY\")."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The search engine id for the "
+#~ "Google Search API. Default is "
+#~ "os.environ.get(\"GOOGLE_SEARCH_ENGINE_ID\", \"EMPTY\")."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The API key for the SerpApi. "
+#~ "Default is os.environ.get(\"SERP_API_KEY\", "
+#~ "MISSING)."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "Configuration class for web_reader (name: "
+#~ "WebReaderConfig, default: ???)."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The API key for the Jina Reader"
+#~ " API. Default is os.environ.get(\"JINA_API_KEY\","
+#~ " MISSING)."
+#~ msgstr ""
 
