@@ -29,15 +29,18 @@ logger = LOGGER_MANAGER.get_logger("serve_retriever")
 
 class SearchRequest(BaseModel):
     queries: list[str] = Field(
-        description="List of queries to search for",
+        description="List of queries to search for. Each query should be a string.",
     )
     top_k: int = Field(
         default=10,
-        description="Number of top results to return",
+        description="Number of top results to return.",
     )
     in_batches: bool = Field(
         default=False,
-        description="Whether to process queries in batches",
+        description=(
+            "Whether to process queries in batches. "
+            "Set to true if you have many queries that are not able to be processed within one batch."
+        ),
     )
     batch_size: int = Field(
         default=32,

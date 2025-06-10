@@ -8,12 +8,12 @@ Retriever is one of the most important component in the RAG pipeline. It retriev
    :width: 50%
 ```
 
-The difference between these retrievers is as follows:
-- `WebRetriever`: The WebRetriever performs real-time information retrieval directly from the **internet**. It is designed to handle queries that require up-to-date or dynamic content, such as breaking news, current events, or newly published data. This retriever is ideal when static knowledge sources are insufficient.
+The differences between these retrievers are as follows:
+- `WebRetriever`: The WebRetriever performs real-time information retrieval directly from the **internet**. It is designed to handle queries that require up-to-date or dynamic content, such as breaking news, current events, or newly published data. This retriever is ideal when static knowledge sources are insufficient. For more information, you can refer to the {doc}`./preparing_web_retriever` tutorial.
 - `APIBasedRetriever`: The APIRetriever connects to external systems via **APIs** to retrieve structured or domain-specific data. It acts as a bridge to proprietary databases, enterprise systems, or third-party services, enabling seamless integration with existing data infrastructures. In FlexRAG, we provide two types of API-based retrievers: {class}`~flexrag.retriever.ElasticRetriever` and {class}`~flexrag.retriever.TypesenseRetriever`.
-- {class}`~flexrag.retriever.FlexRetriever`: The FlexRetriever is an advanced local retriever that supports both **MultiField** and **MultiIndex** retrieval capabilities. It allows each document to be parsed into multiple semantic fields (e.g., title, abstract, content), with dedicated indexes built per field. In addition, FlexRetriever enables hybrid search across multiple indexes, allowing for flexible, fine-grained retrieval strategies tailored to complex information needs. Furthermore, FlexRetriever supports both sparse and dense retrieval methods, making it suitable for a wide range of retrieval tasks. FlexRetriever is also fully **compatible with the Hugging Face ecosystem**, making it easy to publish, share, and reuse retrievers via the Hugging Face Hub. This integration empowers users to contribute and leverage community-built retrieval pipelines with minimal configuration.
+- {class}`~flexrag.retriever.FlexRetriever`: The FlexRetriever is an advanced local retriever that supports both **MultiField** and **MultiIndex** retrieval capabilities: it allows each document to be parsed into multiple semantic fields (e.g., title, abstract, content), with dedicated indexes built per field. In addition, FlexRetriever enables hybrid search across multiple indexes, allowing for flexible, fine-grained retrieval strategies tailored to complex information needs. Furthermore, FlexRetriever supports both sparse and dense retrieval methods, making it suitable for a wide range of retrieval tasks. FlexRetriever is also fully **compatible with the Hugging Face ecosystem**, making it easy to publish, share, and reuse retrievers via the Hugging Face Hub. This integration empowers users to contribute and leverage community-built retrieval pipelines with minimal configuration.
 
-In this tutorial, we will show you how to load the FlexRetriever from the HuggingFace Hub and prepare your own FlexRetriever.
+In this tutorial, we will show you how to load the {class}`~flexrag.retriever.FlexRetriever` from the HuggingFace Hub and prepare your own FlexRetriever.
 
 ## Loading the predefined {class}`~flexrag.retriever.FlexRetriever` from HuggingFace Hub
 FlexRAG provides several predefined {class}`~flexrag.retriever.FlexRetriever`s that are built on various knowledge bases. These retrievers are available on the HuggingFace Hub and can be easily loaded for use in your applications. You can find the list of available retrievers in the [FlexRAG repository](https://huggingface.co/FlexRAG).
@@ -73,13 +73,13 @@ id      text    title
 ```
 
 ### Adding the Documents to the Retriever
-After preparing the knowledge base, you can add the documents to the retriever. In FlexRAG, you can use the `add_passages` function to add the documents to the retriever. The `add_passages` function takes a iterator of `Context` as input, where each Context represents a piece of knowledge. The {class}`~flexrag.utils.dataclasses.Context` class has the following fields:
+After preparing the knowledge base, you can add the documents to the retriever. In FlexRAG, you can use the `add_passages` function to add the documents to the retriever. The `add_passages` function takes a iterator of {class}`~flexrag.utils.dataclasses.Context` as input, where each {class}`~flexrag.utils.dataclasses.Context` represents a piece of knowledge. The {class}`~flexrag.utils.dataclasses.Context` class has the following fields:
 - `context_id`: the unique identifier of the knowledge piece;
 - `data`: a dictionary containing all the information of the knowledge piece, such as `title`, `text`, etc.;
 - `source` (optional): the source of the knowledge piece, which can be used to track the origin of the knowledge piece;
 - `metadata` (optional): additional metadata of the knowledge piece, which can be used to store additional information about the knowledge piece.
 
-You can use the {class}`~flexrag.datasets.RAGCorpusDataset` class to load the knowledge base and convert it into a iterator of `Context`. The `RAGCorpusDataset` class takes a configuration object as input, which specifies the file paths of the knowledge base, the fields to be saved, and the unique identifier field. The following code snippet demonstrates how to prepare the retriever using the Wikipedia knowledge base:
+You can use the {class}`~flexrag.datasets.RAGCorpusDataset` class to load the knowledge base and convert it into a iterator of {class}`~flexrag.utils.dataclasses.Context`. The {class}`~flexrag.datasets.RAGCorpusDataset` class takes a configuration object as input, which specifies the file paths of the knowledge base, the fields to be saved, and the unique identifier field. The following code snippet demonstrates how to prepare the retriever using the Wikipedia knowledge base:
 
 ```python
 from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
@@ -234,7 +234,7 @@ python -m flexrag.entrypoints.add_index \
 ```
 
 
-### Using the Retriever
+### Using the Retriever in Your Code
 After preparing the retriever, you can use it in your RAG application or other tasks. For example, you can use the `FlexRetriever` to retrieve the top 5 passages for a given query:
 
 ```python
@@ -245,6 +245,33 @@ retriever = FlexRetriever.load_from_local("<path_to_retriever>")
 passages = retriever.search('What is the capital of France?', top_k=5)[0]
 print(passages)
 ```
+
+### Deploying the Retriever as a Service
+FlexRAG provides an entrypoint to deploy the retriever as a service. This is helpful when you want to use the retriever to fine-tune your own RAG assistant or when you want to use the retriever in a production demonstration. You can deploy the retriever by running the following command:
+
+```bash
+python -m flexrag.entrypoints.serve_retriever \
+    host='0.0.0.0' \
+    port='3402' \
+    retriever_path=<path_to_retriever> \
+    used_indexes=['bm25']
+```
+
+After deploying the retriever, you can access the retriever service at `http://<host>:<port>/search` or visit `http://<host>:<port>/docs` for documentation. You can send a POST request to the `/search` endpoint with a JSON payload containing the query and the top-k parameter. The following is an example of how to use the retriever service:
+
+```python
+import requests
+
+def search_retriever(query, top_k=5):
+    url = "http://<host>:<port>/search"
+    payload = {
+        "queries": [query],
+        "top_k": top_k,
+    }
+    response = requests.post(url, json=payload)
+    return response.json()
+```
+
 
 ### Uploading the Retriever to the HuggingFace Hub
 To share your retriever with the community, you can upload it to the HuggingFace Hub. For example, to upload the `FlexRetriever` to the HuggingFace Hub, you can run the following code:
