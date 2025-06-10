@@ -1,10 +1,4 @@
-from .generation_metrics import (
-    BLEU,
-    BLEUConfig,
-    Rouge,
-    chrF,
-    chrFConfig,
-)
+from .generation_metrics import BLEU, BLEUConfig, Rouge, chrF, chrFConfig
 from .matching_metrics import (
     F1,
     Accuracy,
@@ -15,16 +9,17 @@ from .matching_metrics import (
 )
 from .metrics_base import MetricsBase
 from .retrieval_metrics import (
-    SuccessRate,
-    SuccessRateConfig,
-    RetrievalRecall,
-    RetrievalRecallConfig,
-    RetrievalPrecision,
-    RetrievalPrecisionConfig,
     RetrievalMAP,
     RetrievalMAPConfig,
+    RetrievalMRR,
     RetrievalNDCG,
     RetrievalNDCGConfig,
+    RetrievalPrecision,
+    RetrievalPrecisionConfig,
+    RetrievalRecall,
+    RetrievalRecallConfig,
+    SuccessRate,
+    SuccessRateConfig,
 )
 
 from .evaluator import Evaluator, EvaluatorConfig  # isort: skip
@@ -50,6 +45,7 @@ __all__ = [
     "RetrievalPrecisionConfig",
     "RetrievalMAP",
     "RetrievalMAPConfig",
+    "RetrievalMRR",
     "RetrievalNDCG",
     "RetrievalNDCGConfig",
     "Evaluator",

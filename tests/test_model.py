@@ -1,15 +1,14 @@
-import os
 import re
-from dataclasses import dataclass, field
 
+import numpy as np
 import pytest
-from omegaconf import OmegaConf
 
 from flexrag.models import (
     AnthropicGenerator,
     AnthropicGeneratorConfig,
     CohereEncoder,
     CohereEncoderConfig,
+    EncoderBase,
     GenerationConfig,
     GeneratorBase,
     HFClipEncoder,
@@ -20,8 +19,6 @@ from flexrag.models import (
     HFGeneratorConfig,
     JinaEncoder,
     JinaEncoderConfig,
-    LlamacppGenerator,
-    LlamacppGeneratorConfig,
     OllamaEncoder,
     OllamaEncoderConfig,
     OllamaGenerator,
@@ -41,23 +38,7 @@ from flexrag.utils import LOGGER_MANAGER
 logger = LOGGER_MANAGER.get_logger("tests.test_model")
 
 
-@dataclass
-class GeneratorTestConfig:
-    openai_configs: list[OpenAIGeneratorConfig] = field(default_factory=list)
-    ollama_configs: list[OllamaGeneratorConfig] = field(default_factory=list)
-    anthropic_configs: list[AnthropicGeneratorConfig] = field(default_factory=list)
-    vllm_configs: list[VLLMGeneratorConfig] = field(default_factory=list)
-    hf_configs: list[HFGeneratorConfig] = field(default_factory=list)
-    llamacpp_configs: list[LlamacppGeneratorConfig] = field(default_factory=list)
-
-
 class TestGenerator:
-    cfg: GeneratorTestConfig = OmegaConf.merge(
-        OmegaConf.structured(GeneratorTestConfig),
-        OmegaConf.load(
-            os.path.join(os.path.dirname(__file__), "configs", "generator.yaml")
-        ),
-    )
     prompts = [
         ChatPrompt(history=[ChatTurn(role="user", content="Who is Bruce Wayne?")]),
         ChatPrompt(history=[ChatTurn(role="user", content="Who is Thomas Wayne?")]),
@@ -136,162 +117,143 @@ class TestGenerator:
         return
 
     @pytest.mark.asyncio
-    async def test_openai(self):
-        for cfg in self.cfg.openai_configs:
-            logger.debug(f"Testing OpenAIGenerator({cfg.model_name}).")
-            generator = OpenAIGenerator(cfg)
-            await self.valid_chat_function(generator)
-            await self.valid_generate_function(generator)
-            logger.debug(f"Testing OpenAIGenerator({cfg.model_name}) done.")
+    async def test_openai(self, mock_openai_client):
+        generator = OpenAIGenerator(
+            OpenAIGeneratorConfig(model_name="gpt-3.5-turbo", api_key="test")
+        )
+        await self.valid_chat_function(generator)
+        await self.valid_generate_function(generator)
         return
 
     @pytest.mark.asyncio
-    async def test_ollama(self):
-        for cfg in self.cfg.ollama_configs:
-            logger.debug(f"Testing OllamaGenerator({cfg.model_name}).")
-            generator = OllamaGenerator(cfg)
-            await self.valid_chat_function(generator)
-            await self.valid_generate_function(generator)
-            logger.debug(f"Testing OllamaGenerator({cfg.model_name}) done.")
+    async def test_ollama(self, mock_ollama_client):
+        generator = OllamaGenerator(
+            OllamaGeneratorConfig(
+                base_url="http://localhost:11434",
+                model_name="llama2",
+            )
+        )
+        await self.valid_chat_function(generator)
+        await self.valid_generate_function(generator)
         return
 
+    @pytest.mark.gpu
     @pytest.mark.asyncio
     async def test_vllm(self):
-        for cfg in self.cfg.vllm_configs:
-            logger.debug(f"Testing VLLMGenerator({cfg.model_path}).")
-            generator = VLLMGenerator(cfg)
-            await self.valid_chat_function(generator)
-            await self.valid_generate_function(generator)
-            logger.debug(f"Testing VLLMGenerator({cfg.model_path}) done.")
+        # FIXME: VLLMGenerator can not be initiate if CUDA is initialized.
+        # if not torch.cuda.is_available():
+        #     pytest.skip("VLLMGenerator requires GPU for inference")
+        generator = VLLMGenerator(VLLMGeneratorConfig(model_path="Qwen/Qwen3-0.6B"))
+        await self.valid_chat_function(generator)
+        await self.valid_generate_function(generator)
         return
 
+    @pytest.mark.gpu
     @pytest.mark.asyncio
     async def test_hf(self):
-        for cfg in self.cfg.hf_configs:
-            logger.debug(f"Testing HFGenerator({cfg.model_path}).")
-            generator = HFGenerator(cfg)
-            await self.valid_chat_function(generator)
-            await self.valid_generate_function(generator)
-            logger.debug(f"Testing HFGenerator({cfg.model_path}) done.")
+        # if not torch.cuda.is_available():
+        #     pytest.skip("HFGenerator requires GPU for inference")
+        generator = HFGenerator(
+            HFGeneratorConfig(
+                model_path="Qwen/Qwen3-0.6B",
+                device_id=[0],
+            )
+        )
+        await self.valid_chat_function(generator)
+        await self.valid_generate_function(generator)
         return
 
     @pytest.mark.asyncio
-    async def test_llamacpp(self):
-        for cfg in self.cfg.llamacpp_configs:
-            logger.debug(f"Testing LlamacppGenerator({cfg.model_path}).")
-            generator = LlamacppGenerator(cfg)
-            await self.valid_chat_function(generator)
-            await self.valid_generate_function(generator)
-            logger.debug(f"Testing LlamacppGenerator({cfg.model_path}) done.")
+    async def test_anthropic(self, mock_anthropic_client):
+        generator = AnthropicGenerator(
+            AnthropicGeneratorConfig(model_name="claude-3-7-sonnet")
+        )
+        await self.valid_chat_function(generator)
         return
-
-    @pytest.mark.asyncio
-    async def test_anthropic(self):
-        for cfg in self.cfg.anthropic_configs:
-            logger.debug(f"Testing AnthropicGenerator({cfg.model_name}).")
-            generator = AnthropicGenerator(cfg)
-            await self.valid_chat_function(generator)
-            logger.debug(f"Testing AnthropicGenerator({cfg.model_name}) done.")
-        return
-
-
-@dataclass
-class EncodeTestConfig:
-    openai_configs: list[OpenAIEncoderConfig] = field(default_factory=list)
-    ollama_configs: list[OllamaEncoderConfig] = field(default_factory=list)
-    hf_configs: list[HFEncoderConfig] = field(default_factory=list)
-    hf_clip_configs: list[HFClipEncoderConfig] = field(default_factory=list)
-    jina_configs: list[JinaEncoderConfig] = field(default_factory=list)
-    cohere_configs: list[CohereEncoderConfig] = field(default_factory=list)
-    st_configs: list[SentenceTransformerEncoderConfig] = field(default_factory=list)
 
 
 class TestEncode:
-    cfg: EncodeTestConfig = OmegaConf.merge(
-        OmegaConf.structured(EncodeTestConfig),
-        OmegaConf.load(
-            os.path.join(os.path.dirname(__file__), "configs", "encoder.yaml")
-        ),
-    )
     text = [
         "Who is Bruce Wayne?",
         "Who is Thomas Wayne?",
         "What is the capital of China?",
     ]
 
+    async def run_encoder(self, encoder: EncoderBase) -> None:
+        r1 = encoder.encode(self.text)
+        assert isinstance(r1, np.ndarray)
+        assert r1.ndim == 2
+        assert r1.shape[0] == len(self.text)
+        assert r1.shape[1] == encoder.embedding_size
+        r2 = await encoder.async_encode(self.text)
+        assert r1.ndim == 2
+        assert r1.shape[0] == len(self.text)
+        assert r1.shape[1] == encoder.embedding_size
+        assert (r1 - r2).max() < 1e-4
+
     @pytest.mark.asyncio
-    async def test_openai(self):
-        for cfg in self.cfg.openai_configs:
-            logger.debug(f"Testing OpenAIEncoder({cfg.model_name}).")
-            encoder = OpenAIEncoder(cfg)
-            r1 = encoder.encode(self.text)
-            r2 = await encoder.async_encode(self.text)
-            assert (r1 - r2).max() < 1e-4
-            logger.debug(f"Testing OpenAIEncoder({cfg.model_name}) done.")
+    async def test_openai(self, mock_openai_client):
+        encoder = OpenAIEncoder(
+            OpenAIEncoderConfig(
+                model_name="text-embedding-3-small",
+                api_key="test",
+                embedding_size=512,
+            )
+        )
+        await self.run_encoder(encoder)
         return
 
     @pytest.mark.asyncio
-    async def test_ollama(self):
-        for cfg in self.cfg.ollama_configs:
-            logger.debug(f"Testing OllamaEncoder({cfg.model_name}).")
-            encoder = OllamaEncoder(cfg)
-            r1 = encoder.encode(self.text)
-            r2 = await encoder.async_encode(self.text)
-            assert (r1 - r2).max() < 1e-4
-            logger.debug(f"Testing OllamaEncoder({cfg.model_name}) done.")
+    async def test_ollama(self, mock_ollama_client):
+        encoder = OllamaEncoder(
+            OllamaEncoderConfig(
+                base_url="http://localhost:11434",
+                model_name="contriever",
+                embedding_size=768,
+            )
+        )
+        await self.run_encoder(encoder)
         return
 
     @pytest.mark.asyncio
     async def test_hf(self):
-        for cfg in self.cfg.hf_configs:
-            logger.debug(f"Testing HFEncoder({cfg.model_path}).")
-            encoder = HFEncoder(cfg)
-            r1 = encoder.encode(self.text)
-            r2 = await encoder.async_encode(self.text)
-            assert (r1 - r2).max() < 1e-4
-            logger.debug(f"Testing HFEncoder({cfg.model_path}) done.")
+        encoder = HFEncoder(HFEncoderConfig(model_path="facebook/contriever"))
+        await self.run_encoder(encoder)
         return
 
     @pytest.mark.asyncio
     async def test_sentence_transformer(self):
-        for cfg in self.cfg.st_configs:
-            logger.debug(f"Testing SentenceTransformerEncoder({cfg.model_path}).")
-            encoder = SentenceTransformerEncoder(cfg)
-            r1 = encoder.encode(self.text)
-            r2 = await encoder.async_encode(self.text)
-            assert (r1 - r2).max() < 1e-4
-            logger.debug(f"Testing SentenceTransformerEncoder({cfg.model_path}) done.")
+        encoder = SentenceTransformerEncoder(
+            SentenceTransformerEncoderConfig(
+                model_path="sentence-transformers/all-MiniLM-L6-v2",
+            )
+        )
+        await self.run_encoder(encoder)
         return
 
     @pytest.mark.asyncio
     async def test_hf_clip(self):
-        for cfg in self.cfg.hf_clip_configs:
-            logger.debug(f"Testing HFClipEncoder({cfg.model_path}).")
-            encoder = HFClipEncoder(cfg)
-            r1 = encoder.encode(self.text)
-            r2 = await encoder.async_encode(self.text)
-            assert (r1 - r2).max() < 1e-4
-            logger.debug(f"Testing HFClipEncoder({cfg.model_path}) done.")
+        # test openai clip model
+        encoder = HFClipEncoder(
+            HFClipEncoderConfig(model_path="openai/clip-vit-base-patch32")
+        )
+        await self.run_encoder(encoder)
         return
 
     @pytest.mark.asyncio
-    async def test_jina(self):
-        for cfg in self.cfg.jina_configs:
-            logger.debug(f"Testing JinaEncoder({cfg.model}).")
-            encoder = JinaEncoder(cfg)
-            r1 = encoder.encode(self.text)
-            r2 = await encoder.async_encode(self.text)
-            assert (r1 - r2).max() < 1e-4
-            logger.debug(f"Testing JinaEncoder({cfg.model}) done.")
+    async def test_jina(self, mock_jina_client):
+        encoder = JinaEncoder(
+            JinaEncoderConfig(
+                model="jina-embeddings-v3",
+                embedding_size=768,
+                api_key="test",
+            )
+        )
+        await self.run_encoder(encoder)
         return
 
     @pytest.mark.asyncio
-    async def test_cohere(self):
-        for cfg in self.cfg.cohere_configs:
-            logger.debug(f"Testing CohereEncoder({cfg.model}).")
-            encoder = CohereEncoder(cfg)
-            r1 = encoder.encode(self.text)
-            r2 = await encoder.async_encode(self.text)
-            assert (r1 - r2).max() < 1e-4
-            logger.debug(f"Testing CohereEncoder({cfg.model}) done.")
+    async def test_cohere(self, mock_cohere_client):
+        encoder = CohereEncoder(CohereEncoderConfig(model="embed-v4.0", api_key="test"))
+        await self.run_encoder(encoder)
         return

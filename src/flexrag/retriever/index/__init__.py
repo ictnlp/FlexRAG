@@ -1,23 +1,25 @@
-from .annoy_index import AnnoyIndex, AnnoyIndexConfig
+from .bm25_index import BM25Index, BM25IndexConfig
 from .faiss_index import FaissIndex, FaissIndexConfig
-from .index_base import DenseIndexBase, DenseIndexBaseConfig, DENSE_INDEX
+from .index_base import RETRIEVER_INDEX, RetrieverIndexBase, RetrieverIndexBaseConfig
+from .multi_field_index import MultiFieldIndex, MultiFieldIndexConfig
 from .scann_index import ScaNNIndex, ScaNNIndexConfig
 
-
-DenseIndexConfig = DENSE_INDEX.make_config(
-    default="faiss", config_name="DenseIndexConfig"
+RetrieverIndexConfig = RETRIEVER_INDEX.make_config(
+    default="faiss", config_name="RetrieverIndexConfig"
 )
 
 
 __all__ = [
-    "AnnoyIndex",
-    "AnnoyIndexConfig",
+    "BM25Index",
+    "BM25IndexConfig",
     "FaissIndex",
     "FaissIndexConfig",
+    "RETRIEVER_INDEX",
+    "RetrieverIndexBase",
+    "RetrieverIndexBaseConfig",
+    "MultiFieldIndex",
+    "MultiFieldIndexConfig",
     "ScaNNIndex",
     "ScaNNIndexConfig",
-    "DenseIndexBase",
-    "DenseIndexBaseConfig",
-    "DENSE_INDEX",
-    "DenseIndexConfig",
+    "RetrieverIndexConfig",
 ]

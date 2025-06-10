@@ -1,11 +1,10 @@
-from dataclasses import dataclass
-from typing import Optional
+from typing import Annotated, Optional
 
 import numpy as np
 
 from flexrag.models import ENCODERS, EncoderConfig
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
-from flexrag.utils import LOGGER_MANAGER, Choices
+from flexrag.utils import LOGGER_MANAGER, Choices, configure
 
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 from .sentence_splitter import SENTENCE_SPLITTERS, SentenceSplitterConfig
@@ -13,7 +12,7 @@ from .sentence_splitter import SENTENCE_SPLITTERS, SentenceSplitterConfig
 logger = LOGGER_MANAGER.get_logger("flexrag.chunking.semantic_chunker")
 
 
-@dataclass
+@configure
 class SemanticChunkerConfig(SentenceSplitterConfig, EncoderConfig, TokenizerConfig):
     """Configuration for SemanticChunker.
 
@@ -74,7 +73,7 @@ class SemanticChunkerConfig(SentenceSplitterConfig, EncoderConfig, TokenizerConf
     threshold: Optional[float] = None
     threshold_percentile: Optional[float] = None
     similarity_window: int = 1
-    similarity_function: Choices(["L2", "IP", "COS"]) = "COS"  # type: ignore
+    similarity_function: Annotated[str, Choices("L2", "IP", "COS")] = "COS"
 
 
 @CHUNKERS("semantic_chunker", config_class=SemanticChunkerConfig)
@@ -108,11 +107,14 @@ class SemanticChunker(ChunkerBase):
         self.tokenizer = TOKENIZERS.load(cfg)
         return
 
-    def chunk(self, text: str) -> list[Chunk]:
+    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
         # split the text into sentences
         sentences = self._split_sentences(text)
         if len(sentences) == 1:
-            return [Chunk(text, 0, len(text))]
+            chunks = [Chunk(text, 0, len(text))]
+            if return_str:
+                return [chunk.text for chunk in chunks]
+            return chunks
 
         # combine the sentences to calculate the embeddings
         combined_sentences = []
@@ -164,14 +166,20 @@ class SemanticChunker(ChunkerBase):
             max_tokens = max(len(self.tokenizer.tokenize(sent)) for sent in sentences)
             if max_tokens == self.max_tokens:
                 chunks = sentences
-                return self._form_chunks(chunks)
+                chunks = self._form_chunks(chunks)
+                if return_str:
+                    return [chunk.text for chunk in chunks]
+                return chunks
             elif max_tokens > self.max_tokens:
                 logger.warning(
                     f"The maximum number of tokens in a sentence is {max_tokens}, "
                     f"which is greater than the specified max_tokens {self.max_tokens}."
                 )
                 chunks = sentences
-                return self._form_chunks(chunks)
+                chunks = self._form_chunks(chunks)
+                if return_str:
+                    return [chunk.text for chunk in chunks]
+                return chunks
 
             # try to find the threshold that best fits the max_tokens
             thresholds = np.sort(similarity)
@@ -201,7 +209,10 @@ class SemanticChunker(ChunkerBase):
             else:
                 threshold = thresholds[mid_pointer] + 1e-6
             chunks = self._group_sentences(sentences, similarity, threshold)
-        return self._form_chunks(chunks)
+        chunks = self._form_chunks(chunks)
+        if return_str:
+            return [chunk.text for chunk in chunks]
+        return chunks
 
     def _group_sentences(
         self, sentences: list[str], similarity: np.ndarray, threshold: float

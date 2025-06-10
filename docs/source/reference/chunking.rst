@@ -5,8 +5,8 @@ This module provides a set of classes for chunking a long text into smaller chun
 
 The Chunker Interface
 ---------------------
-`ChunkerBase` is the base class for all chunkers. 
-It provides a simple interface for chunking a text into smaller chunks. 
+`ChunkerBase` is the base class for all chunkers.
+It provides a simple interface for chunking a text into smaller chunks.
 The chunking process is controlled by a configuration object that is passed to the chunker's constructor.
 
 .. autoclass:: flexrag.chunking.ChunkerBase
@@ -96,7 +96,7 @@ This submodule provides a set of useful tools for splitting a text into sentence
 
 .. autoattribute:: flexrag.chunking.sentence_splitter.PREDEFINED_SPLIT_PATTERNS
 
-    A dictionary of predefined sentence splitting patterns. 
+    A dictionary of predefined sentence splitting patterns.
     The keys are the names of the patterns, and the values are the corresponding regular expressions.
     Currently, ``FlexRAG`` provides 2 sets of predefined patterns: "en" for English and "zh" for Chinese.
     Please refer to the source code for more details.

@@ -1,22 +1,27 @@
 import csv
 import json
-from dataclasses import dataclass, field
+from dataclasses import asdict, field
 from glob import glob
+from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import MISSING, OmegaConf
 
 from flexrag.chunking import CHUNKERS, ChunkerConfig
-from flexrag.common_dataclass import Context
 from flexrag.document_parser import DOCUMENTPARSERS, DocumentParserConfig
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
-from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger
+from flexrag.utils import (
+    LOGGER_MANAGER,
+    SimpleProgressLogger,
+    configure,
+    extract_config,
+)
+from flexrag.utils.dataclasses import Context
 
 logger = LOGGER_MANAGER.get_logger("flexrag.entrypoints.prepare_corpus")
 
 
-@dataclass
+@configure
 class Config(DocumentParserConfig, ChunkerConfig, TextProcessPipelineConfig):
     """The configuration for prepare corpus.
     The documents will be parsed by the DocumentParser specified in the config and then chunked by the Chunker.
@@ -28,7 +33,7 @@ class Config(DocumentParserConfig, ChunkerConfig, TextProcessPipelineConfig):
     """
 
     document_paths: list[str] = field(default_factory=list)
-    output_path: str = MISSING
+    output_path: Optional[str] = None
 
 
 cs = ConfigStore.instance()
@@ -43,7 +48,7 @@ class ContextWriter:
         return
 
     def write(self, ctx: Context):
-        ctx = ctx.to_dict()
+        ctx = asdict(ctx)
         ctx.update(ctx.pop("meta_data"))
         ctx.update(ctx.pop("data"))
         match self.save_format:
@@ -74,6 +79,8 @@ class ContextWriter:
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(cfg: Config):
+    cfg = extract_config(cfg, Config)
+    assert cfg.output_path is not None, "output_path must be provided"
     # parse paths
     if isinstance(cfg.document_paths, str):
         document_paths = [cfg.document_paths]

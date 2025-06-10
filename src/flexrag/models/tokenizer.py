@@ -1,12 +1,8 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from functools import partial
-from typing import Optional, Generic, TypeVar
+from typing import Generic, Optional, TypeVar
 
-from omegaconf import MISSING
-
-from flexrag.utils import Register
-
+from flexrag.utils import Register, configure
 
 TokenType = TypeVar("TokenType")
 
@@ -51,7 +47,7 @@ class TokenizerBase(ABC, Generic[TokenType]):
 TOKENIZERS = Register[TokenizerBase]("tokenizer")
 
 
-@dataclass
+@configure
 class HuggingFaceTokenizerConfig:
     """Configuration for HuggingFaceTokenizer.
 
@@ -59,7 +55,7 @@ class HuggingFaceTokenizerConfig:
     :type tokenizer_path: str
     """
 
-    tokenizer_path: str = MISSING
+    tokenizer_path: Optional[str] = None
 
 
 @TOKENIZERS("hf", config_class=HuggingFaceTokenizerConfig)
@@ -69,6 +65,7 @@ class HuggingFaceTokenizer(TokenizerBase[int]):
     def __init__(self, cfg: HuggingFaceTokenizerConfig) -> None:
         from transformers import AutoTokenizer
 
+        assert cfg.tokenizer_path is not None, "`tokenizer_path` must be provided"
         self.tokenizer = AutoTokenizer.from_pretrained(cfg.tokenizer_path)
         return
 
@@ -84,7 +81,7 @@ class HuggingFaceTokenizer(TokenizerBase[int]):
         return True
 
 
-@dataclass
+@configure
 class TikTokenTokenizerConfig:
     """Configuration for TikTokenTokenizer.
 
@@ -127,7 +124,7 @@ class TikTokenTokenizer(TokenizerBase[int]):
         return True
 
 
-@dataclass
+@configure
 class MosesTokenizerConfig:
     """Configuration for MosesTokenizer.
 
@@ -161,7 +158,7 @@ class MosesTokenizer(TokenizerBase[str]):
         return False
 
 
-@dataclass
+@configure
 class NLTKTokenizerConfig:
     """Configuration for NLTKTokenizer.
 
@@ -195,7 +192,7 @@ class NLTKTokenizer(TokenizerBase[str]):
         return False
 
 
-@dataclass
+@configure
 class JiebaTokenizerConfig:
     """Configuration for JiebaTokenizer.
 

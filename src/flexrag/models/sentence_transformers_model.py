@@ -1,17 +1,16 @@
 import math
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Any, Optional
 
 import numpy as np
-from omegaconf import MISSING
 
-from flexrag.utils import TIME_METER
+from flexrag.utils import TIME_METER, configure
 
-from .model_base import ENCODERS, EncoderBase
+from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
 
 
-@dataclass
-class SentenceTransformerEncoderConfig:
+@configure
+class SentenceTransformerEncoderConfig(EncoderBaseConfig):
     """Configuration for SentenceTransformerEncoder.
 
     :param model_path: The path to the model. Required.
@@ -34,7 +33,7 @@ class SentenceTransformerEncoderConfig:
     :type model_kwargs: dict[str, Any]
     """
 
-    model_path: str = MISSING
+    model_path: Optional[str] = None
     device_id: list[int] = field(default_factory=list)
     trust_remote_code: bool = False
     task: Optional[str] = None
@@ -48,10 +47,11 @@ class SentenceTransformerEncoderConfig:
 @ENCODERS("sentence_transformer", config_class=SentenceTransformerEncoderConfig)
 class SentenceTransformerEncoder(EncoderBase):
     def __init__(self, config: SentenceTransformerEncoderConfig) -> None:
-        super().__init__()
+        super().__init__(config)
         from sentence_transformers import SentenceTransformer
 
         self.devices = config.device_id
+        assert config.model_path is not None, "`model_path` must be provided"
         self.model = SentenceTransformer(
             model_name_or_path=config.model_path,
             device=f"cuda:{config.device_id[0]}" if config.device_id else "cpu",

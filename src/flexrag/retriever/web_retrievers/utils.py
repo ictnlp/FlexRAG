@@ -1,8 +1,10 @@
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Any, Optional
 
+from flexrag.utils import data
 
-@dataclass
+
+@data
 class WebResource:
     """The web resource dataclass.
     ``WebResource`` is the fundamental component for information transmission in the ``web_retrievers`` module of FlexRAG.

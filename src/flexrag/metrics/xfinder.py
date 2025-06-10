@@ -1,18 +1,19 @@
-from dataclasses import dataclass, field
+from dataclasses import field
+from typing import Annotated
 
-from flexrag.utils import TIME_METER, Choices
+from flexrag.utils import TIME_METER, Choices, configure
 
-from .xfinder_utils import Evaluator
 from .metrics_base import METRICS, MetricsBase
+from .xfinder_utils import Evaluator
 
 
-@dataclass
+@configure
 class xFinderConfig:
-    model_type: Choices(["qwen", "llama"]) = "qwen"  # type: ignore
+    model_type: Annotated[str, Choices("qwen", "llama")] = "qwen"
     model_path: str = "IAAR-Shanghai/xFinder-qwen1505"
-    answer_type: Choices(  # type: ignore
-        ["math", "short_text", "categorical_label", "alphabet_option"]
-    ) = "short_text"
+    answer_type: Annotated[
+        str, Choices("math", "short_text", "categorical_label", "alphabet_option")
+    ] = "short_text"
     temperature: float = 0.7
     max_tokens: int = 100
     device_id: list[int] = field(default_factory=list)

@@ -1,22 +1,20 @@
 import asyncio
 import logging
 import os
-from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import httpx
-from concurrent.futures import ThreadPoolExecutor
-from omegaconf import MISSING
 
 from flexrag.prompt import ChatPrompt
-from flexrag.utils import TIME_METER, LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, configure
 
-from .model_base import GenerationConfig, GeneratorBase, GENERATORS
+from .model_base import GENERATORS, GenerationConfig, GeneratorBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.anthropic")
 
 
-@dataclass
+@configure
 class AnthropicGeneratorConfig:
     """Configuration for AnthropicGenerator.
 
@@ -34,7 +32,7 @@ class AnthropicGeneratorConfig:
     :type allow_parallel: bool
     """
 
-    model_name: str = MISSING
+    model_name: Optional[str] = None
     base_url: Optional[str] = None
     api_key: str = os.environ.get("ANTHROPIC_API_KEY", "EMPTY")
     verbose: bool = False
@@ -58,6 +56,7 @@ class AnthropicGenerator(GeneratorBase):
             base_url=cfg.base_url,
             http_client=client,
         )
+        assert cfg.model_name is not None, "model_name must be provided"
         self.model_name = cfg.model_name
         self.allow_parallel = cfg.allow_parallel
         if not cfg.verbose:

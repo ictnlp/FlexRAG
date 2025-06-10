@@ -1,24 +1,23 @@
 import os
 import re
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Optional
 
 import httpx
-from omegaconf import MISSING
 
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.utils import Register
+from flexrag.utils import Register, configure
+from flexrag.utils.configure import extract_config
+from flexrag.utils.dataclasses import RetrievedContext
 
+from .utils import WebResource
 from .web_downloader import (
     WEB_DOWNLOADERS,
     PlaywrightWebDownloader,
     PlaywrightWebDownloaderConfig,
     WebDownloaderConfig,
 )
-from .utils import WebResource
 
 
 class WebReaderBase(ABC):
@@ -48,7 +47,7 @@ class WebReaderBase(ABC):
 WEB_READERS = Register[WebReaderBase]("web_reader")
 
 
-@dataclass
+@configure
 class JinaReaderLMConfig(GeneratorConfig, WebDownloaderConfig, GenerationConfig):
     """The configuration for the ``JinaReaderLM``.
 
@@ -84,7 +83,7 @@ class JinaReaderLM(WebReaderBase):
     def __init__(self, cfg: JinaReaderLMConfig):
         self.reader = GENERATORS.load(cfg)
         self.downloader = WEB_DOWNLOADERS.load(cfg)
-        self.cfg = cfg
+        self.cfg = extract_config(cfg, JinaReaderLMConfig)
         if self.cfg.use_v2_prompt:
             self.template = (
                 "Extract the main content from the given HTML and convert it to Markdown format."
@@ -205,20 +204,22 @@ class JinaReaderLM(WebReaderBase):
         return html
 
 
-@dataclass
+@configure
 class JinaReaderConfig:
     """The configuration for the ``JinaReader``.
 
     :param base_url: The base URL of the Jina Reader API. Default is "https://r.jina.ai".
     :type base_url: str
-    :param api_key: The API key for the Jina Reader API. Default is os.environ.get("JINA_API_KEY", MISSING).
+    :param api_key: The API key for the Jina Reader API.
+        If not provided, it will use the environment variable `JINA_API_KEY`.
+        Defaults to None.
     :type api_key: str
     :param proxy: The proxy to use. Defaults to None.
     :type proxy: Optional[str]
     """
 
     base_url: str = "https://r.jina.ai"
-    api_key: str = os.environ.get("JINA_API_KEY", MISSING)
+    api_key: Optional[str] = None
     proxy: Optional[str] = None
 
 
@@ -227,9 +228,15 @@ class JinaReader(WebReaderBase):
     """The JinaReader parse the web pages using the Jina Reader API."""
 
     def __init__(self, cfg: JinaReaderConfig):
+        api_key = cfg.api_key or os.getenv("JINA_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "API key for Jina Reader is not provided. "
+                "Please set it in the configuration or as an environment variable 'JINA_API_KEY'."
+            )
         self.client = httpx.Client(
             base_url=cfg.base_url,
-            headers={"Authorization": f"Bearer {cfg.api_key}"},
+            headers={"Authorization": f"Bearer {api_key}"},
             proxy=cfg.proxy,
             follow_redirects=True,
         )
@@ -281,7 +288,7 @@ class SnippetWebReader(WebReaderBase):
         return ["snippet"]
 
 
-@dataclass
+@configure
 class ScreenshotWebReaderConfig(PlaywrightWebDownloaderConfig):
     """The configuration for the ``ScreenshotWebReader``."""
 

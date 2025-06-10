@@ -1,18 +1,15 @@
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
-import PIL.Image
 import gradio as gr
 import hydra
 import PIL
+import PIL.Image
 from hydra.core.config_store import ConfigStore
-from omegaconf import OmegaConf
 
 from flexrag.assistant import ASSISTANTS
-from flexrag.utils import load_user_module, LOGGER_MANAGER
-
+from flexrag.utils import LOGGER_MANAGER, configure, extract_config, load_user_module
 
 # load user modules before loading config
 for arg in sys.argv:
@@ -21,10 +18,10 @@ for arg in sys.argv:
         sys.argv.remove(arg)
 
 
-AssistantConfig = ASSISTANTS.make_config()
+AssistantConfig = ASSISTANTS.make_config(config_name="AssistantConfig")
 
 
-@dataclass
+@configure
 class Config(AssistantConfig):
     share: bool = False
     server_name: str = "127.0.0.1"
@@ -51,6 +48,8 @@ user_path = Path(__file__).parents[0] / "assets" / "user.png"
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(config: Config):
+    config = extract_config(config, Config)
+    logger.debug(f"Configs:\n{config.dumps()}")
     # load assistant
     assistant = ASSISTANTS.load(config)
 

@@ -26,10 +26,10 @@ If you wish to develop your project by modifying the FlexRAG source code, all re
 To register a new component, simply decorate the component class with the corresponding register. For example, to register a new `Assistant` component, you can use the `ASSISTANTS` register as shown below:
 
 ```python
-from dataclasses import dataclass
 from flexrag.assistant import AssistantBase, ASSISTANTS
+from flexrag.utils import configure
 
-@dataclass
+@configure
 class MyAssistantConfig:
     # Define your assistant configuration here
     pass
@@ -55,9 +55,10 @@ AssistantConfig = ASSISTANTS.make_config()
 The generated `AssistantConfig` class will have the following structure:
 
 ```python
-from dataclasses import dataclass
+# configure is a special decorator that helps to define the configuration dataclass in FlexRAG
+from flexrag.utils import configure
 
-@dataclass
+@configure
 class AssistantConfig:
     # The shortname of the assistant
     assistant_type: str

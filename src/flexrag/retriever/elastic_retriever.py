@@ -1,19 +1,23 @@
 import logging
-from dataclasses import dataclass
 from typing import Iterable, Optional
 
-from omegaconf import MISSING
 from elasticsearch import Elasticsearch
 
-from flexrag.common_dataclass import Context, RetrievedContext
-from flexrag.utils import SimpleProgressLogger, LOGGER_MANAGER, TIME_METER
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, configure
+from flexrag.utils.configure import extract_config
+from flexrag.utils.dataclasses import Context, RetrievedContext
 
-from .retriever_base import RETRIEVERS, EditableRetriever, EditableRetrieverConfig
+from .retriever_base import (
+    RETRIEVERS,
+    EditableRetriever,
+    EditableRetrieverConfig,
+    batched_cache,
+)
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.elastic")
 
 
-@dataclass
+@configure
 class ElasticRetrieverConfig(EditableRetrieverConfig):
     """Configuration class for ElasticRetriever.
 
@@ -35,7 +39,7 @@ class ElasticRetrieverConfig(EditableRetrieverConfig):
 
     host: str = "http://localhost:9200"
     api_key: Optional[str] = None
-    index_name: str = MISSING
+    index_name: Optional[str] = None
     custom_properties: Optional[dict] = None
     verbose: bool = False
     retry_times: int = 3
@@ -48,9 +52,11 @@ class ElasticRetriever(EditableRetriever):
 
     def __init__(self, cfg: ElasticRetrieverConfig) -> None:
         super().__init__(cfg)
+        self.cfg = extract_config(cfg, ElasticRetrieverConfig)
         # set basic args
         self.host = cfg.host
         self.api_key = cfg.api_key
+        assert cfg.index_name is not None, "`index_name` must be provided"
         self.index_name = cfg.index_name
         self.verbose = cfg.verbose
         self.retry_times = cfg.retry_times
@@ -112,14 +118,14 @@ class ElasticRetriever(EditableRetriever):
                 }
                 actions.append(action)
                 actions.append(passage.data)
-                if len(actions) == self.batch_size * 2:
+                if len(actions) == self.cfg.batch_size * 2:
                     yield actions
                     actions = []
             if actions:
                 yield actions
             return
 
-        p_logger = SimpleProgressLogger(logger, interval=self.log_interval)
+        p_logger = SimpleProgressLogger(logger, interval=self.cfg.log_interval)
         for actions in generate_actions():
             r = self.client.bulk(
                 operations=actions,
@@ -137,7 +143,8 @@ class ElasticRetriever(EditableRetriever):
         return
 
     @TIME_METER("elastic_search", "search")
-    def search_batch(
+    @batched_cache
+    def search(
         self,
         query: list[str],
         search_method: str = "full_text",
@@ -164,7 +171,7 @@ class ElasticRetriever(EditableRetriever):
                             "fields": self.fields,
                         },
                     },
-                    "size": search_kwargs.pop("top_k", self.top_k),
+                    "size": search_kwargs.pop("top_k", self.cfg.top_k),
                 }
             )
 
@@ -172,7 +179,7 @@ class ElasticRetriever(EditableRetriever):
         responses = self.client.msearch(body=body, **search_kwargs)["responses"]
         return self._form_results(query, responses)
 
-    def clean(self) -> None:
+    def clear(self) -> None:
         if self.index_name in self.indices:
             self.client.indices.delete(index=self.index_name)
         return

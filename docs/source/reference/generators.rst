@@ -34,17 +34,6 @@ Local Generators
     :exclude-members: async_chat, async_generate, chat, generate
 
 
-.. Llamacpp Generators
-.. autoclass:: flexrag.models.LlamacppGeneratorConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.models.LlamacppGenerator
-    :members:
-    :show-inheritance:
-    :exclude-members: async_chat, async_generate, chat, generate
-
-
 .. Ollama Generators
 .. autoclass:: flexrag.models.OllamaGeneratorConfig
     :members:

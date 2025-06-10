@@ -1,8 +1,7 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from functools import partial
 
-from flexrag.utils import Register
+from flexrag.utils import Register, configure
 
 
 class SentenceSplitterBase(ABC):
@@ -33,7 +32,7 @@ class SentenceSplitterBase(ABC):
 SENTENCE_SPLITTERS = Register[SentenceSplitterBase]("sentence_splitter")
 
 
-@dataclass
+@configure
 class NLTKSentenceSplitterConfig:
     """Configuration for NLTKSentenceSplitter.
 
@@ -86,7 +85,7 @@ PREDEFINED_SPLIT_PATTERNS = {
 }
 
 
-@dataclass
+@configure
 class RegexSplitterConfig:
     """Configuration for RegexSentenceSplitter.
 
@@ -123,7 +122,7 @@ class RegexSplitter(SentenceSplitterBase):
         return True
 
 
-@dataclass
+@configure
 class SpacySentenceSplitterConfig:
     """Configuration for SpacySentenceSplitter.
 

@@ -1,10 +1,10 @@
-from dataclasses import dataclass
+from typing import Annotated
 
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import GENERATORS, GeneratorBase, GeneratorConfig
-from flexrag.utils import TIME_METER, Choices
+from flexrag.utils import TIME_METER, Choices, configure
+from flexrag.utils.dataclasses import RetrievedContext
 
-from .dense_retriever import DenseRetriever, DenseRetrieverConfig
+from .flex_retriever import FlexRetriever, FlexRetrieverConfig
 from .retriever_base import RETRIEVERS
 
 
@@ -26,6 +26,7 @@ class HydeRewriter:
         self.generator = generator
         return
 
+    @TIME_METER("hyde_retriever", "rewrite")
     def rewrite(self, queries: list[str] | str) -> list[str]:
         if isinstance(queries, str):
             queries = [queries]
@@ -34,8 +35,8 @@ class HydeRewriter:
         return new_queries
 
 
-@dataclass
-class HydeRetrieverConfig(DenseRetrieverConfig, GeneratorConfig):
+@configure
+class HydeRetrieverConfig(FlexRetrieverConfig, GeneratorConfig):
     """Configuration class for HydeRetriever.
 
     :param task: Task for rewriting the query. Default: "WEB_SEARCH".
@@ -45,12 +46,12 @@ class HydeRetrieverConfig(DenseRetrieverConfig, GeneratorConfig):
     :type language: str
     """
 
-    task: Choices(HydeRewriter.Prompts.keys()) = "WEB_SEARCH"  # type: ignore
+    task: Annotated[str, Choices(*HydeRewriter.Prompts.keys())] = "WEB_SEARCH"
     language: str = "en"
 
 
 @RETRIEVERS("hyde", config_class=HydeRetrieverConfig)
-class HydeRetriever(DenseRetriever):
+class HydeRetriever(FlexRetriever):
     """HydeRetriever is a retriever that rewrites the query before searching.
 
     The original paper is available at https://aclanthology.org/2023.acl-long.99/.
@@ -64,11 +65,10 @@ class HydeRetriever(DenseRetriever):
         )
         return
 
-    @TIME_METER("hyde_retriever", "search")
-    def search_batch(
+    def search(
         self,
         query: list[str],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         new_query = self.rewriter.rewrite(query)
-        return super().search_batch(new_query, **search_kwargs)
+        return super().search(new_query, **search_kwargs)

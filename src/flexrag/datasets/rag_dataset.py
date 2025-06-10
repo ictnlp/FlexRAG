@@ -1,9 +1,9 @@
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Iterator, Optional
 
-from flexrag.common_dataclass import Context, RAGEvalData
 from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
-from flexrag.utils import LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, configure, data
+from flexrag.utils.dataclasses import Context
 
 from .hf_dataset import HFDataset, HFDatasetConfig
 from .line_delimited_dataset import LineDelimitedDataset, LineDelimitedDatasetConfig
@@ -11,7 +11,70 @@ from .line_delimited_dataset import LineDelimitedDataset, LineDelimitedDatasetCo
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.rag_dataset")
 
 
-@dataclass
+@data
+class RAGEvalData:
+    """The dataclass for konwledge intensive QA task.
+
+    :param question: The question for evaluation. Required.
+    :type question: str
+    :param golden_contexts: The contexts related to the question. Default: None.
+    :type golden_contexts: Optional[list[Context]]
+    :param golden_answers: The golden answers for the question. Default: None.
+    :type golden_answers: Optional[list[str]]
+    :param meta_data: The metadata of the evaluation data. Default: {}.
+    :type meta_data: dict
+    """
+
+    question: str
+    golden_contexts: Optional[list[Context]] = None
+    golden_answers: Optional[list[str]] = None
+    meta_data: dict = field(default_factory=dict)
+
+
+@data
+class RAGMultipleChoiceData:
+    """The dataclass for multiple choice task.
+
+    :param question: The question for evaluation. Required.
+    :type question: str
+    :param options: The options for the question. Required.
+    :type options: list[str]
+    :param golden_option: The golden option for the question. Default: None.
+    :type golden_option: Optional[list[int]]
+    :param golden_contexts: The contexts related to the question. Default: None.
+    :type golden_contexts: Optional[list[Context]]
+    :param meta_data: The metadata of the evaluation data. Default: {}.
+    :type meta_data: dict
+    """
+
+    question: str
+    options: list[str]
+    golden_options: Optional[list[int]] = None
+    golden_contexts: Optional[list[Context]] = None
+    meta_data: dict = field(default_factory=dict)
+
+
+@data
+class RAGTrueFalseData:
+    """The dataclass for true/false task.
+
+    :param question: The question for evaluation. Required.
+    :type question: str
+    :param golden_contexts: The contexts related to the question. Default: None.
+    :type golden_contexts: Optional[list[Context]]
+    :param golden_answer: The golden answer for the question. Default: None.
+    :type golden_answer: Optional[bool]
+    :param meta_data: The metadata of the evaluation data. Default: {}.
+    :type meta_data: dict
+    """
+
+    question: str
+    golden_contexts: Optional[list[Context]] = None
+    golden_answer: Optional[bool] = None
+    meta_data: dict = field(default_factory=dict)
+
+
+@configure
 class RAGEvalDatasetConfig(HFDatasetConfig):
     """The configuration for ``RAGEvalDataset``.
     This dataset helps to load the evaluation dataset collected by `FlashRAG <https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets>`_.
@@ -96,7 +159,7 @@ class RAGEvalDataset(HFDataset):
         super().__init__(cfg)
         return
 
-    def __getitem__(self, index: int) -> RAGEvalData:
+    def __getitem__(self, index: int) -> RAGEvalData | RAGMultipleChoiceData:
         data = super().__getitem__(index)
         golden_contexts = data.pop("golden_contexts", None)
         golden_contexts = (
@@ -104,20 +167,30 @@ class RAGEvalDataset(HFDataset):
             if golden_contexts is not None
             else None
         )
-        formatted_data = RAGEvalData(
-            question=data.pop("question"),
-            golden_contexts=golden_contexts,
-            golden_answers=data.pop("golden_answers", None),
-        )
+        # multiple choice data
+        if "choices" in data:
+            formatted_data = RAGMultipleChoiceData(
+                question=data.pop("question"),
+                options=data.pop("choices"),
+                golden_options=data.pop("golden_answers", None),
+                golden_contexts=golden_contexts,
+            )
+        # knowledge intensive qa data
+        else:
+            formatted_data = RAGEvalData(
+                question=data.pop("question"),
+                golden_contexts=golden_contexts,
+                golden_answers=data.pop("golden_answers", None),
+            )
         formatted_data.meta_data = data.pop("meta_data", {})
         formatted_data.meta_data.update(data)
         return formatted_data
 
-    def __iter__(self) -> Iterator[RAGEvalData]:
+    def __iter__(self) -> Iterator[RAGEvalData | RAGMultipleChoiceData]:
         yield from super().__iter__()
 
 
-@dataclass
+@configure
 class RAGCorpusDatasetConfig(LineDelimitedDatasetConfig):
     """The configuration for ``RAGCorpusDataset``.
     This dataset helps to load the pre-processed corpus data for RAG retrieval.

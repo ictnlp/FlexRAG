@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"POT-Creation-Date: 2025-06-10 14:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -21,50 +21,74 @@ msgstr ""
 "Generated-By: Babel 2.16.0\n"
 
 #: ../../source/reference/document_parser.rst:2
-#: f5192c1f7fdb435c93337dc462ddfea2
+#: 41ec2bcdcda54bbf98dbd8822c7e844e
 msgid "Document Parser"
 msgstr ""
 
 #: ../../source/reference/document_parser.rst:3
-#: a800ad80627a4cc197c8f82929ee88a3
+#: aa32c1f2b80d4218b65be43cc0c03f42
 msgid ""
 "This module provides a set of classes and functions for parsing a "
 "formated document (such as PDF, Word, etc.) into a structured format."
 msgstr ""
 
-#: 9054257c79d94d72b8201d4dd3b6aed3
+#: 0e37b4689dae4dbeaa512f6fb41edd93
 #: flexrag.document_parser.document_parser_base.Document:1 of
 msgid "A document parsed by a DocumentParser."
 msgstr ""
 
-#: 48bb0cf6c9fb48a89550231171ea40bb
+#: 9ee04f7ceb2e4b5e8222d8345d445475 b2d70154c25f45d9bc79a677677c04c7
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dump:1
+#: of
+msgid "Dump the dataclass to a YAML file."
+msgstr ""
+
+#: 248be56c84fc4e32ae13dde78b514b11 538e5c0c94bd4b5c88e7d7bc2bbb6e57
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dumps:1
+#: of
+msgid "Dump the dataclass to a YAML string."
+msgstr ""
+
+#: c704b39ef3d24e52acc5c791dcdb56b0 fd1536e7b21d414da105df68d39cea6a
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.load:1
+#: of
+msgid "Load the dataclass from a YAML file."
+msgstr ""
+
+#: 9aa05ce5559a47d3b33018565165195c fb44f481ddd14d0d97d7c2dadadd8b43
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.loads:1
+#: of
+msgid "Load the dataclass from a YAML string."
+msgstr ""
+
+#: 5fc9f3b975df41ebadce32f952833b1b
 #: flexrag.document_parser.document_parser_base.DocumentParserBase.parse:1 of
 msgid "Parse the document at the given path."
 msgstr ""
 
-#: ../../source/reference/document_parser.rst 054f7ec99e0c4dbc94b396574d62f3ee
+#: ../../source/reference/document_parser.rst 06a832fe997d4657877fd1cab5e152aa
 msgid "Parameters"
 msgstr ""
 
-#: 3fb9e3c019b84636b78dbf15fa78adcb
+#: 5b08fe034ef145b0b29f6e6a59d0c3b5
 #: flexrag.document_parser.document_parser_base.DocumentParserBase.parse:3 of
 msgid "The path to the document to parse."
 msgstr ""
 
-#: ../../source/reference/document_parser.rst 13ada7ac5c144e8e859b78bd0b28273a
+#: ../../source/reference/document_parser.rst a28e0be857d644ffb18d1d6af2fa4b92
 msgid "Returns"
 msgstr ""
 
-#: 6b907db4872841a6bfa98da0f6f6d29e
+#: b47ebaeb150844a5b1219eced741ece4
 #: flexrag.document_parser.document_parser_base.DocumentParserBase.parse:5 of
 msgid "The parsed document."
 msgstr ""
 
-#: ../../source/reference/document_parser.rst 91a749f7d3d44ff08e7cfee65cc270e3
+#: ../../source/reference/document_parser.rst f70999cd675544b9bc5baaa5164a5fa7
 msgid "Return type"
 msgstr ""
 
-#: 88cffbd67e54483e930e18ef9389d0f4 d65e8fd3edb54480a8172de2bc088151
+#: 6f4deeefab374d08a0752c378c4f45d8 7d88e32636db4751a5b79a31c88b612e
 #: flexrag.document_parser.docling_parser.DoclingParser:1
 #: flexrag.document_parser.markitdown_parser.MarkItDownParser:1 of
 msgid ""

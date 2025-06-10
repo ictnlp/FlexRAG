@@ -1,13 +1,13 @@
 import random as rd
-from dataclasses import dataclass
+from typing import Annotated
 
-from flexrag.common_dataclass import RetrievedContext
-from flexrag.utils import Choices, TIME_METER
+from flexrag.utils import TIME_METER, Choices, configure
+from flexrag.utils.dataclasses import RetrievedContext
 
 from .refiner import REFINERS, RefinerBase
 
 
-@dataclass
+@configure
 class ContextArrangerConfig:
     """The configuration for the ``ContextArranger``.
 
@@ -16,7 +16,9 @@ class ContextArrangerConfig:
     :type order: str
     """
 
-    order: Choices(["ascending", "descending", "side", "random"]) = "ascending"  # type: ignore
+    order: Annotated[str, Choices("ascending", "descending", "side", "random")] = (
+        "ascending"
+    )
 
 
 @REFINERS("context_arranger", config_class=ContextArrangerConfig)

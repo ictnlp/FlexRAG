@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"POT-Creation-Date: 2025-06-10 14:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -20,11 +20,11 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.16.0\n"
 
-#: ../../source/reference/assistant.rst:2 e17f3045af884aa7ad46dc0f93b68d04
+#: ../../source/reference/assistant.rst:2 661d934870f24256bdf96730e34414df
 msgid "Assistant"
 msgstr ""
 
-#: ../../source/reference/assistant.rst:4 be556a2887c64c3aa0637fd924b6f381
+#: ../../source/reference/assistant.rst:4 7cbffda5a8af4748880ac7d8baf4c252
 msgid ""
 "The ``Assistant`` class serves as an abstraction for Retrieval-Augmented "
 "Generation (RAG) behavior. It takes the user's query as input and returns"
@@ -34,11 +34,11 @@ msgid ""
 "assistant generates the response based on the retrieved information."
 msgstr ""
 
-#: ../../source/reference/assistant.rst:7 3b8cb7f241144d53b0b9e0de9dd7b117
+#: ../../source/reference/assistant.rst:7 d85f51bba7f2477daea9d797704c6d25
 msgid "The Assistant Interface"
 msgstr ""
 
-#: ../../source/reference/assistant.rst:8 95741b0ee1d44bec99a06858ec670cd7
+#: ../../source/reference/assistant.rst:8 e43dc22f0f2240acbabaf01d940a5db3
 msgid ""
 "``AssistantBase`` is the base class for all assistants. It provides a "
 "simple interface for answering a user query. The answering process is "
@@ -46,26 +46,27 @@ msgid ""
 "constructor."
 msgstr ""
 
-#: 0d29b39fa96041c58a154b42e7df9a12
+#: 9a775ce9b5ce4feaacefefd11640b675
 #: flexrag.assistant.assistant.AssistantBase.answer:1 of
 msgid "Answer the given question."
 msgstr ""
 
-#: ../../source/reference/assistant.rst 19c2beda2b004b0e93480e2d556f850d
-#: d59fad102a3046a690dbe1673be1c243 f4e1971f6521467c9507a129697ebb34
+#: ../../source/reference/assistant.rst 30993dca77cf4556a7fee7fc3c346fa9
+#: 56be8b695eba483c8f6a284a578f1e32 5a5a804289104b5ba5a9a2c4e85184b7
+#: e1c9c6d921374dd9b42d0dc72987a5ab
 msgid "Parameters"
 msgstr ""
 
-#: 9f0b2d32d1f744ec878807aa705724a1
+#: 916f84ee0ee14ce7a852f98915e07b3d
 #: flexrag.assistant.assistant.AssistantBase.answer:3 of
 msgid "The question to answer."
 msgstr ""
 
-#: ../../source/reference/assistant.rst 3486327480e346fea1968b68513ed9fb
+#: ../../source/reference/assistant.rst 63dd62fca25c4db99aa47adcd2d52d10
 msgid "Returns"
 msgstr ""
 
-#: 19356d0ca5744851a08d15e38391b399
+#: a4e8126b6808413db11a4512b082690f
 #: flexrag.assistant.assistant.AssistantBase.answer:5 of
 msgid ""
 "A tuple containing the following elements: - The response to the "
@@ -73,15 +74,55 @@ msgid ""
 "the assistant."
 msgstr ""
 
-#: ../../source/reference/assistant.rst 5ff4b50d21434746b1c045a54cec5af4
+#: ../../source/reference/assistant.rst 4c47dbfe8b6b4b9f8da2e020f083da61
 msgid "Return type"
 msgstr ""
 
-#: ../../source/reference/assistant.rst:15 4cedb25e3b424b0fa51ac60924355ae8
+#: 2c17886e45e84e2ea0025c316c8d2edd of types.AssistantConfig:1
+msgid "Bases: :py:class:`object`"
+msgstr ""
+
+#: 108fcea77cc54563992f1b619cb7c4c2 of types.AssistantConfig:1
+msgid "Configuration class for assistant (name: AssistantConfig, default: None)."
+msgstr ""
+
+#: 127b960d429c414286435f5d768d9949 of types.AssistantConfig:3
+msgid "The assistant type to use."
+msgstr ""
+
+#: 57a378a9ef3e4a558bc59a778e3bba2c of types.AssistantConfig:5
+msgid "The config for BasicAssistant."
+msgstr ""
+
+#: 7bc694f0f388400a8cf84543d4030449 of types.AssistantConfig:7
+msgid "The config for ModularAssistant."
+msgstr ""
+
+#: e7ed190487d94123b67825ae00158d61 of types.AssistantConfig:9
+msgid "The config for ChatQAAssistant."
+msgstr ""
+
+#: 39303392ae2c4abf8d0e51eaa71a6df0 of types.AssistantConfig:11
+msgid "The config for JinaDeepSearch."
+msgstr ""
+
+#: 1be06a284b8e4877b4feb15d50e6fc41 of types.AssistantConfig:13
+msgid "The config for PerplexityAssistant."
+msgstr ""
+
+#: ../../source/reference/assistant.rst:18 cddfab7f1fcd4e6dafe4a551a6f9f78c
+msgid ""
+"AssistantConfig is the general configuration for all registered "
+"Assistant. You can load any Assistant by specifying the "
+"``assistant_type`` in the configuration. For example, to load the "
+"``BasicAssistant``, you can use the following configuration:"
+msgstr ""
+
+#: ../../source/reference/assistant.rst:41 a5347f8109524a5bb105b64c4e67bdd8
 msgid "FlexRAG Assistants"
 msgstr ""
 
-#: ../../source/reference/assistant.rst:16 90937ab234874f59a1198624159b1403
+#: ../../source/reference/assistant.rst:42 3a56b893cb044c99a37b549e414f32be
 msgid ""
 "FlexRAG provides several assistant implementations that can be used out "
 "of the box. These implementations are designed to be flexible and "
@@ -89,42 +130,66 @@ msgid ""
 "providing their own retrieval and generation components."
 msgstr ""
 
-#: 7436893f0d2747e9a7888703a42ca65f
+#: cc979d9dd89d414ca7756ae2aa5f9799
 #: flexrag.assistant.basic_assistant.BasicAssistantConfig:1 of
 msgid ""
 "Bases: :py:class:`~types.GeneratorConfig`, "
 ":py:class:`~flexrag.models.model_base.GenerationConfig`"
 msgstr ""
 
-#: ee3776f0a1244f5281058141fbea3509
+#: ccf9fff57c504f5394b1c0901c69a81c
 #: flexrag.assistant.basic_assistant.BasicAssistantConfig:1 of
 msgid "The configuration for the basic assistant."
 msgstr ""
 
-#: 2180b158b3564cbaa00ca04ea1d52a7c
+#: 1f21168843c0489c9138e71e3daf885f
 #: flexrag.assistant.basic_assistant.BasicAssistantConfig:3 of
 msgid "The path to the prompt file. Defaults to None."
 msgstr ""
 
-#: ae1be8a5de3b4260aea2289effbef9ff
+#: 9fcd4d22a8544b83af570fdc703372c8
 #: flexrag.assistant.basic_assistant.BasicAssistantConfig:5 of
 msgid ""
 "Whether to save the chat history for multi-turn conversation. Defaults to"
 " False."
 msgstr ""
 
-#: 75f169d46c804aa9b6bdccf63fcf7ef0 bd3ea406d23641229cd7b3d50c690d19
+#: 31ab0aa2e9bb4dd5a16abd9a58a6c38e 99f969e18cf94533af13b4816ca16f8c
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dump:1
+#: of
+msgid "Dump the dataclass to a YAML file."
+msgstr ""
+
+#: c08b051d94794d80bbd5a61cc4a72b5f cd7ee956e2c84ad4b4290b9b169dda87
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dumps:1
+#: of
+msgid "Dump the dataclass to a YAML string."
+msgstr ""
+
+#: 233f0f8cf3e04048a03ec22cd396d2b1 eaa88726dbcd4234802f952925df455f
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.load:1
+#: of
+msgid "Load the dataclass from a YAML file."
+msgstr ""
+
+#: 14e106436675479bacd32256097dc328 408f0848be1e4cd3a58409cdc5107f32
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.loads:1
+#: of
+msgid "Load the dataclass from a YAML string."
+msgstr ""
+
+#: 30307bd7b5284aa885f4abd5d0ba3606 e6fff550e1f64fc69dcd699e748d2198
 #: flexrag.assistant.basic_assistant.BasicAssistant:1
 #: flexrag.assistant.modular_rag_assistant.ModularAssistant:1 of
 msgid "Bases: :py:class:`~flexrag.assistant.assistant.AssistantBase`"
 msgstr ""
 
-#: fff98f1712a946e3aaff453aae75cb88
+#: 0b92a604a51b4fcab666f13ce8c74626
 #: flexrag.assistant.basic_assistant.BasicAssistant:1 of
 msgid "A basic assistant that generates response without retrieval."
 msgstr ""
 
-#: 510719e20094448fb7e764a9b52c868c
+#: 5033e965f4b54638a9a36bc34b32604e
 #: flexrag.assistant.modular_rag_assistant.ModularAssistantConfig:1 of
 msgid ""
 "Bases: :py:class:`~types.GeneratorConfig`, "
@@ -133,50 +198,50 @@ msgid ""
 ":py:class:`~types.RefinerConfig`"
 msgstr ""
 
-#: 7db23dc224434959a01efa964236a952
+#: 76d0d8ec91f2493db60023f69413f0fc
 #: flexrag.assistant.modular_rag_assistant.ModularAssistantConfig:1 of
 msgid "The configuration for the modular assistant."
 msgstr ""
 
-#: fd921dd4505d4e318c8b88cf66d85660
+#: edbaad6d3fd94a15a914c9a1a5f7219e
 #: flexrag.assistant.modular_rag_assistant.ModularAssistantConfig:3 of
 msgid ""
 "The type of response to generate. Defaults to \"short\". Available "
 "options are: \"short\", \"long\", \"original\", \"custom\"."
 msgstr ""
 
-#: 07be9ae5c7c243619c50a7fd3a399a93
+#: a529e4b087514154b586eb85c1801b62
 #: flexrag.assistant.modular_rag_assistant.ModularAssistantConfig:6 of
 msgid "The path to the prompt file for response with context. Defaults to None."
 msgstr ""
 
-#: c2e5e34ff7ad47e493eb4edab21e4a71
+#: d33986f538b5428b8593036e07497f79
 #: flexrag.assistant.modular_rag_assistant.ModularAssistantConfig:8 of
 msgid ""
 "The path to the prompt file for response without context. Defaults to "
 "None."
 msgstr ""
 
-#: 8d81e845c1cb421b996a03f5e09cdfb5
+#: 96a55f64c0dc48ac83d3a0660d71b650
 #: flexrag.assistant.modular_rag_assistant.ModularAssistantConfig:10 of
 msgid "The fields to use in the context. Defaults to []."
 msgstr ""
 
-#: 72cec84035304a2b8ee25113f4bda6cb
+#: ed552e4784e7489e8d72aef63301376a
 #: flexrag.assistant.modular_rag_assistant.ModularAssistant:1 of
 msgid ""
 "The modular RAG assistant that supports retrieval, reranking, and "
 "generation."
 msgstr ""
 
-#: a0c94d78182e48d182baca37b6036585
+#: 73b2da2f9ed74bcb83c19e770f03e929
 #: flexrag.assistant.chatqa_assistant.ChatQAAssistant:1 of
 msgid ""
 "Bases: "
 ":py:class:`~flexrag.assistant.modular_rag_assistant.ModularAssistant`"
 msgstr ""
 
-#: fde8f4d6e3104ffd802e9917edab00e4
+#: b3edc15cd71440f1bae1626f89070316
 #: flexrag.assistant.chatqa_assistant.ChatQAAssistant:1 of
 msgid ""
 "The Modular assistant that employs the ChatQA model for response "

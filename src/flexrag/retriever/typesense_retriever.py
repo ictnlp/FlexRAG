@@ -1,21 +1,25 @@
-from dataclasses import dataclass
-from typing import Generator, Iterable
+from typing import Annotated, Generator, Iterable, Optional
 
-from omegaconf import MISSING
-
-from flexrag.common_dataclass import Context, RetrievedContext
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, SimpleProgressLogger
+from flexrag.utils import (
+    LOGGER_MANAGER,
+    TIME_METER,
+    Choices,
+    SimpleProgressLogger,
+    configure,
+)
+from flexrag.utils.configure import extract_config
+from flexrag.utils.dataclasses import Context, RetrievedContext
 
 from .retriever_base import RETRIEVERS, EditableRetriever, EditableRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.typesense")
 
 
-@dataclass
+@configure
 class TypesenseRetrieverConfig(EditableRetrieverConfig):
     """Configuration class for TypesenseRetriever.
 
-    :param host: Host of the Typesense server. Required.
+    :param host: Host of the Typesense server. Default: "localhost".
     :type host: str
     :param port: Port of the Typesense server. Default: 8108.
     :type port: int
@@ -30,23 +34,25 @@ class TypesenseRetrieverConfig(EditableRetrieverConfig):
     :type timeout: float
     """
 
-    host: str = MISSING
+    host: str = "localhost"
     port: int = 8108
-    protocol: Choices(["https", "http"]) = "http"  # type: ignore
-    api_key: str = MISSING
-    index_name: str = MISSING
+    protocol: Annotated[str, Choices("https", "http")] = "http"
+    api_key: Optional[str] = None
+    index_name: Optional[str] = None
     timeout: float = 200.0
 
 
 @RETRIEVERS("typesense", config_class=TypesenseRetrieverConfig)
 class TypesenseRetriever(EditableRetriever):
-    name = "Typesense"
-
     def __init__(self, cfg: TypesenseRetrieverConfig) -> None:
         super().__init__(cfg)
-        import typesense
+        self.cfg = extract_config(cfg, TypesenseRetrieverConfig)
+        assert self.cfg.api_key is not None, "`api_key` must be provided"
+        assert self.cfg.index_name is not None, "`index_name` must be provided"
 
         # load database
+        import typesense
+
         self.typesense = typesense
         self.client = typesense.Client(
             {
@@ -69,7 +75,7 @@ class TypesenseRetriever(EditableRetriever):
         def get_batch() -> Generator[list[dict[str, str]], None, None]:
             batch = []
             for passage in passages:
-                if len(batch) == self.batch_size:
+                if len(batch) == self.cfg.batch_size:
                     yield batch
                     batch = []
                 data = passage.data.copy()
@@ -90,7 +96,7 @@ class TypesenseRetriever(EditableRetriever):
             self.client.collections.create(schema)
 
         # import documents
-        p_logger = SimpleProgressLogger(logger=logger, interval=self.log_interval)
+        p_logger = SimpleProgressLogger(logger, interval=self.cfg.log_interval)
         for batch in get_batch():
             r = self.client.collections[self.index_name].documents.import_(batch)
             assert all([i["success"] for i in r])
@@ -99,7 +105,7 @@ class TypesenseRetriever(EditableRetriever):
         return
 
     @TIME_METER("typesense", "search")
-    def search_batch(
+    def search(
         self,
         query: list[str],
         **search_kwargs,
@@ -110,7 +116,7 @@ class TypesenseRetriever(EditableRetriever):
                 "collection": self.index_name,
                 "q": q,
                 "query_by": ",".join(self.fields),
-                "per_page": search_kwargs.pop("top_k", self.top_k),
+                "per_page": search_kwargs.pop("top_k", self.cfg.top_k),
                 **search_kwargs,
             }
             for q in query
@@ -146,7 +152,7 @@ class TypesenseRetriever(EditableRetriever):
                 )
         return retrieved
 
-    def clean(self) -> None:
+    def clear(self) -> None:
         if self.index_name in self.indices:
             self.client.collections[self.index_name].delete()
         return

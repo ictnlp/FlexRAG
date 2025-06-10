@@ -1,29 +1,29 @@
 import asyncio
 import logging
 import os
-from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import httpx
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor
-from omegaconf import MISSING
+from openai import AzureOpenAI, OpenAI
 
 from flexrag.prompt import ChatPrompt
-from flexrag.utils import TIME_METER, LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, configure
 
 from .model_base import (
-    EncoderBase,
     ENCODERS,
+    GENERATORS,
+    EncoderBase,
+    EncoderBaseConfig,
     GenerationConfig,
     GeneratorBase,
-    GENERATORS,
 )
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.openai")
 
 
-@dataclass
+@configure
 class OpenAIConfig:
     """The Base Configuration for OpenAI Client.
 
@@ -44,7 +44,7 @@ class OpenAIConfig:
     """
 
     is_azure: bool = False
-    model_name: str = MISSING
+    model_name: Optional[str] = None
     base_url: Optional[str] = None
     api_key: str = os.environ.get("OPENAI_API_KEY", "EMPTY")
     api_version: str = "2024-07-01-preview"
@@ -52,7 +52,7 @@ class OpenAIConfig:
     proxy: Optional[str] = None
 
 
-@dataclass
+@configure
 class OpenAIGeneratorConfig(OpenAIConfig):
     """Configuration for OpenAI Generator.
 
@@ -63,22 +63,9 @@ class OpenAIGeneratorConfig(OpenAIConfig):
     allow_parallel: bool = True
 
 
-@dataclass
-class OpenAIEncoderConfig(OpenAIConfig):
-    """Configuration for OpenAI Encoder.
-
-    :param is_azure: Whether the model is hosted on Azure. Default is False.
-    :type is_azure: bool
-    """
-
-    dimension: Optional[int] = None
-
-
 @GENERATORS("openai", config_class=OpenAIGeneratorConfig)
 class OpenAIGenerator(GeneratorBase):
     def __init__(self, cfg: OpenAIGeneratorConfig) -> None:
-        from openai import OpenAI, AzureOpenAI
-
         # prepare proxy
         if cfg.proxy is not None:
             httpx_client = httpx.Client(proxies=cfg.proxy)
@@ -102,6 +89,7 @@ class OpenAIGenerator(GeneratorBase):
 
         # set logger
         self.allow_parallel = cfg.allow_parallel
+        assert cfg.model_name is not None, "`model_name` must be provided"
         self.model_name = cfg.model_name
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
@@ -248,11 +236,23 @@ class OpenAIGenerator(GeneratorBase):
         assert self.model_name in model_lists, f"Model {self.model_name} not found"
 
 
+@configure
+class OpenAIEncoderConfig(OpenAIConfig, EncoderBaseConfig):
+    """Configuration for OpenAI Encoder.
+
+    :param embedding_size: The size of the embedding vector.
+        If None, it will be determined from the model.
+        Default is None.
+    :type embedding_size: Optional[int]
+    """
+
+    embedding_size: Optional[int] = None
+
+
 @ENCODERS("openai", config_class=OpenAIEncoderConfig)
 class OpenAIEncoder(EncoderBase):
     def __init__(self, cfg: OpenAIEncoderConfig) -> None:
-        from openai import OpenAI, AzureOpenAI
-
+        super().__init__(cfg)
         # prepare proxy
         if cfg.proxy is not None:
             httpx_client = httpx.Client(proxies=cfg.proxy)
@@ -275,8 +275,9 @@ class OpenAIEncoder(EncoderBase):
             )
 
         # set logger
+        assert cfg.model_name is not None, "`model_name` must be provided"
         self.model_name = cfg.model_name
-        self.dimension = cfg.dimension
+        self.dimension = cfg.embedding_size
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)

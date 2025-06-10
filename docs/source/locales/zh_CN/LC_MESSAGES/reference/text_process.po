@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"POT-Creation-Date: 2025-06-10 14:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -20,72 +20,100 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.16.0\n"
 
-#: ../../source/reference/text_process.rst:2 bcafd7856e7f47549f7854330be2a356
+#: ../../source/reference/text_process.rst:2 025a9e1a198e4f589c980499b1221633
 msgid "Text Processing"
 msgstr ""
 
-#: ../../source/reference/text_process.rst:3 6e070e6188914335a88aba4c0859e75a
+#: ../../source/reference/text_process.rst:3 d37373d8f8fb4dffae8e8683d473c306
 msgid ""
 "This module provides a set of classes and functions for preprocessing and"
 " filtering texts, including normalization, length filtering, etc."
 msgstr ""
 
-#: 917b95e3e8e944ac92ed02d7b0e4398d
+#: 1d9399de89ec4b18a4f7a15af6cab170 6caa86adf6f145c8b1bba285672b0de4
+#: d700b5e3af374b039e300b5fe1c5199f
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dump:1
+#: of
+msgid "Dump the dataclass to a YAML file."
+msgstr ""
+
+#: 91ecb924c9434f92b63a8099f20b9cce 962ec29132f84a429ff313be44d85218
+#: a1176e7d1a3f42e08b5ec4e651c1f74f
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dumps:1
+#: of
+msgid "Dump the dataclass to a YAML string."
+msgstr ""
+
+#: 0bc1f956e7aa409f88ddd7307817e984 52b3f86b9abd428099980d51bd23c835
+#: e50afc78c80540d886b86b13cdd9d044
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.load:1
+#: of
+msgid "Load the dataclass from a YAML file."
+msgstr ""
+
+#: 60cc7f4ca99040feb82f860d3546834c 8f2c4882357241b6acd24b918750f41c
+#: f4e8eb895d94424a98faeaa804a0423b
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.loads:1
+#: of
+msgid "Load the dataclass from a YAML string."
+msgstr ""
+
+#: fa18fc12ea594f21b768c4465aa279da
 #: flexrag.text_process.processor.Processor.__call__:1 of
 msgid ""
 "Process the input text. If the processor has been filtered, the reserved "
 "flag of the input TextUnit will be set to False."
 msgstr ""
 
-#: ../../source/reference/text_process.rst c66af0aa305d4d899831600d8aae2abf
-#: cdc6caf16dfc4972add779030801799b
+#: ../../source/reference/text_process.rst 0b034b820fb84057969ce5b4d92908fa
+#: 910dbf225ad3406f997452f90d385262
 msgid "Parameters"
 msgstr ""
 
-#: 941f41a569eb4a1990b87bfd5dc43b79
+#: 0fd2357e4bd74ba1aa56cebf95bb3751
 #: flexrag.text_process.processor.Processor.__call__:4 of
 msgid "The input text to process."
 msgstr ""
 
-#: ../../source/reference/text_process.rst 89a47ae85377414db31cd68e160a560d
+#: ../../source/reference/text_process.rst 3730b751dcb94adbac6a10f3e806e5c5
 msgid "Returns"
 msgstr ""
 
-#: 3bd6f2ef3122417894a12434795eb3fc
+#: 98ab761a467c4af5a44cf56756bfb577
 #: flexrag.text_process.processor.Processor.__call__:6 of
 msgid "The processed text."
 msgstr ""
 
-#: ../../source/reference/text_process.rst 282fe9bb2d4d43f89d1e2121f3485155
+#: ../../source/reference/text_process.rst 216522e9760b4ce79fb2e457f7d19cae
 msgid "Return type"
 msgstr ""
 
-#: 9e8d7b2691e24a01bb225cbe77a1f7d1 of types.TextProcessPipelineConfig:1
+#: 6531daeb41bc4502849673c6536a45e9 of types.TextProcessPipelineConfig:1
 msgid ""
 "Configuration class for processor (name: TextProcessPipelineConfig, "
-"default: ???)."
+"default: None)."
 msgstr ""
 
-#: bb2876a2f865424b924c65545a9c6cc2 of types.TextProcessPipelineConfig:3
+#: 087ba385e881438885ae624bb95649b5 of types.TextProcessPipelineConfig:3
 msgid "The processor type to use."
 msgstr ""
 
-#: 8cfe929bef594bcdba3e43eea71b21df of types.TextProcessPipelineConfig:5
+#: 01ab5913de3f479ab794d59908d12c05 of types.TextProcessPipelineConfig:5
 msgid "The config for LengthFilter."
 msgstr ""
 
-#: 51df3dd1e06b4c9183e6c122db090a16 of types.TextProcessPipelineConfig:7
+#: 9e3087c562834d73ac3abb2d1ed6a0a9 of types.TextProcessPipelineConfig:7
 msgid "The config for TokenNormalizer."
 msgstr ""
 
-#: 59d68c7cf96342119bbff9cb855ba3ed of types.TextProcessPipelineConfig:9
+#: d5974fdabff646bd975fe0049534c0ea of types.TextProcessPipelineConfig:9
 msgid "The config for Truncator."
 msgstr ""
 
-#: 14b63f7efb154a029c233a74a1b7aedf 2c1227cc8ac74dbf8e00e1779f917223
-#: 3c75a8b2130941a3a996d9257f580ec3 4b23451799734d3c8259b93dc1fc695f
-#: 833fd71b2baa41cd89a4ff8bda7db581 89c0c8b6f0f044f49b519e08069613ba
-#: e4a8cc0a00ce498d81029cd80bd400c8
+#: 1eca06132d594b2d81cc88882aaa5d8b 652d7af711494e7fb9d5c8ad99e08715
+#: 687ffcc7cbc44dec9587d0ab2133b406 74cdefb2e8ba4e609bd6c94feecf2257
+#: 8b95bf80bced41f69d1bc8bdaa59e276 97c67dc7385649639969af1d32cf3243
+#: d0a20306f1e743aba3250c0ab2b96518
 #: flexrag.text_process.basic_filters.ExactDeduplicate:1
 #: flexrag.text_process.basic_processors.AnswerSimplifier:1
 #: flexrag.text_process.basic_processors.ChineseSimplifier:1
@@ -95,4 +123,9 @@ msgstr ""
 #: flexrag.text_process.basic_processors.Unifier:1 of
 msgid "Bases: :py:class:`~flexrag.text_process.processor.Processor`"
 msgstr ""
+
+#~ msgid ""
+#~ "Configuration class for processor (name: "
+#~ "TextProcessPipelineConfig, default: ???)."
+#~ msgstr ""
 

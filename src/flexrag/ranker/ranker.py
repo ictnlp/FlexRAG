@@ -1,17 +1,15 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Optional
 
 import numpy as np
 
-from flexrag.common_dataclass import RetrievedContext
-from flexrag.utils import Register, LOGGER_MANAGER
-
+from flexrag.utils import LOGGER_MANAGER, Register, configure
+from flexrag.utils.dataclasses import RetrievedContext
 
 logger = LOGGER_MANAGER.get_logger("flexrag.rankers")
 
 
-@dataclass
+@configure
 class RankerBaseConfig:
     """The configuration for the ranker.
 
@@ -27,7 +25,7 @@ class RankerBaseConfig:
     ranking_field: Optional[str] = None
 
 
-@dataclass
+@configure
 class RankingResult:
     """The result of ranking.
 

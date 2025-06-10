@@ -41,8 +41,7 @@ After executing the above command, you will see that the PDF file has been parse
 2. **Chunking**: chunking long text paragraphs in the structured data into short text paragraphs suitable for processing;
 3. **Preprocessing**: preprocessing and filtering the chunked text paragraphs.
 
-```{eval-rst}
-.. image:: ../../../assets/parse_files.png
+```{image} ../../../assets/parse_files.png
    :alt: Parse File
    :align: center
    :width: 80%

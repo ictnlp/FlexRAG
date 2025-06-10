@@ -1,22 +1,21 @@
 import os
 from copy import deepcopy
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import field
+from typing import Annotated, Optional
 
 import httpx
-from omegaconf import MISSING
 
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.models import GenerationConfig
 from flexrag.prompt import ChatPrompt, ChatTurn
-from flexrag.utils import LOGGER_MANAGER, Choices
+from flexrag.utils import LOGGER_MANAGER, Choices, configure
+from flexrag.utils.dataclasses import RetrievedContext
 
 from .assistant import ASSISTANTS, AssistantBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant")
 
 
-@dataclass
+@configure
 class JinaDeepSearchConfig:
     """The configuration for the Jina DeepSearch Assistant.
 
@@ -26,8 +25,10 @@ class JinaDeepSearchConfig:
     :type use_history: bool, optional
     :param base_url: The base URL of the API. Defaults to "https://deepsearch.jina.ai/v1/chat/completions".
     :type base_url: str
-    :param api_key: The API key. Defaults to os.getenv("JINA_API_KEY", MISSING).
-    :type api_key: str
+    :param api_key: The API key for the Jina DeepSearch API.
+        If not provided, it will use the environment variable `JINA_API_KEY`.
+        Defaults to None.
+    :type api_key: Optional[str]
     :param model: The model to use. Defaults to "jina-deepsearch-v1".
     :type model: str
     :param reasoning_effort: The reasoning effort. Defaults to "medium".
@@ -43,9 +44,9 @@ class JinaDeepSearchConfig:
     prompt_path: Optional[str] = None
     use_history: bool = False
     base_url: str = "https://deepsearch.jina.ai/v1"
-    api_key: str = os.getenv("JINA_API_KEY", MISSING)
+    api_key: Optional[str] = None
     model: str = "jina-deepsearch-v1"
-    reasoning_effort: Choices(["low", "medium", "high"]) = "medium"  # type: ignore
+    reasoning_effort: Annotated[str, Choices("low", "medium", "high")] = "medium"
     proxy: Optional[str] = None
     timeout: int = 10
 
@@ -66,11 +67,17 @@ class JinaDeepSearch(AssistantBase):
             self.history_prompt = None
 
         # prepare client
+        api_key = cfg.api_key or os.getenv("JINA_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "API key for Jina is not provided. "
+                "Please set it in the configuration or as an environment variable 'JINA_API_KEY'."
+            )
         self.client = httpx.Client(
             base_url=cfg.base_url,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {cfg.api_key}",
+                "Authorization": f"Bearer {api_key}",
             },
             proxy=cfg.proxy,
             follow_redirects=True,
@@ -113,7 +120,7 @@ class JinaDeepSearch(AssistantBase):
         return
 
 
-@dataclass
+@configure
 class PerplexityAssistantConfig(GenerationConfig):
     """The configuration for the PerplexityAI Assistant.
 
@@ -123,7 +130,9 @@ class PerplexityAssistantConfig(GenerationConfig):
     :type use_history: bool, optional
     :param base_url: The base URL of the API. Defaults to "https://api.perplexity.ai/chat/completions".
     :type base_url: str
-    :param api_key: The API key. Defaults to os.getenv("PERPLEXITY_API_KEY", MISSING).
+    :param api_key: The API key for the PerplexityAI API.
+        If not provided, it will use the environment variable `PERPLEXITY_API_KEY`.
+        Defaults to None.
     :type api_key: str
     :param model: The model to use. Defaults to "sonar".
     :type model: str
@@ -142,10 +151,12 @@ class PerplexityAssistantConfig(GenerationConfig):
     prompt_path: Optional[str] = None
     use_history: bool = False
     base_url: str = "https://api.perplexity.ai"
-    api_key: str = os.environ.get("PERPLEXITY_API_KEY", MISSING)
+    api_key: Optional[str] = None
     model: str = "sonar"
     search_domain_filter: list[str] = field(default_factory=list)
-    search_recency_filter: Optional[Choices(["month", "week", "day", "hour"])] = None  # type: ignore
+    search_recency_filter: Annotated[
+        str, Choices("month", "week", "day", "hour", "none")
+    ] = "none"
     proxy: Optional[str] = None
     timeout: int = 10
 
@@ -166,11 +177,17 @@ class PerplexityAssistant(AssistantBase):
             self.history_prompt = None
 
         # prepare client
+        api_key = cfg.api_key or os.getenv("PERPLEXITY_API_KEY")
+        if not api_key:
+            raise ValueError(
+                "API key for perplexity is not provided. "
+                "Please set it in the configuration or as an environment variable 'PERPLEXITY_API_KEY'."
+            )
         self.client = httpx.Client(
             base_url=cfg.base_url,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {cfg.api_key}",
+                "Authorization": f"Bearer {api_key}",
             },
             proxy=cfg.proxy,
             follow_redirects=True,
@@ -188,9 +205,9 @@ class PerplexityAssistant(AssistantBase):
             "presence_penalty": 0,
             "frequency_penalty": 1,
         }
-        if cfg.search_domain_filter is not None:
+        if len(cfg.search_domain_filter) > 0:
             self.data_template["search_domain_filter"] = cfg.search_domain_filter
-        if cfg.search_recency_filter is not None:
+        if cfg.search_recency_filter != "none":
             self.data_template["search_recency_filter"] = cfg.search_recency_filter
         return
 

@@ -5,14 +5,14 @@ from flexrag.chunking import (
     CharChunkerConfig,
     RecursiveChunker,
     RecursiveChunkerConfig,
+    SemanticChunker,
+    SemanticChunkerConfig,
     SentenceChunker,
     SentenceChunkerConfig,
     TokenChunker,
     TokenChunkerConfig,
-    SemanticChunker,
-    SemanticChunkerConfig,
 )
-from flexrag.models import HFEncoderConfig
+from flexrag.models import OpenAIEncoderConfig
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
 
 
@@ -46,7 +46,7 @@ class TestChunker:
         # chunk without overlap
         chunker = CharChunker(CharChunkerConfig(max_chars=10, overlap=0))
         for doc in self.docs:
-            chunks = chunker.chunk(doc)
+            chunks = chunker.chunk(doc, return_str=True)
             for chunk in chunks:
                 assert len(chunk) <= 10
             self.chunks_test(chunks, doc)
@@ -54,7 +54,7 @@ class TestChunker:
         # chunk with overlap
         chunker = CharChunker(CharChunkerConfig(max_chars=10, overlap=3))
         for doc in self.docs:
-            chunks = chunker.chunk(doc)
+            chunks = chunker.chunk(doc, return_str=True)
             for chunk in chunks:
                 assert len(chunk) <= 10
         return
@@ -65,7 +65,7 @@ class TestChunker:
         # chunk without overlap
         chunker = TokenChunker(TokenChunkerConfig(max_tokens=5, overlap=0))
         for doc in self.docs:
-            chunks = chunker.chunk(doc)
+            chunks = chunker.chunk(doc, return_str=True)
             for chunk in chunks:
                 assert len(tokenizer.tokenize(chunk)) <= 5
             self.chunks_test(chunks, doc)
@@ -73,7 +73,7 @@ class TestChunker:
         # chunk with overlap
         chunker = TokenChunker(TokenChunkerConfig(max_tokens=5, overlap=1))
         for doc in self.docs:
-            chunks = chunker.chunk(doc)
+            chunks = chunker.chunk(doc, return_str=True)
             for chunk in chunks:
                 assert len(tokenizer.tokenize(chunk)) <= 5
         return
@@ -82,7 +82,7 @@ class TestChunker:
         tokenizer = TOKENIZERS.load(TokenizerConfig())
         chunker = RecursiveChunker(RecursiveChunkerConfig(max_tokens=10))
         for doc in self.docs:
-            chunks = chunker.chunk(doc)
+            chunks = chunker.chunk(doc, return_str=True)
             for chunk in chunks:
                 assert len(tokenizer.tokenize(chunk)) <= 10
             self.chunks_test(chunks, doc)
@@ -94,7 +94,7 @@ class TestChunker:
             SentenceChunkerConfig(max_sents=2, sentence_splitter_type="nltk_splitter")
         )
         for doc in self.docs:
-            chunks = chunker.chunk(doc)
+            chunks = chunker.chunk(doc, return_str=True)
             self.chunks_test(chunks, doc, strict=False)
 
         # test regex sentence splitter
@@ -102,39 +102,39 @@ class TestChunker:
             SentenceChunkerConfig(max_sents=2, sentence_splitter_type="regex")
         )
         for doc in self.docs:
-            chunks = chunker.chunk(doc)
+            chunks = chunker.chunk(doc, return_str=True)
             self.chunks_test(chunks, doc)
         return
 
-    def test_sementic_chunker(self):
+    def test_sementic_chunker(self, mock_openai_client):
         for doc in self.docs:
             # chunk with threshold_percentile
             cfg = SemanticChunkerConfig(
                 threshold_percentile=50,
-                encoder_type="hf",
-                hf_config=HFEncoderConfig(model_path="BAAI/bge-small-en-v1.5"),
+                encoder_type="openai",
+                openai_config=OpenAIEncoderConfig(model_name="text-embedding-3-small"),
             )
             chunker = SemanticChunker(cfg)
-            chunks = chunker.chunk(doc)
+            chunks = chunker.chunk(doc, return_str=True)
             self.chunks_test(chunks, doc, strict=False)
 
             # chunk with threshold
             cfg = SemanticChunkerConfig(
                 threshold=0.95,
-                encoder_type="hf",
-                hf_config=HFEncoderConfig(model_path="BAAI/bge-small-en-v1.5"),
+                encoder_type="openai",
+                openai_config=OpenAIEncoderConfig(model_name="text-embedding-3-small"),
             )
             chunker = SemanticChunker(cfg)
-            chunks = chunker.chunk(doc)
+            chunks = chunker.chunk(doc, return_str=True)
             self.chunks_test(chunks, doc, strict=False)
 
             # chunk with max_tokens
             cfg = SemanticChunkerConfig(
                 max_tokens=30,
-                encoder_type="hf",
-                hf_config=HFEncoderConfig(model_path="BAAI/bge-small-en-v1.5"),
+                encoder_type="openai",
+                openai_config=OpenAIEncoderConfig(model_name="text-embedding-3-small"),
             )
             chunker = SemanticChunker(cfg)
-            chunks = chunker.chunk(doc)
+            chunks = chunker.chunk(doc, return_str=True)
             self.chunks_test(chunks, doc, strict=False)
         return

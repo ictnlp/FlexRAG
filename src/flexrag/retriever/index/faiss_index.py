@@ -1,118 +1,121 @@
 import os
-from dataclasses import dataclass, field
-from typing import Optional
+import shutil
+from copy import deepcopy
+from dataclasses import field
+from typing import Annotated, Any, Iterable, Optional
 
+import faiss
 import numpy as np
 
-from flexrag.utils import Choices, LOGGER_MANAGER
+from flexrag.models import ENCODERS
+from flexrag.utils import LOGGER_MANAGER, Choices, configure
+from flexrag.utils.configure import extract_config
 
-from .index_base import DenseIndexBase, DenseIndexBaseConfig, DENSE_INDEX
+from .index_base import RETRIEVER_INDEX, DenseIndexBase, DenseIndexBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retriever.index.faiss")
 
 
-@dataclass
+@configure
 class FaissIndexConfig(DenseIndexBaseConfig):
     """The configuration for the `FaissIndex`.
 
-    :param index_type: The type of the index. Defaults to "auto".
+    :param index_type: Building param: the type of the index. Defaults to "auto".
         available choices are "FLAT", "IVF", "PQ", "IVFPQ", and "auto".
         If set to "auto", the index will be set to "IVF{n_list},PQ{embedding_size//2}x4fs".
     :type index_type: str
-    :param n_subquantizers: The number of subquantizers. Defaults to 8.
+    :param n_subquantizers: Building param: the number of subquantizers. Defaults to 8.
+        This parameter is only used when the index type is "PQ" or "IVFPQ".
     :type n_subquantizers: int
-    :param n_bits: The number of bits per subquantizer. Defaults to 8.
+    :param n_bits: Building param: the number of bits per subquantizer. Defaults to 8.
+        This parameter is only used when the index type is "PQ" or "IVFPQ".
     :type n_bits: int
-    :param n_list: The number of cells. Defaults to 1000.
+    :param n_list: Building param: the number of cells. Defaults to 1000.
+        This parameter is only used when the index type is "IVF" or "IVFPQ".
     :type n_list: int
-    :param factory_str: The factory string to build the index. Defaults to None.
+    :param factory_str: Building param: the factory string to build the index. Defaults to None.
         If set, the `index_type` will be ignored.
     :type factory_str: Optional[str]
-    :param n_probe: The number of probes. Defaults to 32.
-    :type n_probe: int
-    :param device_id: The device id to use. Defaults to [].
+    :param index_train_num: Building param: the number of data used to train the index. Defaults to -1.
+        If set to -1, all data will be used to train the index.
+    :type index_train_num: int
+    :param n_probe: Inference param: the number of probes. Defaults to None.
+        If not set, the number of probes will be set to `n_list // 8`.
+        This parameter is only used when the index type is "IVF" or "IVFPQ".
+    :type n_probe: Optional[int]
+    :param device_id: Inference param: the device(s) to use. Defaults to [].
         [] means CPU. If set, the index will be accelerated with GPU.
     :type device_id: list[int]
-    :param k_factor: The k factor for search. Defaults to 10.
+    :param k_factor: Inference param: the k factor for search. Defaults to 10.
     :type k_factor: int
-    :param polysemous_ht: The polysemous hash table. Defaults to 0.
+    :param polysemous_ht: Inference param: the polysemous hash table. Defaults to 0.
     :type polysemous_ht: int
-    :param efSearch: The efSearch for HNSW. Defaults to 100.
+    :param efSearch: Inference param: the efSearch for HNSW. Defaults to 100.
     :type efSearch: int
     """
 
-    index_type: Choices(["FLAT", "IVF", "PQ", "IVFPQ", "auto"]) = "auto"  # type: ignore
+    index_type: Annotated[str, Choices("FLAT", "IVF", "PQ", "IVFPQ", "auto")] = "auto"
     n_subquantizers: int = 8
     n_bits: int = 8
     n_list: int = 1000
     factory_str: Optional[str] = None
+    index_train_num: int = -1
     # Inference Arguments
-    n_probe: int = 32
+    n_probe: Optional[int] = None
     device_id: list[int] = field(default_factory=list)
     k_factor: int = 10
     polysemous_ht: int = 0
     efSearch: int = 100
 
 
-@DENSE_INDEX("faiss", config_class=FaissIndexConfig)
+@RETRIEVER_INDEX("faiss", config_class=FaissIndexConfig)
 class FaissIndex(DenseIndexBase):
-    """FaissIndex is a wrapper for the `faiss <https://github.com/facebookresearch/faiss>`_ library.
-
+    """FaissIndex employs `faiss <https://github.com/facebookresearch/faiss>`_ library to build and search indexes with embeddings.
+    FaissIndex supports both CPU and GPU acceleration.
+    FaissIndex supports various index types, including FLAT, IVF, PQ, IVFPQ, and auto.
     FaissIndex provides a flexible and efficient way to build and search indexes with embeddings.
     """
 
-    def __init__(self, cfg: FaissIndexConfig, index_path: str) -> None:
-        super().__init__(cfg, index_path)
-        # check faiss
-        try:
-            import faiss
+    cfg: FaissIndexConfig
 
-            self.faiss = faiss
-        except:
-            raise ImportError(
-                "Please install faiss by running "
-                "`conda install -c pytorch faiss-cpu=1.9.0` "
-                "or `conda install -c pytorch -c nvidia faiss-gpu`"
-            )
-
-        # preapre inference args
-        self.n_probe = cfg.n_probe
-        self.device_id = (
-            cfg.device_id if hasattr(self.faiss, "GpuMultipleClonerOptions") else []
-        )
-        self.k_factor = cfg.k_factor
-        self.polysemous_ht = cfg.polysemous_ht
-        self.efSearch = cfg.efSearch
-
-        # prepare index args
-        self.index_type = cfg.index_type
-        self.distance_function = cfg.distance_function
-        self.n_list = cfg.n_list
-        self.n_subquantizers = cfg.n_subquantizers
-        self.n_bits = cfg.n_bits
-        self.factory_str = cfg.factory_str
-
-        # load the index if exists
+    def __init__(self, cfg: FaissIndexConfig) -> None:
+        super().__init__(cfg)
+        self.cfg = extract_config(cfg, FaissIndexConfig)
+        # prepare index
         self.index = None
-        if self.index_path is not None:
-            if os.path.exists(self.index_path):
-                self.deserialize()
+
+        # load the index if index_path is provided
+        if self.cfg.index_path is not None:
+            if os.path.exists(self.cfg.index_path):
+                logger.info(f"Loading index from {self.cfg.index_path}")
+                try:
+                    index_path = os.path.join(self.cfg.index_path, "index.faiss")
+                    cpu_index = faiss.read_index(index_path, faiss.IO_FLAG_MMAP)
+                    self.index = self._set_index(cpu_index)
+                except:
+                    raise FileNotFoundError(
+                        f"Unable to load index from {self.cfg.index_path}"
+                    )
         return
 
-    def build_index(self, embeddings: np.ndarray) -> None:
-        self.clean()
+    def build_index(self, data: Iterable[Any]) -> None:
+        self.clear()
+        embeddings = self.encode_data_batch(data, is_query=False)
         self.index = self._prepare_index(
-            index_type=self.index_type,
-            distance_function=self.distance_function,
+            index_type=self.cfg.index_type,
+            distance_function=self.cfg.distance_function,
             embedding_size=embeddings.shape[1],
             embedding_length=embeddings.shape[0],
-            n_list=self.n_list,
-            n_subquantizers=self.n_subquantizers,
-            n_bits=self.n_bits,
-            factory_str=self.factory_str,
+            n_list=self.cfg.n_list,
+            n_subquantizers=self.cfg.n_subquantizers,
+            n_bits=self.cfg.n_bits,
+            factory_str=self.cfg.factory_str,
         )
-        self.train_index(embeddings=embeddings)
-        self.add_embeddings(embeddings=embeddings)
+        self._train_index(embeddings)
+        self.add_embeddings_batch(embeddings)
+        if isinstance(embeddings, np.memmap):
+            emb_path = embeddings.filename
+            os.remove(emb_path)
         return
 
     def _prepare_index(
@@ -129,11 +132,14 @@ class FaissIndex(DenseIndexBase):
         # prepare distance function
         match distance_function:
             case "IP":
-                basic_index = self.faiss.IndexFlatIP(embedding_size)
-                basic_metric = self.faiss.METRIC_INNER_PRODUCT
+                basic_index = faiss.IndexFlatIP(embedding_size)
+                basic_metric = faiss.METRIC_INNER_PRODUCT
+            case "COS":
+                basic_index = faiss.IndexFlatIP(embedding_size)
+                basic_metric = faiss.METRIC_INNER_PRODUCT
             case "L2":
-                basic_index = self.faiss.IndexFlatL2(embedding_size)
-                basic_metric = self.faiss.METRIC_L2
+                basic_index = faiss.IndexFlatL2(embedding_size)
+                basic_metric = faiss.METRIC_L2
             case _:
                 raise ValueError(f"Unknown distance function: {distance_function}")
 
@@ -147,7 +153,7 @@ class FaissIndex(DenseIndexBase):
 
         if factory_str is not None:
             # using string factory to build the index
-            index = self.faiss.index_factory(
+            index = faiss.index_factory(
                 embedding_size,
                 factory_str,
                 basic_metric,
@@ -158,20 +164,20 @@ class FaissIndex(DenseIndexBase):
                 case "FLAT":
                     index = basic_index
                 case "IVF":
-                    index = self.faiss.IndexIVFFlat(
+                    index = faiss.IndexIVFFlat(
                         basic_index,
                         embedding_size,
                         n_list,
                         basic_metric,
                     )
                 case "PQ":
-                    index = self.faiss.IndexPQ(
+                    index = faiss.IndexPQ(
                         embedding_size,
                         n_subquantizers,
                         n_bits,
                     )
                 case "IVFPQ":
-                    index = self.faiss.IndexIVFPQ(
+                    index = faiss.IndexIVFPQ(
                         basic_index,
                         embedding_size,
                         n_list,
@@ -185,13 +191,13 @@ class FaissIndex(DenseIndexBase):
         index = self._set_index(index)
         return index
 
-    def train_index(self, embeddings: np.ndarray) -> None:
-        if self.is_flat:
-            logger.info("Index is flat, no need to train")
+    def _train_index(self, embeddings: np.ndarray) -> None:
+        if self.is_trained:
+            logger.info("Index is trained already.")
             return
         logger.info("Training index")
-        if (self.index_train_num >= embeddings.shape[0]) or (
-            self.index_train_num == -1
+        if (self.cfg.index_train_num >= embeddings.shape[0]) or (
+            self.cfg.index_train_num == -1
         ):
             if embeddings.dtype != np.float32:
                 embeddings = embeddings.astype("float32")
@@ -199,7 +205,7 @@ class FaissIndex(DenseIndexBase):
         else:
             selected_indices = np.random.choice(
                 embeddings.shape[0],
-                self.index_train_num,
+                self.cfg.index_train_num,
                 replace=False,
             )
             selected_indices = np.sort(selected_indices)
@@ -207,131 +213,136 @@ class FaissIndex(DenseIndexBase):
             self.index.train(selected_embeddings)
         return
 
-    def add_embeddings_batch(self, embeddings: np.ndarray) -> None:
+    def add_embeddings(self, embeddings: np.ndarray) -> None:
         embeddings = embeddings.astype("float32")
         assert self.is_trained, "Index should be trained first"
-        self.index.add(embeddings)  # debug
+        self.index.add(embeddings)
         return
 
-    def prepare_search_params(self, **kwargs):
+    def _prepare_search_params(self, **kwargs):
+        """A helper function to prepare search parameters for the index.
+
+        :return: The search parameters for the index.
+        :rtype: faiss.SearchParameters
+        """
         # set search kwargs
-        k_factor = kwargs.get("k_factor", self.k_factor)
-        n_probe = kwargs.get("n_probe", self.n_probe)
-        polysemous_ht = kwargs.get("polysemous_ht", self.polysemous_ht)
-        efSearch = kwargs.get("efSearch", self.efSearch)
+        k_factor = kwargs.get("k_factor", self.cfg.k_factor)
+        n_probe = kwargs.get("n_probe", self.cfg.n_probe)
+        if n_probe is None:
+            n_probe = getattr(self.index, "nlist", 256) // 8
+        polysemous_ht = kwargs.get("polysemous_ht", self.cfg.polysemous_ht)
+        efSearch = kwargs.get("efSearch", self.cfg.efSearch)
 
         def get_search_params(index):
-            if isinstance(index, self.faiss.IndexRefine):
-                params = self.faiss.IndexRefineSearchParameters(
+            if isinstance(index, faiss.IndexRefine):
+                params = faiss.IndexRefineSearchParameters(
                     k_factor=k_factor,
                     base_index_params=get_search_params(
-                        self.faiss.downcast_index(index.base_index)
+                        faiss.downcast_index(index.base_index)
                     ),
                 )
-            elif isinstance(index, self.faiss.IndexPreTransform):
-                params = self.faiss.SearchParametersPreTransform(
-                    index_params=get_search_params(
-                        self.faiss.downcast_index(index.index)
-                    )
+            elif isinstance(index, faiss.IndexPreTransform):
+                params = faiss.SearchParametersPreTransform(
+                    index_params=get_search_params(faiss.downcast_index(index.index))
                 )
-            elif isinstance(index, self.faiss.IndexIVFPQ):
+            elif isinstance(index, faiss.IndexIVFPQ):
                 if hasattr(index, "quantizer"):
-                    params = self.faiss.IVFPQSearchParameters(
+                    params = faiss.IVFPQSearchParameters(
                         nprobe=n_probe,
                         polysemous_ht=polysemous_ht,
                         quantizer_params=get_search_params(
-                            self.faiss.downcast_index(index.quantizer)
+                            faiss.downcast_index(index.quantizer)
                         ),
                     )
                 else:
-                    params = self.faiss.IVFPQSearchParameters(
+                    params = faiss.IVFPQSearchParameters(
                         nprobe=n_probe, polysemous_ht=polysemous_ht
                     )
-            elif isinstance(index, self.faiss.IndexIVF):
+            elif isinstance(index, faiss.IndexIVF):
                 if hasattr(index, "quantizer"):
-                    params = self.faiss.SearchParametersIVF(
+                    params = faiss.SearchParametersIVF(
                         nprobe=n_probe,
                         quantizer_params=get_search_params(
-                            self.faiss.downcast_index(index.quantizer)
+                            faiss.downcast_index(index.quantizer)
                         ),
                     )
                 else:
-                    params = self.faiss.SearchParametersIVF(nprobe=n_probe)
-            elif isinstance(index, self.faiss.IndexHNSW):
-                params = self.faiss.SearchParametersHNSW(efSearch=efSearch)
-            elif isinstance(index, self.faiss.IndexPQ):
-                params = self.faiss.SearchParametersPQ(polysemous_ht=polysemous_ht)
+                    params = faiss.SearchParametersIVF(nprobe=n_probe)
+            elif isinstance(index, faiss.IndexHNSW):
+                params = faiss.SearchParametersHNSW(efSearch=efSearch)
+            elif isinstance(index, faiss.IndexPQ):
+                params = faiss.SearchParametersPQ(polysemous_ht=polysemous_ht)
             else:
                 params = None
             return params
 
         return get_search_params(self.index)
 
-    def _search_batch(
+    def search(
         self,
-        query_vectors: np.ndarray,
-        top_docs: int,
+        query: list[Any],
+        top_k: int,
         **search_kwargs,
     ) -> tuple[np.ndarray, np.ndarray]:
-        query_vectors = query_vectors.astype("float32")
-        search_params = self.prepare_search_params(**search_kwargs)
-        scores, indices = self.index.search(
-            query_vectors, top_docs, params=search_params
-        )
+        query_vectors = self.encode_data(query, is_query=True)
+        search_params = self._prepare_search_params(**search_kwargs)
+        scores, indices = self.index.search(query_vectors, top_k, params=search_params)
         return indices, scores
 
-    def serialize(self, index_path: str = None) -> None:
+    def save_to_local(self, index_path: str = None) -> None:
+        # check if the index is serializable
         if index_path is not None:
-            self.index_path = index_path
-        assert self.index_path is not None, "`index_path` is not set."
+            self.cfg.index_path = index_path
+        assert self.cfg.index_path is not None, "`index_path` is not set."
         assert self.index.is_trained, "Index should be trained first."
-        logger.info(f"Serializing index to {self.index_path}")
+        if not os.path.exists(index_path):
+            os.makedirs(self.cfg.index_path)
+        logger.info(f"Serializing index to {self.cfg.index_path}")
+
+        # save the configuration
+        cfg = deepcopy(self.cfg)
+        cfg.query_encoder_config = ENCODERS.squeeze(cfg.query_encoder_config)
+        cfg.passage_encoder_config = ENCODERS.squeeze(cfg.passage_encoder_config)
+        cfg.index_path = ""
+        config_path = os.path.join(self.cfg.index_path, "config.yaml")
+        cfg.dump(config_path)
+        id_path = os.path.join(self.cfg.index_path, "cls.id")
+        with open(id_path, "w", encoding="utf-8") as f:
+            f.write(self.__class__.__name__)
+
+        # serialize the index
+        index_path = os.path.join(index_path, "index.faiss")
         if self.support_gpu:
-            cpu_index = self.faiss.index_gpu_to_cpu(self.index)
+            cpu_index = faiss.index_gpu_to_cpu(self.index)
         else:
             cpu_index = self.index
-        self.faiss.write_index(cpu_index, self.index_path)
+        faiss.write_index(cpu_index, index_path)
         return
 
-    def deserialize(self):
-        assert self.index_path is not None, "Index path is not set."
-        logger.info(f"Loading index from {self.index_path}.")
-        if (os.path.getsize(self.index_path) / (1024**3) > 10) and (
-            not self.support_gpu
-        ):
-            logger.info("Index file is too large. Loading on CPU with memory map.")
-            cpu_index = self.faiss.read_index(self.index_path, self.faiss.IO_FLAG_MMAP)
-        else:
-            cpu_index = self.faiss.read_index(self.index_path)
-        self.index = self._set_index(cpu_index)
-        return self.index
-
-    def clean(self):
+    def clear(self):
         if self.index is None:
             return
-        if self.index_path is not None:
-            if os.path.exists(self.index_path):
-                os.remove(self.index_path)
         self.index.reset()
+
+        if self.cfg.index_path is not None:
+            if os.path.exists(self.cfg.index_path):
+                shutil.rmtree(self.cfg.index_path)
         return
 
     @property
     def embedding_size(self) -> int:
-        if self.index is None:
-            raise ValueError("Index is not initialized.")
-        return self.index.d
+        if self.index is not None:
+            return self.index.d
+        if self.passage_encoder is not None:
+            return self.passage_encoder.embedding_size
+        if self.query_encoder is not None:
+            return self.query_encoder.embedding_size
+        raise ValueError("Index is not initialized.")
 
     @property
     def is_trained(self) -> bool:
         if self.index is None:
             return False
-        if isinstance(self.index, self.faiss.IndexReplicas):
-            trained = True
-            for i in range(self.index.count()):
-                sub_index = self.faiss.downcast_index(self.index.at(i))
-                if not sub_index.is_trained:
-                    trained = False
-            return trained
         return self.index.is_trained
 
     @property
@@ -339,57 +350,33 @@ class FaissIndex(DenseIndexBase):
         return self.is_trained
 
     @property
-    def is_flat(self) -> bool:
-        def _is_flat(index) -> bool:
-            if isinstance(self.index, self.faiss.IndexFlat):
-                return True
-            if self.support_gpu:
-                if isinstance(self.index, self.faiss.GpuIndexFlat):
-                    return True
-            return False
-
-        if self.index is None:
-            return self.index_type == "FLAT"
-        if _is_flat(self.index):
-            return True
-        if isinstance(self.index, self.faiss.IndexReplicas):
-            all_flat = True
-            for i in range(self.index.count()):
-                sub_index = self.faiss.downcast_index(self.index.at(i))
-                if not _is_flat(sub_index):
-                    all_flat = False
-            if all_flat:
-                return True
-        return False
-
-    @property
     def support_gpu(self) -> bool:
-        return hasattr(self.faiss, "GpuMultipleClonerOptions") and (
-            len(self.device_id) > 0
+        return hasattr(faiss, "GpuMultipleClonerOptions") and (
+            len(self.cfg.device_id) > 0
         )
-
-    def __len__(self) -> int:
-        if self.index is None:
-            return 0
-        return self.index.ntotal
 
     def _set_index(self, index):
         if self.support_gpu:
             logger.info("Accelerating index with GPU.")
-            option = self.faiss.GpuMultipleClonerOptions()
+            option = faiss.GpuMultipleClonerOptions()
             option.useFloat16 = True
             option.shard = True
-            if isinstance(index, self.faiss.IndexIVFFlat):
+            if isinstance(index, faiss.IndexIVFFlat):
                 option.common_ivf_quantizer = True
-            index = self.faiss.index_cpu_to_gpus_list(
+            index = faiss.index_cpu_to_gpus_list(
                 index,
                 co=option,
-                gpus=self.device_id,
-                ngpu=len(self.device_id),
+                gpus=self.cfg.device_id,
+                ngpu=len(self.cfg.device_id),
             )
-        elif len(self.device_id) > 0:
+        elif len(self.cfg.device_id) > 0:
             logger.warning(
                 "The installed faiss does not support GPU acceleration. "
                 "Please install faiss-gpu."
             )
         return index
+
+    def __len__(self) -> int:
+        if self.index is None:
+            return 0
+        return self.index.ntotal

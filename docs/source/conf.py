@@ -3,17 +3,27 @@
 # For the full list of built-in configuration values, see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
+import os
+import pathlib
+
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 import re
-import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parents[2] / "src"))
 
+os.environ["DISABLE_CACHE"] = "True"  # Disable loading cache for documentation build
+
 
 def get_version() -> str:
-    version_string_path = pathlib.Path(__file__).parents[2] / "src/flexrag/utils.py"
+    version_string_path = (
+        pathlib.Path(__file__).parents[2]
+        / "src"
+        / "flexrag"
+        / "utils"
+        / "default_vars.py"
+    )
     with open(version_string_path, encoding="utf-8") as f:
         version = re.search(r"__VERSION__ = \"(.*?)\"", f.read()).group(1)
     return version
@@ -53,10 +63,10 @@ html_theme_options = {
 }
 
 # -- Options for autodoc -----------------------------------------------------
-
 autodoc_mock_imports = [
     "gradio",  # as gradio has a lot of dependencies, we mock it to speed up building the docs.
 ]
+autodoc_typehints = "none"
 
 
 # -- Options for copybutton --------------------------------------------------

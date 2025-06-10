@@ -1,11 +1,11 @@
 import os
-from dataclasses import dataclass
+
+from flexrag.utils import configure
+
+from .document_parser_base import DOCUMENTPARSERS, Document, DocumentParserBase
 
 
-from .document_parser_base import Document, DocumentParserBase, DOCUMENTPARSERS
-
-
-@dataclass
+@configure
 class DoclingConfig:
     do_ocr: bool = False
     do_table_structure: bool = True

@@ -1,12 +1,12 @@
 import json
 import time
 from abc import abstractmethod
-from dataclasses import dataclass
 
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
-from flexrag.common_dataclass import RetrievedContext
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, configure
+from flexrag.utils.configure import extract_config
+from flexrag.utils.dataclasses import RetrievedContext
 
 from ..retriever_base import (
     RETRIEVERS,
@@ -30,7 +30,7 @@ def _save_error_state(retry_state: RetryCallState) -> Exception:
     raise retry_state.outcome.exception()
 
 
-@dataclass
+@configure
 class WebRetrieverBaseConfig(RetrieverBaseConfig):
     """The configuration for the ``WebRetrieverBase``.
 
@@ -51,12 +51,7 @@ class WebRetrieverBase(RetrieverBase):
     The subclasses should implement the ``search_item`` method.
     """
 
-    def __init__(self, cfg: WebRetrieverBaseConfig):
-        super().__init__(cfg)
-        # set retry parameters
-        self.retry_times = cfg.retry_times
-        self.retry_delay = cfg.retry_delay
-        return
+    cfg: WebRetrieverBaseConfig
 
     @TIME_METER("web_retriever", "search")
     @batched_cache
@@ -72,8 +67,8 @@ class WebRetrieverBase(RetrieverBase):
             query = [query]
 
         # prepare search method
-        retry_times = search_kwargs.get("retry_times", self.retry_times)
-        retry_delay = search_kwargs.get("retry_delay", self.retry_delay)
+        retry_times = search_kwargs.get("retry_times", self.cfg.retry_times)
+        retry_delay = search_kwargs.get("retry_delay", self.cfg.retry_delay)
         if retry_times > 1:
             search_func = retry(
                 stop=stop_after_attempt(retry_times),
@@ -85,8 +80,8 @@ class WebRetrieverBase(RetrieverBase):
 
         # search & parse
         results = []
-        p_logger = SimpleProgressLogger(logger, len(query), self.log_interval)
-        top_k = search_kwargs.get("top_k", self.top_k)
+        p_logger = SimpleProgressLogger(logger, len(query), self.cfg.log_interval)
+        top_k = search_kwargs.get("top_k", self.cfg.top_k)
         for q in query:
             time.sleep(delay)
             p_logger.update(1, "Searching")
@@ -112,7 +107,7 @@ class WebRetrieverBase(RetrieverBase):
         return
 
 
-@dataclass
+@configure
 class SimpleWebRetrieverConfig(
     WebRetrieverBaseConfig,
     WebReaderConfig,
@@ -128,6 +123,7 @@ class SimpleWebRetriever(WebRetrieverBase):
     def __init__(self, cfg: SimpleWebRetrieverConfig):
         super().__init__(cfg)
         # load the web page reader
+        self.cfg = extract_config(cfg, SimpleWebRetrieverConfig)
         self.reader = WEB_READERS.load(cfg)
         assert self.reader is not None, "WebReader is not set."
 

@@ -1,13 +1,12 @@
 import asyncio
-from dataclasses import dataclass, field
-from typing import Optional
+from dataclasses import field
+from typing import Annotated, Optional
 
 import numpy as np
 import torch
 import torch.nn.functional as F
-from omegaconf import MISSING
-from PIL.ImageFile import ImageFile
 from PIL.Image import Image
+from PIL.ImageFile import ImageFile
 from torch.nn.parallel import DataParallel as DP
 from transformers import (
     AutoConfig,
@@ -34,17 +33,18 @@ from transformers import (
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
 from flexrag.prompt import ChatPrompt, MultiModelChatPrompt, load_template
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, configure
 
 from .model_base import (
     ENCODERS,
     GENERATORS,
     EncoderBase,
+    EncoderBaseConfig,
     GenerationConfig,
     GeneratorBase,
     VLMGeneratorBase,
 )
-from .utils import guess_model_name, configure_attn
+from .utils import configure_attn, guess_model_name
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.hf_model")
 
@@ -245,7 +245,7 @@ def load_hf_model(
     return model, tokenizer
 
 
-@dataclass
+@configure
 class HFModelConfig:
     """The Base Configuration for Huggingface Models,
     including `HFGenerator`, `HFVLMGenerator`, `HFEncoder` and `HFClipEncoder`.
@@ -262,12 +262,13 @@ class HFModelConfig:
     :type load_dtype: str
     """
 
-    model_path: str = MISSING
+    model_path: Optional[str] = None
     tokenizer_path: Optional[str] = None
     trust_remote_code: bool = False
     device_id: list[int] = field(default_factory=list)
-    load_dtype: Choices(  # type: ignore
-        [
+    load_dtype: Annotated[
+        str,
+        Choices(
             "bfloat16",
             "bf16",
             "float32",
@@ -278,11 +279,11 @@ class HFModelConfig:
             "8bit",
             "4bit",
             "auto",
-        ]
-    ) = "auto"
+        ),
+    ] = "auto"
 
 
-@dataclass
+@configure
 class HFGeneratorConfig(HFModelConfig):
     """Configuration for HFGenerator.
 
@@ -295,7 +296,7 @@ class HFGeneratorConfig(HFModelConfig):
 
     pipeline_parallel: bool = False
     use_minference: bool = False
-    model_type: Choices(["causal_lm", "seq2seq"]) = "causal_lm"  # type: ignore
+    model_type: Annotated[str, Choices("causal_lm", "seq2seq")] = "causal_lm"
 
 
 @GENERATORS("hf", config_class=HFGeneratorConfig)
@@ -436,7 +437,7 @@ class HFGenerator(GeneratorBase):
         return
 
 
-@dataclass
+@configure
 class HFVLMGeneratorConfig(HFModelConfig):
     """Configuration for HFVLMGenerator.
 
@@ -528,8 +529,8 @@ class HFVLMGenerator(VLMGeneratorBase):
         )
 
 
-@dataclass
-class HFEncoderConfig(HFModelConfig):
+@configure
+class HFEncoderConfig(HFModelConfig, EncoderBaseConfig):
     """Configuration for HFEncoder.
 
     :param max_encode_length: The maximum length of the input sequence. Default is 512.
@@ -545,7 +546,7 @@ class HFEncoderConfig(HFModelConfig):
     """
 
     max_encode_length: int = 512
-    encode_method: Choices(["cls", "mean"]) = "mean"  # type: ignore
+    encode_method: Annotated[str, Choices("cls", "mean")] = "mean"
     normalize: bool = False
     prompt: str = ""  # used in nomic-text-embedding
     task: str = ""  # used in jina-embedding
@@ -554,7 +555,7 @@ class HFEncoderConfig(HFModelConfig):
 @ENCODERS("hf", config_class=HFEncoderConfig)
 class HFEncoder(EncoderBase):
     def __init__(self, cfg: HFEncoderConfig):
-        self.devices = cfg.device_id
+        super().__init__(cfg)
         # load model
         self.model, self.tokenizer = load_hf_model(
             model_path=cfg.model_path,
@@ -563,6 +564,8 @@ class HFEncoder(EncoderBase):
             device_id=cfg.device_id,
             trust_remote_code=cfg.trust_remote_code,
         )
+        # setup model
+        self.devices = cfg.device_id
         if len(self.devices) > 1:
             if self.is_jina:
                 logger.warning("Data parallel does not support self implemented model.")
@@ -647,8 +650,8 @@ class HFEncoder(EncoderBase):
         )
 
 
-@dataclass
-class HFClipEncoderConfig(HFModelConfig):
+@configure
+class HFClipEncoderConfig(HFModelConfig, EncoderBaseConfig):
     """Configuration for HFClipEncoder.
 
     :param max_encode_length: The maximum length of the input sequence. Default is 512.
@@ -670,6 +673,7 @@ class HFClipEncoder(EncoderBase):
     tokenizer: PreTrainedTokenizer
 
     def __init__(self, cfg: HFClipEncoderConfig):
+        super().__init__(cfg)
         self.devices = cfg.device_id
         # load model
         self.model, (self.tokenizer, self.processor) = load_hf_model(
@@ -724,4 +728,8 @@ class HFClipEncoder(EncoderBase):
 
     @property
     def embedding_size(self) -> int:
-        return self.model.config.hidden_size
+        if hasattr(self.model.config, "projection_dim"):
+            return self.model.config.projection_dim
+        if hasattr(self.model.config, "hidden_size"):
+            return self.model.config.hidden_size
+        raise ValueError("Cannot determine embedding size from model config.")

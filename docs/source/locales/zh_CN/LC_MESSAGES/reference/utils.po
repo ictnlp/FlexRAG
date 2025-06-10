@@ -9,7 +9,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: FlexRAG Documentation \n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-03-19 16:54+0800\n"
+"POT-Creation-Date: 2025-06-10 14:55+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language: zh_CN\n"
@@ -20,253 +20,350 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.16.0\n"
 
-#: ../../source/reference/utils.rst:2 66809c389d544167ae81b1fa2c1376e9
+#: ../../source/reference/utils.rst:2 443cebc359214d9b9ca28a6b0644b726
 msgid "Utils"
 msgstr ""
 
-#: ../../source/reference/utils.rst:3 06f9e98d259d4de5a3df51e106b71e52
+#: ../../source/reference/utils.rst:3 209383d28b0143629738445703f9b2e2
 msgid ""
 "This module contains useful functions that are used throughout the "
 "codebase."
 msgstr ""
 
-#: ../../source/reference/utils.rst:6 7a611ef1a1ed43f2a14820a652ad3076
+#: ../../source/reference/utils.rst:6 a8cbfec2050542b0839d9c15d94a6871
 msgid "Cache"
 msgstr ""
 
-#: ffb1c9317e4844fca4c06c1068907842
-#: flexrag.cache.serializer.CloudPickleSerializer:1 of
-msgid "A serializer that uses the cloudpickle module."
+#: 3e291689ebcb4f78b0f57a75b2cd85fa 68a77f35e52944c6823c7ee05a6884fd
+#: 7271b0e4fdd44ca1af6080b1ca9d1da7 73d8b14f21fa4dc5a6bd381e5deaaeb4
+#: 7fc2b867a72945d19bb768ffae5b1984
+#: flexrag.utils.persistent_cache.FIFOPersistentCache.popitem:1
+#: flexrag.utils.persistent_cache.LFUPersistentCache.popitem:1
+#: flexrag.utils.persistent_cache.LRUPersistentCache.popitem:1
+#: flexrag.utils.persistent_cache.PersistentCacheBase.popitem:1
+#: flexrag.utils.persistent_cache.RandomPersistentCache.popitem:1 of
+msgid "This method should be implemented by subclasses."
 msgstr ""
 
-#: 85c9616cd5d94588925abe3cc55bca70 8d91b63fa2fe4a3d988f1b154160dd00
-#: a32193a9f0dc4bfcbd38ff2e61c522e5 dca87240c1e543a6be10afc4a16b25a3
-#: e003001e03354933b25f8c1a1707134e
-#: flexrag.cache.serializer.CloudPickleSerializer.deserialize:1
-#: flexrag.cache.serializer.JsonSerializer.deserialize:1
-#: flexrag.cache.serializer.MsgpackSerializer.deserialize:1
-#: flexrag.cache.serializer.PickleSerializer.deserialize:1
-#: flexrag.cache.serializer.SerializerBase.deserialize:1 of
-msgid "Deserialize the bytes into an object."
-msgstr ""
-
-#: ../../source/reference/utils.rst 0747557a0c834e9cb8238d1e1ccb0302
-#: 11edcd3cb0d0498199822c011cc08f5e 281b049c27ca41ffb6812414bcb97cfb
-#: 4c77a51b96104d5cb5890f85ade3e57d 723465a5237a47249f33b6380dca2a3d
-#: 72819ba064584374b85dfadfd955f769 781e284020d6417c918ddddc9730c576
-#: 8ccf040f664a4f9692771595c6ff80a7 b9a1746913a840b58bd4606d032ed855
-#: be55a012f276481babe3a90d4cc665a0 bf880759aeab4cc8a8208461ae772579
-#: dc270092ef8f45b6bb1153cb16f86be7 df338b4bcb8e43bc846081b093155f59
-#: df3f110f6795458a94148a4385e7941f
-msgid "Parameters"
-msgstr ""
-
-#: 1ea4731314d9423bba2d4963ca8beb7e 3213c92f5f124ca0b49a8878b55d4ba8
-#: 3860b140e69344cdb8b1492f296c87db 5404fb960d634c5c972d9fe3ab51b0e4
-#: 5eced418b3b9432abf4abe33ba59676b 683e85b0060f4f81af41ef17a54a4a84
-#: 786179c4b4fb442284dd9c4077416bfd a55f3a4dcd9342a6be6e1a25686932e7
-#: e2e217d5b7114a4893de4fd47d830c34 fe0e5f02786943d6aabd360267f73510
-#: flexrag.cache.serializer.CloudPickleSerializer.deserialize:3
-#: flexrag.cache.serializer.CloudPickleSerializer.serialize:5
-#: flexrag.cache.serializer.JsonSerializer.deserialize:3
-#: flexrag.cache.serializer.JsonSerializer.serialize:5
-#: flexrag.cache.serializer.MsgpackSerializer.deserialize:3
-#: flexrag.cache.serializer.MsgpackSerializer.serialize:5
-#: flexrag.cache.serializer.PickleSerializer.deserialize:3
-#: flexrag.cache.serializer.PickleSerializer.serialize:5
-#: flexrag.cache.serializer.SerializerBase.deserialize:3
-#: flexrag.cache.serializer.SerializerBase.serialize:5 of
-msgid "The serialized object."
-msgstr ""
-
-#: ../../source/reference/utils.rst 01f173520862412c814f64b914ba2a4a
-#: 0bc54c06733a46498908f0224a52bdd9 30a522f23f404cb5ac0ed911496fe2fa
-#: 32e98de15d5c47d59fec81208c9ef4d8 339643dde58e4226848f43c1c0807838
-#: 3f60bccaf91b4427a4b79e660708a042 4ac5a0e1d37640a481da07357c309ccd
-#: 6f4571735a1c4500bb78d1e6dab3ac92 7467dc8d4e8d44118ff62dca7196d50d
-#: baec8f6dbe2545efb7ef7094d85f1b36 bf5b4af6ab9d49b984dea10d6b69af45
-#: d37612025aa3417cbb638750b8372086 d400d9cc18f94f039791c985c0bddba2
-#: e199d6b78f854bb3a41dde50406c7925
-msgid "Returns"
-msgstr ""
-
-#: 05acf35556b9407c883b41e9283ad277 15afb1576e864f1ba32020e87da92784
-#: 43e75b938c514c4695708a95c7ce1249 4555306f6d8f42a494bf660a827eab7f
-#: 5f4199a7512b4749919290299ee6b4e7
-#: flexrag.cache.serializer.CloudPickleSerializer.deserialize:5
-#: flexrag.cache.serializer.JsonSerializer.deserialize:5
-#: flexrag.cache.serializer.MsgpackSerializer.deserialize:5
-#: flexrag.cache.serializer.PickleSerializer.deserialize:5
-#: flexrag.cache.serializer.SerializerBase.deserialize:5 of
-msgid "The deserialized object."
-msgstr ""
-
-#: ../../source/reference/utils.rst 17df643e807a4a0da6f426a9346717e9
-#: 2b966e0298c6422b95de8c4c530939be 3a61689e0e734584896afc6c49ebddec
-#: 3c0c41e381bb4ea8b7f01e111f41b142 40cfc866336e47139a775ab61d728681
-#: 483f9efe995a4c77a4e220c8ccff8dd6 677642efd67e4c159ab63c752c3cb4dd
-#: 7fa7d87f0daf4a5299fa945d8bc06542 ad9675a137f34967a62768ec6497e1b1
-#: b139110c4be04fcabbdf3c1b51be01ae b7793d12089741beaa07b7d4d1322773
-#: c5b549e5868d48eb81d68b3b3aeddd4e d5ebb34b72bd4fbca7e6f8d9106edb76
-#: dbf67f7ad38e471ea73bd0cf7358f1d7
-msgid "Return type"
-msgstr ""
-
-#: 45cee84a702046deadf8c100dbc633b9 59029f74dae84afaa10757703ae3e757
-#: 91d024366d6d4397971a900e64fec24b a0849f83d2024eca87c4c4af58ab07d6
-#: d0937a1128504adb992ffeae467cc816
-#: flexrag.cache.serializer.CloudPickleSerializer.serialize:1
-#: flexrag.cache.serializer.JsonSerializer.serialize:1
-#: flexrag.cache.serializer.MsgpackSerializer.serialize:1
-#: flexrag.cache.serializer.PickleSerializer.serialize:1
-#: flexrag.cache.serializer.SerializerBase.serialize:1 of
-msgid "Serialize the object into bytes."
-msgstr ""
-
-#: 0a24e5bedd824caea69fc555c1550b80 7c3fdf0020174dd78bae20d335b52ecd
-#: ad65d55748b644ac894222cabd07c355 ba77047e8d7a45a986498ab2a3b2165e
-#: dbb4fa4b310d4ac6851290c16783dcc9
-#: flexrag.cache.serializer.CloudPickleSerializer.serialize:3
-#: flexrag.cache.serializer.JsonSerializer.serialize:3
-#: flexrag.cache.serializer.MsgpackSerializer.serialize:3
-#: flexrag.cache.serializer.PickleSerializer.serialize:3
-#: flexrag.cache.serializer.SerializerBase.serialize:3 of
-msgid "The object to serialize."
-msgstr ""
-
-#: 29e7e83e066349b68ee93fca2e299014 7de92dbd3e474c82b7bc3de5d0d88e40
-#: 8ae40c56a9be406ea97e9b8c135f68f9 c109fbb59afa407d99ca346f75113f63
-#: fe193f1f494f4b1d9b0509ebc8efc5a7
-#: flexrag.cache.persistent_cache.FIFOPersistentCache.popitem:1
-#: flexrag.cache.persistent_cache.LFUPersistentCache.popitem:1
-#: flexrag.cache.persistent_cache.LRUPersistentCache.popitem:1
-#: flexrag.cache.persistent_cache.PersistentCacheBase.popitem:1
-#: flexrag.cache.persistent_cache.RandomPersistentCache.popitem:1 of
-msgid "as a 2-tuple; but raise KeyError if D is empty."
-msgstr ""
-
-#: 9311b5a4c6c4416fb753e0950b9704ab flexrag.cache.serializer.JsonSerializer:1
-#: of
-msgid "A serializer that uses the json module."
-msgstr ""
-
-#: 31133444fa5d48f8a823368a294b2ccc
-#: flexrag.cache.serializer.MsgpackSerializer:1 of
-msgid "A serializer that uses the msgpack module."
-msgstr ""
-
-#: fa424569bc314e0393ffa192570b674b
-#: flexrag.cache.persistent_cache.PersistentCacheBase.hash_key:1 of
-msgid "Hash the key."
-msgstr ""
-
-#: 92918129035140d18e1dd15a9062f652 flexrag.cache.serializer.PickleSerializer:1
-#: of
-msgid "A serializer that uses the pickle module."
-msgstr ""
-
-#: fe9035d312c34ca0bc50b91603dfca10 flexrag.cache.serializer.SerializerBase:1
-#: of
-msgid "A simple interface for serializing and deserializing python objects."
-msgstr ""
-
-#: 0e3926b2e08b4e70b38d0c0dbb9db6c0 flexrag.cache.backends.StorageBackendBase:1
-#: of
+#: 4aac4f1a107e47058a86b70d47090d85
+#: flexrag.utils.persistent_cache.LFUPersistentCache:1 of
 msgid ""
-"The Binary Storage Backend For ``PersistentCache``. The backend should "
-"provide interfaces like ``MutableMapping``. Thus, The following methods "
-"should be implemented:"
+"The LFUPersistentCache evicts the least frequently used item from the "
+"cache when the cache is full."
 msgstr ""
 
-#: eadb62fb92844196a2a165f86625700c
-#: flexrag.cache.backends.StorageBackendBase:16 of
-msgid "The following methods will be implemented automatically:"
+#: e90008c550ec4117a4c648f968fdadee
+#: flexrag.utils.persistent_cache.LFUPersistentCache:3 of
+msgid ""
+"This implementation employs a Counter to keep track of the frequency of "
+"access. However, the frequency will not be persisted to disk. Thus, the "
+"frequency will be reset when the cache is loaded from disk."
 msgstr ""
 
-#: ../../source/reference/utils.rst:11 96e45a5859c44350ae0d90cfb9ed8ed5
+#: b5ee7667344d448481f9f135ad8dfe0e
+#: flexrag.utils.persistent_cache.LRUPersistentCache:1 of
+msgid ""
+"The LRUPersistentCache evicts the least recently used item from the cache"
+" when the cache is full."
+msgstr ""
+
+#: 01ea9ad830f143d48242c2ee902d8139
+#: flexrag.utils.persistent_cache.LRUPersistentCache:3 of
+msgid ""
+"This implementation employs an OrderedDict to keep track of the order of "
+"access. However, the order will not be persisted to disk. Thus, the order"
+" will be reset when the cache is loaded from disk."
+msgstr ""
+
+#: a91bf594f4c44901ad69ba9b7a359243
+#: flexrag.utils.persistent_cache.PersistentCacheBase:1 of
+msgid "The base class for PersistentCache."
+msgstr ""
+
+#: 16679b54797643e88c2865518b78ce51
+#: flexrag.utils.persistent_cache.PersistentCacheBase:3 of
+msgid ""
+"The PersistentCache is a cache that can be persisted to disk, and provide"
+" a simple interface like a dictionary. The subclasses should implement "
+"the popitem method, which decides which item to evict from the cache when"
+" the cache is full."
+msgstr ""
+
+#: 7e6b2782654248f0912b9b4403e66dfe
+#: flexrag.utils.persistent_cache.PersistentCacheBase.cache:1 of
+msgid ""
+"Decorator to cache the result of a function. The arguments of the "
+"function should be hashable."
+msgstr ""
+
+#: 55dcc487acc24cd5b8098ed3c6f45774
+#: flexrag.utils.persistent_cache.PersistentCacheBase.cache:4 of
+msgid "For example:"
+msgstr ""
+
+#: c8f6d4956b57409797016a926a270dd0
+#: flexrag.utils.persistent_cache.PersistentCacheBase.reduce_size:1 of
+msgid "Reduce the size of the cache to the specified size."
+msgstr ""
+
+#: 9b2ab483680b4a5e9cb682bc0338ea04
+#: flexrag.utils.persistent_cache.PersistentCacheBase.reduce_size:3 of
+msgid ""
+"param size: The size to reduce to. If None, use the self.maxsize. type "
+"size: int return: None rtype: None"
+msgstr ""
+
+#: 80f1a628691b43fdb690b2e38a3d5cdd
+#: flexrag.utils.persistent_cache.RandomPersistentCache:1 of
+msgid ""
+"The RandomPersistentCache evicts a random item from the cache when the "
+"cache is full."
+msgstr ""
+
+#: 885fededb38b40629b40fe18ca99d340
+#: flexrag.utils.persistent_cache.RandomPersistentCache:3 of
+msgid ""
+"In this implementation, the evict order is determined by the __iter__ "
+"method of the backend."
+msgstr ""
+
+#: ../../source/reference/utils.rst:11 71913a56ebf34a3eb47a5c84c1f3be72
 msgid "Other Utils"
 msgstr ""
 
-#: 6176c60ce4784401bddb859aad143a78 flexrag.utils.Register.get:1 of
+#: f616d7aa727444edab74fd37b0e80531 flexrag.utils.configure.Register.get:1 of
 msgid "Get the item dict by name."
 msgstr ""
 
-#: 1624417c513e42faad6a5ef80a08514a 2f6ac796f61c4f98b3830b25143761db
-#: flexrag.utils.Register.get:3 flexrag.utils.Register.get_item:3 of
+#: ../../source/reference/utils.rst 1dc3b95616f4470782dc04084328359a
+#: 526d5a2c8dd346b3bfbc92e2315803c6 686d6ccc6b5a45b183271ede9543c38b
+#: bf3b899a755545c9a76be5b5f17f42d4 e1233427e28a4958ac908c3a39ce89e1
+#: ee1ea76feaca498f9799bf0740e7835a
+msgid "Parameters"
+msgstr ""
+
+#: 62c6ab05099b46ef88405a44a7b8dfac a74cdbf242cf49e4ae8c8ccd732200b1
+#: flexrag.utils.configure.Register.get:3
+#: flexrag.utils.configure.Register.get_item:3 of
 msgid "The name of the item."
 msgstr ""
 
-#: b719aa68bfc44616a2b98e85c45d558d flexrag.utils.Register.get:5 of
+#: 57f235c380af46ce81be53c8103e2d11 flexrag.utils.configure.Register.get:5 of
 msgid "The default value to return, defaults to None."
 msgstr ""
 
-#: 50751f7e6a454bba951b9ec280628e27 flexrag.utils.Register.get:7 of
+#: ../../source/reference/utils.rst 88dd41b039584f5db14bb8cc5df34ea7
+#: c433c48479e6467ea213ed1fea8c103c dd46b042cebf4b279ffc64d030e3f7b5
+#: e65714bd77ed45909297662f91243bfe
+msgid "Returns"
+msgstr ""
+
+#: 9c8a0632c4b84fd0a90962b026add0ae flexrag.utils.configure.Register.get:7 of
 msgid ""
 "The item dict containing the item, main_name, short_names, and "
 "config_class."
 msgstr ""
 
-#: ccee395218dd499c876330b6188ce42b flexrag.utils.Register.get_item:1 of
+#: ../../source/reference/utils.rst 1019ab01d4fe4e8e805be6e45c35766a
+#: 47f068970fff44c19e9363b70a90a2fb a4fb25c4e8fe4acf8edc9fabe52e7ea7
+#: ee0db004ef794933b4dc1b2a298742ac
+msgid "Return type"
+msgstr ""
+
+#: 8f89ef68134344b98608c4129b76a7b6 flexrag.utils.configure.Register.get_item:1
+#: of
 msgid "Get the item by name."
 msgstr ""
 
-#: 47d829d1295c484d9c72ee6fd2d893df flexrag.utils.Register.get_item:5 of
+#: dd70f0fa0c7b41a7aa21b79098845c0c flexrag.utils.configure.Register.get_item:5
+#: of
 msgid "The item."
 msgstr ""
 
-#: ecfcbff464324e49826a26f137fa7b0b flexrag.utils.Register.load:1 of
+#: 044a82dc0201479ca6a0facbcdf1be99 flexrag.utils.configure.Register.load:1 of
 msgid "Load the item(s) from the generated config."
 msgstr ""
 
-#: 80b7862781cc47eebc1f7991a568bdfc flexrag.utils.Register.load:3 of
+#: 3832ae6445ca4fd092d4d40500a946b2 flexrag.utils.configure.Register.load:3 of
 msgid "The config generated by `make_config` method."
 msgstr ""
 
-#: 65d318e69f1745a8be0e05c913c13f93 flexrag.utils.Register.load:5 of
+#: f8bff60294e5417286020d072ea7dd33 flexrag.utils.configure.Register.load:5 of
 msgid "The additional arguments to pass to the item(s)."
 msgstr ""
 
-#: ../../source/reference/utils.rst 4f78dd897d504aff952b5dccf61eb247
+#: ../../source/reference/utils.rst 51fe5bab3cfa41a8a732533d04f540b1
 msgid "Raises"
 msgstr ""
 
-#: 24110128f98e45429379ccdb1b3920c9 flexrag.utils.Register.load:7 of
+#: 9db84a287aa54834a3f064cfb8394016 flexrag.utils.configure.Register.load:7 of
 msgid "If the item type is invalid."
 msgstr ""
 
-#: 68736699b56d47ada89e94e9a822ac95 flexrag.utils.Register.load:8 of
+#: 5bd5f395f527483bad8e6b671a71e7f9 flexrag.utils.configure.Register.load:8 of
 msgid "The loaded item(s)."
 msgstr ""
 
-#: c15c489b5f2a47c1bcf62759cb60b066 flexrag.utils.Register.mainnames:1 of
+#: 04d4a33fadf2470083c4aa1bcc9e52fb flexrag.utils.Register.mainnames:1 of
 msgid "Get the main names of the registered items."
 msgstr ""
 
-#: 4d449ab47d8947769d6111a8af25fc7e flexrag.utils.Register.make_config:1 of
+#: 5e93c25d5c554c6cb89ce3f92a2a4c2f
+#: flexrag.utils.configure.Register.make_config:1 of
 msgid "Make a config class for the registered items."
 msgstr ""
 
-#: 2ec37c8949ea44e1bc4cd4ef2ffff0ee flexrag.utils.Register.make_config:3 of
+#: 207fff50422e48bbb889e758b776ae71
+#: flexrag.utils.configure.Register.make_config:3 of
 msgid "Whether to allow multiple items to be selected, defaults to False."
 msgstr ""
 
-#: b05a383705a7468480b725d2c0c613cb flexrag.utils.Register.make_config:5 of
-msgid "The default item to select, defaults to MISSING(???)."
+#: 13a6447f3a89426ca5aaaf88b18ac6a1
+#: flexrag.utils.configure.Register.make_config:5 of
+msgid "The default item to select, defaults to None."
 msgstr ""
 
-#: 8b0c56e959314612b58b69c52d1b1b0d flexrag.utils.Register.make_config:7 of
+#: 41b0351d852648c3bce62bb4d7e32354
+#: flexrag.utils.configure.Register.make_config:7 of
 msgid "The name of the config class, defaults to None."
 msgstr ""
 
-#: a79b1566495e45bdb42c3cc70e5a8840 flexrag.utils.Register.make_config:9 of
+#: b7189f029e274120928e3975b219c5aa
+#: flexrag.utils.configure.Register.make_config:9 of
 msgid "The config class."
 msgstr ""
 
-#: 288f8aeee47a4e0aa21cdc13edd8fd87 flexrag.utils.Register.names:1 of
+#: 87eca0f04dc946a2b9e63196101a909b flexrag.utils.Register.names:1 of
 msgid "Get the names of the registered items."
 msgstr ""
 
-#: 5cd8600d02944944b7bc17b1084a9b22 flexrag.utils.Register.shortnames:1 of
+#: dd26b6f584f4451ca1a176d96f912fa0 flexrag.utils.Register.shortnames:1 of
 msgid "Get the short names of the registered items."
 msgstr ""
+
+#: bfe2f44d66e446e1a57631d60d293d09 flexrag.utils.configure.Register.squeeze:1
+#: of
+msgid "Convert the nused fields to None."
+msgstr ""
+
+#: ../../source/reference/utils.rst:16 e18f19b5524f4634910203223b2a164b
+msgid "Common Dataclass"
+msgstr ""
+
+#: ../../source/reference/utils.rst:17 4ba3bae924a2454084b35586e90e2cc0
+msgid ""
+"This module provides several pre-defined dataclasses that are commonly "
+"used in the project."
+msgstr ""
+
+#: b0c2ce3100bc478b8741e89939d6e1f4 ec72f08692d040e689f2e9dbde83b913
+#: flexrag.utils.dataclasses.Context:1
+#: flexrag.utils.dataclasses.RetrievedContext:1 of
+msgid "The dataclass for retrieved context."
+msgstr ""
+
+#: bb8abdb6c0ee46a7ad79704a95005638 flexrag.utils.dataclasses.Context:3 of
+msgid "The unique identifier of the context. Default: None."
+msgstr ""
+
+#: 4e83aeb1a6d840c9afc9d06b3f6f061d flexrag.utils.dataclasses.Context:5 of
+msgid "The context data. Default: {}."
+msgstr ""
+
+#: 9e8808e4350b45768c951c56729f3a55 flexrag.utils.dataclasses.Context:7 of
+msgid "The source of the retrieved data. Default: None."
+msgstr ""
+
+#: 3fc698065b1643e7b3688a4f8bd0d39b flexrag.utils.dataclasses.Context:9 of
+msgid "The metadata of the context. Default: {}."
+msgstr ""
+
+#: 8465f854f3a7499bb0a0102734ae3f2a 955084478f2445658f41f7ee1cf61497
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dump:1
+#: of
+msgid "Dump the dataclass to a YAML file."
+msgstr ""
+
+#: 369e8b920a794385bc60798388c11606 b5df20da05b44db389da1e89826ce458
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.dumps:1
+#: of
+msgid "Dump the dataclass to a YAML string."
+msgstr ""
+
+#: 1d69fd677b7f47de8d14192e2459012c f303a165d6954b8cb100752dfcd4f71d
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.load:1
+#: of
+msgid "Load the dataclass from a YAML file."
+msgstr ""
+
+#: 101610f36d994b6693e816f96c0ec463 3cae93135b5347da85e913ed319c03a0
+#: flexrag.utils.configure._create_pydantic_dataclass.<locals>.decorator.<locals>.loads:1
+#: of
+msgid "Load the dataclass from a YAML string."
+msgstr ""
+
+#: ab14d2add1d64cdd87fa9fd6f946f70d
+#: flexrag.utils.dataclasses.RetrievedContext:3 of
+msgid "The name of the retriever. Required."
+msgstr ""
+
+#: 0ee2da047e694395b11fd51b4e7e7b55
+#: flexrag.utils.dataclasses.RetrievedContext:5 of
+msgid "The query for retrieval. Required."
+msgstr ""
+
+#: f42543a5ed6e4f0da7dec81a2eee8bfb
+#: flexrag.utils.dataclasses.RetrievedContext:7 of
+msgid "The relevance score of the retrieved data. Default: 0.0."
+msgstr ""
+
+#~ msgid "A serializer that uses the cloudpickle module."
+#~ msgstr ""
+
+#~ msgid "Deserialize the bytes into an object."
+#~ msgstr ""
+
+#~ msgid "The serialized object."
+#~ msgstr ""
+
+#~ msgid "The deserialized object."
+#~ msgstr ""
+
+#~ msgid "Serialize the object into bytes."
+#~ msgstr ""
+
+#~ msgid "The object to serialize."
+#~ msgstr ""
+
+#~ msgid "as a 2-tuple; but raise KeyError if D is empty."
+#~ msgstr ""
+
+#~ msgid "A serializer that uses the json module."
+#~ msgstr ""
+
+#~ msgid "A serializer that uses the msgpack module."
+#~ msgstr ""
+
+#~ msgid "Hash the key."
+#~ msgstr ""
+
+#~ msgid "A serializer that uses the pickle module."
+#~ msgstr ""
+
+#~ msgid "A simple interface for serializing and deserializing python objects."
+#~ msgstr ""
+
+#~ msgid ""
+#~ "The Binary Storage Backend For "
+#~ "``PersistentCache``. The backend should "
+#~ "provide interfaces like ``MutableMapping``. "
+#~ "Thus, The following methods should be"
+#~ " implemented:"
+#~ msgstr ""
+
+#~ msgid "The following methods will be implemented automatically:"
+#~ msgstr ""
+
+#~ msgid "The default item to select, defaults to MISSING(???)."
+#~ msgstr ""
 

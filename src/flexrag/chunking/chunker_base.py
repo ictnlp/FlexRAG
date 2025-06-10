@@ -1,11 +1,10 @@
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Optional
 
-from flexrag.utils import Register
+from flexrag.utils import Register, data
 
 
-@dataclass
+@data
 class Chunk:
     """The dataclass for a chunk of text.
 
@@ -29,11 +28,14 @@ class ChunkerBase(ABC):
     """
 
     @abstractmethod
-    def chunk(self, text: str) -> list[Chunk]:
+    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
         """Chunk the given text into smaller chunks.
 
         :param text: The text to chunk.
         :type text: str
+        :param return_str: If True, return the chunks as strings instead of Chunk objects.
+            Default is False.
+        :type return_str: bool
         :return: The chunks of the text.
         :rtype: list[Chunk]
         """

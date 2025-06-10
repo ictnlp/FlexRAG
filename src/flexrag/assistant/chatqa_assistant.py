@@ -1,9 +1,8 @@
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.utils import LOGGER_MANAGER
+from flexrag.utils.dataclasses import RetrievedContext
 
 from .assistant import ASSISTANTS
 from .modular_rag_assistant import ModularAssistant, ModularAssistantConfig
-
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant.chatqa")
 

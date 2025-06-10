@@ -1,19 +1,24 @@
-import json
 import logging
 import os
 import sys
-from dataclasses import dataclass, field
+from dataclasses import field
 from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
-from omegaconf import OmegaConf
 
 from flexrag.assistant import ASSISTANTS
-from flexrag.common_dataclass import RetrievedContext
+from flexrag.database.serializer import json_dump
 from flexrag.datasets import RAGEvalDataset, RAGEvalDatasetConfig
 from flexrag.metrics import Evaluator, EvaluatorConfig
-from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, load_user_module
+from flexrag.utils import (
+    LOGGER_MANAGER,
+    SimpleProgressLogger,
+    configure,
+    extract_config,
+    load_user_module,
+)
+from flexrag.utils.dataclasses import RetrievedContext
 
 # load user modules before loading config
 for arg in sys.argv:
@@ -22,12 +27,12 @@ for arg in sys.argv:
         sys.argv.remove(arg)
 
 
-AssistantConfig = ASSISTANTS.make_config()
+AssistantConfig = ASSISTANTS.make_config(config_name="AssistantConfig")
 
 
-@dataclass
+@configure
 class Config(AssistantConfig, RAGEvalDatasetConfig):
-    eval_config: EvaluatorConfig = field(default_factory=EvaluatorConfig)  # fmt: skip
+    eval_config: EvaluatorConfig = field(default_factory=EvaluatorConfig)
     log_interval: int = 10
     output_path: Optional[str] = None
 
@@ -39,6 +44,7 @@ logger = LOGGER_MANAGER.get_logger("run_assistant")
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
 def main(config: Config):
+    config = extract_config(config, Config)
     # load dataset
     testset = RAGEvalDataset(config)
 
@@ -60,11 +66,10 @@ def main(config: Config):
         log_path = os.devnull
 
     # save config and set logger
-    with open(config_path, "w", encoding="utf-8") as f:
-        OmegaConf.save(config, f)
+    config.dump(config_path)
     handler = logging.FileHandler(log_path)
     LOGGER_MANAGER.add_handler(handler)
-    logger.debug(f"Configs:\n{OmegaConf.to_yaml(config)}")
+    logger.debug(f"Configs:\n{config.dumps()}")
 
     # search and generate
     p_logger = SimpleProgressLogger(logger, interval=config.log_interval)
@@ -81,20 +86,22 @@ def main(config: Config):
             response, ctxs, metadata = assistant.answer(question=item.question)
             responses.append(response)
             contexts.append(ctxs)
-            json.dump(
-                {
-                    "question": item.question,
-                    "golden": item.golden_answers,
-                    "golden_contexts": item.golden_contexts,
-                    "metadata_test": item.meta_data,
-                    "response": response,
-                    "contexts": ctxs,
-                    "metadata": metadata,
-                },
-                f,
-                ensure_ascii=False,
+            f.write(
+                json_dump(
+                    {
+                        "question": item.question,
+                        "golden": item.golden_answers,
+                        "golden_contexts": item.golden_contexts,
+                        "metadata_test": item.meta_data,
+                        "response": response,
+                        "contexts": ctxs,
+                        "metadata": metadata,
+                    },
+                    to_bytes=False,
+                    ensure_ascii=False,
+                )
+                + "\n"
             )
-            f.write("\n")
             p_logger.update(desc="Searching")
 
     # evaluate
@@ -108,14 +115,16 @@ def main(config: Config):
         log=True,
     )
     with open(eval_score_path, "w", encoding="utf-8") as f:
-        json.dump(
-            {
-                "eval_scores": resp_score,
-                "eval_details": resp_score_detail,
-            },
-            f,
-            indent=4,
-            ensure_ascii=False,
+        f.write(
+            json_dump(
+                {
+                    "eval_scores": resp_score,
+                    "eval_details": resp_score_detail,
+                },
+                to_bytes=False,
+                indent=4,
+                ensure_ascii=False,
+            )
         )
     return
 

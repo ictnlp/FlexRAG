@@ -1,8 +1,5 @@
-from dataclasses import dataclass, field
-
-from flexrag.common_dataclass import RetrievedContext
-from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
-from flexrag.utils import LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, configure
+from flexrag.utils.dataclasses import RetrievedContext
 
 from .metrics_base import METRICS, MetricsBase
 
@@ -10,10 +7,9 @@ logger = LOGGER_MANAGER.get_logger("flexrag.metrics")
 MetricConfig = METRICS.make_config(allow_multiple=True)
 
 
-@dataclass
+@configure
 class EvaluatorConfig(MetricConfig):
     round: int = 2
-    response_preprocess: TextProcessPipelineConfig = field(default_factory=TextProcessPipelineConfig)  # type: ignore
 
 
 class Evaluator:
@@ -21,12 +17,12 @@ class Evaluator:
         self.metrics: dict[str, MetricsBase] = {
             name: metric for name, metric in zip(cfg.metrics_type, METRICS.load(cfg))
         }
-        self.response_pipeline = TextProcessPipeline(cfg.response_preprocess)
         self.round = cfg.round
         return
 
     def evaluate(
         self,
+        *,
         questions: list[str] = None,
         responses: list[str] = None,
         golden_responses: list[list[str]] = None,
@@ -71,12 +67,6 @@ class Evaluator:
         # evaluate
         evaluation_results = {}
         evaluation_details = {}
-        if responses is not None:
-            responses = [self.response_pipeline(res) for res in responses]
-        if golden_responses is not None:
-            golden_responses = [
-                [self.response_pipeline(g) for g in golds] for golds in golden_responses
-            ]
         for metric in self.metrics:
             metric = str(metric)  # make json serializable
             r, r_detail = self.metrics[metric](

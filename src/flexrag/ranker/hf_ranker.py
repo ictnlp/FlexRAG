@@ -1,17 +1,16 @@
 import asyncio
 import math
-from dataclasses import dataclass
 
-import torch
 import numpy as np
+import torch
 
-from flexrag.models.hf_model import HFModelConfig, load_hf_model, HFGenerationConfig
-from flexrag.utils import TIME_METER
+from flexrag.models.hf_model import HFGenerationConfig, HFModelConfig, load_hf_model
+from flexrag.utils import TIME_METER, configure
 
-from .ranker import RankerBase, RankerBaseConfig, RANKERS
+from .ranker import RANKERS, RankerBase, RankerBaseConfig
 
 
-@dataclass
+@configure
 class HFCrossEncoderRankerConfig(RankerBaseConfig, HFModelConfig):
     """The configuration for the HuggingFace Cross Encoder ranker.
 
@@ -62,7 +61,7 @@ class HFCrossEncoderRanker(RankerBase):
         return await asyncio.to_thread(self._rank, query, candidates)
 
 
-@dataclass
+@configure
 class HFSeq2SeqRankerConfig(RankerBaseConfig, HFModelConfig):
     """The configuration for the HuggingFace Sequence-to-Sequence ranker.
 
@@ -142,7 +141,7 @@ class HFSeq2SeqRanker(RankerBase):
         return await asyncio.to_thread(self._rank, query, candidates)
 
 
-@dataclass
+@configure
 class HFColBertRankerConfig(RankerBaseConfig, HFModelConfig):
     """The configuration for the HuggingFace ColBERT ranker.
 
@@ -227,7 +226,7 @@ class HFColBertRanker(RankerBase):
             max_length=self.max_encode_length - 1,  # for insert token
             truncation=True,
         )
-        inputs = self._insert_token(inputs, insert_token_id)  # type: ignore
+        inputs = self._insert_token(inputs, insert_token_id)
 
         # padding for query
         if is_query:

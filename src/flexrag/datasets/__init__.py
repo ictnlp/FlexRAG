@@ -5,10 +5,12 @@ from .line_delimited_dataset import LineDelimitedDataset, LineDelimitedDatasetCo
 from .rag_dataset import (
     RAGCorpusDataset,
     RAGCorpusDatasetConfig,
+    RAGEvalData,
     RAGEvalDataset,
     RAGEvalDatasetConfig,
+    RAGMultipleChoiceData,
 )
-from .retrieval_dataset import MTEBDataset, MTEBDatasetConfig
+from .retrieval_dataset import IREvalData, MTEBDataset, MTEBDatasetConfig
 
 __all__ = [
     "ChainDataset",
@@ -21,8 +23,11 @@ __all__ = [
     "LineDelimitedDatasetConfig",
     "RAGEvalDatasetConfig",
     "RAGEvalDataset",
+    "RAGEvalData",
+    "RAGMultipleChoiceData",
     "RAGCorpusDatasetConfig",
     "RAGCorpusDataset",
     "MTEBDataset",
     "MTEBDatasetConfig",
+    "IREvalData",
 ]

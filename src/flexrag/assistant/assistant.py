@@ -1,11 +1,10 @@
 import os
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
 from typing import Optional
 
-from flexrag.common_dataclass import RetrievedContext
 from flexrag.prompt import ChatPrompt
-from flexrag.utils import Register
+from flexrag.utils import Register, data
+from flexrag.utils.dataclasses import RetrievedContext
 
 
 class AssistantBase(ABC):
@@ -26,7 +25,7 @@ class AssistantBase(ABC):
         return
 
 
-@dataclass
+@data
 class SearchHistory:
     query: str
     contexts: list[RetrievedContext]

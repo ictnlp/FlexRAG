@@ -1,19 +1,19 @@
 import time
-from dataclasses import dataclass
 from typing import Optional
 
 import httpx
 from bs4 import BeautifulSoup
 
-from flexrag.common_dataclass import RetrievedContext
-from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger
+from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, configure
+from flexrag.utils.configure import extract_config
+from flexrag.utils.dataclasses import RetrievedContext
 
 from ..retriever_base import RETRIEVERS, RetrieverBase, RetrieverBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.web_retriever")
 
 
-@dataclass
+@configure
 class WikipediaRetrieverConfig(RetrieverBaseConfig):
     """The configuration for the ``WikipediaRetriever``.
 
@@ -38,7 +38,7 @@ class WikipediaRetriever(RetrieverBase):
     def __init__(self, cfg: WikipediaRetrieverConfig):
         super().__init__(cfg)
         # set basic configs
-        self.search_url = cfg.search_url
+        self.cfg = extract_config(cfg, WikipediaRetrieverConfig)
         self.client = httpx.Client(proxy=cfg.proxy)
         return
 
@@ -53,7 +53,7 @@ class WikipediaRetriever(RetrieverBase):
 
         # search & parse
         results = []
-        p_logger = SimpleProgressLogger(logger, len(query), self.log_interval)
+        p_logger = SimpleProgressLogger(logger, len(query), self.cfg.log_interval)
         for q in query:
             time.sleep(delay)
             p_logger.update(1, "Searching")
@@ -61,7 +61,7 @@ class WikipediaRetriever(RetrieverBase):
         return results
 
     def search_item(self, query: str, **kwargs) -> RetrievedContext:
-        search_url = self.search_url + query.replace(" ", "+")
+        search_url = self.cfg.search_url + query.replace(" ", "+")
         response_text = self.client.get(search_url).text
 
         soup = BeautifulSoup(response_text, features="html.parser")

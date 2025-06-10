@@ -1,12 +1,11 @@
-from dataclasses import dataclass
-from typing import Optional
+from typing import Annotated, Optional
 
-from flexrag.utils import Choices
+from flexrag.utils import Choices, configure
 
 
-@dataclass
+@configure
 class UTokenizerConfig:
-    tokenizer_type: Choices(["hf", "tiktoken", "moses"]) = "moses"  # type: ignore
+    tokenizer_type: Annotated[str, Choices("hf", "tiktoken", "moses")] = "moses"
     hf_tokenizer_path: Optional[str] = None
     tiktok_tokenizer_name: Optional[str] = None
     lang: Optional[str] = None

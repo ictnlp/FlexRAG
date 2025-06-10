@@ -1,11 +1,10 @@
 import asyncio
-from dataclasses import dataclass
+from typing import Annotated, Optional
 
-from omegaconf import MISSING
 from transformers import AutoConfig, PretrainedConfig
 
-from flexrag.prompt import load_template, ChatPrompt
-from flexrag.utils import Choices, TIME_METER, LOGGER_MANAGER
+from flexrag.prompt import ChatPrompt, load_template
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, configure
 
 from .model_base import GENERATORS, GenerationConfig, GeneratorBase
 from .utils import guess_model_name
@@ -13,7 +12,7 @@ from .utils import guess_model_name
 logger = LOGGER_MANAGER.get_logger("flexrag.models.vllm")
 
 
-@dataclass
+@configure
 class VLLMGeneratorConfig:
     """Configuration for VLLMGenerator.
 
@@ -31,11 +30,13 @@ class VLLMGeneratorConfig:
     :type use_minference: bool
     """
 
-    model_path: str = MISSING
+    model_path: Optional[str] = None
     gpu_memory_utilization: float = 0.85
     max_model_len: int = 16384
     tensor_parallel: int = 1
-    load_dtype: Choices(["auto", "float32", "float16", "bfloat16"]) = "auto"  # type: ignore
+    load_dtype: Annotated[str, Choices("auto", "float32", "float16", "bfloat16")] = (
+        "auto"
+    )
     use_minference: bool = False
     trust_remote_code: bool = False
 
@@ -46,6 +47,7 @@ class VLLMGenerator(GeneratorBase):
         from vllm import LLM
 
         # try to load model arguments from model config
+        assert cfg.model_path is not None, "`model_path` must be provided"
         model_cfg: PretrainedConfig = AutoConfig.from_pretrained(
             cfg.model_path,
             trust_remote_code=cfg.trust_remote_code,

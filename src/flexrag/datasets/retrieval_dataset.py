@@ -1,15 +1,15 @@
 import json
 import os
-from dataclasses import dataclass
+from dataclasses import field
+from typing import Optional
 
-from omegaconf import MISSING
-
-from flexrag.common_dataclass import Context, IREvalData
+from flexrag.utils import configure, data
+from flexrag.utils.dataclasses import Context
 
 from .dataset import MappingDataset
 
 
-@dataclass
+@configure
 class MTEBDatasetConfig:
     """Configuration for loading `MTEB <https://huggingface.co/mteb>`_ Retrieval Dataset.
     The __getitem__ method will return `IREvalData` objects.
@@ -38,10 +38,27 @@ class MTEBDatasetConfig:
     :type load_corpus: bool
     """
 
-    data_path: str = MISSING
-    subset: str = MISSING
+    data_path: str
+    subset: str
     encoding: str = "utf-8"
     load_corpus: bool = False
+
+
+@data
+class IREvalData:
+    """The dataclass for Information Retrieval evaluation data.
+
+    :param question: The question for evaluation. Required.
+    :type question: str
+    :param contexts: The contexts related to the question. Default: None.
+    :type contexts: Optional[list[Context]]
+    :param meta_data: The metadata of the evaluation data. Default: {}.
+    :type meta_data: dict
+    """
+
+    question: str
+    contexts: Optional[list[Context]] = None
+    meta_data: dict = field(default_factory=dict)
 
 
 class MTEBDataset(MappingDataset[IREvalData]):

@@ -1,34 +1,34 @@
 import asyncio
 import logging
-from dataclasses import dataclass
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 import numpy as np
-from concurrent.futures import ThreadPoolExecutor
 from numpy import ndarray
-from omegaconf import MISSING
 
 from flexrag.prompt import ChatPrompt
-from flexrag.utils import TIME_METER, LOGGER_MANAGER
+from flexrag.utils import LOGGER_MANAGER, TIME_METER, configure
 
 from .model_base import (
-    GenerationConfig,
-    GeneratorBase,
+    ENCODERS,
     GENERATORS,
     EncoderBase,
-    ENCODERS,
+    EncoderBaseConfig,
+    GenerationConfig,
+    GeneratorBase,
 )
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.ollama")
 
 
-@dataclass
+@configure
 class OllamaGeneratorConfig:
     """Configuration for the OllamaGenerator.
 
     :param model_name: The name of the model to use. Required.
     :type model_name: str
-    :param base_url: The base URL of the Ollama server. Required.
+    :param base_url: The base URL of the Ollama server.
+        Default is 'http://localhost:11434/'.
     :type base_url: str
     :param verbose: Whether to show verbose logs. Default is False.
     :type verbose: bool
@@ -38,8 +38,8 @@ class OllamaGeneratorConfig:
     :type allow_parallel: bool
     """
 
-    model_name: str = MISSING
-    base_url: str = MISSING
+    model_name: Optional[str] = None
+    base_url: str = "http://localhost:11434/"
     verbose: bool = False
     num_ctx: int = 4096
     allow_parallel: bool = True
@@ -51,6 +51,7 @@ class OllamaGenerator(GeneratorBase):
         from ollama import Client
 
         self.client = Client(host=cfg.base_url)
+        assert cfg.model_name is not None, "`model_name` must be provided"
         self.model_name = cfg.model_name
         self.max_length = cfg.num_ctx
         self.allow_parallel = cfg.allow_parallel
@@ -214,13 +215,14 @@ class OllamaGenerator(GeneratorBase):
         return
 
 
-@dataclass
-class OllamaEncoderConfig:
+@configure
+class OllamaEncoderConfig(EncoderBaseConfig):
     """Configuration for the OllamaEncoder.
 
     :param model_name: The name of the model to use. Required.
     :type model_name: str
-    :param base_url: The base URL of the Ollama server. Required.
+    :param base_url: The base URL of the Ollama server.
+        Default is 'http://localhost:11434/'.
     :type base_url: str
     :param prompt: The prompt to use. Default is None.
     :type prompt: Optional[str]
@@ -231,8 +233,8 @@ class OllamaEncoderConfig:
     :param allow_parallel: Whether to allow parallel generation. Default is True.
     """
 
-    model_name: str = MISSING
-    base_url: str = MISSING
+    model_name: Optional[str] = None
+    base_url: str = "http://localhost:11434/"
     prompt: Optional[str] = None
     verbose: bool = False
     embedding_size: int = 768
@@ -242,10 +244,11 @@ class OllamaEncoderConfig:
 @ENCODERS("ollama", config_class=OllamaEncoderConfig)
 class OllamaEncoder(EncoderBase):
     def __init__(self, cfg: OllamaEncoderConfig) -> None:
-        super().__init__()
+        super().__init__(cfg)
         from ollama import Client
 
         self.client = Client(host=cfg.base_url)
+        assert cfg.model_name is not None, "`model_name` must be provided"
         self.model_name = cfg.model_name
         self.prompt = cfg.prompt
         self._embedding_size = cfg.embedding_size
