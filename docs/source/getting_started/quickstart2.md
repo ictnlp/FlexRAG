@@ -8,7 +8,7 @@ from flexrag.retriever import LocalRetriever
 
 def main():
     # load the retriever
-    retriever = LocalRetriever.load_from_hub("FlexRAG/wiki2021_atlas_bm25s")
+    retriever = LocalRetriever.load_from_hub("FlexRAG/enwiki_2021_atlas")
 
     # load the generator
     generator = OpenAIGenerator(

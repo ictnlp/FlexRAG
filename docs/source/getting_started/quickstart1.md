@@ -3,9 +3,9 @@ This quickstart guide will help you deploy or evaluate the RAG assistant with Fl
 
 In FlexRAG, a RAG assistant is similar to a traditional chatbot but can generate responses by leveraging an external knowledge base. As a result, many RAG-related operations are encapsulated within the RAG assistant, such as determining when retrieval is needed, how to perform retrieval, and how to process the retrieved documents.
 
-FlexRAG provides several built-in RAG assistants, including `BasicAssistant`, `ModularAssistant`, `ChatQAAssistant`, .etc. You can run these assistants with FlexRAG's entrypoints. In this guide, we will show you how to run the `ModularAssistant`, as it offers a wide range of configuration options.
+FlexRAG provides several built-in RAG assistants, including {class}`~flexrag.assistant.BasicAssistant`, {class}`~flexrag.assistant.ModularAssistant`, {class}`~flexrag.assistant.ChatQAAssistant`, .etc. You can run these assistants with FlexRAG's entrypoints. In this guide, we will show you how to run the {class}`~flexrag.assistant.ModularAssistant`, as it offers a wide range of configuration options.
 
-The basic structure of the `ModularAssistant` is as follows:
+The basic structure of the {class}`~flexrag.assistant.ModularAssistant` is as follows:
 
 ```{eval-rst}
 .. image:: ../../../assets/ModularAssistant.png
@@ -14,16 +14,16 @@ The basic structure of the `ModularAssistant` is as follows:
    :width: 50%
 ```
 
-The `ModularAssistant` is composed of four key components: a retriever, a reranker, a context refiner, and a generator.
+The {class}`~flexrag.assistant.ModularAssistant` is composed of four key components: a retriever, a reranker, a context refiner, and a generator.
 - The **retriever** fetches relevant passages from the knowledge base.
 - The **reranker** reorders the retrieved passages for better relevance, which is optional.
 - The **context refiner** optimizes the context for the generator, which is optional.
-- The **generator** creates the final response based on the refined context.
+- The **generator** creates the final response based on the (refined) context.
 
 Each component can be configured independently, allowing you to easily customize your RAG assistant by adjusting the settings for each one.
 
 ## Deploying a GUI application
-The easiest way to run a RAG assistant is to use FlexRAG's entrypoints to start a GUI application. You can run the following command to start a GUI application with the `ModularAssistant`. In the following command, a retriever based on Wikipedia knowledge base provided by FlexRAG and a generator from OpenAI are used to build a typical RAG pipeline. Make sure to replace `$OPENAI_KEY` with your OpenAI access key.
+The easiest way to run a RAG assistant is to use FlexRAG's entrypoints to start a GUI application. You can run the following command to start a GUI application with the {class}`~flexrag.assistant.ModularAssistant`. In the following command, a retriever based on Wikipedia knowledge base provided by FlexRAG and a generator from OpenAI are used to build a typical RAG pipeline. Make sure to replace `$OPENAI_KEY` with your OpenAI access key.
 
 ```bash
 python -m flexrag.entrypoints.run_interactive \
@@ -79,7 +79,7 @@ In the command above, the parameters `name=nq` and `split=test` specify that the
 ```
 
 ## Running the RAG assistan directly
-You can also run the RAG assistant directly in your Python code. The following code snippet demonstrates how to run the `ModularAssistant` with the BM25 retriever and the OpenAI generator:
+You can also run the RAG assistant directly in your Python code. The following code snippet demonstrates how to run the {class}`~flexrag.assistant.ModularAssistant` with a {class}`~flexrag.retriever.FlexRetriever` and an {class}`~flexrag.models.OpenAIGenerator`:
 
 ```python
 from flexrag.assistant import ModularAssistant, ModularAssistantConfig
@@ -116,5 +116,5 @@ In the command above, we use the `answer` method to pose a question to the assis
 ```
 
 ## Developing your own RAG assistant
-You can also develop your own RAG assistant by inherit the `AssistantBase` class and registering it with the `ASSISTANTS` decorator. Then you are able to run your own RAG assistant using FlexRAG's entrypoints by adding the `user_module=<your_module_path>` argument to the command.
+You can also develop your own RAG assistant by inherit the {class}`~flexrag.assistant.AssistantBase` class and registering it with the `ASSISTANTS` decorator. Then you are able to run your own RAG assistant using FlexRAG's entrypoints by adding the `user_module=<your_module_path>` argument to the command.
 You can find more information in the [Developing your own RAG assistant](../tutorial/building_assistant.md) tutorial.

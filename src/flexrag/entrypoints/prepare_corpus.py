@@ -2,6 +2,7 @@ import csv
 import json
 from dataclasses import field
 from glob import glob
+from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
