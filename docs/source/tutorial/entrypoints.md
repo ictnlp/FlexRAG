@@ -13,6 +13,7 @@ The defination of the configuration structure for the `prepare_retriever` entryp
     :members:
     :noindex:
     :show-inheritance:
+    :exclude-members: dump,dumps,load,loads
 ```
 
 ### Adding the Index for FlexRetriever
@@ -24,6 +25,7 @@ The defination of the configuration structure for the `add_index` entrypoint is 
     :members:
     :noindex:
     :show-inheritance:
+    :exclude-members: dump,dumps,load,loads
 ```
 
 ### Evaluating the Assistant
@@ -35,6 +37,7 @@ The defination of the configuration structure for the `eval_assistant` entrypoin
     :members:
     :noindex:
     :show-inheritance:
+    :exclude-members: dump,dumps,load,loads
 ```
 
 ### Running GUI Application
@@ -46,6 +49,7 @@ The defination of the configuration structure for the `run_interactive` entrypoi
     :members:
     :noindex:
     :show-inheritance:
+    :exclude-members: dump,dumps,load,loads
 ```
 
 ### Cache Management
@@ -57,13 +61,14 @@ The defination of the configuration structure for the `cache` entrypoint is as f
     :members:
     :noindex:
     :show-inheritance:
+    :exclude-members: dump,dumps,load,loads
 ```
 
 ```{tip}
 If you wish to disable the Cache during retrieval, you can set the environment variable by `export DISABLE_CACHE=True`.
 ```
 
-### Deploying the Retriever as a Service
+### Deploying the Retriever
 FlexRAG also provides an entrypoint to deploy the retriever as a service. This is helpful when you want to use the retriever to fine-tune your own RAG assistant or when you want to use the retriever in a production demonstration.
 You can use this entrypoint by running `python -m flexrag.entrypoints.serve_retriever`.
 The defination of the configuration structure for the `deploy` entrypoint is as follows:
@@ -73,6 +78,7 @@ The defination of the configuration structure for the `deploy` entrypoint is as 
     :members:
     :noindex:
     :show-inheritance:
+    :exclude-members: dump,dumps,load,loads
 ```
 
 

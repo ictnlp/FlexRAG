@@ -106,6 +106,26 @@ Retriever Index
     :members:
     :inherited-members:
 
+.. autoclass:: flexrag.retriever.index.RetrieverIndexConfig
+    :members:
+    :inherited-members:
+
+RetrieverConfig is the general configuration for all registered RetrieverIndexes.
+You can load any RetrieverIndex by specifying the ``index_type`` in the configuration.
+For example, to load the ``BM25Index``, you can use the following configuration:
+
+.. code-block:: python
+
+    from flexrag.retriever.index import RetrieverIndexConfig, RETRIEVER_INDEX, BM25IndexConfig
+
+    config = RetrieverIndexConfig(
+        index_type='bm25',
+        bm25_config=BM25IndexConfig(
+            index_path='<path_to_index>',
+        )
+    )
+    index = RETRIEVER_INDEX.load(config)
+
 .. Faiss Index
 .. autoclass:: flexrag.retriever.index.FaissIndexConfig
     :members:

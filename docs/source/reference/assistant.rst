@@ -11,6 +11,30 @@ The Assistant Interface
     :members:
     :inherited-members:
 
+.. .. autoclass:: flexrag.assistant.AssistantConfig
+..     :members:
+..     :show-inheritance:
+
+.. AssistantConfig is the general configuration for all registered Assistant.
+.. You can load any Assistant by specifying the ``assistant_type`` in the configuration.
+.. For example, to load the ``BasicAssistant``, you can use the following configuration:
+
+.. .. code-block:: python
+
+..     from flexrag.assistant import AssistantConfig, ASSISTANTS
+..     from flexrag.models import OpenAIGeneratorConfig
+
+..     config = AssistantConfig(
+..         assistant_type='basic',
+..         generator_type='openai',
+..         openai_config=OpenAIGeneratorConfig(
+..             model='gpt-4o-mini',
+..             api_key='<your_openai_api_key>',
+..         ),
+..     )
+..     assistant = ASSISTANTS.load(config)
+
+
 FlexRAG Assistants
 ------------------
 FlexRAG provides several assistant implementations that can be used out of the box. These implementations are designed to be flexible and extensible, allowing users to customize the assistant's behavior by providing their own retrieval and generation components.

@@ -9,6 +9,9 @@ from .online_assistant import (
     PerplexityAssistantConfig,
 )
 
+AssistantConfig = ASSISTANTS.make_config(config_name="AssistantConfig")
+
+
 __all__ = [
     "ASSISTANTS",
     "AssistantBase",

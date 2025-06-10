@@ -2,7 +2,7 @@
 FlexRAG provides a flexible and modularized components for building RAG assistants. You can build your own RAG assistant by defining your own `Assistant` class and registering it with the `ASSISTANTS` decorator.
 
 ## Define the Assistant Class
-To build your RAG assistant, you can create a Python script file and import the necessary FlexRAG modules. Below is an example of how to construct a RAG assistant. In this example, we define a RAG assistant named `SimpleAssistant` by inheriting from the `AssistantBase` class. This assistant includes a retriever (`FlexRetriever`) and a generator (`OpenAIGenerator`). Whenever a user asks a question, `SimpleAssistant` uses `FlexRetriever` to retrieve relevant documents from the database, then concatenates these documents into the prompt and utilizes `OpenAIGenerator` to generate the final response.
+To build your RAG assistant, you can create a Python script file and import the necessary FlexRAG modules. Below is an example of how to construct a RAG assistant. In this example, we define a RAG assistant named `SimpleAssistant` by inheriting from the {class}`~flexrag.assistant.AssistantBase` class. This assistant includes a retriever ({class}`~flexrag.retriever.FlexRetriever`) and a generator ({class}`~flexrag.models.OpenAIGenerator`). Whenever a user asks a question, `SimpleAssistant` uses {class}`~flexrag.retriever.FlexRetriever` to retrieve relevant documents from the database, then concatenates these documents into the prompt and utilizes {class}`~flexrag.models.OpenAIGenerator` to generate the final response.
 
 ```python
 from dataclasses import dataclass

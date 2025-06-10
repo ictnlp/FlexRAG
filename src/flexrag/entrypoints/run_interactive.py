@@ -18,7 +18,7 @@ for arg in sys.argv:
         sys.argv.remove(arg)
 
 
-AssistantConfig = ASSISTANTS.make_config()
+AssistantConfig = ASSISTANTS.make_config(config_name="AssistantConfig")
 
 
 @configure
