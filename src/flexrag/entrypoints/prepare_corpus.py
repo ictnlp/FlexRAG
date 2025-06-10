@@ -1,6 +1,6 @@
 import csv
 import json
-from dataclasses import field
+from dataclasses import asdict, field
 from glob import glob
 from typing import Optional
 
@@ -48,7 +48,7 @@ class ContextWriter:
         return
 
     def write(self, ctx: Context):
-        ctx = ctx.to_dict()
+        ctx = asdict(ctx)
         ctx.update(ctx.pop("meta_data"))
         ctx.update(ctx.pop("data"))
         match self.save_format:
