@@ -1,8 +1,7 @@
 # Preparing the Retriever
 Retriever is one of the most important component in the RAG pipeline. It retrieves the top-k relevant contexts from the knowledge base for a given query. In FlexRAG, there are three types of retrievers: `WebRetriever`, `APIBasedRetriever`, and {class}`~flexrag.retriever.FlexRetriever`. The relationship between these retrievers is shown in the following figure:
 
-```{eval-rst}
-.. image:: ../../../assets/Retrievers.png
+```{image} ../../../assets/Retrievers.png
    :alt: Retrievers
    :align: center
    :width: 50%
@@ -33,9 +32,8 @@ You can also specify the `top_k` parameter to retrieve the top-k passages for a 
 passages = retriever.search('What is the capital of France?', top_k=5)
 ```
 
-```{eval-rst}
-.. note::
-    In :doc:`../getting_started/quickstart1`, we provide several examples that employ the predefined retriever.
+```{note}
+In {doc}`../getting_started/quickstart1`, we provide several examples that employ the predefined retriever.
 ```
 
 ## Preparing Your Own {class}`~flexrag.retriever.FlexRetriever`
@@ -51,10 +49,9 @@ wget https://dl.fbaipublicfiles.com/dpr/wikipedia_split/psgs_w100.tsv.gz
 gzip -d psgs_w100.tsv.gz
 ```
 
-```{eval-rst}
-.. note::
-    You may also utilize your own knowledge base. FlexRAG supports knowledge bases saved in *line-delimited file formats* (such as \*.csv, \*.jsonl, or \*.tsv), where each line represents a piece of knowledge, and each piece can contain multiple fields (such as id, text, etc.). You can store your knowledge base across multiple files or within a single file.
-    You can check the :doc:`./preparing_corpus` documentation for how to prepare the knowledge base.
+```{note}
+You may also utilize your own knowledge base. FlexRAG supports knowledge bases saved in *line-delimited file formats* (such as \*.csv, \*.jsonl, or \*.tsv), where each line represents a piece of knowledge, and each piece can contain multiple fields (such as id, text, etc.). You can store your knowledge base across multiple files or within a single file.
+You can check the {doc}`./preparing_corpus` documentation for how to prepare the knowledge base.
 ```
 
 In this case, the Wikipedia knowledge base provides three fields: `id`, `title`, and `text`, where the `text` field contains a text chunk of the Wikipedia page, `title` contains the title of the corresponding Wikipedia page, and `id` contains the unique identifier of the knowledge piece. You can check the first line of the knowledge base by running the following command:

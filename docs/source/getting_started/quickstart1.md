@@ -7,8 +7,7 @@ FlexRAG provides several built-in RAG assistants, including {class}`~flexrag.ass
 
 The basic structure of the {class}`~flexrag.assistant.ModularAssistant` is as follows:
 
-```{eval-rst}
-.. image:: ../../../assets/ModularAssistant.png
+```{image} ../../../assets/ModularAssistant.png
    :alt: ModularAssistant
    :align: center
    :width: 50%
@@ -38,16 +37,14 @@ python -m flexrag.entrypoints.run_interactive \
 
 Then you can visit the GUI application at `http://localhost:7860` in your browser. You will see a simple interface where you can input your question and get the response from the RAG assistant.
 
-```{eval-rst}
-.. image:: ../../../assets/gui_static.png
+```{image} ../../../assets/gui_static.png
    :alt: GUI
    :align: center
    :width: 80%
 ```
 
-```{eval-rst}
-.. note::
-    In this example, we employ the pre-built ``FlexRetriever`` based on the Wikipedia knowledge base. You can also use other retrievers provided by FlexRAG or build your own retriever. For more information, please refer to the :doc:`../tutorial/preparing_retriever` section.
+```{note}
+In this example, we employ the pre-built `FlexRetriever` based on the Wikipedia knowledge base. You can also use other retrievers provided by FlexRAG or build your own retriever. For more information, please refer to the {doc}`../tutorial/preparing_retriever` section.
 ```
 
 ## Evaluating the RAG assistant
@@ -72,10 +69,9 @@ As before, it is also necessary to replace $OPENAI_KEY with your OpenAI access k
 
 In the command above, the parameters `name=nq` and `split=test` specify that the evaluation is to be conducted on the test set of the *NQ* dataset. The parameter `eval_config.metrics_type=[retrieval_success_rate,generation_f1,generation_em]` indicates that during the evaluation, the retrieval *success rate*, the corresponding *F1* score for generation, and the *Exact Match* score for generation are to be calculated.
 
-```{eval-rst}
-.. note::
-    | For more information about the RAG evaluation tasks, please refer to the :class:`~flexrag.datasets.RAGEvalDatasetConfig` class.
-    | For more information about the evaluation metrics, please refer to the :doc:`../reference/metrics` section.
+```{note}
+For more information about the RAG evaluation tasks, please refer to the {class}`~flexrag.datasets.RAGEvalDatasetConfig` class.
+For more information about the evaluation metrics, please refer to the {doc}`../reference/metrics` section.
 ```
 
 ## Running the RAG assistan directly
@@ -110,9 +106,8 @@ Similar to before, you need to replace `<your-api-key>` in the code above with y
 
 In the command above, we use the `answer` method to pose a question to the assistant and receive three return values: `response`, `contexts`, and `metadata`. Here, `response` is the final reply from the assistant, while `contexts` are the relevant documents retrieved by the assistant, and `metadata` contains additional information from the generation process.
 
-```{eval-rst}
-.. note::
-    For more information about the RAG Assistant class, please refer to the :doc:`../reference/assistant` section.
+```{note}
+For more information about the RAG Assistant class, please refer to the {doc}`../reference/assistant` section.
 ```
 
 ## Developing your own RAG assistant

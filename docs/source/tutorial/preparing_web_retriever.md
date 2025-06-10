@@ -5,9 +5,8 @@ With internet access, WebRetriever has significant advantages in both the timeli
 In this tutorial, we will show you how to load / build the `WebRetriever` for your project.
 
 
-```{eval-rst}
-.. important::
-    Since using computer programs to obtain internet information may be illegal in certain circumstances, or some websites may employ anti-crawling mechanisms to block your access, please ensure that such actions are legal in your region before using WebRetriever.
+```{important}
+Since using computer programs to obtain internet information may be illegal in certain circumstances, or some websites may employ anti-crawling mechanisms to block your access, please ensure that such actions are legal in your region before using WebRetriever.
 ```
 
 ## Using FlexRAG's Predefined WebRetriever
@@ -79,9 +78,8 @@ ctxs = retriever.search("Who is Bruce Wayne?")[0]
 
 After running the code above, you will get the screenshot of the top 5 webpages. The screenshot will be stored as a `PIL.Image.Image` object in the `RetrievedContext`.
 
-```{eval-rst}
-.. note::
-    The screenshot feature requires the ``playwright`` package. Please make sure you have installed the ``playwright`` package before using the screenshot feature.
+```{note}
+The screenshot feature requires the `playwright` package. Please make sure you have installed the `playwright` package before using the screenshot feature.
 ```
 
 ## Building Your Own WebRetriever
@@ -93,8 +91,7 @@ FlexRAG provides several utilities to help you build your own `WebRetriever`:
 - `WebReader`: A utility class that helps you to extract information from the raw web resources.
 - `WebDownloader`: A utility class that helps you to download the web resources.
 
-```{eval-rst}
-.. image:: ../../../assets/WebRetriever.png
+```{image} ../../../assets/WebRetriever.png
    :alt: Retrievers
    :align: center
    :width: 50%

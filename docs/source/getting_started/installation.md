@@ -1,9 +1,8 @@
 # Installation
 FlexRAG is a Python package that can be installed via `pip` or from source.
 
-```{eval-rst}
-.. important::
-    FlexRAG requires Python 3.11 or later.
+```{important}
+FlexRAG requires Python 3.11 or later.
 ```
 
 ## Installation via `pip`
@@ -13,10 +12,9 @@ Before installing FlexRAG, ensure that `faiss` is installed in your environment.
 pip install faiss-cpu
 ```
 
-```{eval-rst}
-.. note::
-    The pypi package is provided by the community.
-    If you want to use the official ``faiss`` package or employ GPU for faster searching, you need to install it using ``conda`` and follow the instructions from its official `documentation <https://github.com/facebookresearch/faiss/blob/main/INSTALL.md>`_.
+```{note}
+The pypi package is provided by the community.
+If you want to use the official `faiss` package or employ GPU for faster searching, you need to install it using `conda` and follow the instructions from its official [documentation](https://github.com/facebookresearch/faiss/blob/main/INSTALL.md).
 ```
 
 After installing `faiss`, run the following command to install FlexRAG:
@@ -35,8 +33,7 @@ cd flexrag
 pip install ./
 ```
 
-```{eval-rst}
-.. tip::
-    You can also install the FlexRAG in *editable* mode with the ``-e`` flag.
-    This allows you to make changes to the source code and have them reflected immediately without needing to reinstall the package.
+```{tip}
+You can also install the FlexRAG in *editable* mode with the `-e` flag.
+This allows you to make changes to the source code and have them reflected immediately without needing to reinstall the package.
 ```
