@@ -11,28 +11,30 @@ The Assistant Interface
     :members:
     :inherited-members:
 
-.. .. autoclass:: flexrag.assistant.AssistantConfig
-..     :members:
-..     :show-inheritance:
+.. autoclass:: flexrag.assistant.AssistantConfig
+    :members:
+    :show-inheritance:
 
-.. AssistantConfig is the general configuration for all registered Assistant.
-.. You can load any Assistant by specifying the ``assistant_type`` in the configuration.
-.. For example, to load the ``BasicAssistant``, you can use the following configuration:
+AssistantConfig is the general configuration for all registered Assistant.
+You can load any Assistant by specifying the ``assistant_type`` in the configuration.
+For example, to load the ``BasicAssistant``, you can use the following configuration:
 
-.. .. code-block:: python
+.. code-block:: python
 
-..     from flexrag.assistant import AssistantConfig, ASSISTANTS
-..     from flexrag.models import OpenAIGeneratorConfig
+    from flexrag.assistant import AssistantConfig, ASSISTANTS, BasicAssistantConfig
+    from flexrag.models import OpenAIGeneratorConfig
 
-..     config = AssistantConfig(
-..         assistant_type='basic',
-..         generator_type='openai',
-..         openai_config=OpenAIGeneratorConfig(
-..             model='gpt-4o-mini',
-..             api_key='<your_openai_api_key>',
-..         ),
-..     )
-..     assistant = ASSISTANTS.load(config)
+    config = AssistantConfig(
+        assistant_type="basic",
+        basic_config=BasicAssistantConfig(
+            generator_type="openai",
+            openai_config=OpenAIGeneratorConfig(
+                model_name="Qwen2-7B-Instruct",
+                base_url="http://127.0.1:8000/v1",
+            ),
+        ),
+    )
+    assistant = ASSISTANTS.load(config)
 
 
 FlexRAG Assistants

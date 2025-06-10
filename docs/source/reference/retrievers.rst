@@ -180,11 +180,11 @@ Web Retriever
 
 FlexRAG provides two simple web retrievers, ``SimpleWebRetriever`` and ``WikipediaRetriever``.
 
-.. autoclass:: flexrag.retriever.web_retrievers.SimpleWebRetrieverConfig
+.. autoclass:: flexrag.retriever.SimpleWebRetrieverConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.retriever.web_retrievers.SimpleWebRetriever
+.. autoclass:: flexrag.retriever.SimpleWebRetriever
     :members:
     :show-inheritance:
 
