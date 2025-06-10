@@ -326,7 +326,6 @@ class LocalRetriever(EditableRetriever):
         revision: str = None,
         token: str = None,
         cache_dir: str = FLEXRAG_CACHE_DIR,
-        retriever_config: LocalRetrieverConfig = None,
         **kwargs,
     ) -> "LocalRetriever":
         """Load a retriever from the HuggingFace Hub.
@@ -339,8 +338,6 @@ class LocalRetriever(EditableRetriever):
         :type token: str
         :param cache_dir: The cache directory to store the retriever. Default: FLEXRAG_CACHE_DIR.
         :type cache_dir: str
-        :param retriever_config: Additional configuration for the retriever. Default: None.
-        :type retriever_config: LocalRetrieverConfig
         :param kwargs: Additional arguments for the retriever.
         :type kwargs: Any
         :return: The loaded retriever.
@@ -366,7 +363,7 @@ class LocalRetriever(EditableRetriever):
             raise RuntimeError(f"Retriever {repo_id} download failed.")
 
         # load the retriever
-        return LocalRetriever.load_from_local(snapshot, retriever_config, **kwargs)
+        return LocalRetriever.load_from_local(snapshot, **kwargs)
 
     def save_to_hub(
         self,
@@ -438,7 +435,7 @@ class LocalRetriever(EditableRetriever):
         return repo_url
 
     @staticmethod
-    def load_from_local(repo_path: str = None) -> "LocalRetriever":
+    def load_from_local(repo_path: str = None, **kwargs) -> "LocalRetriever":
         """Load a retriever from the local disk.
 
         :param repo_path: The path to the local database. Default: None.
