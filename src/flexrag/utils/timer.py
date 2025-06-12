@@ -3,7 +3,6 @@ import resource
 from collections import defaultdict
 from copy import deepcopy
 from time import perf_counter
-from typing import Optional
 
 import numpy as np
 
@@ -94,16 +93,23 @@ class _ResourceMeter:
             )
         return statistics
 
-    def get(
-        self, timer_name: str, round_n: Optional[int] = None
-    ) -> dict[str, int | float]:
+    def get(self, timer_name: str) -> dict[str, int | float]:
         """Get the statistics of a specific timer.
+        The units for the statistics are as follows:
+
+            - `wall_clock.avg`: seconds
+            - `wall_clock.sum`: seconds
+            - `user_cpu.avg`: seconds
+            - `user_cpu.sum`: seconds
+            - `system_cpu.avg`: seconds
+            - `system_cpu.sum`: seconds
+            - `total_cpu.avg`: seconds
+            - `total_cpu.sum`: seconds
+            - `mem.max`: megabytes
+            - `mem.avg`: megabytes
 
         :param timer_name: The name of the timer to retrieve statistics for.
         :type timer_name: str
-        :param round_n: The number of decimal places to round the statistics to.
-            If None, no rounding is applied.
-        :type round_n: Optional[int]
         :return: A dictionary containing the statistics of the specified timer.
         :rtype: dict[str, int | float]
         :raises KeyError: If the timer does not exist.
@@ -119,13 +125,21 @@ class _ResourceMeter:
             "user_cpu.sum": float(np.sum(self.user_cpu_timers[timer_name])),
             "system_cpu.avg": float(np.mean(self.system_cpu_timers[timer_name])),
             "system_cpu.sum": float(np.sum(self.system_cpu_timers[timer_name])),
-            "mem.max (MB)": float(np.max(self.memory_usage[timer_name]) / 1024),
-            "mem.avg (MB)": float(np.mean(self.memory_usage[timer_name]) / 1024),
+            "total_cpu.avg": float(
+                np.mean(
+                    self.user_cpu_timers[timer_name]
+                    + self.system_cpu_timers[timer_name]
+                )
+            ),
+            "total_cpu.sum": float(
+                np.sum(
+                    self.user_cpu_timers[timer_name]
+                    + self.system_cpu_timers[timer_name]
+                )
+            ),
+            "mem.max": float(np.max(self.memory_usage[timer_name]) / 1024),
+            "mem.avg": float(np.mean(self.memory_usage[timer_name]) / 1024),
         }
-        if round_n is not None:
-            for key in statistics:
-                if isinstance(statistics[key], float):
-                    statistics[key] = round(statistics[key], round_n)
         return statistics
 
     @property
