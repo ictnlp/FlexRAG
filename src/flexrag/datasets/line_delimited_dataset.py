@@ -117,14 +117,16 @@ class LineDelimitedDataset(IterableDataset):
                         title = self.titles
                     else:
                         title = []
+                        start_point -= 1  # skip the header row
+                        end_point -= 1  # skip the header row
                     with open(file_path, "r", encoding=self.encoding) as f:
                         for i, row in enumerate(csv_reader(f, delimiter="\t")):
                             if (i == 0) and (len(title) == 0):
                                 title = row
                                 continue
-                            if i <= start_point:
+                            if i < start_point:
                                 continue
-                            if (end_point > 0) and (i > end_point):
+                            if (end_point > 0) and (i >= end_point):
                                 break
                             yield dict(zip(title, row))
                 case ".csv":
@@ -132,14 +134,16 @@ class LineDelimitedDataset(IterableDataset):
                         title = self.titles
                     else:
                         title = []
+                        start_point -= 1  # skip the header row
+                        end_point -= 1  # skip the header row
                     with open(file_path, "r", encoding=self.encoding) as f:
                         for i, row in enumerate(csv_reader(f)):
                             if (i == 0) and (len(title) == 0):
                                 title = row
                                 continue
-                            if i <= start_point:
+                            if i < start_point:
                                 continue
-                            if (end_point > 0) and (i > end_point):
+                            if (end_point > 0) and (i >= end_point):
                                 break
                             yield dict(zip(title, row))
                 case _:
