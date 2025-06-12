@@ -107,7 +107,7 @@ class AbstractiveSummarizer(RefinerBase):
         self.refined_field = cfg.refined_field
         return
 
-    @TIME_METER("abstractive_summarize")
+    @TIME_METER("refiner.abstractive_summarize")
     def refine(self, contexts: list[RetrievedContext]) -> list[RetrievedContext]:
         # prepare input texts
         if self.concatenate:
@@ -209,7 +209,7 @@ class RecompExtractiveSummarizer(RefinerBase):
         self.refined_field = cfg.refined_field
         return
 
-    @TIME_METER("extractive_summarize")
+    @TIME_METER("refiner.extractive_summarize")
     def refine(self, contexts: list[RetrievedContext]) -> list[RetrievedContext]:
         if self.concatenate:
             assert all(

@@ -64,7 +64,7 @@ class AnthropicGenerator(GeneratorBase):
             logger.setLevel(logging.WARNING)
         return
 
-    @TIME_METER("anthropic_generate")
+    @TIME_METER("generator.anthropic_generate")
     def _chat(
         self,
         prompts: list[ChatPrompt],
@@ -102,7 +102,7 @@ class AnthropicGenerator(GeneratorBase):
                     responses[-1].append(response.content[0].text)
         return responses
 
-    @TIME_METER("anthropic_generate")
+    @TIME_METER("generator.anthropic_generate")
     async def async_chat(
         self,
         prompts: list[ChatPrompt],
@@ -130,7 +130,7 @@ class AnthropicGenerator(GeneratorBase):
         ]
         return responses
 
-    @TIME_METER("anthropic_generate")
+    @TIME_METER("generator.anthropic_generate")
     def _generate(
         self,
         prefixes: list[str],
@@ -138,7 +138,7 @@ class AnthropicGenerator(GeneratorBase):
     ) -> list[list[str]]:
         raise NotImplementedError("The Anthropic text completion API is deprecated.")
 
-    @TIME_METER("anthropic_generate")
+    @TIME_METER("generator.anthropic_generate")
     async def async_generate(
         self,
         prefixes: list[str],

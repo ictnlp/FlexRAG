@@ -70,7 +70,7 @@ class TypesenseRetriever(EditableRetriever):
         self.index_name = cfg.index_name
         return
 
-    @TIME_METER("typesense", "add_passages")
+    @TIME_METER("retriever.typesense.add_passages")
     def add_passages(self, passages: Iterable[Context]) -> None:
         def get_batch() -> Generator[list[dict[str, str]], None, None]:
             batch = []
@@ -104,7 +104,7 @@ class TypesenseRetriever(EditableRetriever):
         logger.info("Finished adding passages.")
         return
 
-    @TIME_METER("typesense", "search")
+    @TIME_METER("retriever.typesense.search")
     def search(
         self,
         query: list[str],

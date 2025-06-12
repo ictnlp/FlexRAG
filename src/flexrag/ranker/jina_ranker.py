@@ -72,7 +72,7 @@ class JinaRanker(RankerBase):
         }
         return
 
-    @TIME_METER("jina_rank")
+    @TIME_METER("ranker.jina_rank")
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         data = self.data_template.copy()
         data["query"] = query
@@ -83,7 +83,7 @@ class JinaRanker(RankerBase):
         scores = [i["relevance_score"] for i in response.json()["results"]]
         return None, scores
 
-    @TIME_METER("jina_rank")
+    @TIME_METER("ranker.jina_rank")
     async def _async_rank(
         self, query: str, candidates: list[str]
     ) -> tuple[np.ndarray, np.ndarray]:

@@ -57,7 +57,7 @@ class MixedbreadRanker(RankerBase):
         self.model = cfg.model
         return
 
-    @TIME_METER("mixedbread_rank")
+    @TIME_METER("ranker.mixedbread_rank")
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         result = self.client.rerank(
             query=query,
@@ -68,7 +68,7 @@ class MixedbreadRanker(RankerBase):
         scores = [i.score for i in result.data]
         return None, scores
 
-    @TIME_METER("mixedbread_rank")
+    @TIME_METER("ranker.mixedbread_rank")
     async def _async_rank(
         self, query: str, candidates: list[str]
     ) -> tuple[np.ndarray, np.ndarray]:

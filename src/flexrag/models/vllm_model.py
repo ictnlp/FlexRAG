@@ -83,7 +83,7 @@ class VLLMGenerator(GeneratorBase):
                 logger.warning("Fallback to normal mode.")
         return
 
-    @TIME_METER("vllm_generate")
+    @TIME_METER("generator.vllm_generate")
     def _generate(
         self,
         prefixes: list[str],

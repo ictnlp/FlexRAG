@@ -74,7 +74,7 @@ class SentenceTransformerEncoder(EncoderBase):
         self.normalize = config.normalize
         return
 
-    @TIME_METER("st_encode")
+    @TIME_METER("encoder.st_encode")
     def _encode(self, texts: list[str], **kwargs) -> np.ndarray:
         args = {
             "sentences": texts,

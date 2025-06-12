@@ -125,7 +125,7 @@ class RetrieverIndexBase(ABC):
         """
         return
 
-    @TIME_METER("retrieve", "index", "search")
+    @TIME_METER("retriever.index.search")
     def search_batch(
         self,
         query: Iterable[Any],

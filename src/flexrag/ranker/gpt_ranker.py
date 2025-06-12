@@ -49,7 +49,7 @@ class RankGPTRanker(RankerBase):
         self.max_chunk_size = cfg.max_chunk_size
         return
 
-    @TIME_METER("rankgpt_rank")
+    @TIME_METER("ranker.rankgpt_rank")
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, None]:
         # perform slide window ranking
         indices = list(range(len(candidates)))
@@ -64,7 +64,7 @@ class RankGPTRanker(RankerBase):
             end_idx -= self.step_size
         return np.array(indices), None
 
-    @TIME_METER("rankgpt_rank")
+    @TIME_METER("ranker.rankgpt_rank")
     async def _async_rank(
         self, query: str, candidates: list[str]
     ) -> tuple[np.ndarray, None]:

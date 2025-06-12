@@ -82,7 +82,7 @@ class ElasticRetriever(EditableRetriever):
             es_logger.setLevel(logging.WARNING)
         return
 
-    @TIME_METER("elastic_search", "add_passages")
+    @TIME_METER("retriever.elastic_search.add_passages")
     def add_passages(self, passages: Iterable[Context]):
         def generate_actions():
             index_exists = self.client.indices.exists(index=self.index_name)
@@ -142,7 +142,7 @@ class ElasticRetriever(EditableRetriever):
         logger.info(f"Finished adding passages.")
         return
 
-    @TIME_METER("elastic_search", "search")
+    @TIME_METER("retriever.elastic_search.search")
     @batched_cache
     def search(
         self,

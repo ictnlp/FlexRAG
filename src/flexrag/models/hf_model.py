@@ -335,7 +335,7 @@ class HFGenerator(GeneratorBase):
                 logger.warning(f"Unable to load minference: {e}")
         return
 
-    @TIME_METER("hf_generate")
+    @TIME_METER("generator.hf_generate")
     @torch.no_grad()
     def _generate(
         self,
@@ -465,7 +465,7 @@ class HFVLMGenerator(VLMGeneratorBase):
         )
         return
 
-    @TIME_METER("hf_generate")
+    @TIME_METER("generator.hf_generate")
     @torch.no_grad()
     def _generate(
         self,
@@ -601,7 +601,7 @@ class HFEncoder(EncoderBase):
             embeddings = torch.nn.functional.normalize(embeddings, dim=1)
         return embeddings.float().cpu().numpy()
 
-    @TIME_METER("hf_encode")
+    @TIME_METER("encoder.hf_encode")
     @torch.no_grad()
     def _encode(self, texts: list[str | list[str]]) -> np.ndarray:
         if self.is_jina:  # for jina-embedding
@@ -701,7 +701,7 @@ class HFClipEncoder(EncoderBase):
         assert all(isinstance(d, ImageFile) for d in data)
         return self.encode_image(data)
 
-    @TIME_METER("hf_clip_encode")
+    @TIME_METER("encoder.hf_clip_encode")
     @torch.no_grad()
     def encode_image(self, images: list[ImageFile]) -> np.ndarray:
         if self.convert_to_rgb:
@@ -713,7 +713,7 @@ class HFClipEncoder(EncoderBase):
             embeddings = F.normalize(embeddings, dim=1)
         return embeddings.float().cpu().numpy()
 
-    @TIME_METER("hf_clip_encode")
+    @TIME_METER("encoder.hf_clip_encode")
     @torch.no_grad()
     def encode_text(self, texts: list[str]) -> np.ndarray:
         input_dict = self.tokenizer.batch_encode_plus(

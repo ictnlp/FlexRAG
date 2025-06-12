@@ -128,7 +128,7 @@ class FlexRetriever(LocalRetriever):
         self._check_consistency()
         return
 
-    @TIME_METER("flex_retriever", "add-passages")
+    @TIME_METER("retriever.flex_retriever.add_passages")
     def add_passages(self, passages: Iterable[Context]):
 
         def get_batch() -> Generator[tuple[list[dict], list[str]], None, None]:
@@ -159,7 +159,7 @@ class FlexRetriever(LocalRetriever):
         logger.info("Finished adding passages.")
         return
 
-    @TIME_METER("flex_retriever", "search")
+    @TIME_METER("retriever.flex_retriever.search")
     def search(
         self,
         query: list[str] | str,
@@ -300,7 +300,7 @@ class FlexRetriever(LocalRetriever):
     def fields(self) -> list[str]:
         return self.database.fields
 
-    @TIME_METER("flex_retriever", "add-index")
+    @TIME_METER("retriever.flex_retriever.add_index")
     def add_index(
         self,
         index_name: str,

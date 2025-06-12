@@ -53,7 +53,7 @@ class WebRetrieverBase(RetrieverBase):
 
     cfg: WebRetrieverBaseConfig
 
-    @TIME_METER("web_retriever", "search")
+    @TIME_METER("retriever.web_retriever.search")
     @batched_cache
     def search(
         self,

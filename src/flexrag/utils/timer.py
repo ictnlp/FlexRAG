@@ -3,6 +3,7 @@ import resource
 from collections import defaultdict
 from copy import deepcopy
 from time import perf_counter
+from typing import Optional
 
 import numpy as np
 
@@ -24,7 +25,7 @@ class _ResourceMeter:
         self.memory_usage.clear()
         return
 
-    def __call__(self, *timer_names: str):
+    def __call__(self, timer_name: str):
         def time_it(func):
             def wrapper(*args, **kwargs):
                 start_time = perf_counter()
@@ -32,14 +33,14 @@ class _ResourceMeter:
                 result = func(*args, **kwargs)
                 end_usage = resource.getrusage(resource.RUSAGE_SELF)
                 end_time = perf_counter()
-                self.wall_clock_timers[timer_names].append(end_time - start_time)
-                self.user_cpu_timers[timer_names].append(
+                self.wall_clock_timers[timer_name].append(end_time - start_time)
+                self.user_cpu_timers[timer_name].append(
                     end_usage.ru_utime - start_usage.ru_utime
                 )
-                self.system_cpu_timers[timer_names].append(
+                self.system_cpu_timers[timer_name].append(
                     end_usage.ru_stime - start_usage.ru_stime
                 )
-                self.memory_usage[timer_names].append(end_usage.ru_maxrss)
+                self.memory_usage[timer_name].append(end_usage.ru_maxrss)
                 return result
 
             async def async_wrapper(*args, **kwargs):
@@ -52,14 +53,14 @@ class _ResourceMeter:
                 else:
                     result = result
                 end_time = perf_counter()
-                self.wall_clock_timers[timer_names].append(end_time - start_time)
-                self.user_cpu_timers[timer_names].append(
+                self.wall_clock_timers[timer_name].append(end_time - start_time)
+                self.user_cpu_timers[timer_name].append(
                     end_usage.ru_utime - start_usage.ru_utime
                 )
-                self.system_cpu_timers[timer_names].append(
+                self.system_cpu_timers[timer_name].append(
                     end_usage.ru_stime - start_usage.ru_stime
                 )
-                self.memory_usage[timer_names].append(end_usage.ru_maxrss)
+                self.memory_usage[timer_name].append(end_usage.ru_maxrss)
                 return result
 
             if inspect.iscoroutinefunction(func):
@@ -93,25 +94,43 @@ class _ResourceMeter:
             )
         return statistics
 
-    def get(self, *timer_names: str) -> dict:
-        """Get the statistics of a specific timer."""
-        if timer_names not in self.wall_clock_timers:
-            raise KeyError(f"Timer '{timer_names}' does not exist.")
-        return {
-            "name": timer_names,
-            "calls": len(self.wall_clock_timers[timer_names]),
-            "average wall clock time": np.mean(self.wall_clock_timers[timer_names]),
-            "total wall clock time": np.sum(self.wall_clock_timers[timer_names]),
-            "average user cpu time": np.mean(self.user_cpu_timers[timer_names]),
-            "total user cpu time": np.sum(self.user_cpu_timers[timer_names]),
-            "average system cpu time": np.mean(self.system_cpu_timers[timer_names]),
-            "total system cpu time": np.sum(self.system_cpu_timers[timer_names]),
-            "maximum memory usage (MB)": np.max(self.memory_usage[timer_names]) / 1024,
-            "average memory usage (MB)": np.mean(self.memory_usage[timer_names]) / 1024,
+    def get(
+        self, timer_name: str, round_n: Optional[int] = None
+    ) -> dict[str, int | float]:
+        """Get the statistics of a specific timer.
+
+        :param timer_name: The name of the timer to retrieve statistics for.
+        :type timer_name: str
+        :param round_n: The number of decimal places to round the statistics to.
+            If None, no rounding is applied.
+        :type round_n: Optional[int]
+        :return: A dictionary containing the statistics of the specified timer.
+        :rtype: dict[str, int | float]
+        :raises KeyError: If the timer does not exist.
+        """
+        if timer_name not in self.wall_clock_timers:
+            raise KeyError(f"Timer '{timer_name}' does not exist.")
+        statistics = {
+            "name": timer_name,
+            "calls": len(self.wall_clock_timers[timer_name]),
+            "wall_clock.avg": float(np.mean(self.wall_clock_timers[timer_name])),
+            "wall_clock.sum": float(np.sum(self.wall_clock_timers[timer_name])),
+            "user_cpu.avg": float(np.mean(self.user_cpu_timers[timer_name])),
+            "user_cpu.sum": float(np.sum(self.user_cpu_timers[timer_name])),
+            "system_cpu.avg": float(np.mean(self.system_cpu_timers[timer_name])),
+            "system_cpu.sum": float(np.sum(self.system_cpu_timers[timer_name])),
+            "mem.max (MB)": float(np.max(self.memory_usage[timer_name]) / 1024),
+            "mem.avg (MB)": float(np.mean(self.memory_usage[timer_name]) / 1024),
         }
+        if round_n is not None:
+            for key in statistics:
+                if isinstance(statistics[key], float):
+                    statistics[key] = round(statistics[key], round_n)
+        return statistics
 
     @property
     def details(self) -> dict:
+        """Get the details of all timers."""
         return {
             "wall_clock_timers": deepcopy(self.wall_clock_timers),
             "user_cpu_timers": deepcopy(self.user_cpu_timers),

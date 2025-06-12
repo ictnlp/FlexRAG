@@ -39,7 +39,7 @@ class HFCrossEncoderRanker(RankerBase):
         self.max_encode_length = cfg.max_encode_length
         return
 
-    @TIME_METER("hf_rank")
+    @TIME_METER("ranker.hf_cross_rank")
     @torch.no_grad()
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         # score the candidates
@@ -106,7 +106,7 @@ class HFSeq2SeqRanker(RankerBase):
         )
         return
 
-    @TIME_METER("hf_rank")
+    @TIME_METER("ranker.hf_seq2seq_rank")
     @torch.no_grad()
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         # prepare prompts
@@ -193,7 +193,7 @@ class HFColBertRanker(RankerBase):
         self.normalize = cfg.normalize_embeddings
         return
 
-    @TIME_METER("hf_rank")
+    @TIME_METER("ranker.hf_colbert_rank")
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         # tokenize the query & candidates
         query_inputs = self._query_encode([query])

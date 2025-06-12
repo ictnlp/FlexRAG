@@ -61,7 +61,7 @@ class OllamaGenerator(GeneratorBase):
         self._check()
         return
 
-    @TIME_METER("ollama_generate")
+    @TIME_METER("generator.ollama_generate")
     def _chat(
         self,
         prompts: list[ChatPrompt],
@@ -97,7 +97,7 @@ class OllamaGenerator(GeneratorBase):
                     responses[-1].append(response.message.content)
         return responses
 
-    @TIME_METER("ollama_generate")
+    @TIME_METER("generator.ollama_generate")
     async def async_chat(
         self,
         prompts: list[ChatPrompt],
@@ -127,7 +127,7 @@ class OllamaGenerator(GeneratorBase):
         ]
         return responses
 
-    @TIME_METER("ollama_generate")
+    @TIME_METER("generator.ollama_generate")
     def _generate(
         self,
         prefixes: list[str],
@@ -166,7 +166,7 @@ class OllamaGenerator(GeneratorBase):
                     responses[-1].append(response.response)
         return responses
 
-    @TIME_METER("ollama_generate")
+    @TIME_METER("generator.ollama_generate")
     async def async_generate(
         self,
         prefixes: list[str],
@@ -259,7 +259,7 @@ class OllamaEncoder(EncoderBase):
         self._check()
         return
 
-    @TIME_METER("ollama_encode")
+    @TIME_METER("encoder.ollama_encode")
     def _encode(self, texts: list[str]) -> ndarray:
         if self.prompt:
             texts = [f"{self.prompt} {text}" for text in texts]
@@ -283,7 +283,7 @@ class OllamaEncoder(EncoderBase):
         embeddings = np.array(embeddings)
         return embeddings[:, : self.embedding_size]
 
-    @TIME_METER("ollama_encode")
+    @TIME_METER("encoder.ollama_encode")
     async def async_encode(self, texts: list[str]) -> ndarray:
         if self.prompt:
             texts = [f"{self.prompt} {text}" for text in texts]

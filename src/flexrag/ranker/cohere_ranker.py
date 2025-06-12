@@ -57,7 +57,7 @@ class CohereRanker(RankerBase):
         self.model = cfg.model
         return
 
-    @TIME_METER("cohere_rank")
+    @TIME_METER("ranker.cohere_rank")
     def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
         result = self.client.rerank(
             query=query,
@@ -68,7 +68,7 @@ class CohereRanker(RankerBase):
         scores = [i.relevance_score for i in result.results]
         return None, scores
 
-    @TIME_METER("cohere_rank")
+    @TIME_METER("ranker.cohere_rank")
     async def _async_rank(self, query: str, candidates: list[str]):
         result = await asyncio.create_task(
             asyncio.to_thread(

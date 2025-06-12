@@ -78,7 +78,7 @@ class CohereEncoder(EncoderBase):
         super().__init__(cfg)
         return
 
-    @TIME_METER("cohere_encode")
+    @TIME_METER("encoder.cohere_encode")
     def _encode(self, texts: list[str]) -> ndarray:
         embed_dim = self.embedding_size if self.model == "embed-v4.0" else None
         r = self.client.embed(
@@ -91,7 +91,7 @@ class CohereEncoder(EncoderBase):
         embeddings = r.embeddings.float
         return np.array(embeddings)
 
-    @TIME_METER("cohere_encode")
+    @TIME_METER("encoder.cohere_encode")
     async def async_encode(self, texts: list[str]):
         task = asyncio.create_task(
             asyncio.to_thread(

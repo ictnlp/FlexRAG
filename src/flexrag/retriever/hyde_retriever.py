@@ -26,7 +26,7 @@ class HydeRewriter:
         self.generator = generator
         return
 
-    @TIME_METER("hyde_retriever", "rewrite")
+    @TIME_METER("retriever.hyde_retriever.rewrite")
     def rewrite(self, queries: list[str] | str) -> list[str]:
         if isinstance(queries, str):
             queries = [queries]
