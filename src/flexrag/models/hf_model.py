@@ -573,6 +573,11 @@ class HFEncoder(EncoderBase):
             elif not torch.cuda.is_available():
                 logger.warning("Data parallel is not supported on CPU.")
                 self.dp_model = None
+            elif torch.cuda.device_count() <= max(self.devices):
+                logger.warning(
+                    f"Invalid device ids: {self.devices}. Using single device mode."
+                )
+                self.dp_model = None
             else:
                 self.dp_model = DP(self.model, device_ids=self.devices)
         else:
