@@ -18,6 +18,10 @@ class LineDelimitedDatasetConfig:
     :param file_paths: The paths to the line delimited files.
         It supports unix style path pattern.
     :type file_paths: list[str]
+    :param titles: The field names of the corpus data.
+        This option is only used when the corpus is in tsv or csv format.
+        If not specified, the field names will be inferred from the first line of the file.
+    :type titles: list[str]
     :param data_ranges: The data ranges to load from the files.
         The format is a list of [start_point, end_point] for each file.
         If end_point is -1, it will read to the end of the file.
@@ -47,6 +51,7 @@ class LineDelimitedDatasetConfig:
     """
 
     file_paths: list[str]
+    titles: list[str] = field(default_factory=list)
     data_ranges: list[list[int, int]] = field(default_factory=list)
     encoding: str = "utf-8"
 
@@ -89,6 +94,7 @@ class LineDelimitedDataset(IterableDataset):
         self.file_paths = file_paths
         self.data_ranges = cfg.data_ranges
         self.encoding = cfg.encoding
+        self.titles = cfg.titles
         return
 
     def __iter__(self) -> Iterator[dict]:
@@ -107,10 +113,13 @@ class LineDelimitedDataset(IterableDataset):
                                 break
                             yield json.loads(line)
                 case ".tsv":
-                    title = []
+                    if len(self.titles) > 0:
+                        title = self.titles
+                    else:
+                        title = []
                     with open(file_path, "r", encoding=self.encoding) as f:
                         for i, row in enumerate(csv_reader(f, delimiter="\t")):
-                            if i == 0:
+                            if (i == 0) and (len(title) == 0):
                                 title = row
                                 continue
                             if i <= start_point:
@@ -119,10 +128,13 @@ class LineDelimitedDataset(IterableDataset):
                                 break
                             yield dict(zip(title, row))
                 case ".csv":
-                    title = []
+                    if len(self.titles) > 0:
+                        title = self.titles
+                    else:
+                        title = []
                     with open(file_path, "r", encoding=self.encoding) as f:
                         for i, row in enumerate(csv_reader(f)):
-                            if i == 0:
+                            if (i == 0) and (len(title) == 0):
                                 title = row
                                 continue
                             if i <= start_point:
