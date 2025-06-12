@@ -7,6 +7,7 @@ from time import perf_counter
 import numpy as np
 
 
+# TODO: support multiple process
 class _ResourceMeter:
     def __init__(self):
         self.wall_clock_timers = defaultdict(list)
@@ -69,12 +70,13 @@ class _ResourceMeter:
 
     @property
     def statistics(self) -> list[dict[str, float]]:
-        # TODO: support multiple process
+        """Get the statistics of all timers."""
         statistics = []
         for timer_name in self.wall_clock_timers.keys():
             wall_clock_times = self.wall_clock_timers[timer_name]
             user_cpu_times = self.user_cpu_timers[timer_name]
             system_cpu_times = self.system_cpu_timers[timer_name]
+            memory_usage = self.memory_usage[timer_name]
             statistics.append(
                 {
                     "name": timer_name,
@@ -85,13 +87,28 @@ class _ResourceMeter:
                     "total user cpu time": np.sum(user_cpu_times),
                     "average system cpu time": np.mean(system_cpu_times),
                     "total system cpu time": np.sum(system_cpu_times),
-                    "maximum memory usage (MB)": np.max(self.memory_usage[timer_name])
-                    / 1024,
-                    "average memory usage (MB)": np.mean(self.memory_usage[timer_name])
-                    / 1024,
+                    "maximum memory usage (MB)": np.max(memory_usage) / 1024,
+                    "average memory usage (MB)": np.mean(memory_usage) / 1024,
                 }
             )
         return statistics
+
+    def get(self, *timer_names: str) -> dict:
+        """Get the statistics of a specific timer."""
+        if timer_names not in self.wall_clock_timers:
+            raise KeyError(f"Timer '{timer_names}' does not exist.")
+        return {
+            "name": timer_names,
+            "calls": len(self.wall_clock_timers[timer_names]),
+            "average wall clock time": np.mean(self.wall_clock_timers[timer_names]),
+            "total wall clock time": np.sum(self.wall_clock_timers[timer_names]),
+            "average user cpu time": np.mean(self.user_cpu_timers[timer_names]),
+            "total user cpu time": np.sum(self.user_cpu_timers[timer_names]),
+            "average system cpu time": np.mean(self.system_cpu_timers[timer_names]),
+            "total system cpu time": np.sum(self.system_cpu_timers[timer_names]),
+            "maximum memory usage (MB)": np.max(self.memory_usage[timer_names]) / 1024,
+            "average memory usage (MB)": np.mean(self.memory_usage[timer_names]) / 1024,
+        }
 
     @property
     def details(self) -> dict:

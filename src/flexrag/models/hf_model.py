@@ -570,6 +570,9 @@ class HFEncoder(EncoderBase):
             if self.is_jina:
                 logger.warning("Data parallel does not support self implemented model.")
                 self.dp_model = None
+            elif not torch.cuda.is_available():
+                logger.warning("Data parallel is not supported on CPU.")
+                self.dp_model = None
             else:
                 self.dp_model = DP(self.model, device_ids=self.devices)
         else:

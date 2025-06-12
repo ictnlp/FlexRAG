@@ -1,7 +1,7 @@
-import json
-import os
 from dataclasses import field
-from typing import Optional
+from typing import Generator, Optional
+
+from datasets import load_dataset
 
 from flexrag.utils import configure, data
 from flexrag.utils.dataclasses import Context
@@ -14,33 +14,30 @@ class MTEBDatasetConfig:
     """Configuration for loading `MTEB <https://huggingface.co/mteb>`_ Retrieval Dataset.
     The __getitem__ method will return `IREvalData` objects.
 
-    For example, to load the NQ dataset, you can download the test set by running the following command:
+    :param path: The repository path of the MTEB dataset. Required.
+        This could be a local path or a HuggingFace repository path.
+    :type path: str
+    :param split: The split of the dataset to load. Required.
+    :type split: str
+    :param load_corpus: Whether to load the corpus of the dataset. Default: False.
+        If set to False, the contexts in the `IREvalData` will not contain the actual data.
+        If set to True, it will take more time to load the dataset.
+    :type load_corpus: bool
 
-        >>> git lfs install
-        >>> git clone https://huggingface.co/datasets/mteb/nq nq
-
-    Then you can use the following code to load the dataset:
+    You can use the following code to load the dataset directly from the MTEB repository:
 
         >>> config = MTEBDatasetConfig(
-        ...     data_path="nq",
-        ...     subset="test",
-        ...     load_corpus=False,
+        ...     path="mteb/nq",
+        ...     split="test",
         ... )
         >>> dataset = MTEBDataset(config)
 
-    :param data_path: Path to the data directory. Required.
-    :type data_path: str
-    :param subset: Subset of the dataset to load. Required.
-    :type subset: str
-    :param encoding: Encoding of the data files. Default is 'utf-8'.
-    :type encoding: str
-    :param load_corpus: Whether to load the corpus data. Default is False.
-    :type load_corpus: bool
+    For more information about the MTEB datasets,
+    please refer to the `MTEB repository <https://huggingface.co/mteb>`_.
     """
 
-    data_path: str
-    subset: str
-    encoding: str = "utf-8"
+    path: str
+    split: str
     load_corpus: bool = False
 
 
@@ -65,62 +62,81 @@ class MTEBDataset(MappingDataset[IREvalData]):
     """Dataset for loading MTEB Retrieval Dataset."""
 
     def __init__(self, config: MTEBDatasetConfig) -> None:
-        qrels: list[dict] = [
-            json.loads(line)
-            for line in open(
-                os.path.join(config.data_path, "qrels", f"{config.subset}.jsonl"),
-                "r",
-                encoding=config.encoding,
-            )
-        ]
-        queries = [
-            json.loads(line)
-            for line in open(
-                os.path.join(config.data_path, "queries.jsonl"),
-                "r",
-                encoding=config.encoding,
-            )
-        ]
-        queries = {query["_id"]: query for query in queries}
-
+        # load necessary datasets
+        self.data_name = f"{config.path} ({config.split})"
         if config.load_corpus:
-            corpus = [
-                json.loads(line)
-                for line in open(
-                    os.path.join(config.data_path, "corpus.jsonl"),
-                    "r",
-                    encoding=config.encoding,
-                )
-            ]
-            corpus = {doc["_id"]: doc for doc in corpus}
+            self._corpus = load_dataset(
+                path=config.path,
+                name="corpus",
+                split="corpus",
+            )
+            self._corpus_map: dict[str, int] = {
+                doc["_id"]: index for index, doc in enumerate(self._corpus)
+            }
         else:
-            corpus = None
+            self._corpus = None
+        self._queries = load_dataset(
+            path=config.path,
+            name="queries",
+            split="queries",
+        )
+        self._qrels = load_dataset(
+            path=config.path,
+            name="default",
+            split=config.split,
+        )
+        self._query_map: dict[str, int] = {
+            query["_id"]: index for index, query in enumerate(self._queries)
+        }
 
         # merge qrels, queries, and corpus into RetrievalData
-        dataset_map: dict[str, int] = {}
-        self.dataset: list[IREvalData] = []
-        for qrel in qrels:
+        dataset_map: dict[str, IREvalData] = {}
+
+        for qrel in self.qrels:
             # construct the context
             context = Context(context_id=qrel["corpus-id"])
-            if corpus is not None:
-                context.data = corpus[qrel["corpus-id"]]
+            if self._corpus is not None:
+                context.data = self.corpus[self._corpus_map[qrel["corpus-id"]]]
             if "score" in qrel:  # relevance level of the context
                 context.meta_data["score"] = int(qrel["score"])
-            query = queries[qrel["query-id"]]["text"]
+            # construct the query
+            query = self.queries[self._query_map[qrel["query-id"]]]["text"]
 
             if qrel["query-id"] not in dataset_map:
-                dataset_map[qrel["query-id"]] = len(self.dataset)
-                self.dataset.append(
-                    IREvalData(
-                        question=query,
-                        contexts=[context],
-                        meta_data={"query-id": qrel["query-id"]},
-                    )
+                dataset_map[qrel["query-id"]] = IREvalData(
+                    question=query,
+                    contexts=[context],
+                    meta_data={"query-id": qrel["query-id"]},
                 )
             else:
-                index = dataset_map[qrel["query-id"]]
-                self.dataset[index].contexts.append(context)
+                dataset_map[qrel["query-id"]].contexts.append(context)
+        self.dataset: list[IREvalData] = list(dataset_map.values())
         return
+
+    @property
+    def corpus(self) -> Generator[Context, None, None]:
+        """The corpus of the dataset."""
+        if self._corpus is None:
+            raise ValueError(
+                "Corpus is not loaded. Please set `load_corpus=True` in the configuration."
+            )
+        for data in self._corpus:
+            yield Context(
+                context_id=data["_id"],
+                data={"text": data["text"]},
+                source=self.data_name,
+            )
+        return
+
+    @property
+    def queries(self) -> list[dict]:
+        """The queries of the dataset."""
+        return self._queries
+
+    @property
+    def qrels(self) -> list[dict]:
+        """The qrels of the dataset."""
+        return self._qrels
 
     def __len__(self) -> int:
         return len(self.dataset)
