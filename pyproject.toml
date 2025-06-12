@@ -94,6 +94,7 @@ dev = [
     "doc8",
     "PySocks>=1.7.1",
     "cibuildwheel",
+    "pre-commit",
 ]
 
 [tool.setuptools]
