@@ -539,17 +539,42 @@ class HFEncoderConfig(HFModelConfig, EncoderBaseConfig):
     :type encode_method: str
     :param normalize: Whether to normalize the embedding. Default is False.
     :type normalize: bool
-    :param prompt: The prefix to use. Default is "".
-    :type prompt: str
-    :param task: The task to use. Default is "".
-    :type task: str
+    :param prompt: A Python template for the prompt. Default is None.
+        The `query` variable will be replaced with the input text.
+    :type prompt: Optional[str]
+    :param task: The task to use. Default is None.
+    :type task: Optional[str]
+
+
+    For example, if you want to use the Qwen3-Embedding-0.6B model as an query encoder,
+    you can use the following code:
+
+    .. code-block:: python
+        from flexrag.models import HFEncoder, HFEncoderConfig
+
+        prompt = (
+            'Instruct: '
+            'Given a web search query, retrieve relevant passages that answer the query\n'
+            'Query:{query}'
+        )
+
+        query_encoder = HFEncoder(
+            HFEncoderConfig(
+                model_path="Qwen/Qwen3-Embedding-0.6B",
+                device_id=[0],
+                prompt=prompt,
+                normalize=True,
+                encode_method="last",
+            )
+        )
+        emb = query_encoder.encode(["Who is Bruce Wayne?"])
     """
 
     max_encode_length: int = 512
-    encode_method: Annotated[str, Choices("cls", "mean")] = "mean"
+    encode_method: Annotated[str, Choices("cls", "mean", "last")] = "mean"
     normalize: bool = False
-    prompt: str = ""  # used in nomic-text-embedding
-    task: str = ""  # used in jina-embedding
+    prompt: Optional[str] = None  # used in nomic-text-embedding
+    task: Optional[str] = None  # used in jina-embedding
 
 
 @ENCODERS("hf", config_class=HFEncoderConfig)
@@ -594,14 +619,26 @@ class HFEncoder(EncoderBase):
     def get_embedding(
         self, hidden: torch.Tensor, attn_mask: torch.Tensor
     ) -> np.ndarray:
-        if self.encode_method == "mean":
-            attn_mask = attn_mask.to(hidden.device)
-            embeddings = hidden.masked_fill(~attn_mask[..., None].bool(), 0.0)
-            embeddings = embeddings.sum(dim=1) / attn_mask.sum(dim=1)[..., None]
-        elif self.encode_method == "cls":
-            embeddings = hidden[:, 0]
-        else:
-            raise ValueError(f"Unsupported encode method: {self.encode_method}")
+        match self.encode_method:
+            case "mean":
+                attn_mask = attn_mask.to(hidden.device)
+                embeddings = hidden.masked_fill(~attn_mask[..., None].bool(), 0.0)
+                embeddings = embeddings.sum(dim=1) / attn_mask.sum(dim=1)[..., None]
+            case "cls":
+                embeddings = hidden[:, 0]
+            case "last":
+                left_padding = attn_mask[:, -1].sum() == attn_mask.shape[0]
+                if left_padding:
+                    embeddings = hidden[:, -1]
+                else:
+                    sequence_lengths = attn_mask.sum(dim=1) - 1
+                    batch_size = hidden.shape[0]
+                    embeddings = hidden[
+                        torch.arange(batch_size, device=hidden.device),
+                        sequence_lengths,
+                    ]
+            case _:
+                raise ValueError(f"Unsupported encode method: {self.encode_method}")
         if self.normalize:
             embeddings = torch.nn.functional.normalize(embeddings, dim=1)
         return embeddings.float().cpu().numpy()
@@ -621,7 +658,7 @@ class HFEncoder(EncoderBase):
 
         # add prompt if needed
         if self.prompt:
-            texts = [f"{self.prompt}{i}" for i in texts]
+            texts = [self.prompt.format(query=text) for text in texts]
 
         # prepare encoder
         if (len(texts) >= len(self.devices) * 8) and (self.dp_model is not None):
