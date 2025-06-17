@@ -10,6 +10,7 @@
 [![Read the Docs](https://img.shields.io/badge/docs-Chinese-yellow)](https://flexrag.readthedocs.io/zh-cn/latest/)
 [![PyPI - Version](https://img.shields.io/pypi/v/flexrag)](https://pypi.org/project/flexrag/)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.14306983.svg)](https://doi.org/10.5281/zenodo.14306983)
+[![arXiv](https://img.shields.io/badge/arXiv-2506.12494-b31b1b.svg)](https://arxiv.org/abs/2506.12494)
 
 <p align="center">
 |
@@ -44,6 +45,7 @@ FlexRAG is an innovative open-source framework designed to streamline the rapid 
 
 
 # 📢 News
+- **2025-06-17**: Our publication [FlexRAG: A Flexible and Comprehensive Framework for Retrieval-Augmented Generation](https://arxiv.org/abs/2506.12494) is now available!
 - **2025-03-24**: The Chinese documentation is now available! Please visit the [documentation](https://flexrag.readthedocs.io/zh-cn/latest/) for more details.
 - **2025-02-25**: FlexRAG's LocalRetriever now supports loading from the [HuggingFace Hub](https://huggingface.co/collections/ICTNLP/flexrag-retrievers-67b5373b70123669108a2e59).
 - **2025-01-22**: A new entrypoint `run_retriever` and four new information retrieval metrics (e.g., `RetrievalMAP`) are now available. Check out the [documentation](https://flexrag.readthedocs.io/en/latest/) for more details.
@@ -85,6 +87,15 @@ month = jan,
 title = {{FlexRAG}},
 url = {https://github.com/ictnlp/FlexRAG},
 year = {2025}
+}
+@misc{zhang2025flexragflexiblecomprehensiveframework,
+      title={FlexRAG: A Flexible and Comprehensive Framework for Retrieval-Augmented Generation}, 
+      author={Zhuocheng Zhang and Yang Feng and Min Zhang},
+      year={2025},
+      eprint={2506.12494},
+      archivePrefix={arXiv},
+      primaryClass={cs.CL},
+      url={https://arxiv.org/abs/2506.12494}, 
 }
 ```
 
