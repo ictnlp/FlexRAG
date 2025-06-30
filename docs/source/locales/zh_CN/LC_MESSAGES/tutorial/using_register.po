@@ -131,7 +131,7 @@ msgid ""
 "`config_class`."
 msgstr ""
 "注册器在注册新组件时可以接受两个参数，分别是 `shortnames` 和 "
-"`condig_class`。"
+"`config_class`。"
 
 #: ../../source/tutorial/using_register.md:45 e55d6ac3359f4acf93c8b12421d3b541
 msgid ""
@@ -243,7 +243,7 @@ msgstr "注册器是一个泛型类，因此您可以通过类型实例化来优
 #~ "component will not have a configuration."
 #~ msgstr ""
 #~ "注册器在注册新组件时可以接受两个参数，分别是 `*shortnames` 和 "
-#~ "`condig_class`。其中 `shortnames` "
+#~ "`config_class`。其中 `shortnames` "
 #~ "可以接受一个字符串列表，用于作为当前组件的简化名称，方便您在加载时使用。所有简化名称中的第一个将被作为这个组件的默认名称。而 "
 #~ "`config_class` 则接受一个 `dataclass` "
 #~ "类，用于作为当前组件的配置结构。`config_class` 这个参数是可选的，如果您没有提供，那么这个组件将不使用配置。"
