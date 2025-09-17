@@ -7,6 +7,7 @@ from statistics import mean
 
 import httpx
 from rich.console import Console
+from rich.progress import Progress, TaskID
 from rich.table import Table
 
 
@@ -35,6 +36,8 @@ async def worker(
     timeout: float,
     latencies_ms: list[float],
     failures: list[str],
+    progress: Progress,
+    task_id: TaskID,
 ):
     for _ in range(tasks):
         async with semaphore:
@@ -53,6 +56,7 @@ async def worker(
             else:
                 lat = (time.perf_counter() - start) * 1000.0
                 latencies_ms.append(lat)
+            progress.update(task_id, advance=1)
     return
 
 
@@ -95,35 +99,39 @@ async def main_async(args):
                 pass
 
         # start benchmarking
-        start = time.perf_counter()
-        # evenly distribute tasks to each worker
-        per_worker = total_reqs // concurrency
-        remainder = total_reqs % concurrency
-        tasks = []
-        for i in range(concurrency):
-            count = per_worker + (1 if i < remainder else 0)
-            if count == 0:
-                continue
-            tasks.append(
-                asyncio.create_task(
-                    worker(
-                        i,
-                        client,
-                        args.url,
-                        semaphore,
-                        count,
-                        pool,
-                        queries_per_req,
-                        args.top_k,
-                        args.timeout,
-                        latencies_ms,
-                        failures,
+        with Progress() as progress:
+            task_id = progress.add_task("[green]Benchmarking...", total=total_reqs)
+            start = time.perf_counter()
+            # evenly distribute tasks to each worker
+            per_worker = total_reqs // concurrency
+            remainder = total_reqs % concurrency
+            tasks = []
+            for i in range(concurrency):
+                count = per_worker + (1 if i < remainder else 0)
+                if count == 0:
+                    continue
+                tasks.append(
+                    asyncio.create_task(
+                        worker(
+                            i,
+                            client,
+                            args.url,
+                            semaphore,
+                            count,
+                            pool,
+                            queries_per_req,
+                            args.top_k,
+                            args.timeout,
+                            latencies_ms,
+                            failures=failures,
+                            progress=progress,
+                            task_id=task_id,
+                        )
                     )
                 )
-            )
 
-        await asyncio.gather(*tasks)
-        elapsed = time.perf_counter() - start
+            await asyncio.gather(*tasks)
+            elapsed = time.perf_counter() - start
 
     # Summarize results
     succ = len(latencies_ms)
