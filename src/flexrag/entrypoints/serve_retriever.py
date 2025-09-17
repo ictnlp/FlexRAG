@@ -160,18 +160,9 @@ class Config(FlexRetrieverConfig):
     host: str = "0.0.0.0"
     port: int = 3402
     # Throughput tuning
-    max_batch_size: int = Field(
-        default=128,
-        description="Maximum number of requests to batch together.",
-    )
-    max_latency_ms: int = Field(
-        default=5,
-        description="Maximum latency in milliseconds to wait for batching requests.",
-    )
-    workers: int = Field(
-        default=1,
-        description="Number of Uvicorn worker processes.",
-    )
+    max_batch_size: int = 128
+    max_latency_ms: int = 5
+    workers: int = 1
 
 
 cs = ConfigStore.instance()
