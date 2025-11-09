@@ -92,3 +92,6 @@ class HFDataset(MappingDataset):
 
     def __len__(self):
         return len(self.dataset)
+
+    def __repr__(self) -> str:
+        return f"HFDataset: {self.dataset.__repr__()}"

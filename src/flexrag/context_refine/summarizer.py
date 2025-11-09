@@ -6,9 +6,8 @@ from typing import Optional
 import numpy as np
 
 from flexrag.models import ENCODERS, GENERATORS, EncoderConfig, GeneratorConfig
-from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.utils import TIME_METER, configure
-from flexrag.utils.dataclasses import RetrievedContext
+from flexrag.utils.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 
 from .refiner import REFINERS, RefinerBase
 
@@ -23,7 +22,7 @@ class AbstractiveSummarizerConfig(GeneratorConfig):
     :type template: Optional[str]
     :param chat_prompt: The chat prompt for the generator. Defaults to None.
         Only used when the generator is a chat-based generator.
-    :type chat_prompt: Optional[ChatPrompt]
+    :type chat_prompt: Optional[ChatMessages]
     :param substitute: Whether to substitute the original text with the summary. Defaults to True.
         If False, the summary will be stored in a new field named as refined_field + "_summary".
     :type substitute: bool
@@ -73,7 +72,7 @@ class AbstractiveSummarizerConfig(GeneratorConfig):
         cfg = AbstractiveSummarizerConfig(
             refined_field="text",
             template="Query: ${query}\\nText: ${content}",
-            chat_prompt=ChatPrompt(
+            chat_prompt=ChatMessages(
                 system="You are a skillful summarizer. Please summarize the following text based on given query.",
             ),
             generator_type="openai",
@@ -83,7 +82,7 @@ class AbstractiveSummarizerConfig(GeneratorConfig):
     """
 
     template: Optional[str] = None
-    chat_prompt: Optional[ChatPrompt] = None
+    chat_prompt: Optional[ChatMessages] = None
     substitute: bool = True
     concatenate_contexts: bool = False
     refined_field: Optional[str] = None
@@ -140,7 +139,7 @@ class AbstractiveSummarizer(RefinerBase):
             input_prompts = []
             for text in input_texts:
                 prompt = deepcopy(self.chat_prompt)
-                prompt.update(ChatTurn(role="user", content=text))
+                prompt.append(ChatTurn(role="user", content=text))
                 input_prompts.append(prompt)
             summaries = [i[0] for i in self.model.chat(input_prompts)]
         else:

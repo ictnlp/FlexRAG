@@ -1,7 +1,7 @@
 from flexrag.utils import LOGGER_MANAGER
-from flexrag.utils.dataclasses import RetrievedContext
+from flexrag.utils.dataclasses import ChatMessages, RetrievedContext
 
-from .assistant import ASSISTANTS
+from .assistant import ASSISTANTS, AssistantResponse
 from .modular_rag_assistant import ModularAssistant, ModularAssistantConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant.chatqa")
@@ -32,17 +32,25 @@ class ChatQAAssistant(ModularAssistant):
         return
 
     def answer_with_contexts(
-        self, question: str, contexts: list[RetrievedContext]
-    ) -> tuple[str, str]:
-        prefix = self.get_formatted_input(question, contexts)
+        self, messages: ChatMessages, contexts: list[RetrievedContext] = []
+    ) -> AssistantResponse:
+        prefix = self.get_formatted_input(messages.copy(), contexts)
         response = self.generator.generate([prefix], generation_config=self.gen_cfg)
-        return response[0][0], prefix
+        return AssistantResponse(
+            response=response[0][0], contexts=contexts, metadata={"prefix": prefix}
+        )
 
     def get_formatted_input(
-        self, question: str, contexts: list[RetrievedContext]
+        self, messages: ChatMessages, contexts: list[RetrievedContext]
     ) -> str:
         # prepare system prompts
         prefix = f"{self.sys_prompt}\n\n"
+
+        # add instruction to the first user message
+        for item in messages:
+            if item.role == "user":
+                item.content = self.instruction + " " + item.content
+                break
 
         # prepare context string
         for n, context in enumerate(contexts):
@@ -56,8 +64,20 @@ class ChatQAAssistant(ModularAssistant):
                 ctx = ""
                 for field_name in self.used_fields:
                     ctx += f"{field_name}: {context.data[field_name]}\n"
-            prefix += f"Context {n + 1}: {ctx}\n\n"
 
-        # prepare user instruction
-        prefix += f"User: {self.instruction} {question}\n\nAssistant:"
+        # format prefix
+        conversation = (
+            "\n\n".join(
+                [
+                    (
+                        "User: " + item.content
+                        if item.role == "user"
+                        else "Assistant: " + item.content
+                    )
+                    for item in messages
+                ]
+            )
+            + "\n\nAssistant:"
+        )
+        prefix = f"{self.sys_prompt}\n\n{ctx}\n\n{conversation}"
         return prefix

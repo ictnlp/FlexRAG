@@ -6,11 +6,10 @@ from typing import Annotated, Optional
 import httpx
 
 from flexrag.models import GenerationConfig
-from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.utils import LOGGER_MANAGER, Choices, configure
-from flexrag.utils.dataclasses import RetrievedContext
+from flexrag.utils.dataclasses import ChatMessages, RetrievedContext
 
-from .assistant import ASSISTANTS, AssistantBase
+from .assistant import ASSISTANTS, AssistantBase, AssistantResponse
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant")
 
@@ -19,10 +18,6 @@ logger = LOGGER_MANAGER.get_logger("flexrag.assistant")
 class JinaDeepSearchConfig:
     """The configuration for the Jina DeepSearch Assistant.
 
-    :param prompt_path: The path to the prompt file. Defaults to None.
-    :type prompt_path: str, optional
-    :param use_history: Whether to save the chat history for multi-turn conversation. Defaults to False.
-    :type use_history: bool, optional
     :param base_url: The base URL of the API. Defaults to "https://deepsearch.jina.ai/v1/chat/completions".
     :type base_url: str
     :param api_key: The API key for the Jina DeepSearch API.
@@ -41,8 +36,6 @@ class JinaDeepSearchConfig:
     :type timeout: int
     """
 
-    prompt_path: Optional[str] = None
-    use_history: bool = False
     base_url: str = "https://deepsearch.jina.ai/v1"
     api_key: Optional[str] = None
     model: str = "jina-deepsearch-v1"
@@ -56,16 +49,6 @@ class JinaDeepSearch(AssistantBase):
     """The Jina DeepSearch Assistant (https://jina.ai/deepsearch/)."""
 
     def __init__(self, cfg: JinaDeepSearchConfig):
-        # prepare prompts
-        if cfg.prompt_path is not None:
-            self.prompt = ChatPrompt.from_json(cfg.prompt_path)
-        else:
-            self.prompt = ChatPrompt()
-        if cfg.use_history:
-            self.history_prompt = deepcopy(self.prompt)
-        else:
-            self.history_prompt = None
-
         # prepare client
         api_key = cfg.api_key or os.getenv("JINA_API_KEY")
         if not api_key:
@@ -93,41 +76,31 @@ class JinaDeepSearch(AssistantBase):
         }
         return
 
-    def answer(self, question: str) -> tuple[str, None, dict[str, ChatPrompt]]:
-        # prepare prompt
-        if self.history_prompt is not None:
-            prompt = self.history_prompt
-        else:
-            prompt = deepcopy(self.prompt)
-
-        prompt.update(ChatTurn(role="user", content=question))
+    def answer(
+        self,
+        messages: ChatMessages,
+        disable_retrieval: bool = False,
+    ) -> AssistantResponse:
+        assert (
+            not disable_retrieval
+        ), "JinaDeepSearch does not support disabling retrieval."
 
         # prepare data
         data = deepcopy(self.data_template)
-        data["messages"] = prompt.to_list()
+        data["messages"] = messages.to_list()
 
         # generate response
         response = self.client.post("chat/completions", json=data)
         response.raise_for_status()
         response = response.json()["choices"][0]["message"]["content"]
 
-        # update the prompt
-        prompt.update(ChatTurn(role="assistant", content=response))
-        return response, None, {"prompt": prompt}
-
-    def clear_history(self) -> None:
-        self.history_prompt = deepcopy(self.prompt)
-        return
+        return AssistantResponse(response=response)
 
 
 @configure
 class PerplexityAssistantConfig(GenerationConfig):
     """The configuration for the PerplexityAI Assistant.
 
-    :param prompt_path: The path to the prompt file. Defaults to None.
-    :type prompt_path: str, optional
-    :param use_history: Whether to save the chat history for multi-turn conversation. Defaults to False.
-    :type use_history: bool, optional
     :param base_url: The base URL of the API. Defaults to "https://api.perplexity.ai/chat/completions".
     :type base_url: str
     :param api_key: The API key for the PerplexityAI API.
@@ -148,8 +121,6 @@ class PerplexityAssistantConfig(GenerationConfig):
     :type timeout: int
     """
 
-    prompt_path: Optional[str] = None
-    use_history: bool = False
     base_url: str = "https://api.perplexity.ai"
     api_key: Optional[str] = None
     model: str = "sonar"
@@ -166,16 +137,6 @@ class PerplexityAssistant(AssistantBase):
     """The PerplexityAI Assistant (https://www.perplexity.ai)."""
 
     def __init__(self, cfg: PerplexityAssistantConfig):
-        # load prompts
-        if cfg.prompt_path is not None:
-            self.prompt = ChatPrompt.from_json(cfg.prompt_path)
-        else:
-            self.prompt = ChatPrompt()
-        if cfg.use_history:
-            self.history_prompt = deepcopy(self.prompt)
-        else:
-            self.history_prompt = None
-
         # prepare client
         api_key = cfg.api_key or os.getenv("PERPLEXITY_API_KEY")
         if not api_key:
@@ -212,33 +173,28 @@ class PerplexityAssistant(AssistantBase):
         return
 
     def answer(
-        self, question: str
-    ) -> tuple[str, list[RetrievedContext], dict[str, ChatPrompt]]:
-        # prepare prompt
-        if self.history_prompt is not None:
-            prompt = self.history_prompt
-        else:
-            prompt = deepcopy(self.prompt)
-
-        prompt.update(ChatTurn(role="user", content=question))
+        self,
+        messages: ChatMessages,
+        disable_retrieval: bool = False,
+    ) -> AssistantResponse:
+        assert (
+            not disable_retrieval
+        ), "JinaDeepSearch does not support disabling retrieval."
 
         # prepare data
         data = deepcopy(self.data_template)
-        data["messages"] = prompt.to_list()
+        data["messages"] = messages.to_list()
 
         # generate response
         response = self.client.post("chat/completions", json=data)
         response.raise_for_status()
         r = response.json()["choices"][0]["message"]["content"]
         contexts = [
-            RetrievedContext(source=i, retriever="perplexity", query=question)
+            RetrievedContext(
+                source=i, retriever="perplexity", query=messages[-1].content
+            )
             for i in response.json()["citations"]
         ]
-
-        # update the prompt
-        prompt.update(ChatTurn(role="assistant", content=r))
-        return r, contexts, {"prompt": prompt}
-
-    def clear_history(self) -> None:
-        self.history_prompt = deepcopy(self.prompt)
-        return
+        return AssistantResponse(
+            response=r, contexts=contexts, metadata={"prompt": messages}
+        )

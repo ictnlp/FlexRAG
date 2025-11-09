@@ -1,0 +1,74 @@
+name: CI Tests
+
+on: [push, pull_request]
+
+jobs:
+  pytest:
+    name: Run pytests on Python ${{ matrix.python-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.11, 3.12, 3.13]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        run: |
+          pip install ".[dev]"
+
+      - name: Run tests
+        run: |
+          pytest -m "not gpu"
+
+  sphinx:
+    name: Build Sphinx documentation
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        language: [en, zh_CN]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: |
+          pip install ".[dev]"
+
+      - name: Build documentation
+        run: |
+          sphinx-build docs/source docs/build/${{ matrix.language }} -D language=${{ matrix.language }} -W
+
+  cibuildwheel:
+    name: Build wheels on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: Install dependencies
+        run: pip install setuptools wheel twine cibuildwheel
+
+      - name: Build wheels
+        run: python -m cibuildwheel --output-dir wheelhouse

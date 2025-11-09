@@ -144,12 +144,31 @@ class FaissIndex(DenseIndexBase):
                 raise ValueError(f"Unknown distance function: {distance_function}")
 
         if index_type == "auto":
-            n_list = 2 ** int(np.log2(np.sqrt(embedding_length)))
-            factory_str = f"IVF{n_list},PQ{embedding_size//2}x4fs"
-            logger.info(f"Auto set index to {factory_str}")
-            logger.info(
-                f"We recommend to set n_probe to {n_list//8} for better inference performance"
-            )
+            match embedding_length:
+                case l if l < 1_0_000:
+                    index = basic_index
+                    logger.info(f"Auto set index to FLAT")
+                case l if l < 1_000_000:
+                    n_list = 2 ** int(np.log2(np.sqrt(embedding_length)))
+                    index = faiss.IndexIVFFlat(
+                        basic_index,
+                        embedding_size,
+                        n_list,
+                        basic_metric,
+                    )
+                    logger.info(f"Auto set index to IVF{n_list}")
+                    logger.info(
+                        f"We recommend to set n_probe to {n_list//8} "
+                        f"for better inference performance."
+                    )
+                case _:
+                    n_list = 2 ** int(np.log2(np.sqrt(embedding_length)))
+                    factory_str = f"IVF{n_list},PQ{embedding_size//2}x4fs"
+                    logger.info(f"Auto set index to {factory_str}")
+                    logger.info(
+                        f"We recommend to set n_probe to {n_list//8} "
+                        f"for better inference performance."
+                    )
 
         if factory_str is not None:
             # using string factory to build the index

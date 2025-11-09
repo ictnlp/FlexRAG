@@ -6,10 +6,9 @@ from typing import Optional
 import httpx
 
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
-from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.utils import Register, configure
 from flexrag.utils.configure import extract_config
-from flexrag.utils.dataclasses import RetrievedContext
+from flexrag.utils.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 
 from .utils import WebResource
 from .web_downloader import (
@@ -116,7 +115,7 @@ class JinaReaderLM(WebReaderBase):
 
         # prepare prompts
         prompts = [
-            ChatPrompt(
+            ChatMessages(
                 history=[
                     ChatTurn(role="user", content=self.template.format(text=web_page))
                 ]

@@ -3,13 +3,12 @@ from typing import Any
 from flexrag.chunking import CHUNKERS, ChunkerConfig
 from flexrag.document_parser import DOCUMENTPARSERS, DocumentParserConfig
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
-from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.ranker import RANKERS, RankerConfig
 from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
 from flexrag.utils import LOGGER_MANAGER, configure
-from flexrag.utils.dataclasses import RetrievedContext
+from flexrag.utils.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 
-from .assistant import ASSISTANTS, AssistantBase
+from .assistant import ASSISTANTS, AssistantBase, AssistantResponse
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant.modular")
 
@@ -67,13 +66,11 @@ class DocumentChatAssistant(AssistantBase):
         self.retriever.add_passages(chunks)
         return
 
-    def answer(
-        self, question: str
-    ) -> tuple[str, list[RetrievedContext], dict[str, Any]]:
+    def answer(self, question: str) -> AssistantResponse:
         # answer without contexts
         if len(self.retriever) == 0:
-            prompt = ChatPrompt()
-            prompt.update(ChatTurn(role="user", content=question))
+            prompt = ChatMessages()
+            prompt.append(ChatTurn(role="user", content=question))
             response = self.generator.chat([prompt], generation_config=self.gen_cfg)
             return response[0][0], [], {"prompt": prompt}
 
@@ -87,7 +84,7 @@ class DocumentChatAssistant(AssistantBase):
             contexts = retrieved_contexts
 
         # prepare prompt
-        prompt = ChatPrompt(
+        prompt = ChatMessages(
             system="Answer the user question based on the given contexts."
         )
         usr_prompt = ""
@@ -97,7 +94,7 @@ class DocumentChatAssistant(AssistantBase):
                 ctx += f"{field_name}: {field_value}\n"
             usr_prompt += f"Context {n + 1}: {ctx}\n\n"
         usr_prompt += f"Question: {question}"
-        prompt.update(ChatTurn(role="user", content=usr_prompt))
+        prompt.append(ChatTurn(role="user", content=usr_prompt))
 
         # generate response
         response = self.generator.chat([prompt], generation_config=self.gen_cfg)[0][0]

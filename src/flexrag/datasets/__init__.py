@@ -1,16 +1,22 @@
 # datasets
+from .corpus_dataset import RAGCorpusDataset, RAGCorpusDatasetConfig
 from .dataset import ChainDataset, ConcatDataset, IterableDataset, MappingDataset
 from .hf_dataset import HFDataset, HFDatasetConfig
 from .line_delimited_dataset import LineDelimitedDataset, LineDelimitedDatasetConfig
-from .rag_dataset import (
-    RAGCorpusDataset,
-    RAGCorpusDatasetConfig,
-    RAGEvalData,
-    RAGEvalDataset,
-    RAGEvalDatasetConfig,
-    RAGMultipleChoiceData,
+from .qa_dataset import (
+    QA_DATASETS,
+    FlashQADataset,
+    FlashQADatasetConfig,
+    QADataset,
+    QAEvalData,
 )
-from .retrieval_dataset import IREvalData, MTEBDataset, MTEBDatasetConfig
+from .retrieval_dataset import (
+    RETRIEVAL_DATASETS,
+    IREvalData,
+    MTEBDataset,
+    MTEBDatasetConfig,
+    RetrievalDataset,
+)
 
 __all__ = [
     "ChainDataset",
@@ -21,13 +27,16 @@ __all__ = [
     "HFDatasetConfig",
     "LineDelimitedDataset",
     "LineDelimitedDatasetConfig",
-    "RAGEvalDatasetConfig",
-    "RAGEvalDataset",
-    "RAGEvalData",
-    "RAGMultipleChoiceData",
     "RAGCorpusDatasetConfig",
     "RAGCorpusDataset",
+    "QA_DATASETS",
+    "FlashQADataset",
+    "FlashQADatasetConfig",
+    "QADataset",
+    "QAEvalData",
     "MTEBDataset",
     "MTEBDatasetConfig",
+    "RETRIEVAL_DATASETS",
     "IREvalData",
+    "RetrievalDataset",
 ]

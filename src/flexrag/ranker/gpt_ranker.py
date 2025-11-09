@@ -5,8 +5,8 @@ from pathlib import Path
 import numpy as np
 
 from flexrag.models import GENERATORS, GeneratorConfig
-from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.utils import TIME_METER, configure
+from flexrag.utils.dataclasses import ChatMessages, ChatTurn
 
 from .ranker import RANKERS, RankerBase, RankerBaseConfig
 
@@ -41,7 +41,7 @@ class RankGPTRanker(RankerBase):
 
         # load prompt
         prompt_path = Path(__file__).parent / "ranker_prompts" / "rankgpt_prompt.json"
-        self.prompt = ChatPrompt.from_json(prompt_path)
+        self.prompt = ChatMessages.from_json(prompt_path)
 
         # set basic arguments
         self.step_size = cfg.step_size
@@ -142,9 +142,9 @@ class RankGPTRanker(RankerBase):
             content = cand.replace("Title: Content: ", "")
             content = content.strip()
             content = " ".join(content.split()[: int(max_length)])
-            prompt.update(ChatTurn(role="user", content=f"[{rank}] {content}"))
-            prompt.update(
+            prompt.append(ChatTurn(role="user", content=f"[{rank}] {content}"))
+            prompt.append(
                 ChatTurn(role="assistant", content=f"Received passage [{rank}].")
             )
-        prompt.update(last_turn)
+        prompt.append(last_turn)
         return prompt

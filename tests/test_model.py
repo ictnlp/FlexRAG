@@ -32,17 +32,17 @@ from flexrag.models import (
     VLLMGenerator,
     VLLMGeneratorConfig,
 )
-from flexrag.prompt import ChatPrompt, ChatTurn
 from flexrag.utils import LOGGER_MANAGER
+from flexrag.utils.dataclasses import ChatMessages, ChatTurn
 
 logger = LOGGER_MANAGER.get_logger("tests.test_model")
 
 
 class TestGenerator:
     prompts = [
-        ChatPrompt(history=[ChatTurn(role="user", content="Who is Bruce Wayne?")]),
-        ChatPrompt(history=[ChatTurn(role="user", content="Who is Thomas Wayne?")]),
-        ChatPrompt(history=[ChatTurn(role="user", content="What is the capital of China?")]),  # fmt: skip
+        ChatMessages(history=[ChatTurn(role="user", content="Who is Bruce Wayne?")]),
+        ChatMessages(history=[ChatTurn(role="user", content="Who is Thomas Wayne?")]),
+        ChatMessages(history=[ChatTurn(role="user", content="What is the capital of China?")]),  # fmt: skip
     ]
     prefixes = [
         "Bruce Wayne is A comic book superhero",
