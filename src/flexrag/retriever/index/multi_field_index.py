@@ -71,7 +71,12 @@ class MultiFieldIndex:
         ), "The length of the index and the context_id mapping should be the same."
         return
 
-    def build_index(self, context_ids: Iterable[str], data: Iterable[dict[str, Any]]):
+    def build_index(
+        self,
+        context_ids: Iterable[str],
+        data: Iterable[dict[str, Any]],
+        index_path: str = None,
+    ):
         """Build the index.
         The index will be serialized automatically if the `index_path` is set.
 
@@ -79,6 +84,9 @@ class MultiFieldIndex:
         :type context_ids: Iterable[str]
         :param data: The data to build the index.
         :type data: Iterable[dict[str, Any]]
+        :param index_path: The path to save the index.
+            If None, the index will be saved to self.index.cfg.index_path.
+        :type index_path: str
         :return: None
         """
 
@@ -114,8 +122,9 @@ class MultiFieldIndex:
             self.index_to_context_id[n] = context_id
 
         # serialize the index if the `index_path` is set
-        if self.index.cfg.index_path is not None:
-            self.save_to_local()
+        index_path = index_path or self.index.cfg.index_path
+        if index_path is not None:
+            self.save_to_local(index_path=index_path)
         return
 
     def search_batch(
@@ -391,8 +400,10 @@ class MultiFieldIndex:
 
     @property
     def infimum(self) -> float:
+        """Return the infimum of the similarity scores for the index."""
         return self.index.infimum
 
     @property
     def supremum(self) -> float:
+        """Return the supremum of the similarity scores for the index."""
         return self.index.supremum

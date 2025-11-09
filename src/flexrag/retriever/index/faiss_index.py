@@ -164,13 +164,17 @@ class FaissIndex(DenseIndexBase):
                 case _:
                     n_list = 2 ** int(np.log2(np.sqrt(embedding_length)))
                     factory_str = f"IVF{n_list},PQ{embedding_size//2}x4fs"
+                    index = faiss.index_factory(
+                        embedding_size,
+                        factory_str,
+                        basic_metric,
+                    )
                     logger.info(f"Auto set index to {factory_str}")
                     logger.info(
                         f"We recommend to set n_probe to {n_list//8} "
                         f"for better inference performance."
                     )
-
-        if factory_str is not None:
+        elif factory_str is not None:
             # using string factory to build the index
             index = faiss.index_factory(
                 embedding_size,

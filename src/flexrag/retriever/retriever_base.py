@@ -100,7 +100,7 @@ def batched_cache(func):
 class RetrieverBaseConfig:
     """Base configuration class for all retrievers.
 
-    :param log_interval: The interval of logging. Default: 100.
+    :param log_interval: The interval of logging. Default: 10000.
     :type log_interval: int
     :param top_k: The number of retrieved documents. Default: 10.
     :type top_k: int
@@ -110,7 +110,7 @@ class RetrieverBaseConfig:
     :type query_preprocess_pipeline: TextProcessPipelineConfig
     """
 
-    log_interval: int = 100
+    log_interval: int = 10000
     top_k: int = 10
     batch_size: int = 32
     query_preprocess_pipeline: TextProcessPipelineConfig = field(  # type: ignore

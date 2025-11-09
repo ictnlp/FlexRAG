@@ -325,18 +325,17 @@ class FlexRetriever(LocalRetriever):
                 f"Index {index_name} already exists. Please remove it first."
             )
 
-        # prepare the index
-        index = RETRIEVER_INDEX.load(index_config)
-        index = MultiFieldIndex(indexed_fields_config, index)
-        index.build_index(self.database.ids, self.database.values())
-
         # prepare index path
         if self.cfg.retriever_path is not None:
             index_path = os.path.join(self.cfg.retriever_path, "indexes", index_name)
         else:
             index_path = None
-        if index_path is not None:
-            index.save_to_local(index_path)
+
+        # prepare the index
+        index = RETRIEVER_INDEX.load(index_config)
+        index = MultiFieldIndex(indexed_fields_config, index)
+        if len(self.database) > 0:
+            index.build_index(self.database.ids, self.database.values(), index_path)
 
         # add index to the index table
         self.index_table[index_name] = index
@@ -440,6 +439,13 @@ class FlexRetriever(LocalRetriever):
             for ctx_id in context_ids:
                 yield self.database[ctx_id]
 
+        # prepare index path
+        if self.cfg.retriever_path is not None:
+            index_path = os.path.join(self.cfg.retriever_path, "indexes", index_name)
+        else:
+            index_path = None
+
+        # update index
         for index_name, index in self.index_table.items():
             if index.is_addable:
                 index.insert_batch(context_ids, get_data(), serialize=True)
@@ -448,7 +454,7 @@ class FlexRetriever(LocalRetriever):
                     f"Index {index_name} is not addable. Rebuilding the index."
                 )
                 index.clear()
-                index.build_index(get_data())
+                index.build_index(context_ids, get_data(), index_path)
         return
 
     def _load_database(self) -> RetrieverDatabaseBase:

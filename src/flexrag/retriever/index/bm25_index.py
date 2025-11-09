@@ -34,6 +34,8 @@ class BM25IndexConfig(RetrieverIndexBaseConfig):
     :type delta: float
     :param lang: Language for Tokenization. Default: "english".
     :type lang: str
+    :param show_progress: Whether to show progress bar during indexing. Default: True.
+    :type show_progress: bool
     """
 
     method: Annotated[
@@ -63,6 +65,7 @@ class BM25IndexConfig(RetrieverIndexBaseConfig):
     b: float = 0.75
     delta: float = 0.5
     lang: str = "english"
+    show_progress: bool = True
 
 
 @RETRIEVER_INDEX("bm25", config_class=BM25IndexConfig)
@@ -93,6 +96,7 @@ class BM25Index(RetrieverIndexBase):
             b=cfg.b,
             delta=cfg.delta,
         )
+        self.show_progress = cfg.show_progress
 
         # load the index if index_path is provided
         if self.cfg.index_path is not None:
@@ -114,9 +118,17 @@ class BM25Index(RetrieverIndexBase):
         # tokenize and build index
         logger.info("Building the index.")
         indexed_tokens = bm25s.tokenize(
-            items, stopwords=self.cfg.lang, stemmer=self._stemmer
+            items,
+            stopwords=self.cfg.lang,
+            stemmer=self._stemmer,
+            show_progress=self.show_progress,
+            leave=True,
         )
-        self.index.index(indexed_tokens)
+        self.index.index(
+            indexed_tokens,
+            show_progress=self.show_progress,
+            leave_progress=True,
+        )
 
         # serialize index
         if self.cfg.index_path is not None:
@@ -124,9 +136,7 @@ class BM25Index(RetrieverIndexBase):
         return
 
     def insert(self, data: list[Any]) -> None:
-        raise NotImplementedError(
-            "BM25Index currently does not support inserting data."
-        )
+        raise NotImplementedError("BM25Index does not support inserting data.")
 
     def search(
         self,
@@ -168,8 +178,10 @@ class BM25Index(RetrieverIndexBase):
         return
 
     def clear(self) -> None:
-        del self.index.scores
-        del self.index.vocab_dict
+        if hasattr(self.index, "scores"):
+            del self.index.scores
+        if hasattr(self.index, "vocab_dict"):
+            del self.index.vocab_dict
         if self.cfg.index_path is not None:
             if os.path.exists(self.cfg.index_path):
                 shutil.rmtree(self.cfg.index_path)
