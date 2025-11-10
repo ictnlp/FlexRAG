@@ -147,7 +147,7 @@ class FlashQADatasetConfig:
     path: str = "RUC-NLPIR/FlashRAG_datasets"
 
 
-@QA_DATASETS("flashrag_qa", config_name=FlashQADatasetConfig)
+@QA_DATASETS("flashrag_qa", config_class=FlashQADatasetConfig)
 class FlashQADataset(QADataset):
     """The dataset for loading Knowledge Intensive QA task dataset from the
     `FlashRAG <https://huggingface.co/datasets/RUC-NLPIR/FlashRAG_datasets>`_ repository.
