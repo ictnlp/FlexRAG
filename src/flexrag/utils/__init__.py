@@ -1,7 +1,7 @@
 from .configure import Choices, Register, configure, data, extract_config
 from .default_vars import __VERSION__, FLEXRAG_CACHE_DIR, USER_MODULE_PATH
 from .logging import LOGGER_MANAGER, SimpleProgressLogger
-from .misc import load_user_module
+from .misc import download, download_and_extract, load_user_module
 from .persistent_cache import (
     FIFOPersistentCache,
     LFUPersistentCache,
@@ -22,6 +22,8 @@ __all__ = [
     "LOGGER_MANAGER",
     "SimpleProgressLogger",
     "load_user_module",
+    "download",
+    "download_and_extract",
     "FIFOPersistentCache",
     "LFUPersistentCache",
     "LRUPersistentCache",
