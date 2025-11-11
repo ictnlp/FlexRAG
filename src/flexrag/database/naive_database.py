@@ -3,7 +3,7 @@ from typing import Iterable
 
 import numpy as np
 
-from .databsae_base import RetrieverDatabaseBase
+from .database_base import RetrieverDatabaseBase
 
 
 class NaiveRetrieverDatabase(RetrieverDatabaseBase):

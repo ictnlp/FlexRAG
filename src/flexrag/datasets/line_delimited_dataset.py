@@ -1,14 +1,17 @@
+import csv
 import json
+import sys
 from csv import reader as csv_reader
 from dataclasses import field
 from glob import glob
-from os import PathLike
 from pathlib import Path
 from typing import Iterator
 
 from flexrag.utils import configure
 
 from .dataset import IterableDataset
+
+csv.field_size_limit(sys.maxsize)
 
 
 @configure

@@ -11,10 +11,18 @@ if platform.system() == "Windows":
 
 
 class SimpleProgressLogger:
-    def __init__(self, logger: logging.Logger, total: int = None, interval: int = 100):
+    def __init__(
+        self, logger: logging.Logger = None, total: int = None, interval: int = 100
+    ):
+        # set logger
+        if logger is None:
+            self.logger = LOGGER_MANAGER.default_logger
+        else:
+            self.logger = logger
+
+        # set arguments
         self.total = total
         self.interval = interval
-        self.logger = logger
         self.current = 0
         self.current_stage = 0
         self.desc = "Progress"
@@ -201,6 +209,10 @@ class _LoggerManager:
             for handler in logger.handlers:
                 handler.setFormatter(formatter)
         return
+
+    @property
+    def default_logger(self):
+        return self.get_logger("flexrag")
 
 
 LOGGER_MANAGER = _LoggerManager()

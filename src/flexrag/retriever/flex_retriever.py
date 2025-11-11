@@ -439,14 +439,15 @@ class FlexRetriever(LocalRetriever):
             for ctx_id in context_ids:
                 yield self.database[ctx_id]
 
-        # prepare index path
-        if self.cfg.retriever_path is not None:
-            index_path = os.path.join(self.cfg.retriever_path, "indexes", index_name)
-        else:
-            index_path = None
-
         # update index
         for index_name, index in self.index_table.items():
+            # prepare index path
+            if self.cfg.retriever_path is not None:
+                index_path = os.path.join(
+                    self.cfg.retriever_path, "indexes", index_name
+                )
+            else:
+                index_path = None
             if index.is_addable:
                 index.insert_batch(context_ids, get_data(), serialize=True)
             else:
