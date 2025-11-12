@@ -10,7 +10,7 @@ from .qa_dataset import (
     QADataset,
     QAEvalData,
 )
-from .retrieval_dataset import (
+from .retrieval_datasets import (
     RETRIEVAL_DATASETS,
     IREvalData,
     MTEBDataset,
