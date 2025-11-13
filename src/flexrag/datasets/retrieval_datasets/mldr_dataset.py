@@ -19,6 +19,7 @@ class MultiLongDocRetrievalDatasetConfig:
     The __getitem__ method will return `IREvalData` objects.
 
     :param subset: The subset of the dataset to load. Required.
+        Available choices are: `train`, `dev`, `test`.
     :type subset: str
     :param lang: The language of the dataset. Default is `en`.
         Available choices are:
@@ -67,7 +68,7 @@ class MultiLongDocRetrievalDataset(RetrievalDataset):
         corpus_reader = LineDelimitedReader(corpus_path)
         self._corpus = {}
         for item in corpus_reader:
-            docid = item.pop("docid")
+            docid = str(item["docid"])
             self._corpus[docid] = Context(context_id=docid, data=item, source="mldr")
 
         # load the subset
@@ -75,6 +76,25 @@ class MultiLongDocRetrievalDataset(RetrievalDataset):
             data_path / f"mldr-v1.0-{config.lang}" / f"{config.subset}.jsonl.gz"
         )
         self._subset = list(LineDelimitedReader(subset_path))
+
+        # for training subset, we need to add documents from self._subset to the corpus
+        for item in self._subset:
+            for p in item["positive_passages"]:
+                docid = str(p["docid"])
+                if docid not in self._corpus:
+                    self._corpus[docid] = Context(
+                        context_id=docid,
+                        data=p,
+                        source="mldr_subset",
+                    )
+            for n in item["negative_passages"]:
+                docid = str(n["docid"])
+                if docid not in self._corpus:
+                    self._corpus[docid] = Context(
+                        context_id=docid,
+                        data=n,
+                        source="mldr_subset",
+                    )
         return
 
     def __getitem__(self, index: int) -> IREvalData:
