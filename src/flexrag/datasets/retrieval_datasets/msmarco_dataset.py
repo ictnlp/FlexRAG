@@ -1,7 +1,7 @@
 from collections import defaultdict
-from collections.abc import Iterable
+from collections.abc import Iterator
 from pathlib import Path
-from typing import Generator, Literal
+from typing import Literal
 
 from flexrag.utils import (
     FLEXRAG_CACHE_DIR,
@@ -103,7 +103,7 @@ class MSMARCODataset(RetrievalDataset):
         return
 
     @property
-    def corpus(self) -> Generator[Context, None, None]:
+    def corpus(self) -> Iterator[Context]:
         """The corpus of the dataset."""
         if self._corpus is None:
             raise ValueError(
@@ -205,7 +205,9 @@ class _MSMARCOPassageRankingV1Loader:
         self.subset = subset
         return
 
-    def load_corpus(self) -> Iterable[Context]:
+    def load_corpus(
+        self, return_type: Literal["Context", "dict"] = "Context"
+    ) -> Iterator[Context]:
         """Load the corpus from the given path."""
         if self.data_path is not None:
             corpus_path = Path(self.data_path, "collection.tsv")
@@ -229,12 +231,15 @@ class _MSMARCOPassageRankingV1Loader:
             file_format="tsv",
         )
         for data in reader:
-            ctx_id = data.pop("_id")
-            yield Context(
-                context_id=ctx_id,
-                data={"text": data["text"]},
-                source="msmarco_passage_ranking_v1",
-            )
+            if return_type == "dict":
+                yield data
+            elif return_type == "Context":
+                ctx_id = data.pop("_id")
+                yield Context(
+                    context_id=ctx_id,
+                    data={"text": data["text"]},
+                    source="msmarco_passage_ranking_v1",
+                )
         return
 
     def load_queries(self) -> dict[str, str]:
@@ -309,7 +314,9 @@ class _MSMARCODocumentRankingV1Loader:
         self.subset = subset
         return
 
-    def load_corpus(self) -> Iterable[Context]:
+    def load_corpus(
+        self, return_type: Literal["Context", "dict"] = "Context"
+    ) -> Iterator[Context]:
         """Load the corpus from the given path."""
         if self.data_path is not None:
             corpus_path = Path(self.data_path, "msmarco-docs.tsv.gz")
@@ -333,12 +340,15 @@ class _MSMARCODocumentRankingV1Loader:
             file_format="tsv",
         )
         for data in reader:
-            ctx_id = data.pop("_id")
-            yield Context(
-                context_id=ctx_id,
-                data=data,
-                source="msmarco_document_ranking_v1",
-            )
+            if return_type == "dict":
+                yield data
+            elif return_type == "Context":
+                ctx_id = data.pop("_id")
+                yield Context(
+                    context_id=ctx_id,
+                    data=data,
+                    source="msmarco_document_ranking_v1",
+                )
         return
 
     def load_queries(self) -> dict[str, str]:
@@ -418,7 +428,9 @@ class _MSMARCOPassageRankingV2Loader:
         self.subset = subset
         return
 
-    def load_corpus(self) -> Iterable[Context]:
+    def load_corpus(
+        self, return_type: Literal["Context", "dict"] = "Context"
+    ) -> Iterator[Context]:
         """Load the corpus from the given path."""
         if self.data_path is not None:
             corpus_dir = Path(self.data_path, "corpus")
@@ -440,12 +452,15 @@ class _MSMARCOPassageRankingV2Loader:
                 corpus_path, encoding="utf-8", file_format="jsonl"
             )
             for data in reader:
-                _id = data.pop("pid")
-                yield Context(
-                    context_id=_id,
-                    data=data,
-                    source="msmarco_passage_ranking_v2",
-                )
+                if return_type == "dict":
+                    yield data
+                elif return_type == "Context":
+                    _id = data.pop("pid")
+                    yield Context(
+                        context_id=_id,
+                        data=data,
+                        source="msmarco_passage_ranking_v2",
+                    )
         return
 
     def load_queries(self) -> dict[str, str]:
@@ -522,7 +537,9 @@ class _MSMARCODocumentRankingV2Loader:
         self.subset = subset
         return
 
-    def load_corpus(self) -> Iterable[Context]:
+    def load_corpus(
+        self, return_type: Literal["Context", "dict"] = "Context"
+    ) -> Iterator[Context]:
         """Load the corpus from the given path."""
         if self.data_path is not None:
             corpus_dir = Path(self.data_path, "corpus")
@@ -544,12 +561,15 @@ class _MSMARCODocumentRankingV2Loader:
                 corpus_path, encoding="utf-8", file_format="jsonl"
             )
             for data in reader:
-                docid = data.pop("docid")
-                yield Context(
-                    context_id=docid,
-                    data=data,
-                    source="msmarco_document_ranking_v2",
-                )
+                if return_type == "dict":
+                    yield data
+                elif return_type == "Context":
+                    docid = data.pop("docid")
+                    yield Context(
+                        context_id=docid,
+                        data=data,
+                        source="msmarco_document_ranking_v2",
+                    )
         return
 
     def load_queries(self) -> dict[str, str]:
