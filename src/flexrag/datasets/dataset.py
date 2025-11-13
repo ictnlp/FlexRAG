@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, Generic, TypeVar
 
 ItemTypeI = TypeVar("ItemTypeI")
@@ -43,7 +43,7 @@ class IterableDataset(Iterable[ItemTypeI], Generic[ItemTypeI]):
         return ChainDataset(self, other)
 
 
-class MappingDataset(Generic[ItemTypeM]):
+class MappingDataset(Mapping[int, ItemTypeM], Generic[ItemTypeM]):
     r"""MappingDataset is a BaseClass for datasets that can be indexed by integers.
 
     The subclasses of MappingDataset should implement the following methods:

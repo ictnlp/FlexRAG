@@ -1,4 +1,4 @@
-from typing import Generator
+from collections.abc import Iterator
 
 from datasets import load_dataset
 
@@ -97,7 +97,7 @@ class MTEBDataset(RetrievalDataset):
         return
 
     @property
-    def corpus(self) -> Generator[Context, None, None]:
+    def corpus(self) -> Iterator[Context]:
         """The corpus of the dataset."""
         if self._corpus is None:
             raise ValueError(

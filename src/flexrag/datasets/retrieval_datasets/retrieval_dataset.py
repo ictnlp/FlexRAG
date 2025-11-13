@@ -1,6 +1,7 @@
 from abc import abstractmethod
+from collections.abc import Iterator
 from dataclasses import field
-from typing import Generator, Optional
+from typing import Optional
 
 from flexrag.utils import Register, data
 from flexrag.utils.dataclasses import Context
@@ -29,12 +30,37 @@ class IREvalData:
 
 
 class RetrievalDataset(MappingDataset[IREvalData]):
-    """Interface for Information Retrieval dataset."""
+    """Interface for Information Retrieval dataset.
+
+    The subclasses of RetrievalDataset should implement the following properties:
+
+        >>> # The corpus of the dataset.
+        >>> @property
+        >>> def corpus(self) -> Iterator[Context]: ...
+        >>> # The queries of the dataset.
+        >>> @property
+        >>> def queries(self) -> list[dict]: ...
+        >>> # The qrels of the dataset.
+        >>> @property
+        >>> def qrels(self) -> list[dict]: ...
+    """
 
     @property
     @abstractmethod
-    def corpus(self) -> Generator[Context, None, None]:
+    def corpus(self) -> Iterator[Context]:
         """The corpus of the dataset."""
+        return
+
+    @property
+    @abstractmethod
+    def queries(self) -> list[dict]:
+        """The queries of the dataset."""
+        return
+
+    @property
+    @abstractmethod
+    def qrels(self) -> list[dict]:
+        """The qrels of the dataset."""
         return
 
 
