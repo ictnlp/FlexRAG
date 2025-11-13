@@ -17,6 +17,8 @@ from .retrieval_datasets import (
     MSMARCODataset,
     MTEBDataset,
     MTEBDatasetConfig,
+    MultiLongDocRetrievalDataset,
+    MultiLongDocRetrievalDatasetConfig,
     RetrievalDataset,
 )
 
@@ -42,5 +44,7 @@ __all__ = [
     "MTEBDatasetConfig",
     "RETRIEVAL_DATASETS",
     "IREvalData",
+    "MultiLongDocRetrievalDataset",
+    "MultiLongDocRetrievalDatasetConfig",
     "RetrievalDataset",
 ]
