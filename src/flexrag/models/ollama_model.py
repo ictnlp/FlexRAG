@@ -34,27 +34,33 @@ class OllamaGeneratorConfig:
     :type verbose: bool
     :param num_ctx: The number of context tokens to use. Default is 4096.
     :type num_ctx: int
-    :param allow_parallel: Whether to allow parallel generation. Default is True.
-    :type allow_parallel: bool
+    :param max_concurrency: The maximum number of concurrent generation requests. Default is 1.
+    :type max_concurrency: int
     """
 
     model_name: Optional[str] = None
     base_url: str = "http://localhost:11434/"
     verbose: bool = False
     num_ctx: int = 4096
-    allow_parallel: bool = True
+    max_concurrency: int = 1
 
 
 @GENERATORS("ollama", config_class=OllamaGeneratorConfig)
 class OllamaGenerator(GeneratorBase):
     def __init__(self, cfg: OllamaGeneratorConfig) -> None:
-        from ollama import Client
+        from ollama import AsyncClient, Client
 
+        # initialize ollama client
         self.client = Client(host=cfg.base_url)
+        self.async_client = AsyncClient(host=cfg.base_url)
+
+        # set arguments
         assert cfg.model_name is not None, "`model_name` must be provided"
         self.model_name = cfg.model_name
         self.max_length = cfg.num_ctx
-        self.allow_parallel = cfg.allow_parallel
+        self.max_concurrency = cfg.max_concurrency
+
+        # prepare logger
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)
@@ -68,33 +74,29 @@ class OllamaGenerator(GeneratorBase):
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         # as ollama does not support sample_num, we sample multiple times
+        prompts = [prompts] if not isinstance(prompts, list) else prompts
         options = self._get_options(generation_config)
-        if self.allow_parallel:
-            with ThreadPoolExecutor() as pool:
-                responses = pool.map(
-                    lambda prompt: [
-                        self.client.chat(
-                            model=self.model_name,
-                            messages=prompt.to_list(),
-                            options=options,
-                        ).message.content
-                        for _ in range(generation_config.sample_num)
-                    ],
-                    prompts,
-                )
-                responses = list(responses)
+        sample_num = generation_config.sample_num
+
+        def _create(prompt: ChatPrompt) -> str:
+            return self.client.chat(
+                model=self.model_name,
+                messages=prompt.to_list(),
+                options=options,
+            ).message.content
+
+        tasks = prompts * sample_num
+        if self.max_concurrency > 1:
+            with ThreadPoolExecutor(max_workers=self.max_concurrency) as pool:
+                responses = list(pool.map(_create, tasks))
         else:
-            responses: list[list[str]] = []
-            for prompt in prompts:
-                prompt = prompt.to_list()
-                responses.append([])
-                for _ in range(generation_config.sample_num):
-                    response = self.client.chat(
-                        model=self.model_name,
-                        messages=prompt,
-                        options=options,
-                    )
-                    responses[-1].append(response.message.content)
+            responses = []
+            for task in tasks:
+                responses.append(_create(task))
+        responses: list[list[str]] = [
+            responses[i * sample_num : (i + 1) * sample_num]
+            for i in range(len(prompts))
+        ]
         return responses
 
     @TIME_METER("generator.ollama_generate")
@@ -103,27 +105,27 @@ class OllamaGenerator(GeneratorBase):
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        if not isinstance(prompts, list):
-            prompts = [prompts]
-        tasks = []
+        # as ollama does not support sample_num, we sample multiple times
+        prompts = [prompts] if not isinstance(prompts, list) else prompts
         options = self._get_options(generation_config)
-        for prompt in prompts:
-            # as ollama does not support sample_num, we sample multiple times
-            prompt = prompt.to_list()
-            tasks.append([])
-            for _ in range(generation_config.sample_num):
-                tasks[-1].append(
-                    asyncio.create_task(
-                        asyncio.to_thread(
-                            self.client.chat,
-                            model=self.model_name,
-                            messages=prompt,
-                            options=options,
-                        )
-                    )
-                )
+        sample_num = generation_config.sample_num
+
+        semaphore = asyncio.Semaphore(self.max_concurrency)
+
+        async def _create(prompt: ChatPrompt) -> str:
+            async with semaphore:
+                return await self.async_client.chat(
+                    model=self.model_name,
+                    messages=prompt.to_list(),
+                    options=options,
+                ).message.content
+
+        tasks = prompts * sample_num
+        tasks = asyncio.create_task(_create(p) for p in tasks)
+        responses = [await task for task in tasks]
         responses = [
-            [(await task).message.content for task in task_list] for task_list in tasks
+            responses[i * sample_num : (i + 1) * sample_num]
+            for i in range(len(prompts))
         ]
         return responses
 
@@ -134,36 +136,30 @@ class OllamaGenerator(GeneratorBase):
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         # as ollama does not support sample_num, we sample multiple times
-        if not isinstance(prefixes, list):
-            prefixes = [prefixes]
+        prefixes = [prefixes] if not isinstance(prefixes, list) else prefixes
         options = self._get_options(generation_config)
-        if self.allow_parallel:
-            with ThreadPoolExecutor() as pool:
-                responses = pool.map(
-                    lambda prefix: [
-                        self.client.generate(
-                            model=self.model_name,
-                            prompt=prefix,
-                            raw=True,
-                            options=options,
-                        ).response
-                        for _ in range(generation_config.sample_num)
-                    ],
-                    prefixes,
-                )
-                responses = list(responses)
+        sample_num = generation_config.sample_num
+
+        def _create(prefix: str) -> str:
+            return self.client.generate(
+                model=self.model_name,
+                prompt=prefix,
+                raw=True,
+                options=options,
+            ).response
+
+        tasks = prefixes * sample_num
+        if self.max_concurrency > 1:
+            with ThreadPoolExecutor(max_workers=self.max_concurrency) as pool:
+                responses = list(pool.map(_create, tasks))
         else:
-            responses: list[list[str]] = []
-            for prefix in prefixes:
-                responses.append([])
-                for _ in range(generation_config.sample_num):
-                    response = self.client.generate(
-                        model=self.model_name,
-                        prompt=prefix,
-                        raw=True,
-                        options=options,
-                    )
-                    responses[-1].append(response.response)
+            responses = []
+            for task in tasks:
+                responses.append(_create(task))
+        responses: list[list[str]] = [
+            responses[i * sample_num : (i + 1) * sample_num]
+            for i in range(len(prefixes))
+        ]
         return responses
 
     @TIME_METER("generator.ollama_generate")
@@ -172,27 +168,27 @@ class OllamaGenerator(GeneratorBase):
         prefixes: list[str],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        if not isinstance(prefixes, list):
-            prefixes = [prefixes]
-        tasks = []
+        prefixes = [prefixes] if not isinstance(prefixes, list) else prefixes
         options = self._get_options(generation_config)
-        for prefix in prefixes:
-            # as ollama does not support sample_num, we sample multiple times
-            tasks.append([])
-            for _ in range(generation_config.sample_num):
-                tasks[-1].append(
-                    asyncio.create_task(
-                        asyncio.to_thread(
-                            self.client.generate,
-                            model=self.model_name,
-                            prompt=prefix,
-                            raw=True,
-                            options=options,
-                        )
-                    )
-                )
+        sample_num = generation_config.sample_num
+
+        semaphore = asyncio.Semaphore(self.max_concurrency)
+
+        async def _create(prefix: str) -> str:
+            async with semaphore:
+                return await self.async_client.generate(
+                    model=self.model_name,
+                    prompt=prefix,
+                    raw=True,
+                    options=options,
+                ).response
+
+        tasks = prefixes * sample_num
+        tasks = asyncio.create_task(_create(p) for p in tasks)
+        responses = [await task for task in tasks]
         responses = [
-            [(await task).response for task in task_list] for task_list in tasks
+            responses[i * sample_num : (i + 1) * sample_num]
+            for i in range(len(prefixes))
         ]
         return responses
 
@@ -230,7 +226,8 @@ class OllamaEncoderConfig(EncoderBaseConfig):
     :type verbose: bool
     :param embedding_size: The size of the embeddings. Default is 768.
     :type embedding_size: int
-    :param allow_parallel: Whether to allow parallel generation. Default is True.
+    :param max_concurrency: The maximum number of concurrent encoding requests. Default is 1.
+    :type max_concurrency: int
     """
 
     model_name: Optional[str] = None
@@ -238,21 +235,27 @@ class OllamaEncoderConfig(EncoderBaseConfig):
     prompt: Optional[str] = None
     verbose: bool = False
     embedding_size: int = 768
-    allow_parallel: bool = True
+    max_concurrency: int = 1
 
 
 @ENCODERS("ollama", config_class=OllamaEncoderConfig)
 class OllamaEncoder(EncoderBase):
     def __init__(self, cfg: OllamaEncoderConfig) -> None:
         super().__init__(cfg)
-        from ollama import Client
+        from ollama import AsyncClient, Client
 
+        # initialize ollama client
         self.client = Client(host=cfg.base_url)
+        self.async_client = AsyncClient(host=cfg.base_url)
+
+        # set arguments
         assert cfg.model_name is not None, "`model_name` must be provided"
         self.model_name = cfg.model_name
         self.prompt = cfg.prompt
         self._embedding_size = cfg.embedding_size
-        self.allow_parallel = cfg.allow_parallel
+        self.max_concurrency = cfg.max_concurrency
+
+        # set logger
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)
@@ -261,44 +264,41 @@ class OllamaEncoder(EncoderBase):
 
     @TIME_METER("encoder.ollama_encode")
     def _encode(self, texts: list[str]) -> ndarray:
+        texts = [texts] if not isinstance(texts, list) else texts
         if self.prompt:
             texts = [f"{self.prompt} {text}" for text in texts]
-        if self.allow_parallel:
-            with ThreadPoolExecutor() as pool:
-                embeddings = pool.map(
-                    lambda text: self.client.embeddings(
-                        model=self.model_name, prompt=text
-                    )["embedding"],
-                    texts,
-                )
+
+        def _create(text: str) -> list[float]:
+            embed = self.client.embeddings(model=self.model_name, prompt=text)
+            return embed["embedding"]
+
+        if self.max_concurrency > 1:
+            with ThreadPoolExecutor(max_workers=self.max_concurrency) as pool:
+                embeddings = pool.map(_create, texts)
                 embeddings = list(embeddings)
         else:
             embeddings = []
             for text in texts:
-                embeddings.append(
-                    self.client.embeddings(model=self.model_name, prompt=text)[
-                        "embedding"
-                    ]
-                )
+                embeddings.append(_create(text))
         embeddings = np.array(embeddings)
         return embeddings[:, : self.embedding_size]
 
     @TIME_METER("encoder.ollama_encode")
     async def async_encode(self, texts: list[str]) -> ndarray:
+        texts = [texts] if not isinstance(texts, list) else texts
         if self.prompt:
             texts = [f"{self.prompt} {text}" for text in texts]
-        tasks = []
-        for text in texts:
-            tasks.append(
-                asyncio.create_task(
-                    asyncio.to_thread(
-                        self.client.embeddings,
-                        model=self.model_name,
-                        prompt=text,
-                    )
-                )
-            )
-        embeddings = np.array([(await task)["embedding"] for task in tasks])
+        semaphore = asyncio.Semaphore(self.max_concurrency)
+
+        async def _create(text: str) -> list[float]:
+            async with semaphore:
+                return await self.async_client.embeddings(
+                    model=self.model_name,
+                    prompt=text,
+                )["embedding"]
+
+        tasks = [asyncio.create_task(_create(text)) for text in texts]
+        embeddings = np.array([await task for task in tasks])
         return embeddings[:, : self.embedding_size]
 
     @property

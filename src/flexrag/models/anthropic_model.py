@@ -28,8 +28,8 @@ class AnthropicGeneratorConfig:
     :type verbose: bool
     :param proxy: The proxy to use. Defaults to None.
     :type proxy: Optional[str]
-    :param allow_parallel: Whether to allow parallel generation. Defaults to True.
-    :type allow_parallel: bool
+    :param max_concurrency: The maximum number of concurrent generation requests. Defaults to 1.
+    :type max_concurrency: int
     """
 
     model_name: Optional[str] = None
@@ -37,28 +37,36 @@ class AnthropicGeneratorConfig:
     api_key: str = os.environ.get("ANTHROPIC_API_KEY", "EMPTY")
     verbose: bool = False
     proxy: Optional[str] = None
-    allow_parallel: bool = True
+    max_concurrency: int = 1
 
 
 @GENERATORS("anthropic", config_class=AnthropicGeneratorConfig)
 class AnthropicGenerator(GeneratorBase):
     def __init__(self, cfg: AnthropicGeneratorConfig) -> None:
-        from anthropic import Anthropic
+        from anthropic import Anthropic, AsyncAnthropic
 
-        # set proxy
+        # initialize the client
         if cfg.proxy is not None:
             client = httpx.Client(proxies=cfg.proxy)
         else:
             client = None
-
         self.client = Anthropic(
             api_key=cfg.api_key,
             base_url=cfg.base_url,
             http_client=client,
         )
+        self.async_client = AsyncAnthropic(
+            api_key=cfg.api_key,
+            base_url=cfg.base_url,
+            http_client=client,
+        )
+
+        # set arguments
         assert cfg.model_name is not None, "model_name must be provided"
         self.model_name = cfg.model_name
-        self.allow_parallel = cfg.allow_parallel
+        self.max_concurrency = cfg.max_concurrency
+
+        # set logger
         if not cfg.verbose:
             logger = logging.getLogger("httpx")
             logger.setLevel(logging.WARNING)
@@ -71,35 +79,30 @@ class AnthropicGenerator(GeneratorBase):
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
         # as anthropic does not support sample_num, we sample multiple times
+        prompts = [prompts] if not isinstance(prompts, list) else prompts
         gen_cfg = self._get_options(generation_config)
-        if self.allow_parallel:
-            with ThreadPoolExecutor() as pool:
-                responses = pool.map(
-                    lambda prompt: [
-                        self.client.messages.create(
-                            model=self.model_name,
-                            messages=prompt.to_list(),
-                            **gen_cfg,
-                        )
-                        .content[0]
-                        .text
-                        for _ in range(generation_config.sample_num)
-                    ],
-                    prompts,
-                )
-                responses = list(responses)
+        sample_num = generation_config.sample_num
+
+        def _create(prompt: ChatPrompt) -> str:
+            r = self.client.messages.create(
+                model=self.model_name,
+                messages=prompt.to_list(),
+                **gen_cfg,
+            )
+            return r.content[0].text
+
+        tasks = prompts * sample_num
+        if self.max_concurrency > 1:
+            with ThreadPoolExecutor(max_workers=self.max_concurrency) as pool:
+                responses = list(pool.map(_create, tasks))
         else:
-            responses: list[list[str]] = []
-            for prompt in prompts:
-                prompt = prompt.to_list()
-                responses.append([])
-                for _ in range(generation_config.sample_num):
-                    response = self.client.messages.create(
-                        model=self.model_name,
-                        messages=prompt,
-                        **gen_cfg,
-                    )
-                    responses[-1].append(response.content[0].text)
+            responses = []
+            for task in tasks:
+                responses.append(_create(task))
+        responses: list[list[str]] = [
+            responses[i * sample_num : (i + 1) * sample_num]
+            for i in range(len(prompts))
+        ]
         return responses
 
     @TIME_METER("generator.anthropic_generate")
@@ -108,25 +111,27 @@ class AnthropicGenerator(GeneratorBase):
         prompts: list[ChatPrompt],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
+        prompts = [prompts] if not isinstance(prompts, list) else prompts
         gen_cfg = self._get_options(generation_config)
-        tasks = []
-        for prompt in prompts:
-            prompt = prompt.to_list()
-            # as anthropic does not support sample_num, we sample multiple times
-            tasks.append([])
-            for _ in range(generation_config.sample_num):
-                tasks[-1].append(
-                    asyncio.create_task(
-                        asyncio.to_thread(
-                            self.client.messages.create,
-                            model=self.model_name,
-                            messages=prompt,
-                            **gen_cfg,
-                        )
-                    )
+        sample_num = generation_config.sample_num
+
+        semaphore = asyncio.Semaphore(self.max_concurrency)
+
+        async def _create(prompt: ChatPrompt) -> str:
+            async with semaphore:
+                r = await self.async_client.messages.create(
+                    model=self.model_name,
+                    messages=prompt.to_list(),
+                    **gen_cfg,
                 )
-        responses = [
-            [(await task).content[0].text for task in task_list] for task_list in tasks
+                return r.content[0].text
+
+        tasks = prompts * sample_num
+        tasks = [asyncio.create_task(_create(prompt)) for prompt in tasks]
+        responses = await asyncio.gather(*tasks)
+        responses: list[list[str]] = [
+            responses[i * sample_num : (i + 1) * sample_num]
+            for i in range(len(prompts))
         ]
         return responses
 
