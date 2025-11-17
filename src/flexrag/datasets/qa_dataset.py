@@ -142,7 +142,7 @@ class FlashQADatasetConfig:
             "wikiqa",
             "wikiasp",
         ),
-    ]
+    ] = "nq"
     split: Annotated[str, Choices("dev", "test", "train")] = "test"
     path: str = "RUC-NLPIR/FlashRAG_datasets"
 
@@ -222,3 +222,6 @@ class FlashQADataset(QADataset):
     def form(self) -> str:
         """The form of the dataset."""
         return self._form
+
+
+QADatasetConfig = QA_DATASETS.make_config()

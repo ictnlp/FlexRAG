@@ -8,6 +8,7 @@ from .qa_dataset import (
     FlashQADataset,
     FlashQADatasetConfig,
     QADataset,
+    QADatasetConfig,
     QAEvalData,
 )
 from .retrieval_datasets import (
@@ -38,6 +39,7 @@ __all__ = [
     "FlashQADatasetConfig",
     "QADataset",
     "QAEvalData",
+    "QADatasetConfig",
     "MSMARCOConfig",
     "MSMARCODataset",
     "MTEBDataset",

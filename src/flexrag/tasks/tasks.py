@@ -13,6 +13,8 @@ class TaskBase(ABC):
 
     def __init__(self, config: TaskBaseConfig):
         self.config = config
+        self.setup()
+        return
 
     @abstractmethod
     def setup(self):

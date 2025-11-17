@@ -4,9 +4,9 @@ from dataclasses import field
 from pathlib import Path
 from typing import Optional
 
-from flexrag.assistant import AssistantBase
+from flexrag.assistant import ASSISTANTS, AssistantConfig
 from flexrag.database import json_dump
-from flexrag.datasets import QADataset
+from flexrag.datasets import QA_DATASETS, QADatasetConfig
 from flexrag.metrics import Evaluator, EvaluatorConfig
 from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, configure
 from flexrag.utils.dataclasses import ChatMessages, ChatTurn, RetrievedContext
@@ -24,10 +24,9 @@ PREDEFINED_PROMPTS = {
 
 
 @configure
-class QATaskConfig:
+class QATaskConfig(AssistantConfig, QADatasetConfig, EvaluatorConfig):
     """Configuration for Knowledge Intensive QA Task."""
 
-    eval_config: EvaluatorConfig = field(default_factory=EvaluatorConfig)
     log_interval: int = 10
     output_path: Optional[str] = None
 
@@ -38,11 +37,11 @@ class QATask(TaskBase):
 
     config: QATaskConfig
 
-    def setup(self, assistant: AssistantBase, dataset: QADataset):
+    def setup(self):
         """Setup the Knowledge Intensive QA task."""
-        self.assistant = assistant
-        self.testset = dataset
-        self.evaluator = Evaluator(self.config.eval_config)
+        self.assistant = ASSISTANTS.load(self.config)
+        self.testset = QA_DATASETS.load(self.config)
+        self.evaluator = Evaluator(self.config)
 
         # prepare output path
         if self.config.output_path is not None:
