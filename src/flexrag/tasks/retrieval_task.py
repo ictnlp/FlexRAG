@@ -22,7 +22,7 @@ class RetrievalTaskConfig:
     output_path: Optional[str] = None
 
 
-@TASKS("retrieval", config_name=RetrievalTaskConfig)
+@TASKS("retrieval", config_class=RetrievalTaskConfig)
 class RetrievalTask(TaskBase):
     """Retrieval Task."""
 

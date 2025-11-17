@@ -32,7 +32,7 @@ class QATaskConfig:
     output_path: Optional[str] = None
 
 
-@TASKS("qa", config_name=QATaskConfig)
+@TASKS("qa", config_class=QATaskConfig)
 class QATask(TaskBase):
     """Knowledge Intensive QA Task."""
 
