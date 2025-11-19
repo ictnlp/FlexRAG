@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 
-from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
+from flexrag.datasets import IterableCorpus, IterableCorpusConfig
 from flexrag.models import EncoderConfig, OpenAIEncoderConfig
 from flexrag.retriever import (
     EditableRetriever,
@@ -31,18 +31,18 @@ class TestRetrievers:
         assert len(retriever) == 0
 
         # load corpus
-        cfg1 = RAGCorpusDatasetConfig(
+        cfg1 = IterableCorpusConfig(
             file_paths=[str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")],
             data_ranges=[[0, 10000]],
             id_field="id",
         )
-        cfg2 = RAGCorpusDatasetConfig(
+        cfg2 = IterableCorpusConfig(
             file_paths=[str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")],
             data_ranges=[[10000, 20000]],
             id_field="id",
         )
-        dataset1 = RAGCorpusDataset(cfg1)
-        dataset2 = RAGCorpusDataset(cfg2)
+        dataset1 = IterableCorpus(cfg1)
+        dataset2 = IterableCorpus(cfg2)
 
         # testing add_passages
         retriever.add_passages(dataset1)
@@ -79,18 +79,18 @@ class TestRetrievers:
 
     def test_flex_retriever(self, mock_openai_client):
         # load datasets
-        cfg1 = RAGCorpusDatasetConfig(
+        cfg1 = IterableCorpusConfig(
             file_paths=[str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")],
             data_ranges=[[0, 1000]],
             id_field="id",
         )
-        cfg2 = RAGCorpusDatasetConfig(
+        cfg2 = IterableCorpusConfig(
             file_paths=[str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")],
             data_ranges=[[1000, 2000]],
             id_field="id",
         )
-        dataset1 = RAGCorpusDataset(cfg1)
-        dataset2 = RAGCorpusDataset(cfg2)
+        dataset1 = IterableCorpus(cfg1)
+        dataset2 = IterableCorpus(cfg2)
         with tempfile.TemporaryDirectory() as tempdir:
             # in mem retriever
             cfg = FlexRetrieverConfig(

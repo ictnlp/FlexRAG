@@ -16,7 +16,7 @@ from flexrag.database.serializer import (
     PickleSerializer,
     SerializerBase,
 )
-from flexrag.datasets import LineDelimitedDataset, LineDelimitedDatasetConfig
+from flexrag.datasets.reader import LineDelimitedReader
 
 
 class TestDatabase:
@@ -119,24 +119,9 @@ class TestDatabase:
 
     def run_batched_operations(self, database: RetrieverDatabaseBase):
         corpus_path = str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")
-        dataset1 = [
-            i
-            for i in LineDelimitedDataset(
-                LineDelimitedDatasetConfig(
-                    file_paths=[corpus_path],
-                    data_ranges=[[0, 10000]],
-                )
-            )
-        ]
-        dataset2 = [
-            i
-            for i in LineDelimitedDataset(
-                LineDelimitedDatasetConfig(
-                    file_paths=[corpus_path],
-                    data_ranges=[[10000, 20000]],
-                )
-            )
-        ]
+        dataset = list(LineDelimitedReader(corpus_path))
+        dataset1 = dataset[:10000]
+        dataset2 = dataset[10000:20000]
         indices1 = [str(i) for i in range(10000)]
         indices2 = [str(i) for i in range(10000, 20000)]
 

@@ -4,7 +4,7 @@ from typing import Annotated
 import hydra
 from hydra.core.config_store import ConfigStore
 
-from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
+from flexrag.datasets import IterableCorpus, IterableCorpusConfig
 from flexrag.retriever import (
     ElasticRetriever,
     ElasticRetrieverConfig,
@@ -20,7 +20,7 @@ logger = LOGGER_MANAGER.get_logger("flexrag.prepare_index")
 
 # fmt: off
 @configure
-class Config(RAGCorpusDatasetConfig):
+class Config(IterableCorpusConfig):
     # retriever configs
     retriever_type: Annotated[str, Choices("flex", "elastic", "typesense")] = "flex"
     flex_config: FlexRetrieverConfig = field(default_factory=FlexRetrieverConfig)
@@ -53,7 +53,7 @@ def main(cfg: Config):
         logger.warning("Reinitializing retriever and removing all passages")
         retriever.clear()
 
-    retriever.add_passages(passages=RAGCorpusDataset(cfg))
+    retriever.add_passages(passages=IterableCorpus(cfg))
     return
 
 

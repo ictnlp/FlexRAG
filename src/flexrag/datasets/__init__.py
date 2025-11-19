@@ -1,8 +1,7 @@
 # datasets
-from .corpus_dataset import RAGCorpusDataset, RAGCorpusDatasetConfig
+from .corpus_dataset import IterableCorpus, IterableCorpusConfig
 from .dataset import ChainDataset, ConcatDataset, IterableDataset, MappingDataset
 from .hf_dataset import HFDataset, HFDatasetConfig
-from .line_delimited_dataset import LineDelimitedDataset, LineDelimitedDatasetConfig
 from .qa_dataset import (
     QA_DATASETS,
     FlashQADataset,
@@ -30,10 +29,8 @@ __all__ = [
     "ConcatDataset",
     "HFDataset",
     "HFDatasetConfig",
-    "LineDelimitedDataset",
-    "LineDelimitedDatasetConfig",
-    "RAGCorpusDatasetConfig",
-    "RAGCorpusDataset",
+    "IterableCorpusConfig",
+    "IterableCorpus",
     "QA_DATASETS",
     "FlashQADataset",
     "FlashQADatasetConfig",
