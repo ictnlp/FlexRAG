@@ -1,5 +1,8 @@
+from __future__ import annotations
+
+from abc import abstractmethod
 from collections.abc import Iterable, Iterator, Mapping
-from typing import Any, Generic, TypeVar
+from typing import Any, Generic, TypeVar, overload
 
 ItemTypeI = TypeVar("ItemTypeI")
 ItemTypeM = TypeVar("ItemTypeM")
@@ -49,7 +52,8 @@ class MappingDataset(Mapping[int, ItemTypeM], Generic[ItemTypeM]):
     The subclasses of MappingDataset should implement the following methods:
 
         >>> # retrun the item at the given index.
-        >>> def __getitem__(self, index: int) -> ItemTypeM: ...
+        >>> def get_item(self, index: int) -> ItemTypeM: ...
+
         >>> # return the number of items in the dataset.
         >>> def __len__(self) -> int: ...
 
@@ -57,10 +61,15 @@ class MappingDataset(Mapping[int, ItemTypeM], Generic[ItemTypeM]):
 
         >>> # concatenate multiple MappingDatasets.
         >>> def __add__(self, other: MappingDataset[ItemTypeM]) -> MappingDataset[ItemTypeM]: ...
+
         >>> # return whether the dataset contains the given index.
         >>> def __contains__(self, key: int) -> bool: ...
+
         >>> # return an iterator over the items in the dataset.
         >>> def __iter__(self) -> Iterator[ItemTypeM]: ...
+
+        >>> # get the item at the given index, or return a SubDataset if a slice is given.
+        >>> def __getitem__(self, index: int | slice) -> ItemTypeM | MappingDataset[ItemTypeM]: ...
 
     For example:
 
@@ -69,7 +78,7 @@ class MappingDataset(Mapping[int, ItemTypeM], Generic[ItemTypeM]):
         ...         self.n = n
         ...         return
         ...
-        ...     def __getitem__(self, index: int) -> int:
+        ...     def get_item(self, index: int) -> int:
         ...         if 0 <= index < self.n:
         ...             return index
         ...         raise IndexError(f"Index {index} out of range.")
@@ -94,10 +103,29 @@ class MappingDataset(Mapping[int, ItemTypeM], Generic[ItemTypeM]):
         for i in range(len(self)):
             yield self[i]
 
-    def get(self, index: int, default: Any = None) -> ItemTypeM:
-        if 0 <= index < len(self):
-            return self[index]
-        return default
+    @overload
+    def __getitem__(self, index: int) -> ItemTypeM:
+        """Get the item from the dataset by index."""
+
+    @overload
+    def __getitem__(self, index: slice) -> MappingDataset[ItemTypeM]:
+        """Get a subset of the MappingDataset by slice."""
+
+    def __getitem__(self, index: int | slice) -> ItemTypeM | MappingDataset[ItemTypeM]:
+        if isinstance(index, slice):
+            return SubDataset(self, index)
+        return self.get_item(index)
+
+    @abstractmethod
+    def get_item(self, index: int) -> ItemTypeM:
+        """Get the item at the given index.
+
+        :param index: The index of the item.
+        :type index: int
+        :return: The item at the given index.
+        :rtype: ItemTypeM
+        """
+        return
 
 
 class ChainDataset(IterableDataset[ItemTypeChain]):
@@ -134,3 +162,42 @@ class ConcatDataset(MappingDataset[ItemTypeConcat]):
 
     def __len__(self) -> int:
         return sum(len(dataset) for dataset in self.datasets)
+
+
+class SubDataset(MappingDataset[ItemTypeM]):
+    """SubDataset is a dataset that contains a subset of another dataset.
+    The SubDataset is a view of the original dataset, and does not copy the data.
+
+    :param dataset: The original dataset.
+    :type dataset: MappingDataset[ItemTypeM]
+    :param indices: The indices of the subset.
+    :type indices: list[int] | slice
+    """
+
+    def __init__(
+        self, dataset: MappingDataset[ItemTypeM], indices: list[int] | slice
+    ) -> None:
+        self.dataset = dataset
+        if isinstance(indices, slice):
+            self.indices = list(range(*indices.indices(len(dataset))))
+        else:
+            self.indices = indices
+        return
+
+    def __getitem__(self, index: int | slice) -> ItemTypeM | MappingDataset[ItemTypeM]:
+        # re-implement to prevent recursion
+        if isinstance(index, slice):
+            subset_slice = self.indices[index]
+            clone = SubDataset(self.dataset, subset_slice)
+            return clone
+        return self.dataset[self.indices[index]]
+
+    def get_item(self, index: int) -> ItemTypeM:
+        return self.dataset.get_item(self.indices[index])
+
+    def __len__(self) -> int:
+        return len(self.indices)
+
+    def __getattr__(self, name: str) -> Any:
+        """Delegate attribute access to the underlying dataset."""
+        return getattr(self.dataset, name)

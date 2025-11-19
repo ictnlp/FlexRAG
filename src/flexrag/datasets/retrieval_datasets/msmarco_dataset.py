@@ -1,7 +1,7 @@
 from collections import defaultdict
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Literal
+from typing import Literal, Mapping
 
 from flexrag.utils import (
     FLEXRAG_CACHE_DIR,
@@ -14,13 +14,13 @@ from flexrag.utils import (
 from flexrag.utils.dataclasses import Context
 
 from ..reader import LineDelimitedReader
-from .retrieval_dataset import RETRIEVAL_DATASETS, IREvalData, RetrievalDataset
+from .retrieval_dataset import RETRIEVAL_DATASETS, RetrievalDataset
 
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.msmarco_dataset")
 
 
 @configure
-class MSMARCOConfig:
+class MSMARCODatasetConfig:
     """Configuration for loading `MS MARCO <https://microsoft.github.io/msmarco>`_ Retrieval Dataset.
     The __getitem__ method will return `IREvalData` objects.
 
@@ -62,11 +62,11 @@ class MSMARCOConfig:
     load_corpus: bool = False
 
 
-@RETRIEVAL_DATASETS("msmarco", MSMARCOConfig)
+@RETRIEVAL_DATASETS("msmarco", MSMARCODatasetConfig)
 class MSMARCODataset(RetrievalDataset):
     """Dataset for loading MSMARCO Retrieval Dataset."""
 
-    def __init__(self, config: MSMARCOConfig) -> None:
+    def __init__(self, config: MSMARCODatasetConfig) -> None:
         match config.data_name:
             case "msmarco_passage_ranking_v1":
                 loader = _MSMARCOPassageRankingV1Loader(
@@ -88,57 +88,30 @@ class MSMARCODataset(RetrievalDataset):
                 raise ValueError(f"Unsupported data_name: {config.data_name}")
 
         # load corpus, queries, and qrels
+        self._context_data = {}
         if config.load_corpus:
             p_logger = SimpleProgressLogger(logger=logger, interval=100_000)
-            corpus = {}
             for context in loader.load_corpus():
                 p_logger.update(1, desc="Loading corpus")
-                corpus[context.context_id] = context
-            self._corpus = corpus
-        else:
-            self._corpus = None
-        self._qrels = loader.load_qrels()
-        self._queries = loader.load_queries()
-        self._qids = list(set(self._qrels.keys()) & set(self._queries.keys()))
+                self._context_data[context.context_id] = context
+        self._qrels_data = loader.load_qrels()
+        self._queries_data = loader.load_queries()
         return
 
     @property
-    def corpus(self) -> Iterator[Context]:
-        """The corpus of the dataset."""
-        if self._corpus is None:
-            raise ValueError(
-                "Corpus is not loaded. Please set `load_corpus=True` in the configuration."
-            )
-        for data in self._corpus:
-            yield self._corpus[data]
-        return
+    def _contexts(self) -> Mapping[str, Context]:
+        """Return a mapping from context_id to Context object."""
+        return self._context_data
 
     @property
-    def queries(self) -> list[dict]:
-        """The queries of the dataset."""
-        return self._queries
+    def _queries(self) -> Mapping[str, str]:
+        """Return a mapping from query_id to query text."""
+        return self._queries_data
 
     @property
-    def qrels(self) -> list[dict]:
-        """The qrels of the dataset."""
-        return self._qrels
-
-    def __len__(self) -> int:
-        return len(self._qids)
-
-    def __getitem__(self, index: int) -> IREvalData:
-        qid = self._qids[index]
-        query = self._queries[qid]
-        ctx_ids = self._qrels[qid]
-        if self._corpus is not None:
-            contexts = [self._corpus[ctx_id] for ctx_id in ctx_ids]
-        else:
-            contexts = [Context(context_id=ctx_id) for ctx_id in ctx_ids]
-        return IREvalData(
-            question=query,
-            contexts=contexts,
-            meta_data={"query-id": qid},
-        )
+    def _qrels(self) -> Mapping[str, set[str]]:
+        """Return a mapping from query_id to a set of relevant context_ids."""
+        return self._qrels_data
 
 
 RESOURCES = {
@@ -270,11 +243,11 @@ class _MSMARCOPassageRankingV1Loader:
             queries[data["_id"]] = data["query"]
         return queries
 
-    def load_qrels(self) -> dict[str, set[str]]:
+    def load_qrels(self) -> dict[str, dict[str, float]]:
         """Load the qrels from the given path.
 
         :return: A dictionary mapping from query id to a set of relevant context ids.
-        :rtype: dict[str, set[str]]
+        :rtype: dict[str, dict[str, float]]
         """
         if self.data_path is not None:
             qrels_path = Path(self.data_path, f"qrels.{self.subset}.tsv")
@@ -291,7 +264,7 @@ class _MSMARCOPassageRankingV1Loader:
             logger.info(f"Downloading qrels from {url} to {qrels_path}.")
             download(url, qrels_path)
         # load the qrels
-        qrels = defaultdict(set)
+        qrels = defaultdict(dict)
         reader = LineDelimitedReader(
             qrels_path,
             titles=["qid", "_", "ctx_id", "rel"],
@@ -300,9 +273,7 @@ class _MSMARCOPassageRankingV1Loader:
             delimiter=r"\s+",
         )
         for data in reader:
-            if data["rel"] == "0":
-                continue
-            qrels[data["qid"]].add(data["ctx_id"])
+            qrels[data["qid"]][data["ctx_id"]] = float(data["rel"])
         return qrels
 
 
@@ -382,11 +353,11 @@ class _MSMARCODocumentRankingV1Loader:
             queries[data["_id"]] = data["query"]
         return queries
 
-    def load_qrels(self) -> dict[str, set[str]]:
+    def load_qrels(self) -> dict[str, dict[str, float]]:
         """Load the qrels from the given path.
 
         :return: A dictionary mapping from query id to a set of relevant context ids.
-        :rtype: dict[str, set[str]]
+        :rtype: dict[str, dict[str, float]]
         """
         if self.data_path is not None:
             qrels_path = Path(self.data_path, f"msmarco-doc{self.subset}-qrels.tsv.gz")
@@ -403,7 +374,7 @@ class _MSMARCODocumentRankingV1Loader:
             logger.info(f"Downloading qrels from {url} to {qrels_path}.")
             download(url, qrels_path)
         # load the qrels
-        qrels = defaultdict(set)
+        qrels = defaultdict(dict)
         reader = LineDelimitedReader(
             qrels_path,
             titles=["qid", "_", "ctx_id", "rel"],
@@ -412,9 +383,7 @@ class _MSMARCODocumentRankingV1Loader:
             delimiter=r"\s+",
         )
         for data in reader:
-            if data["rel"] == "0":
-                continue
-            qrels[data["qid"]].add(data["ctx_id"])
+            qrels[data["qid"]][data["ctx_id"]] = float(data["rel"])
         return qrels
 
 
@@ -491,11 +460,11 @@ class _MSMARCOPassageRankingV2Loader:
             queries[data["_id"]] = data["query"]
         return queries
 
-    def load_qrels(self) -> dict[str, set[str]]:
+    def load_qrels(self) -> dict[str, dict[str, float]]:
         """Load the qrels from the given path.
 
         :return: A dictionary mapping from query id to a set of relevant context ids.
-        :rtype: dict[str, set[str]]
+        :rtype: dict[str, dict[str, float]]
         """
         if self.data_path is not None:
             qrels_path = Path(self.data_path, f"passv2_{self.subset}_qrels.tsv")
@@ -512,7 +481,7 @@ class _MSMARCOPassageRankingV2Loader:
             logger.info(f"Downloading qrels from {url} to {qrels_path}.")
             download(url, qrels_path)
         # load the qrels
-        qrels = defaultdict(set)
+        qrels = defaultdict(dict)
         reader = LineDelimitedReader(
             qrels_path,
             titles=["qid", "_", "ctx_id", "rel"],
@@ -521,9 +490,7 @@ class _MSMARCOPassageRankingV2Loader:
             delimiter=r"\s+",
         )
         for data in reader:
-            if data["rel"] == "0":
-                continue
-            qrels[data["qid"]].add(data["ctx_id"])
+            qrels[data["qid"]][data["ctx_id"]] = float(data["rel"])
         return qrels
 
 
@@ -600,11 +567,11 @@ class _MSMARCODocumentRankingV2Loader:
             queries[data["_id"]] = data["query"]
         return queries
 
-    def load_qrels(self) -> dict[str, set[str]]:
+    def load_qrels(self) -> dict[str, dict[str, float]]:
         """Load the qrels from the given path.
 
         :return: A dictionary mapping from query id to a set of relevant context ids.
-        :rtype: dict[str, set[str]]
+        :rtype: dict[str, dict[str, float]]
         """
         if self.data_path is not None:
             qrels_path = Path(self.data_path, f"docv2_{self.subset}_qrels.tsv")
@@ -621,7 +588,7 @@ class _MSMARCODocumentRankingV2Loader:
             logger.info(f"Downloading qrels from {url} to {qrels_path}.")
             download(url, qrels_path)
         # load the qrels
-        qrels = defaultdict(set)
+        qrels = defaultdict(dict)
         reader = LineDelimitedReader(
             qrels_path,
             titles=["qid", "_", "ctx_id", "rel"],
@@ -630,7 +597,5 @@ class _MSMARCODocumentRankingV2Loader:
             delimiter=r"\s+",
         )
         for data in reader:
-            if data["rel"] == "0":
-                continue
-            qrels[data["qid"]].add(data["ctx_id"])
+            qrels[data["qid"]][data["ctx_id"]] = float(data["rel"])
         return qrels

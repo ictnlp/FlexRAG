@@ -197,7 +197,7 @@ class FlashQADataset(QADataset):
             )
         return
 
-    def __getitem__(self, index: int) -> QAEvalData:
+    def get_item(self, index: int) -> QAEvalData:
         data = self.dataset[index]
         golden_contexts = data.pop("golden_contexts", None)
         golden_contexts = (

@@ -14,8 +14,8 @@ from .qa_dataset import (
 from .retrieval_datasets import (
     RETRIEVAL_DATASETS,
     IREvalData,
-    MSMARCOConfig,
     MSMARCODataset,
+    MSMARCODatasetConfig,
     MTEBDataset,
     MTEBDatasetConfig,
     MultiLongDocRetrievalDataset,
@@ -40,7 +40,7 @@ __all__ = [
     "QADataset",
     "QAEvalData",
     "QADatasetConfig",
-    "MSMARCOConfig",
+    "MSMARCODatasetConfig",
     "MSMARCODataset",
     "MTEBDataset",
     "MTEBDatasetConfig",

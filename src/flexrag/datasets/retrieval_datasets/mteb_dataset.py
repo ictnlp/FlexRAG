@@ -1,11 +1,12 @@
-from collections.abc import Iterator
+from collections import defaultdict
+from collections.abc import Mapping
 
 from datasets import load_dataset
 
 from flexrag.utils import configure
 from flexrag.utils.dataclasses import Context
 
-from .retrieval_dataset import RETRIEVAL_DATASETS, IREvalData, RetrievalDataset
+from .retrieval_dataset import RETRIEVAL_DATASETS, RetrievalDataset
 
 
 @configure
@@ -45,84 +46,56 @@ class MTEBDataset(RetrievalDataset):
     """Dataset for loading MTEB Retrieval Dataset."""
 
     def __init__(self, config: MTEBDatasetConfig) -> None:
-        # load necessary datasets
+        # load corpus if needed
         self.data_name = f"{config.path} ({config.split})"
+        self._context_data = {}
         if config.load_corpus:
-            self._corpus = load_dataset(
+            corpus = load_dataset(
                 path=config.path,
                 name="corpus",
                 split="corpus",
             )
-            self._corpus_map: dict[str, int] = {
-                doc["_id"]: index for index, doc in enumerate(self._corpus)
-            }
-        else:
-            self._corpus = None
-        self._queries = load_dataset(
+
+            for item in corpus:
+                self._context_data[item["_id"]] = Context(
+                    context_id=item["_id"],
+                    data=item,
+                    source=config.path,
+                )
+
+        # load queries
+        queries = load_dataset(
             path=config.path,
             name="queries",
             split="queries",
         )
-        self._qrels = load_dataset(
+        self._queries_data = {query["_id"]: query["text"] for query in queries}
+
+        # load qrels
+        qrels = load_dataset(
             path=config.path,
             name="default",
             split=config.split,
         )
-        self._query_map: dict[str, int] = {
-            query["_id"]: index for index, query in enumerate(self._queries)
-        }
-
-        # merge qrels, queries, and corpus into RetrievalData
-        dataset_map: dict[str, IREvalData] = {}
-
-        for qrel in self.qrels:
-            # construct the context
-            context = Context(context_id=qrel["corpus-id"])
-            if self._corpus is not None:
-                context.data = self.corpus[self._corpus_map[qrel["corpus-id"]]]
-            if "score" in qrel:  # relevance level of the context
-                context.meta_data["score"] = int(qrel["score"])
-            # construct the query
-            query = self.queries[self._query_map[qrel["query-id"]]]["text"]
-
-            if qrel["query-id"] not in dataset_map:
-                dataset_map[qrel["query-id"]] = IREvalData(
-                    question=query,
-                    contexts=[context],
-                    meta_data={"query-id": qrel["query-id"]},
+        self._qrels_data = defaultdict(dict)
+        for qrel in qrels:
+            if qrel["query-id"] in self._queries:
+                self._qrels_data[qrel["query-id"]][qrel["corpus-id"]] = float(
+                    qrel["score"]
                 )
-            else:
-                dataset_map[qrel["query-id"]].contexts.append(context)
-        self.dataset: list[IREvalData] = list(dataset_map.values())
         return
 
     @property
-    def corpus(self) -> Iterator[Context]:
-        """The corpus of the dataset."""
-        if self._corpus is None:
-            raise ValueError(
-                "Corpus is not loaded. Please set `load_corpus=True` in the configuration."
-            )
-        for data in self._corpus:
-            yield Context(
-                context_id=data["_id"],
-                data={"text": data["text"]},
-                source=self.data_name,
-            )
-        return
+    def _contexts(self) -> Mapping[str, Context]:
+        """Return a mapping from context_id to Context object."""
+        return self._context_data
 
     @property
-    def queries(self) -> list[dict]:
-        """The queries of the dataset."""
-        return self._queries
+    def _queries(self) -> Mapping[str, str]:
+        """Return a mapping from query_id to query text."""
+        return self._queries_data
 
     @property
-    def qrels(self) -> list[dict]:
-        """The qrels of the dataset."""
-        return self._qrels
-
-    def __len__(self) -> int:
-        return len(self.dataset)
-
-    def __getitem__(self, index: int) -> IREvalData:
-        return self.dataset[index]
+    def _qrels(self) -> Mapping[str, set[str]]:
+        """Return a mapping from query_id to a set of relevant context_ids."""
+        return self._qrels_data

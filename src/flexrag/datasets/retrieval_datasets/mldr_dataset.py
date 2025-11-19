@@ -1,6 +1,6 @@
-from collections.abc import Iterator
-from functools import cached_property
+from collections import defaultdict
 from pathlib import Path
+from typing import Mapping
 
 from huggingface_hub import snapshot_download
 
@@ -8,7 +8,7 @@ from flexrag.utils import FLEXRAG_CACHE_DIR, LOGGER_MANAGER, configure
 from flexrag.utils.dataclasses import Context
 
 from ..reader import LineDelimitedReader
-from .retrieval_dataset import RETRIEVAL_DATASETS, IREvalData, RetrievalDataset
+from .retrieval_dataset import RETRIEVAL_DATASETS, RetrievalDataset
 
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.mldr_dataset")
 
@@ -66,10 +66,14 @@ class MultiLongDocRetrievalDataset(RetrievalDataset):
         # load the corpus
         corpus_path = data_path / f"mldr-v1.0-{config.lang}" / "corpus.jsonl.gz"
         corpus_reader = LineDelimitedReader(corpus_path)
-        self._corpus = {}
+        self._context_data = {}
         for item in corpus_reader:
             docid = str(item["docid"])
-            self._corpus[docid] = Context(context_id=docid, data=item, source="mldr")
+            self._context_data[docid] = Context(
+                context_id=docid,
+                data=item,
+                source="mldr-v1.0",
+            )
 
         # load the subset
         subset_path = (
@@ -81,76 +85,45 @@ class MultiLongDocRetrievalDataset(RetrievalDataset):
         for item in self._subset:
             for p in item["positive_passages"]:
                 docid = str(p["docid"])
-                if docid not in self._corpus:
-                    self._corpus[docid] = Context(
+                if docid not in self._context_data:
+                    self._context_data[docid] = Context(
                         context_id=docid,
                         data=p,
                         source="mldr_subset",
                     )
             for n in item["negative_passages"]:
                 docid = str(n["docid"])
-                if docid not in self._corpus:
-                    self._corpus[docid] = Context(
+                if docid not in self._context_data:
+                    self._context_data[docid] = Context(
                         context_id=docid,
                         data=n,
                         source="mldr_subset",
                     )
-        return
 
-    def __getitem__(self, index: int) -> IREvalData:
-        item = self._subset[index]
-        question = item["query"]
-        ctx_ids = [p["docid"] for p in item["positive_passages"]]
-        neg_ids = [n["docid"] for n in item["negative_passages"]]
-        return IREvalData(
-            question=question,
-            contexts=[self._corpus[ctx_id] for ctx_id in ctx_ids],
-            hard_negatives=[self._corpus[neg_id] for neg_id in neg_ids],
-            meta_data={"id": item["query_id"]},
-        )
-
-    @property
-    def corpus(self) -> Iterator[Context]:
-        """The corpus of the dataset."""
-        for context in self._corpus.values():
-            yield context
-
-    @cached_property
-    def queries(self) -> list[dict]:
-        """The queries of the dataset."""
-        queries = []
+        # set up queries and qrels
+        self._queries_data = {}
         for item in self._subset:
-            queries.append(
-                {
-                    "query_id": item["query_id"],
-                    "query": item["query"],
-                }
-            )
-        return queries
-
-    @cached_property
-    def qrels(self) -> list[dict]:
-        """The qrels of the dataset."""
-        qrels = []
+            self._queries_data[item["query_id"]] = item["query"]
+        self._qrels_data = defaultdict(dict)
         for item in self._subset:
             query_id = item["query_id"]
             for p in item["positive_passages"]:
-                qrels.append(
-                    {
-                        "query_id": query_id,
-                        "docid": p["docid"],
-                        "relevance": 1,
-                    }
-                )
+                self._qrels_data[query_id][p["docid"]] = 1.0
             for n in item["negative_passages"]:
-                qrels.append(
-                    {
-                        "query_id": query_id,
-                        "docid": n["docid"],
-                        "relevance": 0,
-                    }
-                )
-        return qrels
+                self._qrels_data[query_id][n["docid"]] = 0.0
+        return
 
-    def __len__(self) -> int:
-        return len(self._subset)
+    @property
+    def _contexts(self) -> Mapping[str, Context]:
+        """Return a mapping from context_id to Context object."""
+        return self._context_data
+
+    @property
+    def _queries(self) -> Mapping[str, str]:
+        """Return a mapping from query_id to query text."""
+        return self._queries_data
+
+    @property
+    def _qrels(self) -> Mapping[str, set[str]]:
+        """Return a mapping from query_id to a set of relevant context_ids."""
+        return self._qrels_data

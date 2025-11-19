@@ -87,7 +87,7 @@ class HFDataset(MappingDataset):
             )
         return
 
-    def __getitem__(self, index: int):
+    def get_item(self, index: int):
         return self.dataset[index]
 
     def __len__(self):
