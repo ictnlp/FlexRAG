@@ -289,13 +289,12 @@ class HFGeneratorConfig(HFModelConfig):
 
     :param pipeline_parallel: Whether to use pipeline parallel. Default is False.
     :type pipeline_parallel: bool
-    :param use_minference: Whether to use minference for long sequence inference. Default is False.
-    :type use_minference: bool
-    :param model_type: The type of the model. Default is "causal_lm". Available choices are "causal_lm", "seq2seq".
+    :param model_type: The type of the model. Default is "causal_lm".
+        Available choices are "causal_lm", "seq2seq".
+    :type model_type: str
     """
 
     pipeline_parallel: bool = False
-    use_minference: bool = False
     model_type: Annotated[str, Choices("causal_lm", "seq2seq")] = "causal_lm"
 
 
@@ -320,19 +319,6 @@ class HFGenerator(GeneratorBase):
         # prepare prompt function
         model_name = guess_model_name(self.model.config)
         self.template = load_template(model_name=model_name, tokenizer=self.tokenizer)
-
-        # load minference
-        if cfg.use_minference:
-            assert (
-                not cfg.pipeline_parallel
-            ), "Minference does not support pipeline parallel"
-            from minference import MInference
-
-            try:
-                inf_patch = MInference("minference", model_name)
-                self.model = inf_patch(self.model)
-            except Exception as e:
-                logger.warning(f"Unable to load minference: {e}")
         return
 
     @TIME_METER("generator.hf_generate")

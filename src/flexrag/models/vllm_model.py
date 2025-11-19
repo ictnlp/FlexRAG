@@ -24,10 +24,9 @@ class VLLMGeneratorConfig:
     :type max_model_len: int
     :param tensor_parallel: The number of tensor parallel. Defaults to 1.
     :type tensor_parallel: int
-    :param load_dtype: The dtype to load the model. Defaults to "auto". Available options are "auto", "float32", "float16", "bfloat16".
+    :param load_dtype: The dtype to load the model. Defaults to "auto".
+        Available options are "auto", "float32", "float16", "bfloat16".
     :type load_dtype: str
-    :param use_minference: Whether to use minference for Long Sequence Inference. Defaults to False.
-    :type use_minference: bool
     """
 
     model_path: Optional[str] = None
@@ -37,7 +36,6 @@ class VLLMGeneratorConfig:
     load_dtype: Annotated[str, Choices("auto", "float32", "float16", "bfloat16")] = (
         "auto"
     )
-    use_minference: bool = False
     trust_remote_code: bool = False
 
 
@@ -66,21 +64,10 @@ class VLLMGenerator(GeneratorBase):
             tensor_parallel_size=cfg.tensor_parallel,
             max_model_len=max_length,
             trust_remote_code=cfg.trust_remote_code,
-            enforce_eager=True if cfg.use_minference else False,
+            enforce_eager=False,
         )
         self.tokenizer = self.model.get_tokenizer()
         self.template = load_template(model_name=model_name, tokenizer=self.tokenizer)
-
-        # load minference
-        if cfg.use_minference:
-            try:
-                from minference import MInference
-
-                inf_patch = MInference("vllm", model_name)
-                self.model = inf_patch(self.model)
-            except Exception as e:
-                logger.warning(f"Unable to load minference: {e}")
-                logger.warning("Fallback to normal mode.")
         return
 
     @TIME_METER("generator.vllm_generate")
