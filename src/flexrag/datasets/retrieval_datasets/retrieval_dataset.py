@@ -4,8 +4,8 @@ from dataclasses import field
 from functools import cached_property
 from typing import Optional
 
-from flexrag.utils import Register, data
-from flexrag.utils.dataclasses import Context
+from flexrag.common import Register, data
+from flexrag.common.dataclasses import Context
 
 from ..dataset import MappingDataset
 

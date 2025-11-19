@@ -1,6 +1,6 @@
 import os
 
-from flexrag.utils import configure
+from flexrag.common import configure
 
 from .document_parser_base import DOCUMENTPARSERS, Document, DocumentParserBase
 

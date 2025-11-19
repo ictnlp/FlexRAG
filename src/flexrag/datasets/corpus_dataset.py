@@ -5,9 +5,12 @@ from glob import glob
 from pathlib import Path
 from typing import Iterator, Optional
 
-from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
-from flexrag.utils import LOGGER_MANAGER, configure
-from flexrag.utils.dataclasses import Context
+from flexrag.common import LOGGER_MANAGER, configure
+from flexrag.common.dataclasses import Context
+from flexrag.preprocessing.text_processor import (
+    TextProcessPipeline,
+    TextProcessPipelineConfig,
+)
 
 from .dataset import IterableDataset, MappingDataset
 from .reader import LineDelimitedReader

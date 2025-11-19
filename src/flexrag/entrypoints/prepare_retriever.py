@@ -4,6 +4,7 @@ from typing import Annotated
 import hydra
 from hydra.core.config_store import ConfigStore
 
+from flexrag.common import LOGGER_MANAGER, Choices, configure, extract_config
 from flexrag.datasets import IterableCorpus, IterableCorpusConfig
 from flexrag.retriever import (
     ElasticRetriever,
@@ -13,7 +14,6 @@ from flexrag.retriever import (
     TypesenseRetriever,
     TypesenseRetrieverConfig,
 )
-from flexrag.utils import LOGGER_MANAGER, Choices, configure, extract_config
 
 logger = LOGGER_MANAGER.get_logger("flexrag.prepare_index")
 

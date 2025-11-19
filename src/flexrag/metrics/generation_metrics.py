@@ -3,7 +3,7 @@ from typing import Annotated
 import rouge
 import sacrebleu
 
-from flexrag.utils import TIME_METER, Choices, configure
+from flexrag.common import TIME_METER, Choices, configure
 
 from .metrics_base import METRICS, MetricsBase
 

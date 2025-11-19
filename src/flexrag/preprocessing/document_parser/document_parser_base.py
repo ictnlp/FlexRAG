@@ -4,7 +4,7 @@ from typing import Optional
 
 from PIL.Image import Image
 
-from flexrag.utils import Register, data
+from flexrag.common import Register, data
 
 
 @data

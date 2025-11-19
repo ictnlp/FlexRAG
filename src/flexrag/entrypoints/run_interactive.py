@@ -9,8 +9,8 @@ import PIL.Image
 from hydra.core.config_store import ConfigStore
 
 from flexrag.assistant import ASSISTANTS
-from flexrag.utils import LOGGER_MANAGER, configure, extract_config, load_user_module
-from flexrag.utils.dataclasses import ChatMessages, ChatTurn
+from flexrag.common import LOGGER_MANAGER, configure, extract_config, load_user_module
+from flexrag.common.dataclasses import ChatMessages, ChatTurn
 
 # load user modules before loading config
 for arg in sys.argv:

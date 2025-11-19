@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from typing import Optional
 
-from flexrag.utils import Register, data
+from flexrag.common import Register, data
 
 
 @data

@@ -3,8 +3,8 @@ import sys
 import hydra
 from hydra.core.config_store import ConfigStore
 
+from flexrag.common import LOGGER_MANAGER, extract_config, load_user_module
 from flexrag.tasks import TASKS, TaskConfig
-from flexrag.utils import LOGGER_MANAGER, extract_config, load_user_module
 
 # load user modules before loading config
 for arg in sys.argv:

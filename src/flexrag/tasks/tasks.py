@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from flexrag.utils import Register, configure
+from flexrag.common import Register, configure
 
 
 @configure

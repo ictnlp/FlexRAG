@@ -7,8 +7,7 @@ from uuid import uuid4
 import numpy as np
 from huggingface_hub import HfApi
 
-from flexrag.models import ENCODERS, EncoderConfig
-from flexrag.utils import (
+from flexrag.common import (
     FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
     TIME_METER,
@@ -17,6 +16,7 @@ from flexrag.utils import (
     SimpleProgressLogger,
     configure,
 )
+from flexrag.models import ENCODERS, EncoderConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index")
 

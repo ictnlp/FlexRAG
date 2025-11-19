@@ -3,8 +3,8 @@ from collections.abc import Mapping
 
 from datasets import load_dataset
 
-from flexrag.utils import configure
-from flexrag.utils.dataclasses import Context
+from flexrag.common import configure
+from flexrag.common.dataclasses import Context
 
 from .retrieval_dataset import RETRIEVAL_DATASETS, RetrievalDataset
 

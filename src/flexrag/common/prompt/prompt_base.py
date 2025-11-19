@@ -7,7 +7,7 @@ from typing import Annotated, Optional
 
 from PIL.Image import Image
 
-from flexrag.utils import Choices, data
+from flexrag.common import Choices, data
 
 
 @data

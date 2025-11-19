@@ -1,7 +1,7 @@
 from typing import Optional
 
-from flexrag.utils import Register, data
-from flexrag.utils.dataclasses import ChatMessages, Context, RetrievedContext
+from flexrag.common import Register, data
+from flexrag.common.dataclasses import ChatMessages, Context, RetrievedContext
 
 
 @data

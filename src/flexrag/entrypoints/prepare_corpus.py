@@ -7,16 +7,19 @@ from typing import Optional
 import hydra
 from hydra.core.config_store import ConfigStore
 
-from flexrag.chunking import CHUNKERS, ChunkerConfig
-from flexrag.document_parser import DOCUMENTPARSERS, DocumentParserConfig
-from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
-from flexrag.utils import (
+from flexrag.common import (
     LOGGER_MANAGER,
     SimpleProgressLogger,
     configure,
     extract_config,
 )
-from flexrag.utils.dataclasses import Context
+from flexrag.common.dataclasses import Context
+from flexrag.preprocessing.chunking import CHUNKERS, ChunkerConfig
+from flexrag.preprocessing.document_parser import DOCUMENTPARSERS, DocumentParserConfig
+from flexrag.preprocessing.text_processor import (
+    TextProcessPipeline,
+    TextProcessPipelineConfig,
+)
 
 logger = LOGGER_MANAGER.get_logger("flexrag.entrypoints.prepare_corpus")
 

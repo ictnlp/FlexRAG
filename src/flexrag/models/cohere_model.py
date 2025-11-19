@@ -6,7 +6,7 @@ import httpx
 import numpy as np
 from numpy import ndarray
 
-from flexrag.utils import TIME_METER, Choices, configure
+from flexrag.common import TIME_METER, Choices, configure
 
 from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
 

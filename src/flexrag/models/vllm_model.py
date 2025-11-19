@@ -3,8 +3,8 @@ from typing import Annotated, Optional
 
 from transformers import AutoConfig, PretrainedConfig
 
-from flexrag.prompt import ChatPrompt, load_template
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, configure
+from flexrag.common import LOGGER_MANAGER, TIME_METER, Choices, configure
+from flexrag.common.prompt import ChatPrompt, load_template
 
 from .model_base import GENERATORS, GenerationConfig, GeneratorBase
 from .utils import guess_model_name

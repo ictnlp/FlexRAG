@@ -5,8 +5,8 @@ from typing import Annotated, Any, Generator, Iterable
 
 import numpy as np
 
-from flexrag.utils import LOGGER_MANAGER, Choices, SimpleProgressLogger, configure
-from flexrag.utils.configure import extract_config
+from flexrag.common import LOGGER_MANAGER, Choices, SimpleProgressLogger, configure
+from flexrag.common.configure import extract_config
 
 from .index_base import RetrieverIndexBase
 

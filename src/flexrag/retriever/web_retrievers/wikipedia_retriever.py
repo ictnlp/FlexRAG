@@ -4,9 +4,9 @@ from typing import Optional
 import httpx
 from bs4 import BeautifulSoup
 
-from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, configure
-from flexrag.utils.configure import extract_config
-from flexrag.utils.dataclasses import RetrievedContext
+from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
+from flexrag.common.configure import extract_config
+from flexrag.common.dataclasses import RetrievedContext
 
 from ..retriever_base import RETRIEVERS, RetrieverBase, RetrieverBaseConfig
 

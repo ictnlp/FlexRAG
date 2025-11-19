@@ -5,8 +5,8 @@ from typing import Annotated, Any, Iterable, Optional
 import bm25s
 import numpy as np
 
-from flexrag.utils import LOGGER_MANAGER, Choices, configure
-from flexrag.utils.configure import extract_config
+from flexrag.common import LOGGER_MANAGER, Choices, configure
+from flexrag.common.configure import extract_config
 
 from .index_base import RETRIEVER_INDEX, RetrieverIndexBase, RetrieverIndexBaseConfig
 

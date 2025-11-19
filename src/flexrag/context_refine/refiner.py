@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
-from flexrag.utils import Register
-from flexrag.utils.dataclasses import RetrievedContext
+from flexrag.common import Register
+from flexrag.common.dataclasses import RetrievedContext
 
 
 class RefinerBase(ABC):

@@ -1,4 +1,4 @@
-from flexrag.utils.persistent_cache import (
+from flexrag.common.persistent_cache import (
     FIFOPersistentCache,
     LFUPersistentCache,
     LRUPersistentCache,

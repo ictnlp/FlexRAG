@@ -1,5 +1,6 @@
 import pytest
 
+from flexrag.common import LOGGER_MANAGER
 from flexrag.models import OpenAIGeneratorConfig
 from flexrag.ranker import (
     CohereRanker,
@@ -20,7 +21,6 @@ from flexrag.ranker import (
     VoyageRanker,
     VoyageRankerConfig,
 )
-from flexrag.utils import LOGGER_MANAGER
 
 logger = LOGGER_MANAGER.get_logger("tests.test_ranker")
 

@@ -6,9 +6,9 @@ from typing import Any, Iterable
 
 import numpy as np
 
+from flexrag.common import LOGGER_MANAGER, configure
+from flexrag.common.configure import extract_config
 from flexrag.models import ENCODERS
-from flexrag.utils import LOGGER_MANAGER, configure
-from flexrag.utils.configure import extract_config
 
 from .index_base import RETRIEVER_INDEX, DenseIndexBase, DenseIndexBaseConfig
 

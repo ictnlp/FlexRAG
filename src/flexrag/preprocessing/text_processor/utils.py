@@ -1,6 +1,6 @@
 from typing import Annotated, Optional
 
-from flexrag.utils import Choices, configure
+from flexrag.common import Choices, configure
 
 
 @configure

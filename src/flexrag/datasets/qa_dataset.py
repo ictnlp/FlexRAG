@@ -2,8 +2,8 @@ from abc import abstractmethod
 from dataclasses import field
 from typing import Annotated, Optional
 
-from flexrag.utils import Choices, Register, configure, data
-from flexrag.utils.dataclasses import Context
+from flexrag.common import Choices, Register, configure, data
+from flexrag.common.dataclasses import Context
 
 from .dataset import MappingDataset
 from .hf_dataset import HFDataset, HFDatasetConfig

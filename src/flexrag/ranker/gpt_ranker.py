@@ -4,9 +4,9 @@ from pathlib import Path
 
 import numpy as np
 
+from flexrag.common import TIME_METER, configure
+from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.models import GENERATORS, GeneratorConfig
-from flexrag.utils import TIME_METER, configure
-from flexrag.utils.dataclasses import ChatMessages, ChatTurn
 
 from .ranker import RANKERS, RankerBase, RankerBaseConfig
 

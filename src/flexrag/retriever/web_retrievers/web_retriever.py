@@ -4,9 +4,9 @@ from abc import abstractmethod
 
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, configure
-from flexrag.utils.configure import extract_config
-from flexrag.utils.dataclasses import RetrievedContext
+from flexrag.common import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, configure
+from flexrag.common.configure import extract_config
+from flexrag.common.dataclasses import RetrievedContext
 
 from ..retriever_base import (
     RETRIEVERS,

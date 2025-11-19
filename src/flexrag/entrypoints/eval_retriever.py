@@ -7,18 +7,18 @@ from typing import Optional
 import hydra
 from hydra.core.config_store import ConfigStore
 
-from flexrag.database.serializer import json_dump
-from flexrag.datasets import MTEBDataset, MTEBDatasetConfig
-from flexrag.metrics import Evaluator, EvaluatorConfig
-from flexrag.retriever import RETRIEVERS
-from flexrag.utils import (
+from flexrag.common import (
     LOGGER_MANAGER,
     SimpleProgressLogger,
     configure,
     extract_config,
     load_user_module,
 )
-from flexrag.utils.dataclasses import Context, RetrievedContext
+from flexrag.common.database.serializer import json_dump
+from flexrag.common.dataclasses import Context, RetrievedContext
+from flexrag.datasets import MTEBDataset, MTEBDatasetConfig
+from flexrag.metrics import Evaluator, EvaluatorConfig
+from flexrag.retriever import RETRIEVERS
 
 # load user modules before loading config
 for arg in sys.argv:

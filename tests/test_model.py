@@ -3,6 +3,8 @@ import re
 import numpy as np
 import pytest
 
+from flexrag.common import LOGGER_MANAGER
+from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.models import (
     AnthropicGenerator,
     AnthropicGeneratorConfig,
@@ -32,8 +34,6 @@ from flexrag.models import (
     VLLMGenerator,
     VLLMGeneratorConfig,
 )
-from flexrag.utils import LOGGER_MANAGER
-from flexrag.utils.dataclasses import ChatMessages, ChatTurn
 
 logger = LOGGER_MANAGER.get_logger("tests.test_model")
 

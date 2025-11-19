@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 
 import httpx
 
-from flexrag.utils import Choices, Register, configure
+from flexrag.common import Choices, Register, configure
 
 from .utils import WebResource
 

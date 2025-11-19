@@ -5,8 +5,8 @@ from typing import Optional
 import numpy as np
 from PIL.Image import Image
 
-from flexrag.prompt import ChatPrompt, MultiModelChatPrompt
-from flexrag.utils import LOGGER_MANAGER, Register, SimpleProgressLogger, configure
+from flexrag.common import LOGGER_MANAGER, Register, SimpleProgressLogger, configure
+from flexrag.common.prompt import ChatPrompt, MultiModelChatPrompt
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models")
 

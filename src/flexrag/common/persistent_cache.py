@@ -2,8 +2,7 @@ from abc import abstractmethod
 from collections import Counter, OrderedDict
 from typing import Any, MutableMapping, Optional
 
-from flexrag.database import LMDBRetrieverDatabase, NaiveRetrieverDatabase
-
+from .database import LMDBRetrieverDatabase, NaiveRetrieverDatabase
 from .logging import LOGGER_MANAGER
 
 logger = LOGGER_MANAGER.get_logger("flexrag.cache")

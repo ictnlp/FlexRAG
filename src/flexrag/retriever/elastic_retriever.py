@@ -3,9 +3,9 @@ from typing import Iterable, Optional
 
 from elasticsearch import Elasticsearch
 
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, configure
-from flexrag.utils.configure import extract_config
-from flexrag.utils.dataclasses import Context, RetrievedContext
+from flexrag.common import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, configure
+from flexrag.common.configure import extract_config
+from flexrag.common.dataclasses import Context, RetrievedContext
 
 from .retriever_base import (
     RETRIEVERS,

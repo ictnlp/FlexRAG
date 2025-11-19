@@ -3,8 +3,8 @@ from typing import Optional
 
 import numpy as np
 
-from flexrag.utils import LOGGER_MANAGER, Register, configure
-from flexrag.utils.dataclasses import RetrievedContext
+from flexrag.common import LOGGER_MANAGER, Register, configure
+from flexrag.common.dataclasses import RetrievedContext
 
 logger = LOGGER_MANAGER.get_logger("flexrag.rankers")
 

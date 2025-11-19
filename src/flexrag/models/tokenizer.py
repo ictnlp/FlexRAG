@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 from functools import partial
 from typing import Generic, Optional, TypeVar
 
-from flexrag.utils import Register, configure
+from flexrag.common import Register, configure
 
 TokenType = TypeVar("TokenType")
 

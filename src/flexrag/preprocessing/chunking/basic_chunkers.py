@@ -1,8 +1,8 @@
 from dataclasses import field
 from typing import Optional
 
+from flexrag.common import LOGGER_MANAGER, configure
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
-from flexrag.utils import LOGGER_MANAGER, configure
 
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 from .sentence_splitter import (
@@ -310,15 +310,14 @@ class SentenceChunker(ChunkerBase):
     def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
         sentences = self.splitter.split(text)
         if self.max_tokens != float("inf"):
-            token_counts = [len(self.tokenizer.tokenize(s)) for s in sentences]
+            token_counts = [len(self.tokenizer.tokenize(s["text"])) for s in sentences]
         else:
             token_counts = [0] * len(sentences)
-        char_counts = [len(s) for s in sentences]
+        char_counts = [len(s["text"]) for s in sentences]
 
         chunks = []
         start_pointer = 0
         end_pointer = 0
-        start_index = 0
         while end_pointer < len(sentences):
             while end_pointer < len(sentences) and (
                 ((end_pointer - start_pointer) < self.max_sents)
@@ -340,17 +339,15 @@ class SentenceChunker(ChunkerBase):
                         "There are 100 sentences have more than `max_tokens` tokens or `max_chars` characters. "
                         "Please check the configuration of SentenceChunker."
                     )
-            text = "".join(sentences[start_pointer:end_pointer])
+            text = " ".join(s["text"] for s in sentences[start_pointer:end_pointer])
             chunks.append(
                 Chunk(
                     text=text,
-                    start=start_index if self.splitter.reversible else None,
-                    end=start_index + len(text) if self.splitter.reversible else None,
+                    start=sentences[start_pointer]["char_span"][0],
+                    end=sentences[end_pointer - 1]["char_span"][1],
                 )
             )
             new_start = max(end_pointer - self.overlap, start_pointer + 1)
-            overlap_length = len("".join(sentences[new_start:end_pointer]))
-            start_index += len(text) - overlap_length
             start_pointer = new_start
             end_pointer = start_pointer
         if return_str:

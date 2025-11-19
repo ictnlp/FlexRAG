@@ -1,4 +1,4 @@
-from flexrag.utils import TIME_METER
+from flexrag.common import TIME_METER
 
 from .processor import PROCESSORS, Processor, TextUnit
 

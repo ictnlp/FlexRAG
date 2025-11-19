@@ -1,8 +1,8 @@
 import random as rd
 from typing import Annotated
 
-from flexrag.utils import TIME_METER, Choices, configure
-from flexrag.utils.dataclasses import RetrievedContext
+from flexrag.common import TIME_METER, Choices, configure
+from flexrag.common.dataclasses import RetrievedContext
 
 from .refiner import REFINERS, RefinerBase
 

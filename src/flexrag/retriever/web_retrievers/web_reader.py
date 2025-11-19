@@ -5,10 +5,10 @@ from typing import Optional
 
 import httpx
 
+from flexrag.common import Register, configure
+from flexrag.common.configure import extract_config
+from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
-from flexrag.utils import Register, configure
-from flexrag.utils.configure import extract_config
-from flexrag.utils.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 
 from .utils import WebResource
 from .web_downloader import (

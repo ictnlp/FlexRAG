@@ -4,8 +4,8 @@ import math
 import numpy as np
 import torch
 
+from flexrag.common import TIME_METER, configure
 from flexrag.models.hf_model import HFGenerationConfig, HFModelConfig, load_hf_model
-from flexrag.utils import TIME_METER, configure
 
 from .ranker import RANKERS, RankerBase, RankerBaseConfig
 

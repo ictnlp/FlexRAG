@@ -1,5 +1,5 @@
-from flexrag.utils import LOGGER_MANAGER, configure
-from flexrag.utils.dataclasses import RetrievedContext
+from flexrag.common import LOGGER_MANAGER, configure
+from flexrag.common.dataclasses import RetrievedContext
 
 from .metrics_base import METRICS, MetricsBase
 

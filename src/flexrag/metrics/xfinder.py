@@ -1,7 +1,7 @@
 from dataclasses import field
 from typing import Annotated
 
-from flexrag.utils import TIME_METER, Choices, configure
+from flexrag.common import TIME_METER, Choices, configure
 
 from .metrics_base import METRICS, MetricsBase
 from .xfinder_utils import Evaluator
@@ -43,7 +43,7 @@ class xFinder(MetricsBase):
         responses: list[str],
         golden_responses: list[list[str]],
         choices: list[list[str]],
-        **kwargs
+        **kwargs,
     ) -> tuple[float, dict[str, list[float]]]:
         results = []
         for question, response, goldens, choice in zip(

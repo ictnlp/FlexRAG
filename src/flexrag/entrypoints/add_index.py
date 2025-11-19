@@ -3,9 +3,9 @@ from typing import Optional
 import hydra
 from hydra.core.config_store import ConfigStore
 
+from flexrag.common import configure, extract_config
 from flexrag.retriever import FlexRetriever
 from flexrag.retriever.index import MultiFieldIndexConfig, RetrieverIndexConfig
-from flexrag.utils import configure, extract_config
 
 
 @configure

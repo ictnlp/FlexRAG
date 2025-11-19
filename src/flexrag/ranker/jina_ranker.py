@@ -4,7 +4,7 @@ from typing import Optional
 import httpx
 import numpy as np
 
-from flexrag.utils import TIME_METER, configure
+from flexrag.common import TIME_METER, configure
 
 from .ranker import RANKERS, RankerBase, RankerBaseConfig
 

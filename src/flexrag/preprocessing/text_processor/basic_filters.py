@@ -1,7 +1,7 @@
 from dataclasses import field
 from typing import Optional
 
-from flexrag.utils import configure
+from flexrag.common import configure
 
 from .processor import PROCESSORS, Processor, TextUnit
 from .utils import UnifiedTokenizer, UTokenizerConfig

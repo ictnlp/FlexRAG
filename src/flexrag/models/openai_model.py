@@ -8,8 +8,8 @@ import httpx
 import numpy as np
 from openai import AsyncAzureOpenAI, AsyncOpenAI, AzureOpenAI, Omit, OpenAI
 
-from flexrag.prompt import ChatPrompt
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, configure
+from flexrag.common import LOGGER_MANAGER, TIME_METER, configure
+from flexrag.common.prompt import ChatPrompt
 
 from .model_base import (
     ENCODERS,

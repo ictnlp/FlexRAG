@@ -6,8 +6,8 @@ from typing import Optional
 
 import httpx
 
-from flexrag.prompt import ChatPrompt
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, configure
+from flexrag.common import LOGGER_MANAGER, TIME_METER, configure
+from flexrag.common.prompt import ChatPrompt
 
 from .model_base import GENERATORS, GenerationConfig, GeneratorBase
 

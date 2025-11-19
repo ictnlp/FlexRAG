@@ -4,8 +4,8 @@ from typing import Annotated
 import hydra
 from hydra.core.config_store import ConfigStore
 
+from flexrag.common import Choices, configure, extract_config
 from flexrag.retriever.retriever_base import RETRIEVAL_CACHE
-from flexrag.utils import Choices, configure, extract_config
 
 
 @configure

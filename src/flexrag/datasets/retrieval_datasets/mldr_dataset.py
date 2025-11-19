@@ -4,8 +4,8 @@ from typing import Mapping
 
 from huggingface_hub import snapshot_download
 
-from flexrag.utils import FLEXRAG_CACHE_DIR, LOGGER_MANAGER, configure
-from flexrag.utils.dataclasses import Context
+from flexrag.common import FLEXRAG_CACHE_DIR, LOGGER_MANAGER, configure
+from flexrag.common.dataclasses import Context
 
 from ..reader import LineDelimitedReader
 from .retrieval_dataset import RETRIEVAL_DATASETS, RetrievalDataset

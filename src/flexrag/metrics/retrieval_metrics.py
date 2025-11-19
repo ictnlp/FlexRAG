@@ -4,9 +4,9 @@ from typing import Annotated, Optional
 
 import pytrec_eval
 
-from flexrag.text_process import AnswerSimplifier
-from flexrag.utils import TIME_METER, Choices, configure
-from flexrag.utils.dataclasses import Context, RetrievedContext
+from flexrag.common import TIME_METER, Choices, configure
+from flexrag.common.dataclasses import Context, RetrievedContext
+from flexrag.preprocessing.text_processor import AnswerSimplifier
 
 from .metrics_base import METRICS, MetricsBase
 

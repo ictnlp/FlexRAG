@@ -5,9 +5,9 @@ from typing import Annotated, Optional
 
 import httpx
 
+from flexrag.common import LOGGER_MANAGER, Choices, configure
+from flexrag.common.dataclasses import ChatMessages, RetrievedContext
 from flexrag.models import GenerationConfig
-from flexrag.utils import LOGGER_MANAGER, Choices, configure
-from flexrag.utils.dataclasses import ChatMessages, RetrievedContext
 
 from .assistant import ASSISTANTS, AssistantBase, AssistantResponse
 

@@ -1,12 +1,10 @@
-from typing import Any
-
-from flexrag.chunking import CHUNKERS, ChunkerConfig
-from flexrag.document_parser import DOCUMENTPARSERS, DocumentParserConfig
+from flexrag.common import LOGGER_MANAGER, configure
+from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
+from flexrag.preprocessing.chunking import CHUNKERS, ChunkerConfig
+from flexrag.preprocessing.document_parser import DOCUMENTPARSERS, DocumentParserConfig
 from flexrag.ranker import RANKERS, RankerConfig
 from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
-from flexrag.utils import LOGGER_MANAGER, configure
-from flexrag.utils.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 
 from .assistant import ASSISTANTS, AssistantBase, AssistantResponse
 

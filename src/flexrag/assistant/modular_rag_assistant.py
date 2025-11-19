@@ -1,12 +1,12 @@
 from dataclasses import field
 from typing import Annotated, Any, Optional
 
+from flexrag.common import LOGGER_MANAGER, Choices, configure, data
+from flexrag.common.dataclasses import ChatMessages, RetrievedContext
 from flexrag.context_refine import REFINERS, RefinerConfig
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.ranker import RANKERS, RankerConfig
 from flexrag.retriever import RETRIEVERS, RetrieverConfig
-from flexrag.utils import LOGGER_MANAGER, Choices, configure, data
-from flexrag.utils.dataclasses import ChatMessages, RetrievedContext
 
 from .assistant import ASSISTANTS, AssistantBase, AssistantResponse
 

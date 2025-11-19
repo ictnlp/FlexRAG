@@ -7,9 +7,9 @@ from typing import Annotated, Any, Iterable, Optional
 import faiss
 import numpy as np
 
+from flexrag.common import LOGGER_MANAGER, Choices, configure
+from flexrag.common.configure import extract_config
 from flexrag.models import ENCODERS
-from flexrag.utils import LOGGER_MANAGER, Choices, configure
-from flexrag.utils.configure import extract_config
 
 from .index_base import RETRIEVER_INDEX, DenseIndexBase, DenseIndexBaseConfig
 

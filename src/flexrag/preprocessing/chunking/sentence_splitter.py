@@ -1,31 +1,26 @@
 from abc import ABC, abstractmethod
 from functools import partial
 
-from flexrag.utils import Register, configure
+from flexrag.common import Register, configure
 
 
 class SentenceSplitterBase(ABC):
     """Sentence splitter that splits text into sentences.
     This is an abstract class that defines the interface for all sentence splitters.
     The subclasses should implement the `split` method to split the text.
-    The `reversible` property should return True if the splitted sentences can be concatenate back to the original text.
     """
 
     @abstractmethod
-    def split(self, text: str) -> list[str]:
+    def split(self, text: str) -> list[dict[str, str | tuple[int, int]]]:
         """Split the given text into sentences.
 
         :param text: The text to split.
         :type text: str
-        :return: The sentences of the text.
-        :rtype: list[str]
+        :return: The splitted sentences with their metadata.
+            For example: [{"text": "sentence1", "char_span": (0, 9)}, {"text": "sentence2", "char_span": (10, 20)}].
+            If the character span is not available, it will be set to (-1, -1).
+        :rtype: list[dict[str, str | tuple[int, int]]]
         """
-        return
-
-    @property
-    @abstractmethod
-    def reversible(self) -> bool:
-        """return True if the splitted sentences can be concatenate back to the original text."""
         return
 
 
@@ -57,29 +52,35 @@ class NLTKSentenceSplitter(SentenceSplitterBase):
         self.splitter = partial(nltk.sent_tokenize, language=cfg.language)
         return
 
-    def split(self, text: str) -> list[str]:
-        texts = [t + " " for t in self.splitter(text)]
-        texts[-1] = texts[-1][:-1]
-        return texts
+    def split(self, text: str) -> list[dict[str, str | tuple[int, int]]]:
+        sents = [s for s in self.splitter(text)]
+        spans = []
+        start = 0
+        for sent in sents:
+            try:
+                start = text.index(sent, start)
+            except ValueError:
+                spans.append((-1, -1))
+                continue
+            end = start + len(sent)
+            spans.append((start, end))
+            start = end
+        return [{"text": sent, "char_span": span} for sent, span in zip(sents, spans)]
 
-    @property
-    def reversible(self) -> bool:
-        """NLTKSentenceSplitter is not reversible as it may lose spaces between sentences."""
-        return False
 
-
+# \R only supported in regex module, not re module
 PREDEFINED_SPLIT_PATTERNS = {
     "en": {
         "big_paragraph": r"(?<=\R{2,})",
         "paragraph": r"(?<=\R)",
-        "sentence": r"(?<=[.?!])",
+        "sentence": r"(?<=[.?!]+[\"')\]]*)(?=\s+)",
         "subsentence": r"(?<=[,;\"'{}<>\[\]`~])",
         "word": r"(?<=\s)",
     },
     "zh": {
         "big_paragraph": r"(?<=\R{2,})",
         "paragraph": r"(?<=\R)",
-        "setence": r"(?<=[。！？])",
+        "sentence": r"(?<=[。！？])",
         "subsentence": r"(?<=[，；：“”‘’《》【】、])",
     },
 }
@@ -113,13 +114,29 @@ class RegexSplitter(SentenceSplitterBase):
         self.pattern = regex.compile(cfg.pattern)
         return
 
-    def split(self, text: str) -> list[str]:
-        return self.pattern.split(text)
+    def split(self, text: str) -> list[dict[str, str | tuple[int, int]]]:
+        # Use regex split while keeping track of character spans.
+        # Note: this assumes the pattern is a zero-width assertion (e.g. lookbehind),
+        # which is the recommended usage in PREDEFINED_SPLIT_PATTERNS.
+        sents: list[str] = []
+        spans: list[tuple[int, int]] = []
 
-    @property
-    def reversible(self) -> bool:
-        """The default RegexSplitter is reversible. However, the reversibility depends on the pattern used."""
-        return True
+        last_idx = 0
+        for matched in self.pattern.finditer(text):
+            end = matched.end()
+            if end > last_idx:
+                sent = text[last_idx:end]
+                sents.append(sent)
+                spans.append((last_idx, end))
+                last_idx = end
+
+        # Tail after the last match
+        if last_idx < len(text):
+            sent = text[last_idx:]
+            sents.append(sent)
+            spans.append((last_idx, len(text)))
+
+        return [{"text": sent, "char_span": span} for sent, span in zip(sents, spans)]
 
 
 @configure
@@ -145,13 +162,12 @@ class SpacySentenceSplitter(SentenceSplitterBase):
         self.nlp = spacy.load(cfg.model)
         return
 
-    def split(self, text: str) -> list[str]:
-        return [sent.text for sent in self.nlp(text).sents]
-
-    @property
-    def reversible(self) -> bool:
-        """SpacySentenceSplitter is not reversible as it may lose spaces between sentences."""
-        return False
+    def split(self, text: str) -> list[dict[str, str | tuple[int, int]]]:
+        sents = list(self.nlp(text).sents)
+        return [
+            {"text": sent.text, "char_span": (sent.start_char, sent.end_char)}
+            for sent in sents
+        ]
 
 
 SentenceSplitterConfig = SENTENCE_SPLITTERS.make_config(

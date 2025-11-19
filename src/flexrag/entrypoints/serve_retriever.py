@@ -8,8 +8,8 @@ from fastapi import FastAPI, HTTPException
 from hydra.core.config_store import ConfigStore
 from pydantic import BaseModel, Field
 
+from flexrag.common import LOGGER_MANAGER, configure, extract_config
 from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
-from flexrag.utils import LOGGER_MANAGER, configure, extract_config
 
 app = FastAPI()
 

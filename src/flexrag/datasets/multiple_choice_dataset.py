@@ -1,8 +1,8 @@
 from dataclasses import field
 from typing import Optional
 
-from flexrag.utils import data
-from flexrag.utils.dataclasses import Context
+from flexrag.common import data
+from flexrag.common.dataclasses import Context
 
 from .dataset import MappingDataset
 

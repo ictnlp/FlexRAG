@@ -9,8 +9,7 @@ from typing import Any, Generator, Iterable, Optional
 import numpy as np
 from huggingface_hub import HfApi
 
-from flexrag.text_process import TextProcessPipeline, TextProcessPipelineConfig
-from flexrag.utils import (
+from flexrag.common import (
     __VERSION__,
     FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
@@ -19,7 +18,11 @@ from flexrag.utils import (
     SimpleProgressLogger,
     configure,
 )
-from flexrag.utils.dataclasses import Context, RetrievedContext
+from flexrag.common.dataclasses import Context, RetrievedContext
+from flexrag.preprocessing.text_processor import (
+    TextProcessPipeline,
+    TextProcessPipelineConfig,
+)
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers")
 

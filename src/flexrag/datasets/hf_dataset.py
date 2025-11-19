@@ -5,7 +5,7 @@ from datasets import Dataset as _Dataset
 from datasets import DatasetDict as _DatasetDict
 from datasets import load_dataset
 
-from flexrag.utils import configure
+from flexrag.common import configure
 
 from .dataset import MappingDataset
 

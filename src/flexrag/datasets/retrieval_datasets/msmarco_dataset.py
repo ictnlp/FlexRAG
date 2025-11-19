@@ -3,7 +3,7 @@ from collections.abc import Iterator
 from pathlib import Path
 from typing import Literal, Mapping
 
-from flexrag.utils import (
+from flexrag.common import (
     FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
     SimpleProgressLogger,
@@ -11,7 +11,7 @@ from flexrag.utils import (
     download,
     download_and_extract,
 )
-from flexrag.utils.dataclasses import Context
+from flexrag.common.dataclasses import Context
 
 from ..reader import LineDelimitedReader
 from .retrieval_dataset import RETRIEVAL_DATASETS, RetrievalDataset

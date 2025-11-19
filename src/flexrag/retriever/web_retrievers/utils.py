@@ -1,7 +1,7 @@
 from dataclasses import field
 from typing import Any, Optional
 
-from flexrag.utils import data
+from flexrag.common import data
 
 
 @data

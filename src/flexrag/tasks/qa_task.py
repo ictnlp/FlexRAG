@@ -5,11 +5,11 @@ from pathlib import Path
 from typing import Optional
 
 from flexrag.assistant import ASSISTANTS, AssistantConfig
-from flexrag.database import json_dump
+from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
+from flexrag.common.database import json_dump
+from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.datasets import QA_DATASETS, QADatasetConfig
 from flexrag.metrics import Evaluator, EvaluatorConfig
-from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, configure
-from flexrag.utils.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 
 from .tasks import TASKS, TaskBase
 

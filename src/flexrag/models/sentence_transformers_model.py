@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 import numpy as np
 
-from flexrag.utils import TIME_METER, configure
+from flexrag.common import TIME_METER, configure
 
 from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
 

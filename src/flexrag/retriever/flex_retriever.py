@@ -5,12 +5,7 @@ from typing import Annotated, Any, Generator, Iterable, Optional
 
 from jinja2 import Template
 
-from flexrag.database import (
-    LMDBRetrieverDatabase,
-    NaiveRetrieverDatabase,
-    RetrieverDatabaseBase,
-)
-from flexrag.utils import (
+from flexrag.common import (
     __VERSION__,
     LOGGER_MANAGER,
     TIME_METER,
@@ -18,8 +13,13 @@ from flexrag.utils import (
     SimpleProgressLogger,
     configure,
 )
-from flexrag.utils.configure import extract_config
-from flexrag.utils.dataclasses import Context, RetrievedContext
+from flexrag.common.configure import extract_config
+from flexrag.common.database import (
+    LMDBRetrieverDatabase,
+    NaiveRetrieverDatabase,
+    RetrieverDatabaseBase,
+)
+from flexrag.common.dataclasses import Context, RetrievedContext
 
 from .index import (
     RETRIEVER_INDEX,

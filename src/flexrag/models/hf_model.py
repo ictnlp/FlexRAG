@@ -32,8 +32,8 @@ from transformers import (
 )
 from transformers.dynamic_module_utils import get_class_from_dynamic_module
 
-from flexrag.prompt import ChatPrompt, MultiModelChatPrompt, load_template
-from flexrag.utils import LOGGER_MANAGER, TIME_METER, Choices, configure
+from flexrag.common import LOGGER_MANAGER, TIME_METER, Choices, configure
+from flexrag.common.prompt import ChatPrompt, MultiModelChatPrompt, load_template
 
 from .model_base import (
     ENCODERS,

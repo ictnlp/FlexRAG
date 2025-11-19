@@ -8,7 +8,7 @@ import numpy as np
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from PIL import Image
 
-from flexrag.utils import Register
+from flexrag.common import Register
 
 
 class SerializerBase(ABC):

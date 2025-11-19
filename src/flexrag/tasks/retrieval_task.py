@@ -4,11 +4,11 @@ from dataclasses import field
 from pathlib import Path
 from typing import Optional
 
-from flexrag.database import json_dump
+from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
+from flexrag.common.database import json_dump
 from flexrag.datasets import RetrievalDataset
 from flexrag.metrics import Evaluator, EvaluatorConfig
 from flexrag.retriever import RetrieverBase
-from flexrag.utils import LOGGER_MANAGER, SimpleProgressLogger, configure
 
 from .tasks import TASKS, TaskBase
 

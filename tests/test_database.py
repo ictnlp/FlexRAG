@@ -5,12 +5,12 @@ import numpy as np
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from PIL import Image
 
-from flexrag.database import (
+from flexrag.common.database import (
     LMDBRetrieverDatabase,
     NaiveRetrieverDatabase,
     RetrieverDatabaseBase,
 )
-from flexrag.database.serializer import (
+from flexrag.common.database.serializer import (
     JsonSerializer,
     MsgpackSerializer,
     PickleSerializer,

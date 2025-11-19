@@ -1,8 +1,8 @@
 from abc import abstractmethod
 from collections import Counter
 
-from flexrag.text_process import AnswerSimplifier
-from flexrag.utils import TIME_METER, configure
+from flexrag.common import TIME_METER, configure
+from flexrag.preprocessing.text_processor import AnswerSimplifier
 
 from .metrics_base import METRICS, MetricsBase
 

@@ -2,9 +2,9 @@ from typing import Annotated, Optional
 
 import numpy as np
 
+from flexrag.common import LOGGER_MANAGER, Choices, configure
 from flexrag.models import ENCODERS, EncoderConfig
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
-from flexrag.utils import LOGGER_MANAGER, Choices, configure
 
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 from .sentence_splitter import SENTENCE_SPLITTERS, SentenceSplitterConfig
@@ -224,23 +224,22 @@ class SemanticChunker(ChunkerBase):
                 chunks.append(chunk)
                 chunk = sentences[i]
             else:
-                if self.splitter.reversible:
-                    chunk += sentences[i]
-                else:
-                    chunk += " " + sentences[i]
+                chunk += " " + sentences[i]
         chunks.append(chunk)
         return chunks
 
-    def _split_sentences(self, text: str) -> list[str]:
+    def _split_sentences(self, text: str) -> list[setattr]:
         """Split the text into sentences."""
         sents = self.splitter.split(text)
         if self.max_tokens_per_sentence is None:
-            return sents
+            return [s["text"] for s in sents]
+
+        # split the sentences that are longer than `max_tokens_per_sentence`
         new_sents = []
         for sent in sents:
-            tokens = self.tokenizer.tokenize(sent)
+            tokens = self.tokenizer.tokenize(sent["text"])
             if len(tokens) <= self.max_tokens_per_sentence:
-                new_sents.append(sent)
+                new_sents.append(sent["text"])
                 continue
             splitted_sents = []
             for i in range(0, len(tokens), self.max_tokens_per_sentence):
@@ -254,17 +253,6 @@ class SemanticChunker(ChunkerBase):
 
     def _form_chunks(self, texts: list[str]) -> list[Chunk]:
         chunks = []
-        current_index = 0
         for text in texts:
-            if self.splitter.reversible:
-                chunks.append(
-                    Chunk(
-                        text=text,
-                        start=current_index,
-                        end=current_index + len(text),
-                    )
-                )
-                current_index += len(text)
-            else:
-                chunks.append(Chunk(text=text))
+            chunks.append(Chunk(text=text))
         return chunks

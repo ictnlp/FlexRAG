@@ -5,9 +5,9 @@ from typing import Optional
 
 import numpy as np
 
+from flexrag.common import TIME_METER, configure
+from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.models import ENCODERS, GENERATORS, EncoderConfig, GeneratorConfig
-from flexrag.utils import TIME_METER, configure
-from flexrag.utils.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 
 from .refiner import REFINERS, RefinerBase
 

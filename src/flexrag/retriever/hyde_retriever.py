@@ -1,8 +1,8 @@
 from typing import Annotated
 
+from flexrag.common import TIME_METER, Choices, configure
+from flexrag.common.dataclasses import RetrievedContext
 from flexrag.models import GENERATORS, GeneratorBase, GeneratorConfig
-from flexrag.utils import TIME_METER, Choices, configure
-from flexrag.utils.dataclasses import RetrievedContext
 
 from .flex_retriever import FlexRetriever, FlexRetrieverConfig
 from .retriever_base import RETRIEVERS

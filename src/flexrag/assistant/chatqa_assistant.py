@@ -1,5 +1,5 @@
-from flexrag.utils import LOGGER_MANAGER
-from flexrag.utils.dataclasses import ChatMessages, RetrievedContext
+from flexrag.common import LOGGER_MANAGER
+from flexrag.common.dataclasses import ChatMessages, RetrievedContext
 
 from .assistant import ASSISTANTS, AssistantResponse
 from .modular_rag_assistant import ModularAssistant, ModularAssistantConfig

@@ -1,8 +1,8 @@
 from .assistant import ASSISTANTS
+from .common import __VERSION__
 from .models import ENCODERS, GENERATORS
 from .ranker import RANKERS
 from .retriever import RETRIEVERS
-from .utils import __VERSION__
 
 __all__ = [
     "RETRIEVERS",

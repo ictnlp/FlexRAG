@@ -1,12 +1,12 @@
 import pytest
 
+from flexrag.common import LOGGER_MANAGER
 from flexrag.datasets import (
     RAGEvalData,
     RAGEvalDataset,
     RAGEvalDatasetConfig,
     RAGMultipleChoiceData,
 )
-from flexrag.utils import LOGGER_MANAGER
 
 logger = LOGGER_MANAGER.get_logger("tests.datasets")
 
