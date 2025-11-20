@@ -6,12 +6,18 @@ from os import PathLike
 from typing import Annotated, Optional
 
 from PIL.Image import Image
+from rich.console import Console
+from rich.markdown import Markdown
 
 from flexrag.common import Choices, data
+
+console = Console()
 
 
 @data
 class ChatTurn:
+    """A single turn in a chat conversation."""
+
     role: Annotated[str, Choices("user", "assistant", "system")]
     content: str
 
@@ -21,6 +27,12 @@ class ChatTurn:
     @classmethod
     def from_dict(cls, chat_turn: dict[str, str]):
         return cls(role=chat_turn["role"], content=chat_turn["content"])
+
+    def pretty_print(self) -> None:
+        header = f"[bold cyan]{self.role.upper()}[/bold cyan]"
+        console.print(header)
+        console.print(Markdown(self.content))
+        return
 
 
 @data
@@ -76,6 +88,8 @@ class MultiModelChatTurn:
 
 @data
 class ChatPrompt:
+    """A chat prompt consisting of system message, history, and demonstrations."""
+
     system: Optional[ChatTurn] = None
     history: list[ChatTurn] = field(default_factory=list)
     demonstrations: list[list[ChatTurn]] = field(default_factory=list)
@@ -189,6 +203,33 @@ class ChatPrompt:
         history_num = len(self.history)
         demo_num = sum([len(demo) for demo in self.demonstrations])
         return system_num + history_num + demo_num
+
+    def pretty_print(self) -> None:
+        console.print(
+            "\n[bold magenta]--- System ---[/bold magenta]\n", justify="center"
+        )
+        if self.system is not None:
+            self.system.pretty_print()
+
+        console.print(
+            "\n[bold magenta]--- Demonstrations ---[/bold magenta]\n", justify="center"
+        )
+        for demo in self.demonstrations:
+            for turn in demo:
+                turn.pretty_print()
+
+        console.print(
+            "\n[bold magenta]--- History ---[/bold magenta]\n", justify="center"
+        )
+        for n, turn in enumerate(self.history):
+            turn_num = n // 2 + 1
+            if n % 2 == 0:
+                console.print(
+                    f"\n[bold yellow]--- Turn {turn_num} ---[/bold yellow]\n",
+                    justify="center",
+                )
+            turn.pretty_print()
+        return
 
 
 @data
