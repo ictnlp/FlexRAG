@@ -143,10 +143,14 @@ class OpenAIGenerator(GeneratorBase):
     @TIME_METER("generator.openai_generate")
     async def async_chat(
         self,
-        prompts: list[ChatPrompt],
+        prompts: list[ChatPrompt] | list[list[dict]] | ChatPrompt | list[dict],
         generation_config: GenerationConfig = GenerationConfig(),
     ) -> list[list[str]]:
-        prompts = [prompts] if not isinstance(prompts, list) else prompts
+        if isinstance(prompts, ChatPrompt) or isinstance(prompts[0], dict):
+            prompts = [prompts]
+        for i in range(len(prompts)):
+            if isinstance(prompts[i], list):
+                prompts[i] = ChatPrompt.from_list(prompts[i])
         gen_cfg = self._get_options(generation_config)
 
         semaphore = asyncio.Semaphore(self.max_concurrency)
