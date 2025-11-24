@@ -197,16 +197,19 @@ class OllamaGenerator(GeneratorBase):
         return responses
 
     def _get_options(self, generation_config: GenerationConfig) -> dict:
-        return {
+        options = {
             "top_k": generation_config.top_k,
             "top_p": generation_config.top_p,
-            "temperature": (
-                generation_config.temperature if generation_config.do_sample else 0.0
-            ),
-            "num_predict": generation_config.max_new_tokens,
             "num_ctx": self.max_length,
             "stop": list(generation_config.stop_str),
         }
+        if generation_config.max_new_tokens is not None:
+            options["num_predict"] = generation_config.max_new_tokens
+        if generation_config.do_sample:
+            options["temperature"] = generation_config.temperature
+        else:
+            options["temperature"] = 0.0
+        return options
 
     def _check(self) -> None:
         models = [i["model"] for i in self.client.list()["models"]]

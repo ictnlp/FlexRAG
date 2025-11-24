@@ -156,12 +156,15 @@ class AnthropicGenerator(GeneratorBase):
         raise NotImplementedError("The Anthropic text completion API is deprecated.")
 
     def _get_options(self, generation_config: GenerationConfig) -> dict:
-        return {
-            "temperature": (
-                generation_config.temperature if generation_config.do_sample else 0.0
-            ),
-            "max_tokens": generation_config.max_new_tokens,
+        options = {
             "top_p": generation_config.top_p,
             "top_k": generation_config.top_k,
             "stop_sequences": generation_config.stop_str,
         }
+        if generation_config.max_new_tokens is not None:
+            options["max_tokens"] = generation_config.max_new_tokens
+        if generation_config.do_sample:
+            options["temperature"] = generation_config.temperature
+        else:
+            options["temperature"] = 0.0
+        return options

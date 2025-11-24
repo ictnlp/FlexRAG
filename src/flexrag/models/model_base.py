@@ -21,8 +21,9 @@ class GenerationConfig:
     :type sample_num: int
     :param temperature: The temperature of the sampling distribution. Defaults to 1.0.
     :type temperature: float
-    :param max_new_tokens: The maximum number of tokens to generate. Defaults to 512.
-    :type max_new_tokens: int
+    :param max_new_tokens: The maximum number of tokens to generate. Defaults to None.
+        None means no limit.
+    :type max_new_tokens: Optional[int]
     :param top_p: The cumulative probability for nucleus sampling. Defaults to 0.9.
     :type top_p: float
     :param top_k: The number of tokens to consider for top-k sampling. Defaults to 50.
@@ -36,7 +37,7 @@ class GenerationConfig:
     do_sample: bool = True
     sample_num: int = 1
     temperature: float = 1.0
-    max_new_tokens: int = 512
+    max_new_tokens: Optional[int] = None
     top_p: float = 0.9
     top_k: int = 50
     eos_token_id: Optional[int] = None
@@ -48,7 +49,8 @@ class GenerationConfig:
         if self.sample_num > 1:
             assert self.do_sample, "do_sample must be True when sample_num > 1"
         assert self.temperature >= 0, "temperature must be greater than or equal to 0"
-        assert self.max_new_tokens > 0, "max_new_tokens must be greater than 0"
+        if self.max_new_tokens is not None:
+            assert self.max_new_tokens > 0, "max_new_tokens must be greater than 0"
         assert 0 <= self.top_p <= 1, "top_p must be between 0 and 1"
         assert self.top_k > 0, "top_k must be greater than 0"
 
