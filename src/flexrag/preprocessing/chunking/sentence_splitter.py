@@ -159,7 +159,33 @@ class SpacySentenceSplitter(SentenceSplitterBase):
             import spacy
         except ImportError:
             raise ImportError("spaCy is required for SpacySentenceSplitter.")
+
+        # load the spacy model with parser / sentencizer enabled
         self.nlp = spacy.load(cfg.model)
+        all_pipes = set(self.nlp.pipe_names)
+        required_pipes = []
+        if "parser" in self.nlp.pipe_names:
+            for pipe_name in self.nlp.pipe_names:
+                if pipe_name == "tagger":
+                    continue
+                required_pipes.append(pipe_name)
+                if pipe_name == "parser":
+                    break
+        elif "senter" in all_pipes:
+            for pipe_name in self.nlp.pipe_names:
+                required_pipes.append(pipe_name)
+                if pipe_name == "senter":
+                    break
+        elif "sentencizer" in all_pipes:
+            for pipe_name in self.nlp.pipe_names:
+                required_pipes.append(pipe_name)
+                if pipe_name == "sentencizer":
+                    break
+        else:
+            raise ValueError(
+                f"The spaCy model '{cfg.model}' does not have a sentence boundary detector."
+            )
+        self.nlp.select_pipes(enable=required_pipes)
         return
 
     def split(self, text: str) -> list[dict[str, str | tuple[int, int]]]:
