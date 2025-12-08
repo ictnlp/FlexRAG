@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 
 from flexrag.common import Register
-from flexrag.common.dataclasses import Context, RetrievedContext
+from flexrag.common.dataclasses import RetrievedContext
 
 
 class MetricsBase(ABC):
@@ -10,7 +10,7 @@ class MetricsBase(ABC):
         *,
         questions: list[str] = None,
         responses: list[str] = None,
-        golden_responses: list[list[str | Context]] = None,
+        golden_responses: list[list[str]] = None,
         retrieved_contexts: list[list[str | RetrievedContext]] = None,
         golden_contexts: list[list[str]] = None,
     ) -> tuple[dict[str, float], dict]:

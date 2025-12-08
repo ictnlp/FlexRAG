@@ -6,7 +6,7 @@ from typing import Optional
 
 from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
 from flexrag.common.database import json_dump
-from flexrag.datasets import RetrievalDataset
+from flexrag.datasets import RetrievalDatasetBase
 from flexrag.metrics import Evaluator, EvaluatorConfig
 from flexrag.retriever import RetrieverBase
 
@@ -28,7 +28,7 @@ class RetrievalTask(TaskBase):
 
     config: RetrievalTaskConfig
 
-    def setup(self, retriever: RetrieverBase, dataset: RetrievalDataset):
+    def setup(self, retriever: RetrieverBase, dataset: RetrievalDatasetBase):
         """Setup the Retrieval task."""
         self.retriever = retriever
         assert len(self.retriever) == 0, "Retriever is not empty."

@@ -16,9 +16,22 @@ class SentenceSplitterBase(ABC):
 
         :param text: The text to split.
         :type text: str
-        :return: The splitted sentences with their metadata.
-            For example: [{"text": "sentence1", "char_span": (0, 9)}, {"text": "sentence2", "char_span": (10, 20)}].
-            If the character span is not available, it will be set to (-1, -1).
+        :return: The splitted sentences with their spans.
+            Each item is a dictionary with two fields:
+
+            * ``text`` — the sentence string.
+            * ``char_span`` — a tuple ``(start, end)`` indicating the
+              character span of the sentence within the original text.
+
+            The span follows a half-open interval ``[start, end)``,
+            where ``start`` is inclusive and ``end`` marks the position
+            immediately after the last character of the span.
+
+            Example:
+                ``[{"text": "sentence1", "char_span": (0, 9)},`
+                `{"text": "sentence2", "char_span": (10, 20)}]``
+
+            If the character span is not available, ``char_span`` is set to ``(-1, -1)``.
         :rtype: list[dict[str, str | tuple[int, int]]]
         """
         return
@@ -189,10 +202,9 @@ class SpacySentenceSplitter(SentenceSplitterBase):
         return
 
     def split(self, text: str) -> list[dict[str, str | tuple[int, int]]]:
-        sents = list(self.nlp(text).sents)
         return [
             {"text": sent.text, "char_span": (sent.start_char, sent.end_char)}
-            for sent in sents
+            for sent in self.nlp(text).sents
         ]
 
 

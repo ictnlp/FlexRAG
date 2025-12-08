@@ -6,11 +6,11 @@ import numpy as np
 
 from flexrag.common import TIME_METER, configure
 
-from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
+from .encoder_base import ENCODERS, EncoderBase
 
 
 @configure
-class SentenceTransformerEncoderConfig(EncoderBaseConfig):
+class SentenceTransformerEncoderConfig:
     """Configuration for SentenceTransformerEncoder.
 
     :param model_path: The path to the model. Required.

@@ -6,7 +6,7 @@ from datasets import load_dataset
 from flexrag.common import configure
 from flexrag.common.dataclasses import Context
 
-from .retrieval_dataset import RETRIEVAL_DATASETS, RetrievalDataset
+from .retrieval_dataset import RETRIEVAL_DATASETS, RetrievalDatasetBase
 
 
 @configure
@@ -42,7 +42,7 @@ class MTEBDatasetConfig:
 
 
 @RETRIEVAL_DATASETS("mteb", MTEBDatasetConfig)
-class MTEBDataset(RetrievalDataset):
+class MTEBDataset(RetrievalDatasetBase):
     """Dataset for loading MTEB Retrieval Dataset."""
 
     def __init__(self, config: MTEBDatasetConfig) -> None:

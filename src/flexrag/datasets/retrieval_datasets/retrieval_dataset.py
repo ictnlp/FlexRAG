@@ -30,7 +30,7 @@ class IREvalData:
     meta_data: dict = field(default_factory=dict)
 
 
-class RetrievalDataset(MappingDataset[IREvalData]):
+class RetrievalDatasetBase(MappingDataset[IREvalData]):
     """Base class for Information Retrieval (IR) datasets.
 
     This class provides a unified interface for accessing IR datasets, which typically consist of:
@@ -185,4 +185,4 @@ class RetrievalDataset(MappingDataset[IREvalData]):
         )
 
 
-RETRIEVAL_DATASETS = Register[RetrievalDataset]("retrieval_dataset")
+RETRIEVAL_DATASETS = Register[RetrievalDatasetBase]("retrieval_dataset")

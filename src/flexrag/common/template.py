@@ -5,12 +5,8 @@ from typing import Literal, Optional
 
 from transformers import PreTrainedTokenizer
 
-from flexrag.common import LOGGER_MANAGER
-
-from .prompt_base import ChatPrompt
-
-# TRUNCATION_STRATEGIES = ["left", "right", "history", "demo", "auto"]
-
+from .dataclasses import ChatMessages
+from .logging import LOGGER_MANAGER
 
 logger = LOGGER_MANAGER.get_logger("flexrag.prompt")
 
@@ -19,7 +15,7 @@ class ChatTemplate(ABC):
     @abstractmethod
     def render_to_text(
         self,
-        prompt: ChatPrompt,
+        prompt: ChatMessages,
         add_generation_prompt: bool = True,
     ) -> str:
         return
@@ -27,9 +23,9 @@ class ChatTemplate(ABC):
     @abstractmethod
     def render_to_ids(
         self,
-        prompt: ChatPrompt,
+        prompt: ChatMessages,
         max_length: int = None,
-        truncation: Literal["left", "right", "history", "demo", "auto"] = "auto",
+        truncation: Literal["left", "right", "history"] = "auto",
         padding: bool = False,
         has_label: bool = False,
         add_generation_prompt: bool = True,
@@ -52,7 +48,7 @@ class HFTemplate(ChatTemplate):
 
     def render_to_text(
         self,
-        prompt: ChatPrompt,
+        prompt: ChatMessages,
         add_generation_prompt: bool = True,
     ) -> str:
         # add default system prompt
@@ -72,14 +68,14 @@ class HFTemplate(ChatTemplate):
 
     def render_to_ids(
         self,
-        prompt: ChatPrompt,
+        prompt: ChatMessages,
         max_length: Optional[int] = None,
-        truncation: Literal["left", "right", "history", "demo", "auto"] = "auto",
+        truncation: Literal["left", "right", "history"] = "history",
         padding: bool = False,
         add_generation_prompt: bool = True,
     ) -> list[int] | tuple[list[int], list[int]]:
         def _encode(
-            prompt: ChatPrompt,
+            prompt: ChatMessages,
             max_length: int = None,
             truncation: bool = False,
             truncation_side: str = "left",
@@ -115,38 +111,18 @@ class HFTemplate(ChatTemplate):
                 case "history":
                     pre_ids = _encode(prompt)
                     while len(pre_ids) > max_length:
-                        if len(prompt.history) > 1:
-                            prompt.pop_history(0)
-                            prompt.pop_history(0)
+                        if prompt.system is not None:
+                            history_start = 1
+                        else:
+                            history_start = 0
+                        if len(prompt.history) > 1 + history_start:
+                            prompt.pop(history_start)
+                            prompt.pop(history_start)
                         else:
                             raise ValueError(
                                 "Unable to truncate the prompt using `history` strategy."
                             )
                         pre_ids = _encode(prompt)
-                    ids = pre_ids
-                case "demo":
-                    pre_ids = _encode(prompt)
-                    while len(pre_ids) > max_length:
-                        if len(prompt.demonstrations) > 0:
-                            prompt.pop_demonstration(0)
-                        else:
-                            raise ValueError(
-                                "Unable to truncate the prompt using `demo` strategy."
-                            )
-                case "auto":
-                    pre_ids = _encode(prompt)
-                    while len(pre_ids) > max_length:
-                        if len(prompt.history) > 1:
-                            prompt.pop_history(0)
-                            prompt.pop_history(0)
-                            pre_ids = _encode(prompt)
-                        elif len(prompt.demonstrations) > 0:
-                            prompt.pop_demonstration(0)
-                            pre_ids = _encode(prompt)
-                        else:
-                            pre_ids = _encode(
-                                prompt, truncation=True, truncation_side="left"
-                            )
                     ids = pre_ids
                 case _:
                     raise ValueError("Unsupported truncation strategy.")

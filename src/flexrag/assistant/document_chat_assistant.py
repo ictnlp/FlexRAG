@@ -1,5 +1,4 @@
-from flexrag.common import LOGGER_MANAGER, configure
-from flexrag.common.dataclasses import ChatMessages, ChatTurn
+from flexrag.common import LOGGER_MANAGER, ChatMessages, ChatTurn, configure
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.preprocessing.chunking import CHUNKERS, ChunkerConfig
 from flexrag.preprocessing.document_parser import DOCUMENTPARSERS, DocumentParserConfig

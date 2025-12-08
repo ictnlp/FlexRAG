@@ -8,7 +8,7 @@ from flexrag.common import FLEXRAG_CACHE_DIR, LOGGER_MANAGER, configure
 from flexrag.common.dataclasses import Context
 
 from ..reader import LineDelimitedReader
-from .retrieval_dataset import RETRIEVAL_DATASETS, RetrievalDataset
+from .retrieval_dataset import RETRIEVAL_DATASETS, RetrievalDatasetBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.mldr_dataset")
 
@@ -50,7 +50,7 @@ class MultiLongDocRetrievalDatasetConfig:
 
 
 @RETRIEVAL_DATASETS("mldr", config_class=MultiLongDocRetrievalDatasetConfig)
-class MultiLongDocRetrievalDataset(RetrievalDataset):
+class MultiLongDocRetrievalDataset(RetrievalDatasetBase):
     def __init__(self, config: MultiLongDocRetrievalDatasetConfig) -> None:
         # prepare dataset path
         if config.data_path is None:

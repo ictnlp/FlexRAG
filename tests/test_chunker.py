@@ -1,6 +1,8 @@
 import re
 
-from flexrag.chunking import (
+from flexrag.models import OpenAIEncoderConfig
+from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
+from flexrag.preprocessing.chunking import (
     CharChunker,
     CharChunkerConfig,
     RecursiveChunker,
@@ -12,8 +14,6 @@ from flexrag.chunking import (
     TokenChunker,
     TokenChunkerConfig,
 )
-from flexrag.models import OpenAIEncoderConfig
-from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
 
 
 class TestChunker:
@@ -39,7 +39,7 @@ class TestChunker:
         if strict:
             assert "".join(chunks) == doc
         else:
-            assert re.sub("\s", "", "".join(chunks)) == re.sub("\s", "", doc)
+            assert re.sub(r"\s", "", "".join(chunks)) == re.sub(r"\s", "", doc)
         return
 
     def test_char_chunker(self):

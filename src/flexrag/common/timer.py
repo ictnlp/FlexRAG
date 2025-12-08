@@ -7,7 +7,6 @@ from time import perf_counter
 import numpy as np
 
 
-# TODO: support multiple process
 class _ResourceMeter:
     def __init__(self):
         self.wall_clock_timers = defaultdict(list)

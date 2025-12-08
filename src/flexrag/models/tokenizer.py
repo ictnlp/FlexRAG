@@ -1,50 +1,303 @@
 from abc import ABC, abstractmethod
 from functools import partial
-from typing import Generic, Optional, TypeVar
+from itertools import chain
+from typing import Optional
 
 from flexrag.common import Register, configure
 
-TokenType = TypeVar("TokenType")
 
-
-class TokenizerBase(ABC, Generic[TokenType]):
-    """TokenizerBase is an abstract class that defines the interface for all tokenizers.
+class TokenizerBase(ABC):
+    """A tokenizer is a component that converts raw natural language text into discrete tokens
+    (such as words, subwords, or symbols) for subsequent modeling and processing.
     These tokenizers are useful in the `text_processing` module and the `chunking` module.
 
-    The subclasses should implement the `tokenize` and `detokenize` methods to convert text to tokens and vice versa.
-    The `reversible` property should return True if the tokenizer can detokenize the tokens back to the original text.
+    TokenizerBase is an abstract class that defines the interface for all tokenizers.
+
+    The subclasses should implement the following methods:
+
+        >>> def tokenize(self, text: str) -> list[str]:
+        >>>     # Tokenize the given text into tokens
+        >>>     ...
+
+        >>> def detokenize(self, tokens: list[str]) -> str:
+        >>>     # Detokenize the tokens back to text
+        >>>     ...
+
+        >>> def encode(self, text: str) -> list[int]:
+        >>>     # Encode the given text into token ids
+        >>>     ...
+
+        >>> def decode(self, tokens: list[int]) -> str:
+        >>>     # Decode the token ids back to text
+        >>>     ...
+
+        >>> @property
+        >>> def reversible(self) -> bool:
+        >>>     # Return True if the tokenizer can decode the tokens back to the original text strictly
+        >>>     ...
+
+        >>> @property
+        >>> def vocab_size(self) -> int:
+        >>>     # Return the size of the tokenizer vocabulary
+        >>>     ...
+
+    The `reversible` property should return True if the tokenizer can decode the tokens back to the original text.
     """
 
     @abstractmethod
-    def tokenize(self, texts: str) -> list[TokenType]:
+    def tokenize(self, text: str) -> list[str]:
         """Tokenize the given text into tokens.
 
-        :param texts: The text to tokenize.
-        :type texts: str
+        :param text: The text to tokenize.
+        :type text: str
         :return: The tokens of the text.
-        :rtype: list[TokenType]
+        :rtype: list[str]
         """
         return
 
     @abstractmethod
-    def detokenize(self, tokens: list[TokenType]) -> str:
+    def detokenize(self, tokens: list[str]) -> str:
         """Detokenize the tokens back to text.
 
         :param tokens: The tokens to detokenize.
-        :type tokens: list[TokenType]
+        :type tokens: list[str]
         :return: The detokenized text.
         :rtype: str
+        """
+        return
+
+    @abstractmethod
+    def encode(self, text: str) -> list[int]:
+        """Encode the given text into token ids.
+
+        :param text: The text to tokenize.
+        :type text: str
+        :return: The tokens of the text.
+        :rtype: list[int]
+        """
+        return
+
+    @abstractmethod
+    def decode(self, tokens: list[int]) -> str:
+        """Decode the token ids back to text.
+
+        :param tokens: The tokens to decode.
+        :type tokens: list[int]
+        :return: The decoded text.
+        :rtype: str
+        """
+        return
+
+    @abstractmethod
+    def tokens_to_ids(self, tokens: list[str]) -> list[int]:
+        """Convert tokens to token ids.
+
+        :param tokens: The tokens to convert.
+        :type tokens: list[str]
+        :return: The token ids.
+        :rtype: list[int]
+        """
+        return
+
+    @abstractmethod
+    def ids_to_tokens(self, token_ids: list[int]) -> list[str]:
+        """Convert token ids to tokens.
+
+        :param token_ids: The token ids to convert.
+        :type token_ids: list[int]
+        :return: The tokens.
+        :rtype: list[str]
         """
         return
 
     @property
     @abstractmethod
     def reversible(self) -> bool:
-        """Return True if the tokenizer can detokenize the tokens back to the original text."""
+        """Return True if the tokenizer can decode the tokens back to the original text strictly."""
+        return
+
+    @property
+    @abstractmethod
+    def vocab_size(self) -> int:
+        """Return the size of the tokenizer vocabulary."""
         return
 
 
 TOKENIZERS = Register[TokenizerBase]("tokenizer")
+
+
+@configure
+class MosesTokenizerConfig:
+    """Configuration for MosesTokenizer.
+
+    :param lang: The language code for the tokenizer. Default is "en".
+    :type lang: str
+    """
+
+    lang: str = "en"
+
+
+@TOKENIZERS("moses", config_class=MosesTokenizerConfig)
+class MosesTokenizer(TokenizerBase):
+    """A wrapper for SacreMoses tokenizers."""
+
+    def __init__(self, cfg: MosesTokenizerConfig) -> None:
+        from sacremoses import MosesDetokenizer, MosesTokenizer
+
+        self.tokenizer = MosesTokenizer(cfg.lang)
+        self.detokenizer = MosesDetokenizer(cfg.lang)
+        return
+
+    def tokenize(self, texts: str) -> list[str]:
+        return self.tokenizer.tokenize(texts)
+
+    def detokenize(self, tokens: list[str]) -> str:
+        return self.detokenizer.detokenize(tokens)
+
+    def encode(self, text: str) -> list[int]:
+        raise NotImplementedError("MosesTokenizer does not support `encode` method.")
+
+    def decode(self, tokens: list[int]) -> str:
+        raise NotImplementedError("MosesTokenizer does not support `decode` method.")
+
+    def tokens_to_ids(self, tokens: list[str]) -> list[int]:
+        raise NotImplementedError(
+            "MosesTokenizer does not support `tokens_to_ids` method."
+        )
+
+    def ids_to_tokens(self, token_ids: list[int]) -> list[str]:
+        raise NotImplementedError(
+            "MosesTokenizer does not support `ids_to_tokens` method."
+        )
+
+    @property
+    def reversible(self) -> bool:
+        """MosesTokenizer is not reversible as it may lose sapces and punctuations."""
+        return False
+
+    @property
+    def vocab_size(self) -> int:
+        raise NotImplementedError(
+            "MosesTokenizer does not support `vocab_size` property."
+        )
+
+
+@configure
+class NLTKTokenizerConfig:
+    """Configuration for NLTKTokenizer.
+
+    :param lang: The language to use for the tokenizer. Default is "english".
+    :type lang: str
+    """
+
+    lang: str = "english"
+
+
+@TOKENIZERS("nltk", config_class=NLTKTokenizerConfig)
+class NLTKTokenizer(TokenizerBase):
+    """A wrapper for NLTK tokenizers."""
+
+    def __init__(self, cfg: NLTKTokenizerConfig) -> None:
+        from nltk.tokenize import word_tokenize
+
+        self.lang = cfg.lang
+        self.tokenize_func = partial(word_tokenize, language=cfg.lang)
+        return
+
+    def tokenize(self, texts: str) -> list[str]:
+        return self.tokenize_func(texts)
+
+    def detokenize(self, tokens: list[str]) -> str:
+        return " ".join(tokens)
+
+    def encode(self, text: str) -> list[int]:
+        raise NotImplementedError("NLTKTokenizer does not support `encode` method.")
+
+    def decode(self, tokens: list[int]) -> str:
+        raise NotImplementedError("NLTKTokenizer does not support `decode` method.")
+
+    def tokens_to_ids(self, tokens: list[str]) -> list[int]:
+        raise NotImplementedError(
+            "NLTKTokenizer does not support `tokens_to_ids` method."
+        )
+
+    def ids_to_tokens(self, token_ids: list[int]) -> list[str]:
+        raise NotImplementedError(
+            "NLTKTokenizer does not support `ids_to_tokens` method."
+        )
+
+    @property
+    def reversible(self) -> bool:
+        """NLTKTokenizer is not reversible as it may lose spaces."""
+        return False
+
+    @property
+    def vocab_size(self) -> int:
+        raise NotImplementedError(
+            "NLTKTokenizer does not support `vocab_size` property."
+        )
+
+
+@configure
+class JiebaTokenizerConfig:
+    """Configuration for JiebaTokenizer.
+
+    :param enable_hmm: Whether to use the Hidden Markov Model. Default is True.
+    :type enable_hmm: bool
+    :param cut_all: Whether to use the full mode. Default is False.
+    :type cut_all: bool
+    """
+
+    enable_hmm: bool = True
+    cut_all: bool = False
+
+
+@TOKENIZERS("jieba", config_class=JiebaTokenizerConfig)
+class JiebaTokenizer(TokenizerBase):
+    """A wrapper for Jieba tokenizers.
+    Jieba keeps all characters including spaces and punctuations during tokenization,
+    making it reversible.
+    """
+
+    def __init__(self, cfg: JiebaTokenizerConfig) -> None:
+        import jieba
+
+        jieba.disable_parallel()
+        self.tokenize_func = partial(jieba.cut, HMM=cfg.enable_hmm, cut_all=cfg.cut_all)
+        return
+
+    def tokenize(self, texts: str) -> list[str]:
+        return list(self.tokenize_func(texts))
+
+    def detokenize(self, tokens: list[str]) -> str:
+        return "".join(tokens)
+
+    def encode(self, text: str) -> list[int]:
+        raise NotImplementedError("JiebaTokenizer does not support `encode` method.")
+
+    def decode(self, tokens: list[int]) -> str:
+        raise NotImplementedError("JiebaTokenizer does not support `decode` method.")
+
+    def tokens_to_ids(self, tokens: list[str]) -> list[int]:
+        raise NotImplementedError(
+            "JiebaTokenizer does not support `tokens_to_ids` method."
+        )
+
+    def ids_to_tokens(self, token_ids: list[int]) -> list[str]:
+        raise NotImplementedError(
+            "JiebaTokenizer does not support `ids_to_tokens` method."
+        )
+
+    @property
+    def reversible(self) -> bool:
+        """JiebaTokenizer is reversible."""
+        return True
+
+    @property
+    def vocab_size(self) -> int:
+        raise NotImplementedError(
+            "JiebaTokenizer does not support `vocab_size` property."
+        )
 
 
 @configure
@@ -59,7 +312,7 @@ class HuggingFaceTokenizerConfig:
 
 
 @TOKENIZERS("hf", config_class=HuggingFaceTokenizerConfig)
-class HuggingFaceTokenizer(TokenizerBase[int]):
+class HuggingFaceTokenizer(TokenizerBase):
     """A wrapper for HuggingFace tokenizers."""
 
     def __init__(self, cfg: HuggingFaceTokenizerConfig) -> None:
@@ -69,11 +322,27 @@ class HuggingFaceTokenizer(TokenizerBase[int]):
         self.tokenizer = AutoTokenizer.from_pretrained(cfg.tokenizer_path)
         return
 
-    def tokenize(self, texts: str) -> list[int]:
-        return self.tokenizer.encode(texts)
+    def encode(self, text: str) -> list[int]:
+        return self.tokenizer.encode(text)
 
-    def detokenize(self, tokens: list[int]) -> str:
+    def decode(self, tokens: list[int]) -> str:
         return self.tokenizer.decode(tokens)
+
+    def tokenize(self, text: str) -> list[str]:
+        return self.tokenizer.tokenize(text)
+
+    def detokenize(self, tokens: list[str]) -> str:
+        return self.tokenizer.convert_tokens_to_string(tokens)
+
+    def tokens_to_ids(self, tokens: list[str]) -> list[int]:
+        return self.tokenizer.convert_tokens_to_ids(tokens)
+
+    def ids_to_tokens(self, token_ids: list[int]) -> list[str]:
+        return self.tokenizer.convert_ids_to_tokens(token_ids)
+
+    @property
+    def vocab_size(self) -> int:
+        return int(self.tokenizer.vocab_size)
 
     @property
     def reversible(self) -> bool:
@@ -98,7 +367,7 @@ class TikTokenTokenizerConfig:
 
 
 @TOKENIZERS("tiktoken", config_class=TikTokenTokenizerConfig)
-class TikTokenTokenizer(TokenizerBase[int]):
+class TikTokenTokenizer(TokenizerBase):
     """A wrapper for TikToken tokenizers."""
 
     def __init__(self, cfg: TikTokenTokenizerConfig) -> None:
@@ -112,120 +381,41 @@ class TikTokenTokenizer(TokenizerBase[int]):
             raise ValueError("Either tokenizer_name or model_name must be provided.")
         return
 
-    def tokenize(self, texts: str) -> list[int]:
-        return self.tokenizer.encode(texts)
+    def tokenize(self, texts: str) -> list[str]:
+        # tiktoken works on bytes; here we expose string tokens for consistency.
+        token_ids = self.tokenizer.encode(texts)
+        return [self.tokenizer.decode([tid]) for tid in token_ids]
 
-    def detokenize(self, tokens: list[int]) -> str:
+    def detokenize(self, tokens: list[str]) -> str:
+        # Re-tokenize each token string and concatenate; this may not be strictly reversible
+        # for arbitrary manipulations but is consistent with `encode`/`decode` behavior.
+        token_ids = list(
+            chain.from_iterable(self.tokenizer.encode(token) for token in tokens)
+        )
+        return self.tokenizer.decode(token_ids)
+
+    def encode(self, text: str) -> list[int]:
+        return self.tokenizer.encode(text)
+
+    def decode(self, tokens: list[int]) -> str:
         return self.tokenizer.decode(tokens)
+
+    def tokens_to_ids(self, tokens: list[str]) -> list[int]:
+        return list(
+            chain.from_iterable(self.tokenizer.encode(token) for token in tokens)
+        )
+
+    def ids_to_tokens(self, token_ids: list[int]) -> list[str]:
+        return [self.tokenizer.decode([tid]) for tid in token_ids]
+
+    @property
+    def vocab_size(self) -> int:
+        # tiktoken encoders expose number of tokens via `n_vocab` attribute
+        return int(getattr(self.tokenizer, "n_vocab", 0))
 
     @property
     def reversible(self) -> bool:
         """TikTokenTokenizer is reversible."""
-        return True
-
-
-@configure
-class MosesTokenizerConfig:
-    """Configuration for MosesTokenizer.
-
-    :param lang: The language code for the tokenizer. Default is "en".
-    :type lang: str
-    """
-
-    lang: str = "en"
-
-
-@TOKENIZERS("moses", config_class=MosesTokenizerConfig)
-class MosesTokenizer(TokenizerBase[str]):
-    """A wrapper for SacreMoses tokenizers."""
-
-    def __init__(self, cfg: MosesTokenizerConfig) -> None:
-        from sacremoses import MosesDetokenizer, MosesTokenizer
-
-        self.tokenizer = MosesTokenizer(cfg.lang)
-        self.detokenizer = MosesDetokenizer(cfg.lang)
-        return
-
-    def tokenize(self, texts: str) -> list[str]:
-        return self.tokenizer.tokenize(texts)
-
-    def detokenize(self, tokens: list[str]) -> str:
-        return self.detokenizer.detokenize(tokens)
-
-    @property
-    def reversible(self) -> bool:
-        """MosesTokenizer is not reversible as it may lose sapces and punctuations."""
-        return False
-
-
-@configure
-class NLTKTokenizerConfig:
-    """Configuration for NLTKTokenizer.
-
-    :param lang: The language to use for the tokenizer. Default is "english".
-    :type lang: str
-    """
-
-    lang: str = "english"
-
-
-@TOKENIZERS("nltk_tokenizer", config_class=NLTKTokenizerConfig)
-class NLTKTokenizer(TokenizerBase[str]):
-    """A wrapper for NLTK tokenizers."""
-
-    def __init__(self, cfg: NLTKTokenizerConfig) -> None:
-        from nltk.tokenize import word_tokenize
-
-        self.lang = cfg.lang
-        self.tokenize_func = partial(word_tokenize, language=cfg.lang)
-        return
-
-    def tokenize(self, texts: str) -> list[str]:
-        return self.tokenize_func(texts)
-
-    def detokenize(self, tokens: list[str]) -> str:
-        return " ".join(tokens)
-
-    @property
-    def reversible(self) -> bool:
-        """NLTKTokenizer is not reversible as it may lose sapces."""
-        return False
-
-
-@configure
-class JiebaTokenizerConfig:
-    """Configuration for JiebaTokenizer.
-
-    :param enable_hmm: Whether to use the Hidden Markov Model. Default is True.
-    :type enable_hmm: bool
-    :param cut_all: Whether to use the full mode. Default is False.
-    :type cut_all: bool
-    """
-
-    enable_hmm: bool = True
-    cut_all: bool = False
-
-
-@TOKENIZERS("jieba", config_class=JiebaTokenizerConfig)
-class JiebaTokenizer(TokenizerBase[str]):
-    """A wrapper for Jieba tokenizers."""
-
-    def __init__(self, cfg: JiebaTokenizerConfig) -> None:
-        import jieba
-
-        jieba.disable_parallel()
-        self.tokenize_func = partial(jieba.cut, HMM=cfg.enable_hmm, cut_all=cfg.cut_all)
-        return
-
-    def tokenize(self, texts: str) -> list[str]:
-        return list(self.tokenize_func(texts))
-
-    def detokenize(self, tokens: list[str]) -> str:
-        return "".join(tokens)
-
-    @property
-    def reversible(self) -> bool:
-        """JiebaTokenizer is reversible."""
         return True
 
 

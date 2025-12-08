@@ -44,7 +44,7 @@ class AssistantBase:
         """Generate a response to the given messages.
 
         :param messages: The messages to generate a response for.
-        :type messages: ChatPrompt | list[dict]
+        :type messages: ChatMessages | list[dict]
         :param disable_retrieval: If True, disables retrieval and uses the messages directly.
             Defaults to False.
         :type disable_retrieval: bool, optional

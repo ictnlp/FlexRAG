@@ -170,24 +170,20 @@ class ModularAssistant(AssistantBase):
         match self.context_incorporation:
             case "system_prompt":
                 if prompt.system is not None:
-                    prompt.set_system(
-                        (
-                            f"{prompt.system}\n\n"
-                            "Here are some context documents that may be relevant to this conversation:\n\n"
-                            f"{context_str}"
-                        )
+                    prompt.system = (
+                        f"{prompt.system}\n\n"
+                        "Here are some context documents that may be relevant to this conversation:\n\n"
+                        f"{context_str}"
                     )
                 else:
-                    prompt.set_system(
-                        (
-                            "You are a helpful and knowledgeable AI assistant. "
-                            "You may be provided with one or more context documents alongside user messages. "
-                            "These documents may or may not be relevant to the current query."
-                            "If unsure about the relevance or completeness of contexts, "
-                            "please answer based on your own knowledge."
-                            "Here are some context documents that may be relevant to this conversation:\n\n"
-                            f"{context_str}"
-                        )
+                    prompt.system = (
+                        "You are a helpful and knowledgeable AI assistant. "
+                        "You may be provided with one or more context documents alongside user messages. "
+                        "These documents may or may not be relevant to the current query."
+                        "If unsure about the relevance or completeness of contexts, "
+                        "please answer based on your own knowledge."
+                        "Here are some context documents that may be relevant to this conversation:\n\n"
+                        f"{context_str}"
                     )
             case "user_prompt":
                 prompt[-1].content = (

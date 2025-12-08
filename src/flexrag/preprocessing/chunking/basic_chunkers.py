@@ -225,7 +225,7 @@ class RecursiveChunker(ChunkerBase):
                 )
             return chunks
         else:
-            chunks = self.splitter[level].split(text)
+            chunks = [s["text"] for s in self.splitter[level].split(text)]
             new_chunks = []
             chunk = ""
             for chunk_ in chunks:
@@ -339,10 +339,19 @@ class SentenceChunker(ChunkerBase):
                         "There are 100 sentences have more than `max_tokens` tokens or `max_chars` characters. "
                         "Please check the configuration of SentenceChunker."
                     )
-            text = " ".join(s["text"] for s in sentences[start_pointer:end_pointer])
+            try:
+                char_start = sentences[start_pointer]["char_span"][0]
+                char_end = sentences[end_pointer - 1]["char_span"][1]
+                assert char_start != -1 and char_end != -1
+                chunk_text = text[char_start:char_end]
+            except AssertionError:
+                char_start, char_end = None, None
+                chunk_text = " ".join(
+                    s["text"] for s in sentences[start_pointer:end_pointer]
+                )
             chunks.append(
                 Chunk(
-                    text=text,
+                    text=chunk_text,
                     start=sentences[start_pointer]["char_span"][0],
                     end=sentences[end_pointer - 1]["char_span"][1],
                 )

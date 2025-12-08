@@ -1,7 +1,8 @@
 import re
-import string
 from dataclasses import field
 from typing import Optional
+
+import regex
 
 from flexrag.common import configure
 
@@ -123,14 +124,18 @@ class Truncator(Processor):
 
 @PROCESSORS("simplify_answer")
 class AnswerSimplifier(Processor):
+    article_pattern = re.compile(r"\b(a|an|the)\b", re.IGNORECASE)
+    punctuation_pattern = regex.compile(r"\p{P}+", re.UNICODE)
+    whitespace_pattern = re.compile(r"\s+", re.UNICODE)
+
     def process(self, input_text: TextUnit) -> TextUnit:
         # lower case
-        input_text.content = input_text.content.lower()
+        text = input_text.content.lower()
         # remove_articles
-        text = re.sub(r"\b(a|an|the)\b", " ", input_text.content)
-        # unify white space
-        text = " ".join(text.split())
+        text = self.article_pattern.sub(" ", text)
         # remove punctuation
-        exclude = set(string.punctuation)
-        input_text.content = "".join(ch for ch in text if ch not in exclude)
+        text = self.punctuation_pattern.sub(" ", text)
+        # unify white space
+        text = self.whitespace_pattern.sub(" ", text).strip()
+        input_text.content = text
         return input_text

@@ -230,7 +230,7 @@ class SemanticChunker(ChunkerBase):
 
     def _split_sentences(self, text: str) -> list[setattr]:
         """Split the text into sentences."""
-        sents = self.splitter.split(text)
+        sents = [s["text"] for s in self.splitter.split(text)]
         if self.max_tokens_per_sentence is None:
             return [s["text"] for s in sents]
 

@@ -91,7 +91,7 @@ class LineDelimitedReader(Iterable[dict], FileReaderMixin):
                             break
                         yield json.loads(line)
             case fmt if fmt in {"tsv", "csv"}:
-                if len(self.titles) > 0:
+                if self.titles is not None and len(self.titles) > 0:
                     title = self.titles
                 else:
                     title = []

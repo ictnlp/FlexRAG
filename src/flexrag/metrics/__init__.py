@@ -1,4 +1,5 @@
 from .generation_metrics import BLEU, BLEUConfig, Rouge, chrF, chrFConfig
+from .llm_as_a_judge import ShortformCorrectness, ShortformCorrectnessConfig
 from .matching_metrics import (
     F1,
     Accuracy,
@@ -24,6 +25,7 @@ from .retrieval_metrics import (
 
 from .evaluator import Evaluator, EvaluatorConfig  # isort: skip
 
+
 __all__ = [
     "MetricsBase",
     "MatchingMetrics",
@@ -37,6 +39,8 @@ __all__ = [
     "Rouge",
     "chrF",
     "chrFConfig",
+    "ShortformCorrectness",
+    "ShortformCorrectnessConfig",
     "SuccessRate",
     "SuccessRateConfig",
     "RetrievalRecall",

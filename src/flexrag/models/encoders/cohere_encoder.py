@@ -1,18 +1,17 @@
-import asyncio
 import os
 from typing import Annotated, Optional
 
 import httpx
 import numpy as np
-from numpy import ndarray
 
 from flexrag.common import TIME_METER, Choices, configure
 
-from .model_base import ENCODERS, EncoderBase, EncoderBaseConfig
+from .api_based_encoder import APIBasedEncoder, APIBasedEncoderConfig
+from .encoder_base import ENCODERS
 
 
 @configure
-class CohereEncoderConfig(EncoderBaseConfig):
+class CohereEncoderConfig(APIBasedEncoderConfig):
     """Configuration for CohereEncoder.
 
     :param model: The model to use. Default is "embed-v4.0".
@@ -29,7 +28,6 @@ class CohereEncoderConfig(EncoderBaseConfig):
     :type base_url: Optional[str]
     :param api_key: The API key for the Cohere API.
         If not provided, it will use the environment variable `COHERE_API_KEY`.
-        Defaults to None.
     :type api_key: str
     :param proxy: The proxy to use. Default is None.
     :type proxy: Optional[str]
@@ -47,67 +45,46 @@ class CohereEncoderConfig(EncoderBaseConfig):
         ),
     ] = "search_document"
     embedding_size: Annotated[str, Choices("256", "512", "1024", "1536")] = "1536"
+    api_key: str = os.environ.get("COHERE_API_KEY")
     base_url: Optional[str] = None
-    api_key: Optional[str] = None
     proxy: Optional[str] = None
 
 
 @ENCODERS("cohere", config_class=CohereEncoderConfig)
-class CohereEncoder(EncoderBase):
-    def __init__(self, cfg: CohereEncoderConfig):
-        from cohere import ClientV2
+class CohereEncoder(APIBasedEncoder):
+    async def _create_client(self, config: CohereEncoderConfig):
+        from cohere import AsyncClientV2
 
-        if cfg.proxy is not None:
-            httpx_client = httpx.Client(proxies=cfg.proxy)
+        self._model_name = config.model
+        self._dimension = int(config.embedding_size)
+        self._input_type = config.input_type
+
+        if config.proxy is not None:
+            httpx_client = httpx.Client(proxies=config.proxy)
         else:
             httpx_client = None
-        api_key = cfg.api_key or os.getenv("COHERE_API_KEY")
-        if not api_key:
-            raise ValueError(
-                "API key for Cohere is not provided. "
-                "Please set it in the configuration or as an environment variable 'COHERE_API_KEY'."
-            )
-        self.client = ClientV2(
-            api_key=api_key,
-            base_url=cfg.base_url,
+        return AsyncClientV2(
+            api_key=config.api_key,
+            base_url=config.base_url,
             httpx_client=httpx_client,
         )
-        self.model = cfg.model
-        self.input_type = cfg.input_type
-        self._embedding_size = int(cfg.embedding_size)
-        super().__init__(cfg)
-        return
 
     @TIME_METER("encoder.cohere_encode")
-    def _encode(self, texts: list[str]) -> ndarray:
-        embed_dim = self.embedding_size if self.model == "embed-v4.0" else None
-        r = self.client.embed(
+    async def _async_encode_impl(self, client, texts: list[str]) -> np.ndarray:
+        embed_dim = self.embedding_size if self._model_name == "embed-v4.0" else None
+        r = await client.embed(
             texts=texts,
-            model=self.model,
-            input_type=self.input_type,
+            model=self._model_name,
+            input_type=self._input_type,
             embedding_types=["float"],
             output_dimension=embed_dim,
         )
         embeddings = r.embeddings.float
         return np.array(embeddings)
 
-    @TIME_METER("encoder.cohere_encode")
-    async def async_encode(self, texts: list[str]):
-        task = asyncio.create_task(
-            asyncio.to_thread(
-                self.client.embed,
-                texts=texts,
-                model=self.model,
-                input_type=self.input_type,
-                embedding_types=["float"],
-            )
-        )
-        embeddings = (await task).embeddings.float
-        return np.array(embeddings)
-
     @property
     def embedding_size(self) -> int:
-        match self.model:
+        match self._model_name:
             case "embed-multilingual-light-v3.0":
                 return 384
             case "embed-multilingual-v3.0":
@@ -117,11 +94,11 @@ class CohereEncoder(EncoderBase):
             case "embed-english-v3.0":
                 return 1024
             case "embed-v4.0":
-                if self._embedding_size is not None:
-                    return self._embedding_size
+                if self._dimension is not None:
+                    return self._dimension
                 return 1536
             case _:
                 raise ValueError(
-                    f"Unsupported model {self.model} for CohereEncoder. "
+                    f"Unsupported model {self._model_name} for CohereEncoder. "
                     "Please specify the embedding size explicitly."
                 )

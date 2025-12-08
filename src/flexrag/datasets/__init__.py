@@ -19,7 +19,7 @@ from .retrieval_datasets import (
     MTEBDatasetConfig,
     MultiLongDocRetrievalDataset,
     MultiLongDocRetrievalDatasetConfig,
-    RetrievalDataset,
+    RetrievalDatasetBase,
 )
 
 __all__ = [
@@ -45,5 +45,5 @@ __all__ = [
     "IREvalData",
     "MultiLongDocRetrievalDataset",
     "MultiLongDocRetrievalDatasetConfig",
-    "RetrievalDataset",
+    "RetrievalDatasetBase",
 ]
