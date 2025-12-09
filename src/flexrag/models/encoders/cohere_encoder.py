@@ -6,12 +6,12 @@ import numpy as np
 
 from flexrag.common import TIME_METER, Choices, configure
 
-from .api_based_encoder import APIBasedEncoder, APIBasedEncoderConfig
 from .encoder_base import ENCODERS
+from .remote_encoder_base import RemoteEncoderBase, RemoteEncoderBaseConfig
 
 
 @configure
-class CohereEncoderConfig(APIBasedEncoderConfig):
+class CohereEncoderConfig(RemoteEncoderBaseConfig):
     """Configuration for CohereEncoder.
 
     :param model: The model to use. Default is "embed-v4.0".
@@ -51,7 +51,7 @@ class CohereEncoderConfig(APIBasedEncoderConfig):
 
 
 @ENCODERS("cohere", config_class=CohereEncoderConfig)
-class CohereEncoder(APIBasedEncoder):
+class CohereEncoder(RemoteEncoderBase):
     async def _create_client(self, config: CohereEncoderConfig):
         from cohere import AsyncClientV2
 

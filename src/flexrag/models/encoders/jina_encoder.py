@@ -7,12 +7,12 @@ from numpy import ndarray
 
 from flexrag.common import TIME_METER, Choices, configure
 
-from .api_based_encoder import APIBasedEncoder, APIBasedEncoderConfig
 from .encoder_base import ENCODERS
+from .remote_encoder_base import RemoteEncoderBase, RemoteEncoderBaseConfig
 
 
 @configure
-class JinaEncoderConfig(APIBasedEncoderConfig):
+class JinaEncoderConfig(RemoteEncoderBaseConfig):
     """Configuration for JinaEncoder.
 
     :param model: The model to use. Default is "jina-embeddings-v3".
@@ -51,7 +51,7 @@ class JinaEncoderConfig(APIBasedEncoderConfig):
 
 
 @ENCODERS("jina", config_class=JinaEncoderConfig)
-class JinaEncoder(APIBasedEncoder):
+class JinaEncoder(RemoteEncoderBase):
     async def _create_client(self, config: JinaEncoderConfig):
         self._data_template = {
             "model": config.model,

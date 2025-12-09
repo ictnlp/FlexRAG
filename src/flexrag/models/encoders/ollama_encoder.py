@@ -4,14 +4,14 @@ import numpy as np
 
 from flexrag.common import LOGGER_MANAGER, TIME_METER, configure
 
-from .api_based_encoder import APIBasedEncoder, APIBasedEncoderConfig
 from .encoder_base import ENCODERS
+from .remote_encoder_base import RemoteEncoderBase, RemoteEncoderBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.ollama")
 
 
 @configure
-class OllamaEncoderConfig(APIBasedEncoderConfig):
+class OllamaEncoderConfig(RemoteEncoderBaseConfig):
     """Configuration for the OllamaEncoder.
 
     :param model_name: The name of the model to use. Required.
@@ -32,7 +32,7 @@ class OllamaEncoderConfig(APIBasedEncoderConfig):
 
 
 @ENCODERS("ollama", config_class=OllamaEncoderConfig)
-class OllamaEncoder(APIBasedEncoder):
+class OllamaEncoder(RemoteEncoderBase):
     async def _create_client(self, config: OllamaEncoderConfig):
         from ollama import AsyncClient
 

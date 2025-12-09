@@ -1,3 +1,4 @@
+from .guten_qa import GutenQADataset, GutenQADatasetConfig
 from .literary_qa import LiteraryQADataset, LiteraryQADatasetConfig
 from .narrative_qa import NarrativeQADataset, NarrativeQADatasetConfig
 from .qa_dataset_base import (
@@ -15,6 +16,8 @@ QADatasetConfig = QA_DATASETS.make_config()
 
 
 __all__ = [
+    "GutenQADataset",
+    "GutenQADatasetConfig",
     "LiteraryQADataset",
     "LiteraryQADatasetConfig",
     "NarrativeQADataset",

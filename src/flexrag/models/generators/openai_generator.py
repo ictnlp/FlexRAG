@@ -13,14 +13,14 @@ from flexrag.common.base64_utils import (
 )
 from flexrag.common.logging import LOGGER_MANAGER
 
-from .api_based_generator import APIBasedGeneratorBase, APIBasedGeneratorBaseConfig
 from .generator_base import GenerationConfig
+from .remote_generator_base import RemoteGeneratorBase, RemoteGeneratorBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.openai_generator")
 
 
 @configure
-class OpenAIGeneratorConfig(APIBasedGeneratorBaseConfig):
+class OpenAIGeneratorConfig(RemoteGeneratorBaseConfig):
     """Configuration for OpenAI Generator.
 
     :param is_azure: Whether the model is hosted on Azure. Default is False.
@@ -47,7 +47,7 @@ class OpenAIGeneratorConfig(APIBasedGeneratorBaseConfig):
     proxy: Optional[str] = None
 
 
-class OpenAIGenerator(APIBasedGeneratorBase):
+class OpenAIGenerator(RemoteGeneratorBase):
 
     async def _create_client(self, config: OpenAIGeneratorConfig):
         """Create and return the async OpenAI client."""

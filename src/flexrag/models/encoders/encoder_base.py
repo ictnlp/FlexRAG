@@ -2,7 +2,7 @@ from abc import ABC, abstractmethod
 
 import numpy as np
 
-from flexrag.common import LOGGER_MANAGER, Register, SimpleProgressLogger, configure
+from flexrag.common import LOGGER_MANAGER, Register, SimpleProgressLogger
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.encoder")
 

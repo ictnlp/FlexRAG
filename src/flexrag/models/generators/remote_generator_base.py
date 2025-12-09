@@ -9,14 +9,14 @@ from .generator_base import GenerationConfig, GeneratorBase
 
 
 @configure
-class APIBasedGeneratorBaseConfig:
+class RemoteGeneratorBaseConfig:
     max_concurrency: int = 1
 
 
-class APIBasedGeneratorBase(GeneratorBase):
+class RemoteGeneratorBase(GeneratorBase):
     """Base class for API-based LLM generators.
 
-    The APIBasedGeneratorBase uses a background event loop to run async calls,
+    The RemoteGeneratorBase uses a background event loop to run async calls,
     and provides both async and sync interfaces with concurrency control.
     It manages a background event loop thread to execute asynchronous tasks and uses
     an asyncio Semaphore to limit the maximum number of concurrent API requests.
@@ -29,7 +29,7 @@ class APIBasedGeneratorBase(GeneratorBase):
 
     The subclasses should implement the following methods:
 
-        >>> async def _create_client(self, config: APIBasedGeneratorBaseConfig):
+        >>> async def _create_client(self, config: RemoteGeneratorBaseConfig):
         >>>     # Create and return the async client instance.
         >>>     ...
 
@@ -52,21 +52,25 @@ class APIBasedGeneratorBase(GeneratorBase):
         >>>     ...
     """
 
-    def __init__(self, config: APIBasedGeneratorBaseConfig):
+    def __init__(self, config: RemoteGeneratorBaseConfig):
         self._loop_thread = BackgroundEventLoop()
-        self._semaphore = asyncio.Semaphore(config.max_concurrency)
+        self._semaphore = None
+        self._client_lock = None
         self._client = None  # Will be created lazily
         self._config = config
         return
 
     async def _get_async_client(self):
         """Create client lazily inside background event loop."""
-        if self._client is None:
-            self._client = await self._create_client(self._config)
+        if self._client_lock is None:
+            self._client_lock = asyncio.Lock()
+        async with self._client_lock:
+            if self._client is None:
+                self._client = await self._create_client(self._config)
         return self._client
 
     @abstractmethod
-    async def _create_client(self, config: APIBasedGeneratorBaseConfig):
+    async def _create_client(self, config: RemoteGeneratorBaseConfig):
         """Implemented by subclasses, create and return the async client instance."""
         return
 
@@ -103,14 +107,19 @@ class APIBasedGeneratorBase(GeneratorBase):
                 messages[i] = ChatMessages.from_list(messages[i])
         # Process each chat request with concurrency control
         sample_num = generation_config.sample_num if generation_config else 1
-        async with self._semaphore:
-            client = await self._get_async_client()
-            tasks = [
-                self._async_chat_impl(client, msg, generation_config)
-                for msg in messages
-                for _ in range(sample_num)
-            ]
-            flat_response = await asyncio.gather(*tasks)
+        client = await self._get_async_client()
+
+        if self._semaphore is None:
+            self._semaphore = asyncio.Semaphore(self._config.max_concurrency)
+
+        async def _chat_task(msg: ChatMessages) -> ChatTurn:
+            async with self._semaphore:
+                return await self._async_chat_impl(client, msg, generation_config)
+
+        flat_response = await asyncio.gather(
+            *[_chat_task(msg) for msg in messages for _ in range(sample_num)]
+        )
+
         responses: list[list[ChatTurn]] = [
             flat_response[i * sample_num : (i + 1) * sample_num]
             for i in range(len(messages))
@@ -127,14 +136,21 @@ class APIBasedGeneratorBase(GeneratorBase):
             prefixes = [prefixes]
         # Process each generation request with concurrency control
         sample_num = generation_config.sample_num if generation_config else 1
-        async with self._semaphore:
-            client = await self._get_async_client()
-            tasks = [
-                self._async_generate_impl(client, prefix, generation_config)
-                for prefix in prefixes
-                for _ in range(sample_num)
-            ]
-            flat_response = await asyncio.gather(*tasks)
+        client = await self._get_async_client()
+
+        if self._semaphore is None:
+            self._semaphore = asyncio.Semaphore(self._config.max_concurrency)
+
+        async def _generate_task(prefix: str) -> str:
+            async with self._semaphore:
+                return await self._async_generate_impl(
+                    client, prefix, generation_config
+                )
+
+        flat_response = await asyncio.gather(
+            *[_generate_task(prefix) for prefix in prefixes for _ in range(sample_num)]
+        )
+
         responses: list[list[str]] = [
             flat_response[i * sample_num : (i + 1) * sample_num]
             for i in range(len(prefixes))

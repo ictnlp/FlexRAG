@@ -7,14 +7,14 @@ from openai import AsyncAzureOpenAI, AsyncOpenAI, Omit
 
 from flexrag.common import LOGGER_MANAGER, TIME_METER, configure
 
-from .api_based_encoder import APIBasedEncoder, APIBasedEncoderConfig
 from .encoder_base import ENCODERS
+from .remote_encoder_base import RemoteEncoderBase, RemoteEncoderBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.openai")
 
 
 @configure
-class OpenAIEncoderConfig(APIBasedEncoderConfig):
+class OpenAIEncoderConfig(RemoteEncoderBaseConfig):
     """Configuration for OpenAI Encoder.
 
     :param is_azure: Whether the model is hosted on Azure. Default is False.
@@ -48,7 +48,7 @@ class OpenAIEncoderConfig(APIBasedEncoderConfig):
 
 
 @ENCODERS("openai", config_class=OpenAIEncoderConfig)
-class OpenAIEncoder(APIBasedEncoder):
+class OpenAIEncoder(RemoteEncoderBase):
     async def _create_client(self, config: OpenAIEncoderConfig):
         """Create and return the async OpenAI client."""
         self._model_name = config.model_name

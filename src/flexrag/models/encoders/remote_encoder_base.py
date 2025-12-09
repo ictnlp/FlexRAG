@@ -10,14 +10,14 @@ from .encoder_base import EncoderBase
 
 
 @configure
-class APIBasedEncoderConfig:
+class RemoteEncoderBaseConfig:
     max_concurrency: int = 1
 
 
-class APIBasedEncoder(EncoderBase):
+class RemoteEncoderBase(EncoderBase):
     """Base class for API-based encoders.
 
-    The APIBasedEncoder uses a background event loop to run async calls,
+    The RemoteEncoderBase uses a background event loop to run async calls,
     and provides both async and sync interfaces with concurrency control.
     It manages a background event loop thread to execute asynchronous tasks and uses
     an asyncio Semaphore to limit the maximum number of concurrent API requests.
@@ -28,7 +28,7 @@ class APIBasedEncoder(EncoderBase):
 
     The subclasses should implement the following methods:
 
-        >>> async def _create_client(self, config: APIBasedEncoderConfig):
+        >>> async def _create_client(self, config: RemoteEncoderBaseConfig):
         >>>     # Create and return the async client instance.
 
         >>> async def _async_encode_impl(
@@ -40,22 +40,26 @@ class APIBasedEncoder(EncoderBase):
         >>>     ...
     """
 
-    def __init__(self, config: APIBasedEncoderConfig):
+    def __init__(self, config: RemoteEncoderBaseConfig):
         super().__init__()
         self._loop_thread = BackgroundEventLoop()
-        self._semaphore = asyncio.Semaphore(config.max_concurrency)
+        self._semaphore = None
+        self._client_lock = None
         self._client = None
         self._config = config
         return
 
     async def _get_async_client(self):
         """Create client lazily inside background event loop."""
-        if self._client is None:
-            self._client = await self._create_client(self._config)
+        if self._client_lock is None:
+            self._client_lock = asyncio.Lock()
+        async with self._client_lock:
+            if self._client is None:
+                self._client = await self._create_client(self._config)
         return self._client
 
     @abstractmethod
-    async def _create_client(self, config: APIBasedEncoderConfig):
+    async def _create_client(self, config: RemoteEncoderBaseConfig):
         """Implemented by subclasses, create and return the async client instance."""
         return
 
@@ -80,11 +84,16 @@ class APIBasedEncoder(EncoderBase):
             batches = [
                 texts[i : i + batch_size] for i in range(0, len(texts), batch_size)
             ]
+        client = await self._get_async_client()
 
-        async with self._semaphore:
-            client = await self._get_async_client()
-            tasks = [self._async_encode_impl(client, batch) for batch in batches]
-            results = await asyncio.gather(*tasks)
+        if self._semaphore is None:
+            self._semaphore = asyncio.Semaphore(self._config.max_concurrency)
+
+        async def _encode_task(batch: list[str]) -> np.ndarray:
+            async with self._semaphore:
+                return await self._async_encode_impl(client, batch)
+
+        results = await asyncio.gather(*[_encode_task(batch) for batch in batches])
 
         if not results:
             return np.array([])
