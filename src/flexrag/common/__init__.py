@@ -9,7 +9,6 @@ from .persistent_cache import (
     LRUPersistentCache,
     RandomPersistentCache,
 )
-from .template import ChatTemplate, HFTemplate, load_template
 from .timer import TIME_METER
 
 __all__ = [
@@ -34,8 +33,5 @@ __all__ = [
     "LFUPersistentCache",
     "LRUPersistentCache",
     "RandomPersistentCache",
-    "ChatTemplate",
-    "HFTemplate",
-    "load_template",
     "TIME_METER",
 ]
