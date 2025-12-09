@@ -14,9 +14,9 @@ from .qa_dataset_base import KNOWLEDGE_QA_DATASETS, QA_DATASETS, KnowledgeQAData
 class NarrativeQADatasetConfig:
     """Configuration for NarrativeQADataset.
 
-    `NarrativeQA <https://arxiv.org/abs/1712.07040>`_ is a high-quality subset
-    of NarrativeQA focused on literary works, designed to address issues with
-    noisy documents and flawed QA pairs in the original benchmark.
+    `NarrativeQA <https://arxiv.org/abs/1712.07040>`_ is a reading-comprehension
+    dataset that requires answering questions about entire books or movie scripts,
+    emphasizing deep narrative understanding rather than shallow text matching.
 
     :param data_path: The path to the NarrativeQA dataset file. Default is None.
         If not provided, the dataset will be downloaded automatically.
