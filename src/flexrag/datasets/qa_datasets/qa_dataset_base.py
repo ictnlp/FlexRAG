@@ -70,11 +70,15 @@ class QADatasetBase(MappingDataset[QAEvalData]):
     def get_item(self, index: int) -> QAEvalData:
         qid = self._qids[index]
         question = self._queries[qid]
+        if hasattr(self, "_meta_data"):
+            meta_data = self._meta_data.get(qid, {})
+        else:
+            meta_data = {}
         if self._answers is not None:
             answers = self._answers.get(qid)
         else:
             answers = None
-        return QAEvalData(question=question, answers=answers)
+        return QAEvalData(question=question, answers=answers, meta_data=meta_data)
 
     def __len__(self) -> int:
         return len(self._qids)
@@ -113,7 +117,7 @@ class KnowledgeQADatasetBase(RetrievalDatasetBase, QADatasetBase):
             question=ir_data.question,
             contexts=ir_data.contexts,
             hard_negatives=ir_data.hard_negatives,
-            meta_data=ir_data.meta_data,
+            meta_data=ir_data.meta_data | qa_data.meta_data,
             answers=qa_data.answers,
         )
 
