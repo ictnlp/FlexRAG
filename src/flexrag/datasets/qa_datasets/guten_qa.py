@@ -23,10 +23,11 @@ class GutenQADatasetConfig:
     :type data_path: Optional[str]
     :context_mode: How contexts are organized. Default is `lumber_chunk`.
         Available choices are:
-            - `lumber_chunk`: Use pre-segmented chunks from LumberChunker.
-            - `recursive_chunk`: Use recursively chunked text segments.
-            - `semantic_chunk`: Use semantically chunked text segments.
-            - `book`: Use entire books as contexts.
+
+        - `lumber_chunk`: Use pre-segmented chunks from LumberChunker.
+        - `recursive_chunk`: Use recursively chunked text segments.
+        - `semantic_chunk`: Use semantically chunked text segments.
+        - `book`: Use entire books as contexts.
     :type context_mode: str
     """
 
