@@ -48,6 +48,15 @@ class QADatasetBase(MappingDataset[QAEvalData]):
         >>> def _answers(self) -> Mapping[str, list[str]] | None:
         >>>     # Return a mapping from question_id to golden answers list
         >>>     ...
+
+    Subclasses can also optionally implement the `_meta_data` property to provide additional
+    information about the dataset. This information will be retrieved along with the question
+    and answers via the `get_item` method.
+
+        >>> @property
+        >>> def _meta_data(self) -> Mapping[str, dict]:
+        >>>     # Return a mapping from question_id to metadata dictionary
+        >>>     ...
     """
 
     @property
