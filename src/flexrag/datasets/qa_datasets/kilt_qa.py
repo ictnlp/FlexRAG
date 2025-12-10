@@ -52,6 +52,9 @@ class KiltQADatasetConfig:
         TriviaQA dataset needs to be downloaded separately. If not provided, the
         dataset will be downloaded automatically to the cache directory.
     :type triviaqa_path: Optional[str]
+    :param use_full_wiki: Whether to use the full Wikipedia pages instead of the
+        chunked version. Default is False.
+    :type use_full_wiki: bool
     """
 
     data_path: Optional[str] = None
@@ -60,6 +63,7 @@ class KiltQADatasetConfig:
     load_corpus: bool = True
     corpus_path: Optional[str] = None
     triviaqa_path: Optional[str] = None
+    use_full_wiki: bool = False
 
 
 CORPUS_URL = "http://dl.fbaipublicfiles.com/KILT/kilt_knowledgesource.json"
@@ -71,6 +75,7 @@ class KiltQADataset(KnowledgeQADatasetBase):
     def __init__(self, config: KiltQADatasetConfig):
         self._subset = config.subset
         self._split = config.split
+        self._full_wiki = config.use_full_wiki
         # download the kilt dataset if not exists
         if config.data_path is None:
             data_dir = FLEXRAG_CACHE_DIR / "datasets" / "kilt"
@@ -92,7 +97,9 @@ class KiltQADataset(KnowledgeQADatasetBase):
                 corpus_path = data_dir / "kilt_knowledgesource.json"
             if not corpus_path.exists():
                 download(CORPUS_URL, corpus_path)
-            self._context_data = self._load_corpus(corpus_path)
+            self._context_data = self._load_corpus(
+                corpus_path, full_wiki=self._full_wiki
+            )
         else:
             self._context_data = {}
 
@@ -157,7 +164,10 @@ class KiltQADataset(KnowledgeQADatasetBase):
                 for p in ans["provenance"]:
                     wikipedia_id = p["wikipedia_id"]
                     chunk_id = str(p["start_paragraph_id"])
-                    context_id = f"{wikipedia_id}_{chunk_id}"
+                    if self._full_wiki:
+                        context_id = wikipedia_id
+                    else:
+                        context_id = f"{wikipedia_id}_{chunk_id}"
                     qrels[context_id] = 1.0
                     meta["provenance"].append(
                         {
@@ -177,7 +187,7 @@ class KiltQADataset(KnowledgeQADatasetBase):
         return
 
     def _load_corpus(
-        self, corpus_path: Path, load_meta: bool = False
+        self, corpus_path: Path, load_meta: bool = False, full_wiki: bool = False
     ) -> dict[str, Context]:
         logger.info("Loading KILT corpus...")
         wiki_data = {}
@@ -194,19 +204,31 @@ class KiltQADataset(KnowledgeQADatasetBase):
                 if load_meta
                 else {}
             )
-            for chunk_id, chunk in enumerate(document["text"]):
-                context_id = f"{wikipedia_id}_{chunk_id}"
-                # PERFORMANCE NOTE: pydantic model instantiation is slow here
+            if full_wiki:
                 context = Context(
-                    context_id=context_id,
+                    context_id=wikipedia_id,
                     data={
-                        "text": chunk,
+                        "text": "".join(document["text"]),
                         "title": document["wikipedia_title"],
                     },
                     source="wikipedia",
                     meta_data=meta_data,
                 )
-                wiki_data[context_id] = context
+                wiki_data[wikipedia_id] = context
+            else:
+                for chunk_id, chunk in enumerate(document["text"]):
+                    context_id = f"{wikipedia_id}_{chunk_id}"
+                    # PERFORMANCE NOTE: pydantic model instantiation is slow here
+                    context = Context(
+                        context_id=context_id,
+                        data={
+                            "text": chunk,
+                            "title": document["wikipedia_title"],
+                        },
+                        source="wikipedia",
+                        meta_data=meta_data,
+                    )
+                    wiki_data[context_id] = context
         logger.info(f"Loaded {len(wiki_data)} contexts from KILT corpus.")
         return wiki_data
 
