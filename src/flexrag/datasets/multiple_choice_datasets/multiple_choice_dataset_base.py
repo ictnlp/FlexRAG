@@ -53,6 +53,15 @@ class MultipleChoiceDatasetBase(MappingDataset[MultipleChoiceEvalData]):
         >>> def _answers(self) -> Mapping[str, list[int]] | None:
         >>>     # Return a mapping from question_id to list of golden answer indices
         >>>     ...
+
+    Subclasses can also optionally implement the `_meta_data` property to provide additional
+    information about the dataset. This information will be retrieved along with the question
+    and answers via the `get_item` method.
+
+        >>> @property
+        >>> def _meta_data(self) -> Mapping[str, dict]:
+        >>>     # Return a mapping from question_id to metadata dictionary
+        >>>     ...
     """
 
     @property
@@ -88,10 +97,15 @@ class MultipleChoiceDatasetBase(MappingDataset[MultipleChoiceEvalData]):
             answers = self._answers.get(qid)
         else:
             answers = None
+        if hasattr(self, "_meta_data"):
+            meta_data = self._meta_data.get(qid, {})
+        else:
+            meta_data = {}
         return MultipleChoiceEvalData(
             question=question,
             choices=choices,
             answers=answers,
+            meta_data=meta_data,
         )
 
 
@@ -133,7 +147,7 @@ class KnowledgeMultipleChoiceDatasetBase(
             answers=mc_data.answers,
             contexts=ir_data.contexts,
             hard_negatives=ir_data.hard_negatives,
-            meta_data=ir_data.meta_data,
+            meta_data=ir_data.meta_data | mc_data.meta_data,
         )
 
 
