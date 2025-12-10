@@ -2,6 +2,7 @@ from .crud_qa import CRUDQADataset, CRUDQADatasetConfig
 from .guten_qa import GutenQADataset, GutenQADatasetConfig
 from .kilt_qa import KiltQADataset, KiltQADatasetConfig
 from .literary_qa import LiteraryQADataset, LiteraryQADatasetConfig
+from .multihop_rag import MultihopRAGDataset, MultihopRAGDatasetConfig
 from .narrative_qa import NarrativeQADataset, NarrativeQADatasetConfig
 from .qa_dataset_base import (
     KNOWLEDGE_QA_DATASETS,
@@ -26,6 +27,8 @@ __all__ = [
     "KiltQADatasetConfig",
     "LiteraryQADataset",
     "LiteraryQADatasetConfig",
+    "MultihopRAGDataset",
+    "MultihopRAGDatasetConfig",
     "NarrativeQADataset",
     "NarrativeQADatasetConfig",
     "KNOWLEDGE_QA_DATASETS",
