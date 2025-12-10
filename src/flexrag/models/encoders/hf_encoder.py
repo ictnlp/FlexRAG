@@ -67,7 +67,6 @@ class HFEncoderConfig(HFModelConfig):
 @ENCODERS("hf", config_class=HFEncoderConfig)
 class HFEncoder(EncoderBase):
     def __init__(self, cfg: HFEncoderConfig):
-        super().__init__(cfg)
         # load model
         self.model, self.tokenizer = load_hf_model(
             model_path=cfg.model_path,

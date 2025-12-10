@@ -47,7 +47,6 @@ class SentenceTransformerEncoderConfig:
 @ENCODERS("sentence_transformer", config_class=SentenceTransformerEncoderConfig)
 class SentenceTransformerEncoder(EncoderBase):
     def __init__(self, config: SentenceTransformerEncoderConfig) -> None:
-        super().__init__(config)
         from sentence_transformers import SentenceTransformer
 
         self.devices = config.device_id
