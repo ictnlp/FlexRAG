@@ -1,4 +1,3 @@
-import asyncio
 from typing import Annotated, Optional
 
 import PIL
