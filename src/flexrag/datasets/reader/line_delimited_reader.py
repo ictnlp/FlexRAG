@@ -1,5 +1,4 @@
 import csv
-import json
 import re
 import sys
 from collections.abc import Iterable, Iterator
@@ -8,6 +7,8 @@ from functools import cached_property
 from os import PathLike
 from pathlib import Path
 from typing import Literal
+
+import orjson
 
 from .file_mixin import FileReaderMixin
 
@@ -83,13 +84,13 @@ class LineDelimitedReader(Iterable[dict], FileReaderMixin):
             assert end_point > start_point, f"Invalid data range: {self.data_range}"
         match self.format:
             case fmt if fmt in {"jsonl"}:
-                with self._open_file(self.file_path, "r", encoding=self.encoding) as f:
+                with self._open_file(self.file_path, "rb") as f:
                     for i, line in enumerate(f):
                         if i < start_point:
                             continue
                         if (end_point > 0) and (i >= end_point):
                             break
-                        yield json.loads(line)
+                        yield orjson.loads(line)
             case fmt if fmt in {"tsv", "csv"}:
                 if self.titles is not None and len(self.titles) > 0:
                     title = self.titles
@@ -153,9 +154,9 @@ class LineDelimitedReader(Iterable[dict], FileReaderMixin):
                     continue
                 line = line.strip()
                 try:
-                    json.loads(line)
+                    orjson.loads(line)
                     return "jsonl"
-                except json.JSONDecodeError:
+                except orjson.JSONDecodeError:
                     pass
                 if "\t" in line:
                     return "tsv"
