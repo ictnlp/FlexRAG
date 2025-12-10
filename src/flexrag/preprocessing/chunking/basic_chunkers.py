@@ -228,20 +228,23 @@ class RecursiveChunker(ChunkerBase):
             chunks = [s["text"] for s in self.splitter[level].split(text)]
             new_chunks = []
             chunk = ""
+            chunk_token_count = 0
             for chunk_ in chunks:
                 token_count_ = len(self.tokenizer.tokenize(chunk_))
-                merged_count = len(self.tokenizer.tokenize(chunk + chunk_))
-                if merged_count <= self.chunk_size:
+                if chunk_token_count + token_count_ <= self.chunk_size:
                     chunk += chunk_
+                    chunk_token_count += token_count_
                 elif token_count_ <= self.chunk_size:
                     if chunk:
                         new_chunks.append(chunk)
                     chunk = chunk_
+                    chunk_token_count = token_count_
                 else:
                     if chunk:
                         new_chunks.append(chunk)
                     new_chunks.extend(self._recursive_chunk(chunk_, level + 1))
                     chunk = ""
+                    chunk_token_count = 0
             if chunk:
                 new_chunks.append(chunk)
             return new_chunks
