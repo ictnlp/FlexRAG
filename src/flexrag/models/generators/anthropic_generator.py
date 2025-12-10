@@ -6,7 +6,7 @@ import httpx
 from flexrag.common import TIME_METER, ChatMessages, ChatTurn, configure
 from flexrag.common.base64_utils import file_to_base64, image_to_base64
 
-from .generator_base import GenerationConfig
+from .generator_base import GENERATORS, GenerationConfig
 from .remote_generator_base import RemoteGeneratorBase, RemoteGeneratorBaseConfig
 
 
@@ -32,6 +32,7 @@ class AnthropicGeneratorConfig(RemoteGeneratorBaseConfig):
     proxy: Optional[str] = None
 
 
+@GENERATORS("anthropic", config_class=AnthropicGeneratorConfig)
 class AnthropicGenerator(RemoteGeneratorBase):
     async def _create_client(self, config: AnthropicGeneratorConfig):
         """Create and return the async Anthropic client."""

@@ -3,7 +3,7 @@ from typing import Optional
 from flexrag.common import TIME_METER, ChatMessages, ChatTurn, configure
 from flexrag.common.base64_utils import file_to_base64, image_to_base64, url_to_base64
 
-from .generator_base import GenerationConfig
+from .generator_base import GENERATORS, GenerationConfig
 from .remote_generator_base import RemoteGeneratorBase, RemoteGeneratorBaseConfig
 
 
@@ -25,6 +25,7 @@ class OllamaGeneratorConfig(RemoteGeneratorBaseConfig):
     verbose: bool = False
 
 
+@GENERATORS("ollama", config_class=OllamaGeneratorConfig)
 class OllamaGenerator(RemoteGeneratorBase):
     async def _create_client(self, config: OllamaGeneratorConfig):
         from ollama import AsyncClient

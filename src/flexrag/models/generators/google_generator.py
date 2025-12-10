@@ -6,7 +6,7 @@ import httpx
 
 from flexrag.common import TIME_METER, ChatMessages, ChatTurn, configure
 
-from .generator_base import GenerationConfig
+from .generator_base import GENERATORS, GenerationConfig
 from .remote_generator_base import RemoteGeneratorBase, RemoteGeneratorBaseConfig
 
 
@@ -35,6 +35,7 @@ class GoogleGeneratorConfig(RemoteGeneratorBaseConfig):
     proxy: Optional[str] = None
 
 
+@GENERATORS("google", config_class=GoogleGeneratorConfig)
 class GoogleGenerator(RemoteGeneratorBase):
     async def _create_client(self, config: GoogleGeneratorConfig):
         from google import genai
