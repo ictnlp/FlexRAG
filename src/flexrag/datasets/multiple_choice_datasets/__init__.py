@@ -1,3 +1,4 @@
+from .long_bench import LongBenchMCDataset, LongBenchMCDatasetConfig
 from .multiple_choice_dataset_base import (
     KNOWLEDGE_MULTIPLE_CHOICE_DATASETS,
     MULTIPLE_CHOICE_DATASETS,
@@ -14,6 +15,8 @@ MultipleChoiceDatasetConfig = MULTIPLE_CHOICE_DATASETS.make_config()
 
 
 __all__ = [
+    "LongBenchMCDataset",
+    "LongBenchMCDatasetConfig",
     "KNOWLEDGE_MULTIPLE_CHOICE_DATASETS",
     "MULTIPLE_CHOICE_DATASETS",
     "KnowledgeMultipleChoiceData",
