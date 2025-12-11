@@ -1,4 +1,3 @@
-from .attribute_qa import AttributedQADataset, AttributedQADatasetConfig
 from .crud_qa import CRUDQADataset, CRUDQADatasetConfig
 from .guten_qa import GutenQADataset, GutenQADatasetConfig
 from .kilt_qa import KiltQADataset, KiltQADatasetConfig
@@ -20,8 +19,6 @@ QADatasetConfig = QA_DATASETS.make_config()
 
 
 __all__ = [
-    "AttributedQADataset",
-    "AttributedQADatasetConfig",
     "CRUDQADataset",
     "CRUDQADatasetConfig",
     "GutenQADataset",
