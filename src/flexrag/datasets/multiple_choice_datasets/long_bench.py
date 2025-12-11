@@ -16,9 +16,9 @@ from .multiple_choice_dataset_base import (
 
 @configure
 class LongBenchMCDatasetConfig:
-    """Configuration for LongBenchMultipleChoiceDataset.
+    """Configuration for LongBenchMCDataset.
 
-    `LongBench <https://arxiv.org/abs/2412.15204>`_ is a benchmark designed to evaluate
+    `LongBench <https://arxiv.org/abs/2308.14508>`_ is a benchmark designed to evaluate
     the long-context understanding capabilities of large language models (LLMs).
     It features tasks that require processing and reasoning over extended contexts,
     pushing the boundaries of LLMs' abilities in handling long documents.
