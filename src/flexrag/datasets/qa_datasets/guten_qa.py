@@ -142,6 +142,7 @@ class GutenQADataset(KnowledgeQADatasetBase):
         self._queries_data = {}
         self._answers_data = {}
         self._qrels_data = {}
+        self._meta_data = {}
         qa_pairs = pd.read_parquet(qa_path)
         for idx, row in qa_pairs.iterrows():
             if self._context_mode == "book":
@@ -152,6 +153,9 @@ class GutenQADataset(KnowledgeQADatasetBase):
             self._queries_data[query_id] = row["Question"]
             self._answers_data[query_id] = [row["Answer"]]
             self._qrels_data[query_id] = {ctx_id: 1.0}
+            self._meta_data[query_id] = {
+                "Chunk Must Contain": row["Chunk Must Contain"]
+            }
         return
 
     @property
