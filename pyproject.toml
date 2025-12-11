@@ -30,7 +30,7 @@ dependencies = [
     "omegaconf>=2.3.0",
     "pillow",
     "colorama",
-    "torch==2.8.0",
+    "torch==2.9.0",
     "pandas",
     "sentencepiece",
     "orjson",
@@ -72,7 +72,7 @@ dependencies = [
     "pytest-playwright",
     "markitdown",
     # gui
-    "gradio>=5.8.0",
+    "gradio>=6.1.0",
     # chunking
     "regex",
     "nltk",
