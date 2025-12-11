@@ -21,7 +21,7 @@ ext_modules = [
 
 def get_version() -> str:
     with open(
-        Path("src", "flexrag", "utils", "default_vars.py"), encoding="utf-8"
+        Path("src", "flexrag", "common", "default_vars.py"), encoding="utf-8"
     ) as f:
         file_content = f.read()
         pattern = r"{}\W*=\W*\"([^\"]+)\"".format("__VERSION__")
