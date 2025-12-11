@@ -40,7 +40,7 @@ class AnthropicGenerator(RemoteGeneratorBase):
 
         self._model_name = config.model_name
         if config.proxy is not None:
-            httpx_client = httpx.Client(proxies=config.proxy)
+            httpx_client = httpx.AsyncClient(proxies=config.proxy)
         else:
             httpx_client = None
         return AsyncAnthropic(

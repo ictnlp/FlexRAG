@@ -60,7 +60,7 @@ class CohereEncoder(RemoteEncoderBase):
         self._input_type = config.input_type
 
         if config.proxy is not None:
-            httpx_client = httpx.Client(proxies=config.proxy)
+            httpx_client = httpx.AsyncClient(proxies=config.proxy)
         else:
             httpx_client = None
         return AsyncClientV2(

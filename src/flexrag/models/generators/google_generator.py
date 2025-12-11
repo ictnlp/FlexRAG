@@ -43,7 +43,7 @@ class GoogleGenerator(RemoteGeneratorBase):
         # initialize the client
         self._model_name = config.model_name
         if config.proxy is not None:
-            client = httpx.Client(proxies=config.proxy)
+            client = httpx.AsyncClient(proxies=config.proxy)
         else:
             client = None
         return genai.Client(
@@ -51,7 +51,7 @@ class GoogleGenerator(RemoteGeneratorBase):
             vertexai=config.vertexai,
             http_options={
                 "base_url": config.base_url,
-                "httpx_client": client,
+                "httpx_async_client": client,
             },
         ).aio
 

@@ -33,6 +33,8 @@ class OpenAIGeneratorConfig(RemoteGeneratorBaseConfig):
     :type api_key: str
     :param api_version: The API version to use. Default is "2024-07-01-preview".
     :type api_version: str
+    :param timeout: The timeout for the HTTP client in seconds. Default is None.
+    :type timeout: Optional[float]
     :param proxy: The proxy to use for the HTTP client. Default is None.
     :type proxy: Optional[str]
     :param max_concurrency: The maximum number of concurrent generation requests. Default is 1.
@@ -44,6 +46,7 @@ class OpenAIGeneratorConfig(RemoteGeneratorBaseConfig):
     base_url: Optional[str] = None
     api_key: str = os.environ.get("OPENAI_API_KEY", "EMPTY")
     api_version: str = "2024-07-01-preview"
+    timeout: Optional[float] = None
     proxy: Optional[str] = None
 
 
@@ -55,7 +58,7 @@ class OpenAIGenerator(RemoteGeneratorBase):
         # Run inside background event loop
         self._model_name = config.model_name
         if config.proxy is not None:
-            httpx_client = httpx.Client(proxies=config.proxy)
+            httpx_client = httpx.AsyncClient(proxies=config.proxy)
         else:
             httpx_client = None
         if config.is_azure:
@@ -64,12 +67,14 @@ class OpenAIGenerator(RemoteGeneratorBase):
                 api_version=config.api_version,
                 azure_endpoint=config.base_url,
                 http_client=httpx_client,
+                timeout=config.timeout,
             )
         else:
             return AsyncOpenAI(
                 base_url=config.base_url,
                 api_key=config.api_key,
                 http_client=httpx_client,
+                timeout=config.timeout,
             )
 
     @TIME_METER("generator.openai_generate")

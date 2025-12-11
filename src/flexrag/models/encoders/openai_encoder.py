@@ -54,7 +54,7 @@ class OpenAIEncoder(RemoteEncoderBase):
         self._model_name = config.model_name
         self._dimension = config.embedding_size
         if config.proxy is not None:
-            httpx_client = httpx.Client(proxies=config.proxy)
+            httpx_client = httpx.AsyncClient(proxies=config.proxy)
         else:
             httpx_client = None
         if config.is_azure:
