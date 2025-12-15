@@ -33,8 +33,8 @@ class MSMARCODatasetConfig:
             - msmarco_document_ranking_v2
 
     :type data_name: str
-    :param subset: The subset of the dataset to load. Required.
-    :type subset: str
+    :param split: The split of the dataset to load. Required.
+    :type split: str
     :param data_path: The local path to the dataset.
         If not specified, it will download the dataset to the cache directory.
     :type data_path: str | None
@@ -43,11 +43,11 @@ class MSMARCODatasetConfig:
         If set to True, it will take more time to load the dataset.
     :type load_corpus: bool
 
-    For example, you can use the following code to load the train subset of the msmarco_passage_ranking_v1:
+    For example, you can use the following code to load the train split of the msmarco_passage_ranking_v1:
 
         >>> config = MSMARCOConfig(
         ...     data_name="msmarco_passage_ranking_v1",
-        ...     subset="train",
+        ...     split="train",
         ...     load_corpus=True,
         ... )
         >>> dataset = MSMARCODataset(config)
@@ -57,7 +57,7 @@ class MSMARCODatasetConfig:
     """
 
     data_name: str
-    subset: str
+    split: str
     data_path: str | None = None
     load_corpus: bool = False
 
@@ -70,19 +70,19 @@ class MSMARCODataset(RetrievalDatasetBase):
         match config.data_name:
             case "msmarco_passage_ranking_v1":
                 loader = _MSMARCOPassageRankingV1Loader(
-                    subset=config.subset, data_path=config.data_path
+                    split=config.split, data_path=config.data_path
                 )
             case "msmarco_document_ranking_v1":
                 loader = _MSMARCODocumentRankingV1Loader(
-                    subset=config.subset, data_path=config.data_path
+                    split=config.split, data_path=config.data_path
                 )
             case "msmarco_passage_ranking_v2":
                 loader = _MSMARCOPassageRankingV2Loader(
-                    subset=config.subset, data_path=config.data_path
+                    split=config.split, data_path=config.data_path
                 )
             case "msmarco_document_ranking_v2":
                 loader = _MSMARCODocumentRankingV2Loader(
-                    subset=config.subset, data_path=config.data_path
+                    split=config.split, data_path=config.data_path
                 )
             case _:
                 raise ValueError(f"Unsupported data_name: {config.data_name}")
@@ -173,9 +173,9 @@ RESOURCES = {
 class _MSMARCOPassageRankingV1Loader:
     """Dataset for loading MSMARCO Passage Ranking V1 Dataset."""
 
-    def __init__(self, subset: Literal["train", "dev"], data_path: str = None) -> None:
+    def __init__(self, split: Literal["train", "dev"], data_path: str = None) -> None:
         self.data_path = data_path
-        self.subset = subset
+        self.split = split
         return
 
     def load_corpus(
@@ -218,17 +218,17 @@ class _MSMARCOPassageRankingV1Loader:
     def load_queries(self) -> dict[str, str]:
         """Load the queries from the given path."""
         if self.data_path is not None:
-            queries_path = Path(self.data_path, f"queries.{self.subset}.tsv")
+            queries_path = Path(self.data_path, f"queries.{self.split}.tsv")
         else:
             queries_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_passage_ranking_v1",
-                f"queries.{self.subset}.tsv",
+                f"queries.{self.split}.tsv",
             )
         # download the queries if not exists
         if not queries_path.exists():
-            url = RESOURCES["msmarco_passage_ranking_v1"][self.subset]["queries"]
+            url = RESOURCES["msmarco_passage_ranking_v1"][self.split]["queries"]
             logger.info(f"Downloading queries from {url} to {queries_path.parent}.")
             download_and_extract(url, queries_path.parent)
         # load the queries
@@ -250,17 +250,17 @@ class _MSMARCOPassageRankingV1Loader:
         :rtype: dict[str, dict[str, float]]
         """
         if self.data_path is not None:
-            qrels_path = Path(self.data_path, f"qrels.{self.subset}.tsv")
+            qrels_path = Path(self.data_path, f"qrels.{self.split}.tsv")
         else:
             qrels_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_passage_ranking_v1",
-                f"qrels.{self.subset}.tsv",
+                f"qrels.{self.split}.tsv",
             )
         # download the qrels if not exists
         if not qrels_path.exists():
-            url = RESOURCES["msmarco_passage_ranking_v1"][self.subset]["qrels"]
+            url = RESOURCES["msmarco_passage_ranking_v1"][self.split]["qrels"]
             logger.info(f"Downloading qrels from {url} to {qrels_path}.")
             download(url, qrels_path)
         # load the qrels
@@ -280,9 +280,9 @@ class _MSMARCOPassageRankingV1Loader:
 class _MSMARCODocumentRankingV1Loader:
     """Dataset for loading MSMARCO Document Ranking V1 Dataset."""
 
-    def __init__(self, subset: Literal["train", "dev"], data_path: str = None) -> None:
+    def __init__(self, split: Literal["train", "dev"], data_path: str = None) -> None:
         self.data_path = data_path
-        self.subset = subset
+        self.split = split
         return
 
     def load_corpus(
@@ -327,18 +327,18 @@ class _MSMARCODocumentRankingV1Loader:
         # msmarco-doctrain-queries.tsv
         if self.data_path is not None:
             queries_path = Path(
-                self.data_path, f"msmarco-doc{self.subset}-queries.tsv.gz"
+                self.data_path, f"msmarco-doc{self.split}-queries.tsv.gz"
             )
         else:
             queries_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_document_ranking_v1",
-                f"msmarco-doc{self.subset}-queries.tsv.gz",
+                f"msmarco-doc{self.split}-queries.tsv.gz",
             )
         # download the queries if not exists
         if not queries_path.exists():
-            url = RESOURCES["msmarco_document_ranking_v1"][self.subset]["queries"]
+            url = RESOURCES["msmarco_document_ranking_v1"][self.split]["queries"]
             logger.info(f"Downloading queries from {url} to {queries_path}.")
             download(url, queries_path)
         # load the queries
@@ -360,17 +360,17 @@ class _MSMARCODocumentRankingV1Loader:
         :rtype: dict[str, dict[str, float]]
         """
         if self.data_path is not None:
-            qrels_path = Path(self.data_path, f"msmarco-doc{self.subset}-qrels.tsv.gz")
+            qrels_path = Path(self.data_path, f"msmarco-doc{self.split}-qrels.tsv.gz")
         else:
             qrels_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_document_ranking_v1",
-                f"msmarco-doc{self.subset}-qrels.tsv.gz",
+                f"msmarco-doc{self.split}-qrels.tsv.gz",
             )
         # download the qrels if not exists
         if not qrels_path.exists():
-            url = RESOURCES["msmarco_document_ranking_v1"][self.subset]["qrels"]
+            url = RESOURCES["msmarco_document_ranking_v1"][self.split]["qrels"]
             logger.info(f"Downloading qrels from {url} to {qrels_path}.")
             download(url, qrels_path)
         # load the qrels
@@ -391,10 +391,10 @@ class _MSMARCOPassageRankingV2Loader:
     """Dataset for loading MSMARCO Passage Ranking V2 Dataset."""
 
     def __init__(
-        self, subset: Literal["train", "dev1", "dev2"], data_path: str = None
+        self, split: Literal["train", "dev1", "dev2"], data_path: str = None
     ) -> None:
         self.data_path = data_path
-        self.subset = subset
+        self.split = split
         return
 
     def load_corpus(
@@ -435,17 +435,17 @@ class _MSMARCOPassageRankingV2Loader:
     def load_queries(self) -> dict[str, str]:
         """Load the queries from the given path."""
         if self.data_path is not None:
-            queries_path = Path(self.data_path, f"passv2_{self.subset}_queries.tsv")
+            queries_path = Path(self.data_path, f"passv2_{self.split}_queries.tsv")
         else:
             queries_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_passage_ranking_v2",
-                f"passv2_{self.subset}_queries.tsv",
+                f"passv2_{self.split}_queries.tsv",
             )
         # download the queries if not exists
         if not queries_path.exists():
-            url = RESOURCES["msmarco_passage_ranking_v2"][self.subset]["queries"]
+            url = RESOURCES["msmarco_passage_ranking_v2"][self.split]["queries"]
             logger.info(f"Downloading queries from {url} to {queries_path}.")
             download(url, queries_path)
         # load the queries
@@ -467,17 +467,17 @@ class _MSMARCOPassageRankingV2Loader:
         :rtype: dict[str, dict[str, float]]
         """
         if self.data_path is not None:
-            qrels_path = Path(self.data_path, f"passv2_{self.subset}_qrels.tsv")
+            qrels_path = Path(self.data_path, f"passv2_{self.split}_qrels.tsv")
         else:
             qrels_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_passage_ranking_v2",
-                f"passv2_{self.subset}_qrels.tsv",
+                f"passv2_{self.split}_qrels.tsv",
             )
         # download the qrels if not exists
         if not qrels_path.exists():
-            url = RESOURCES["msmarco_passage_ranking_v2"][self.subset]["qrels"]
+            url = RESOURCES["msmarco_passage_ranking_v2"][self.split]["qrels"]
             logger.info(f"Downloading qrels from {url} to {qrels_path}.")
             download(url, qrels_path)
         # load the qrels
@@ -498,10 +498,10 @@ class _MSMARCODocumentRankingV2Loader:
     """Dataset for loading MSMARCO Document Ranking V2 Dataset."""
 
     def __init__(
-        self, subset: Literal["train", "dev1", "dev2"], data_path: str = None
+        self, split: Literal["train", "dev1", "dev2"], data_path: str = None
     ) -> None:
         self.data_path = data_path
-        self.subset = subset
+        self.split = split
         return
 
     def load_corpus(
@@ -542,17 +542,17 @@ class _MSMARCODocumentRankingV2Loader:
     def load_queries(self) -> dict[str, str]:
         """Load the queries from the given path."""
         if self.data_path is not None:
-            queries_path = Path(self.data_path, f"docv2_{self.subset}_queries.tsv")
+            queries_path = Path(self.data_path, f"docv2_{self.split}_queries.tsv")
         else:
             queries_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_document_ranking_v2",
-                f"docv2_{self.subset}_queries.tsv",
+                f"docv2_{self.split}_queries.tsv",
             )
         # download the queries if not exists
         if not queries_path.exists():
-            url = RESOURCES["msmarco_document_ranking_v2"][self.subset]["queries"]
+            url = RESOURCES["msmarco_document_ranking_v2"][self.split]["queries"]
             logger.info(f"Downloading queries from {url} to {queries_path}.")
             download(url, queries_path)
         # load the queries
@@ -574,17 +574,17 @@ class _MSMARCODocumentRankingV2Loader:
         :rtype: dict[str, dict[str, float]]
         """
         if self.data_path is not None:
-            qrels_path = Path(self.data_path, f"docv2_{self.subset}_qrels.tsv")
+            qrels_path = Path(self.data_path, f"docv2_{self.split}_qrels.tsv")
         else:
             qrels_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_document_ranking_v2",
-                f"docv2_{self.subset}_qrels.tsv",
+                f"docv2_{self.split}_qrels.tsv",
             )
         # download the qrels if not exists
         if not qrels_path.exists():
-            url = RESOURCES["msmarco_document_ranking_v2"][self.subset]["qrels"]
+            url = RESOURCES["msmarco_document_ranking_v2"][self.split]["qrels"]
             logger.info(f"Downloading qrels from {url} to {qrels_path}.")
             download(url, qrels_path)
         # load the qrels

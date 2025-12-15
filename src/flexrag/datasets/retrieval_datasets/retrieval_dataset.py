@@ -16,6 +16,8 @@ class IREvalData:
 
     :param question: The question for evaluation. Required.
     :type question: str
+    :param question_id: The unique identifier for the question. Default: None.
+    :type question_id: Optional[str]
     :param contexts: The contexts related to the question. Default: None.
     :type contexts: Optional[list[Context]]
     :param hard_negatives: The hard negatives related to the question. Default: None.
@@ -25,6 +27,7 @@ class IREvalData:
     """
 
     question: str
+    question_id: Optional[str] = None
     contexts: Optional[list[Context]] = None
     hard_negatives: Optional[list[Context]] = None
     meta_data: dict = field(default_factory=dict)
@@ -179,9 +182,9 @@ class RetrievalDatasetBase(MappingDataset[IREvalData]):
         ]
         return IREvalData(
             question=query,
+            question_id=qid,
             contexts=rels,
             hard_negatives=negs,
-            meta_data={"query-id": qid},
         )
 
 

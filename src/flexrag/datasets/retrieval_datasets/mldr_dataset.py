@@ -18,9 +18,9 @@ class MultiLongDocRetrievalDatasetConfig:
     """Configuration for loading `MLDR <https://huggingface.co/datasets/Shitao/MLDR>`_ Retrieval Dataset.
     The __getitem__ method will return `IREvalData` objects.
 
-    :param subset: The subset of the dataset to load. Required.
+    :param split: The split of the dataset to load. Required.
         Available choices are: `train`, `dev`, `test`.
-    :type subset: str
+    :type split: str
     :param lang: The language of the dataset. Default is `en`.
         Available choices are:
 
@@ -44,7 +44,7 @@ class MultiLongDocRetrievalDatasetConfig:
     :type data_path: str | None
     """
 
-    subset: str
+    split: str
     lang: str = "en"
     data_path: str | None = None
 
@@ -75,21 +75,19 @@ class MultiLongDocRetrievalDataset(RetrievalDatasetBase):
                 source="mldr-v1.0",
             )
 
-        # load the subset
-        subset_path = (
-            data_path / f"mldr-v1.0-{config.lang}" / f"{config.subset}.jsonl.gz"
-        )
-        self._subset = list(LineDelimitedReader(subset_path))
+        # load the split
+        split_path = data_path / f"mldr-v1.0-{config.lang}" / f"{config.split}.jsonl.gz"
+        self._split = list(LineDelimitedReader(split_path))
 
-        # for training subset, we need to add documents from self._subset to the corpus
-        for item in self._subset:
+        # for training split, we need to add documents from self._split to the corpus
+        for item in self._split:
             for p in item["positive_passages"]:
                 docid = str(p["docid"])
                 if docid not in self._context_data:
                     self._context_data[docid] = Context(
                         context_id=docid,
                         data=p,
-                        source="mldr_subset",
+                        source="mldr",
                     )
             for n in item["negative_passages"]:
                 docid = str(n["docid"])
@@ -97,15 +95,15 @@ class MultiLongDocRetrievalDataset(RetrievalDatasetBase):
                     self._context_data[docid] = Context(
                         context_id=docid,
                         data=n,
-                        source="mldr_subset",
+                        source="mldr",
                     )
 
         # set up queries and qrels
         self._queries_data = {}
-        for item in self._subset:
+        for item in self._split:
             self._queries_data[item["query_id"]] = item["query"]
         self._qrels_data = defaultdict(dict)
-        for item in self._subset:
+        for item in self._split:
             query_id = item["query_id"]
             for p in item["positive_passages"]:
                 self._qrels_data[query_id][p["docid"]] = 1.0
