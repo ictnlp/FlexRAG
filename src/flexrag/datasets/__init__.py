@@ -1,5 +1,5 @@
 # datasets
-from .corpus_dataset import IterableCorpus, IterableCorpusConfig
+from .corpora import IterableCorpus, MappingCorpus
 from .dataset import ChainDataset, ConcatDataset, IterableDataset, MappingDataset
 from .hf_dataset import HFDataset, HFDatasetConfig
 from .qa_dataset import (
@@ -29,8 +29,8 @@ __all__ = [
     "ConcatDataset",
     "HFDataset",
     "HFDatasetConfig",
-    "IterableCorpusConfig",
     "IterableCorpus",
+    "MappingCorpus",
     "QA_DATASETS",
     "FlashQADataset",
     "FlashQADatasetConfig",

@@ -45,7 +45,7 @@ class KiltQADatasetConfig:
     :param load_corpus: Whether to load the full corpus for retrieval. Default is True
     :type load_corpus: bool
     :param corpus_path: The path to the corpus file. Default is None.
-        If not provided, the corpus will be downloaded automatically to the `data_path`.
+        If not provided, the corpus will be downloaded automatically.
     :type corpus_path: Optional[str]
     :param triviaqa_path: The path to the TriviaQA dataset file. Default is None.
         As the KILT release does not include the full TriviaQA dataset, the original
@@ -94,7 +94,12 @@ class KiltQADataset(KnowledgeQADatasetBase):
             if config.corpus_path is not None:
                 corpus_path = Path(config.corpus_path)
             else:
-                corpus_path = data_dir / "kilt_knowledgesource.json"
+                corpus_path = (
+                    FLEXRAG_CACHE_DIR
+                    / "corpora"
+                    / "enwiki_2019_kilt"
+                    / "kilt_knowledgesource.json"
+                )
             if not corpus_path.exists():
                 download(CORPUS_URL, corpus_path)
             self._context_data = self._load_corpus(
