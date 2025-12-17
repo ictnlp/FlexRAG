@@ -510,3 +510,6 @@ class FlexRetriever(LocalRetriever):
         if not os.path.exists(id_path):
             with open(id_path, "w", encoding="utf-8") as f:
                 f.write(self.__class__.__name__)
+
+    def __getitem__(self, context_id: str) -> dict:
+        return self.database[context_id]

@@ -1,7 +1,7 @@
 import logging
 from typing import Iterable, Optional
 
-from elasticsearch import Elasticsearch
+from elasticsearch import Elasticsearch, NotFoundError
 
 from flexrag.common import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, configure
 from flexrag.common.configure import extract_config
@@ -235,3 +235,14 @@ class ElasticRetriever(EditableRetriever):
             mapping = self.client.indices.get_mapping(index=self.index_name)
             return list(mapping[self.index_name]["mappings"]["properties"].keys())
         return []
+
+    def __getitem__(self, context_id: str) -> Context:
+        try:
+            res = self.client.get(index=self.index_name, id=context_id)
+            return Context(
+                context_id=res["_id"],
+                data=res["_source"],
+                source=res["_index"],
+            )
+        except NotFoundError:
+            raise KeyError(context_id)

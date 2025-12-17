@@ -282,6 +282,17 @@ class EditableRetriever(RetrieverBase):
         """Return the number of documents in the retriever database."""
         return
 
+    @abstractmethod
+    def __getitem__(self, context_id: str) -> Context:
+        """Get the document at the given context ID.
+
+        :param context_id: The context ID of the document.
+        :type context_id: str
+        :return: The document at the given context ID.
+        :rtype: Context
+        """
+        return
+
 
 @configure
 class LocalRetrieverConfig(EditableRetrieverConfig):

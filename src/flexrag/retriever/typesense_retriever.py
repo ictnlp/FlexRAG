@@ -152,6 +152,22 @@ class TypesenseRetriever(EditableRetriever):
                 )
         return retrieved
 
+    def __getitem__(self, context_id: str) -> Context:
+        try:
+            res = (
+                self.client.collections[self.index_name]
+                .documents[context_id]
+                .retrieve()
+            )
+            c_id = res.pop(self.id_field_name)
+            return Context(
+                context_id=c_id,
+                data=res,
+                source=self.index_name,
+            )
+        except self.typesense.exceptions.ObjectNotFound:
+            raise KeyError(context_id)
+
     def clear(self) -> None:
         if self.index_name in self.indices:
             self.client.collections[self.index_name].delete()
