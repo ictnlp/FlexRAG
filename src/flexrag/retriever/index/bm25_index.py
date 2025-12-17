@@ -36,6 +36,8 @@ class BM25IndexConfig(RetrieverIndexBaseConfig):
     :type lang: str
     :param show_progress: Whether to show progress bar during indexing. Default: True.
     :type show_progress: bool
+    :param mmap: Whether to use memory-maps for loading the index. Default: True.
+    :type mmap: bool
     """
 
     method: Annotated[
@@ -66,6 +68,7 @@ class BM25IndexConfig(RetrieverIndexBaseConfig):
     delta: float = 0.5
     lang: str = "english"
     show_progress: bool = True
+    mmap: bool = True
 
 
 @RETRIEVER_INDEX("bm25", config_class=BM25IndexConfig)
@@ -103,7 +106,9 @@ class BM25Index(RetrieverIndexBase):
             if os.path.exists(self.cfg.index_path):
                 logger.info(f"Loading index from {self.cfg.index_path}")
                 try:
-                    self.index = bm25s.BM25.load(self.cfg.index_path, mmap=True)
+                    self.index = bm25s.BM25.load(
+                        self.cfg.index_path, mmap=self.cfg.mmap
+                    )
                 except:
                     raise FileNotFoundError(
                         f"Unable to load index from {self.cfg.index_path}"

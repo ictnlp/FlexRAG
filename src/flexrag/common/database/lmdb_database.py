@@ -1,12 +1,16 @@
 import atexit
+import mmap
 import os
 from collections.abc import Sequence
 
 import lmdb
 import numpy as np
 
+from ..logging import LOGGER_MANAGER
 from .database_base import RetrieverDatabaseBase
 from .serializer import SERIALIZERS, SerializerConfig
+
+logger = LOGGER_MANAGER.get_logger("flexrag.database.lmdb")
 
 
 class LMDBRetrieverDatabase(RetrieverDatabaseBase):
@@ -22,6 +26,7 @@ class LMDBRetrieverDatabase(RetrieverDatabaseBase):
         max_readers: int | None = None,
         writemap: bool | None = None,
         map_async: bool | None = None,
+        force_warmup: bool = False,
     ) -> None:
         super().__init__()
 
@@ -48,6 +53,9 @@ class LMDBRetrieverDatabase(RetrieverDatabaseBase):
 
         # prepare serializer
         self.serializer = SERIALIZERS.load(SerializerConfig(serializer))
+
+        # warmup database
+        self._warmup(force=force_warmup)
         return
 
     def __getitem__(self, idx: str | list[str] | np.ndarray) -> dict | list[dict]:
@@ -129,6 +137,22 @@ class LMDBRetrieverDatabase(RetrieverDatabaseBase):
         current_size = info["map_size"]
         new_size = current_size + increment
         self.database.set_mapsize(new_size)
+        return
+
+    def _warmup(self, force: bool = False) -> None:
+        data_file = os.path.join(self.database_path, "data.mdb")
+        if os.path.exists(data_file):
+            if hasattr(mmap, "MADV_WILLNEED") and not force:
+                with open(data_file, "rb") as f:
+                    fd = f.fileno()
+                    mm = mmap.mmap(fd, 0, access=mmap.ACCESS_READ)
+                    mm.madvise(mmap.MADV_WILLNEED)
+                    mm.close()
+            else:
+                with open(data_file, "rb") as f:
+                    while f.read(64 * 1024 * 1024):
+                        pass
+        logger.info("LMDB database warmup completed.")
         return
 
     @property
