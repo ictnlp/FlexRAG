@@ -6,7 +6,7 @@ from flexrag.common.dataclasses import ChatMessages, RetrievedContext
 from flexrag.context_refine import REFINERS, RefinerConfig
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.ranker import RANKERS, RankerConfig
-from flexrag.retriever import RETRIEVERS, RetrieverConfig
+from flexrag.retrievers import RETRIEVERS, RetrieverConfig
 
 from .assistant import ASSISTANTS, AssistantBase, AssistantResponse
 

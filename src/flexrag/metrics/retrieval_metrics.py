@@ -6,7 +6,7 @@ import pytrec_eval
 
 from flexrag.common import TIME_METER, Choices, configure
 from flexrag.common.dataclasses import Context, RetrievedContext
-from flexrag.preprocessing.text_processor import AnswerSimplifier
+from flexrag.processors.text_processors import AnswerSimplifier
 
 from .metrics_base import METRICS, MetricsBase
 

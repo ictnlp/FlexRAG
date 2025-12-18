@@ -9,7 +9,7 @@ from hydra.core.config_store import ConfigStore
 from pydantic import BaseModel, Field
 
 from flexrag.common import LOGGER_MANAGER, configure, extract_config
-from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
+from flexrag.retrievers import FlexRetriever, FlexRetrieverConfig
 
 app = FastAPI()
 

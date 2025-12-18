@@ -4,7 +4,7 @@ from dataclasses import field
 from pathlib import Path
 from typing import Optional
 
-from flexrag.assistant import ASSISTANTS, AssistantConfig
+from flexrag.assistants import ASSISTANTS, AssistantConfig
 from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
 from flexrag.common.database import json_dump
 from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext

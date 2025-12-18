@@ -3,7 +3,7 @@ from pathlib import Path
 
 from flexrag.datasets import IterableCorpus, IterableCorpusConfig
 from flexrag.models import EncoderConfig, OpenAIEncoderConfig
-from flexrag.retriever import (
+from flexrag.retrievers import (
     EditableRetriever,
     ElasticRetriever,
     ElasticRetrieverConfig,
@@ -12,7 +12,7 @@ from flexrag.retriever import (
     TypesenseRetriever,
     TypesenseRetrieverConfig,
 )
-from flexrag.retriever.index import (
+from flexrag.retrievers.index import (
     BM25IndexConfig,
     FaissIndexConfig,
     MultiFieldIndexConfig,

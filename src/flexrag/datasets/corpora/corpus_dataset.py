@@ -7,7 +7,7 @@ from typing import Iterator, Optional
 
 from flexrag.common import LOGGER_MANAGER
 from flexrag.common.dataclasses import Context
-from flexrag.preprocessing.text_processor import TextProcessPipeline
+from flexrag.processors.text_processors import TextProcessPipeline
 
 from ..dataset import IterableDataset, MappingDataset
 from ..reader import LineDelimitedReader

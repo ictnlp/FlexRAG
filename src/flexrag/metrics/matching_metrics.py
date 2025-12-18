@@ -2,7 +2,7 @@ from abc import abstractmethod
 from collections import Counter
 
 from flexrag.common import TIME_METER, configure
-from flexrag.preprocessing.text_processor import AnswerSimplifier
+from flexrag.processors.text_processors import AnswerSimplifier
 
 from .metrics_base import METRICS, MetricsBase
 

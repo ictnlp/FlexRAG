@@ -14,9 +14,9 @@ from flexrag.common import (
     extract_config,
 )
 from flexrag.common.dataclasses import Context
-from flexrag.preprocessing.chunking import CHUNKERS, ChunkerConfig
-from flexrag.preprocessing.document_parser import DOCUMENTPARSERS, DocumentParserConfig
-from flexrag.preprocessing.text_processor import (
+from flexrag.processors.chunkers import CHUNKERS, ChunkerConfig
+from flexrag.processors.document_parsers import DOCUMENTPARSERS, DocumentParserConfig
+from flexrag.processors.text_processors import (
     TextProcessPipeline,
     TextProcessPipelineConfig,
 )

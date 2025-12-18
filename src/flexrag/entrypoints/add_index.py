@@ -4,8 +4,8 @@ import hydra
 from hydra.core.config_store import ConfigStore
 
 from flexrag.common import configure, extract_config
-from flexrag.retriever import FlexRetriever
-from flexrag.retriever.index import MultiFieldIndexConfig, RetrieverIndexConfig
+from flexrag.retrievers import FlexRetriever
+from flexrag.retrievers.index import MultiFieldIndexConfig, RetrieverIndexConfig
 
 
 @configure

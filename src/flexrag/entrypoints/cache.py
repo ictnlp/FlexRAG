@@ -5,7 +5,7 @@ import hydra
 from hydra.core.config_store import ConfigStore
 
 from flexrag.common import Choices, configure, extract_config
-from flexrag.retriever.retriever_base import RETRIEVAL_CACHE
+from flexrag.retrievers.retriever_base import RETRIEVAL_CACHE
 
 
 @configure

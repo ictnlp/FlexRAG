@@ -19,7 +19,7 @@ from flexrag.common import (
     configure,
 )
 from flexrag.common.dataclasses import Context, RetrievedContext
-from flexrag.preprocessing.text_processor import (
+from flexrag.processors.text_processors import (
     TextProcessPipeline,
     TextProcessPipelineConfig,
 )

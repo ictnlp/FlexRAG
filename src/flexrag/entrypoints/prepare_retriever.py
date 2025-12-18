@@ -6,7 +6,7 @@ from hydra.core.config_store import ConfigStore
 
 from flexrag.common import LOGGER_MANAGER, Choices, configure, extract_config
 from flexrag.datasets import IterableCorpus, IterableCorpusConfig
-from flexrag.retriever import (
+from flexrag.retrievers import (
     ElasticRetriever,
     ElasticRetrieverConfig,
     FlexRetriever,

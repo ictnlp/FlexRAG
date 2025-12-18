@@ -8,7 +8,7 @@ from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
 from flexrag.common.database import json_dump
 from flexrag.datasets import RetrievalDatasetBase
 from flexrag.metrics import Evaluator, EvaluatorConfig
-from flexrag.retriever import RetrieverBase
+from flexrag.retrievers import RetrieverBase
 
 from .tasks import TASKS, TaskBase
 

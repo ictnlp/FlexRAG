@@ -18,7 +18,7 @@ from flexrag.common.database.serializer import json_dump
 from flexrag.common.dataclasses import Context, RetrievedContext
 from flexrag.datasets import MTEBDataset, MTEBDatasetConfig
 from flexrag.metrics import Evaluator, EvaluatorConfig
-from flexrag.retriever import RETRIEVERS
+from flexrag.retrievers import RETRIEVERS
 
 # load user modules before loading config
 for arg in sys.argv:

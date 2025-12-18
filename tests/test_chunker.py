@@ -2,7 +2,7 @@ import re
 
 from flexrag.models import OpenAIEncoderConfig
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
-from flexrag.preprocessing.chunking import (
+from flexrag.processors.chunkers import (
     CharChunker,
     CharChunkerConfig,
     RecursiveChunker,

@@ -1,6 +1,6 @@
 import pytest
 
-from flexrag.assistant import BasicAssistant, BasicAssistantConfig
+from flexrag.assistants import BasicAssistant, BasicAssistantConfig
 from flexrag.models import OpenAIGeneratorConfig
 
 
