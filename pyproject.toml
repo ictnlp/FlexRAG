@@ -1,6 +1,6 @@
 [build-system]
-requires = ["setuptools>=61", "wheel", "pybind11>=2.13"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling", "hatch-vcs"]
+build-backend = "hatchling.build"
 
 [project]
 name = "flexrag"
@@ -19,6 +19,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Scientific/Engineering :: Artificial Intelligence",
 ]
 dynamic = ["version"]
@@ -94,22 +95,17 @@ dev = [
     "rstcheck",
     "doc8",
     "PySocks>=1.7.1",
-    "cibuildwheel",
     "pre-commit",
 ]
 
-[tool.setuptools]
-package-dir = { "" = "src" }
+[tool.hatch.version]
+source = "vcs"
 
-[tool.setuptools.packages.find]
-where = ["src"]
+[tool.hatch.build.hooks.vcs]
+version-file = "src/flexrag/common/_version.py"
 
-[tool.setuptools.package-data]
-"flexrag" = [
-    "ranker/ranker_prompts/*.json",
-    "assistant/assistant_prompts/*.json",
-    "entrypoints/assets/*.png",
-]
+[tool.hatch.build.targets.wheel]
+packages = ["src/flexrag"]
 
 [tool.rstcheck]
 ignore_directives = ["autoclass", "automodule", "autofunction", "autosummary"]

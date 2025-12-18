@@ -16,24 +16,14 @@ sys.path.insert(0, str(pathlib.Path(__file__).parents[2] / "src"))
 os.environ["DISABLE_CACHE"] = "True"  # Disable loading cache for documentation build
 
 
-def get_version() -> str:
-    version_string_path = (
-        pathlib.Path(__file__).parents[2]
-        / "src"
-        / "flexrag"
-        / "utils"
-        / "default_vars.py"
-    )
-    with open(version_string_path, encoding="utf-8") as f:
-        version = re.search(r"__VERSION__ = \"(.*?)\"", f.read()).group(1)
-    return version
+from flexrag.common.default_vars import __VERSION__ as version
 
 
 project = "FlexRAG Documentation"
 html_short_title = "FlexRAG Documentation"
 copyright = "2025, ZhuochengZhang"
 author = "ZhuochengZhang"
-release = get_version()
+release = version
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration

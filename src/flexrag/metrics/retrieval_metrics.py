@@ -10,17 +10,8 @@ from flexrag.preprocessing.text_processor import AnswerSimplifier
 
 from .metrics_base import METRICS, MetricsBase
 
-try:
-    from .lib_rel import get_contain_map
 
-    has_librel = True
-except:
-    has_librel = False
-
-
-def get_contain_map_py(evidences: list[str], retrieved: list[str]) -> list[list[bool]]:
-    if has_librel:
-        return get_contain_map(evidences, retrieved)
+def get_contain_map(evidences: list[str], retrieved: list[str]) -> list[list[bool]]:
     contain_map: list[list[bool]] = []
     for ret in retrieved:
         contain_map.append([])
@@ -78,7 +69,7 @@ class SuccessRate(MetricsBase):
             if self.simplifier is not None:
                 ctxs = [self.simplifier(ctx) for ctx in ctxs]
                 golds = [self.simplifier(gold) for gold in golds]
-            rel_map = get_contain_map_py(golds, ctxs)
+            rel_map = get_contain_map(golds, ctxs)
             is_success = any(sum(rel_map, []))
             success_map.append(is_success)
         score = sum(success_map) / len(success_map)

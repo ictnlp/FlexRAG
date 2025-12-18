@@ -98,6 +98,10 @@ __pypackages__/
 
 # Celery stuff
 celerybeat-schedule
+
+# Dynamic version file
+src/flexrag/common/_version.py
+
 celerybeat.pid
 
 # SageMath parsed files
