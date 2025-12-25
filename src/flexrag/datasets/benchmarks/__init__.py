@@ -1,8 +1,8 @@
 from .multiple_choice import (
     LongBenchV2Dataset,
     LongBenchV2DatasetConfig,
-    NovelQADataset,
     NovelQAConfig,
+    NovelQADataset,
     QuALITYDataset,
     QuALITYDatasetConfig,
 )
@@ -29,6 +29,15 @@ from .qa import (
     SimpleQADatasetConfig,
     SQuADDataset,
     SQuADDatasetConfig,
+)
+from .retrieval import (
+    MSMARCODataset,
+    MSMARCODatasetConfig,
+    MTEBDataset,
+    MTEBDatasetConfig,
+    MultiLongDocRetrievalDataset,
+    MultiLongDocRetrievalDatasetConfig,
+    RetrievalDatasetBase,
 )
 from .suites import KiltDataset, KiltDatasetConfig
 
@@ -61,6 +70,13 @@ __all__ = [
     "SimpleQADatasetConfig",
     "SQuADDataset",
     "SQuADDatasetConfig",
+    "MSMARCODataset",
+    "MSMARCODatasetConfig",
+    "MTEBDataset",
+    "MTEBDatasetConfig",
+    "MultiLongDocRetrievalDataset",
+    "MultiLongDocRetrievalDatasetConfig",
+    "RetrievalDatasetBase",
     "KiltDataset",
     "KiltDatasetConfig",
 ]

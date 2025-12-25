@@ -13,8 +13,9 @@ from flexrag.common import (
 )
 from flexrag.common.dataclasses import Context
 
-from ..reader import LineDelimitedReader
-from .retrieval_dataset import RETRIEVAL_DATASETS, RetrievalDatasetBase
+from ...core import DATASETS
+from ...reader import LineDelimitedReader
+from .retrieval_dataset_base import RetrievalDatasetBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.msmarco_dataset")
 
@@ -62,7 +63,7 @@ class MSMARCODatasetConfig:
     load_corpus: bool = False
 
 
-@RETRIEVAL_DATASETS("msmarco", MSMARCODatasetConfig)
+@DATASETS("msmarco", MSMARCODatasetConfig)
 class MSMARCODataset(RetrievalDatasetBase):
     """Dataset for loading MSMARCO Retrieval Dataset."""
 

@@ -1,14 +1,15 @@
 from collections import defaultdict
 from pathlib import Path
-from typing import Mapping
+from typing import Annotated, Mapping, Optional
 
 from huggingface_hub import snapshot_download
 
-from flexrag.common import FLEXRAG_CACHE_DIR, LOGGER_MANAGER, configure
+from flexrag.common import FLEXRAG_CACHE_DIR, LOGGER_MANAGER, Choices, configure
 from flexrag.common.dataclasses import Context
 
-from ..reader import LineDelimitedReader
-from .retrieval_dataset import RETRIEVAL_DATASETS, RetrievalDatasetBase
+from ...core import DATASETS
+from ...reader import LineDelimitedReader
+from .retrieval_dataset_base import RetrievalDatasetBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.mldr_dataset")
 
@@ -45,11 +46,28 @@ class MultiLongDocRetrievalDatasetConfig:
     """
 
     split: str
-    lang: str = "en"
-    data_path: str | None = None
+    lang: Annotated[
+        str,
+        Choices(
+            "ar",
+            "de",
+            "en",
+            "es",
+            "fr",
+            "hi",
+            "it",
+            "ja",
+            "ko",
+            "pt",
+            "ru",
+            "th",
+            "zh",
+        ),
+    ] = "en"
+    data_path: Optional[str] = None
 
 
-@RETRIEVAL_DATASETS("mldr", config_class=MultiLongDocRetrievalDatasetConfig)
+@DATASETS("mldr", config_class=MultiLongDocRetrievalDatasetConfig)
 class MultiLongDocRetrievalDataset(RetrievalDatasetBase):
     def __init__(self, config: MultiLongDocRetrievalDatasetConfig) -> None:
         # prepare dataset path
@@ -112,16 +130,13 @@ class MultiLongDocRetrievalDataset(RetrievalDatasetBase):
         return
 
     @property
-    def _contexts(self) -> Mapping[str, Context]:
-        """Return a mapping from context_id to Context object."""
-        return self._context_data
+    def _qrels(self) -> Mapping[str, Mapping[str, float]]:
+        return self._qrels_data
 
     @property
     def _queries(self) -> Mapping[str, str]:
-        """Return a mapping from query_id to query text."""
         return self._queries_data
 
     @property
-    def _qrels(self) -> Mapping[str, set[str]]:
-        """Return a mapping from query_id to a set of relevant context_ids."""
-        return self._qrels_data
+    def _contexts(self) -> Mapping[str, Context]:
+        return self._context_data

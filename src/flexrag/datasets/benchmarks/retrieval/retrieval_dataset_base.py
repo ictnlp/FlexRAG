@@ -1,39 +1,13 @@
 from abc import abstractmethod
 from collections.abc import Iterator, Mapping
-from dataclasses import field
 from functools import cached_property
-from typing import Optional
 
-from flexrag.common import Register, data
 from flexrag.common.dataclasses import Context
 
-from ..dataset import MappingDataset
+from ...core import IRSample, MappingDataset
 
 
-@data
-class IREvalData:
-    """The dataclass for Information Retrieval evaluation data.
-
-    :param question: The question for evaluation. Required.
-    :type question: str
-    :param question_id: The unique identifier for the question. Default: None.
-    :type question_id: Optional[str]
-    :param contexts: The contexts related to the question. Default: None.
-    :type contexts: Optional[list[Context]]
-    :param hard_negatives: The hard negatives related to the question. Default: None.
-    :type hard_negatives: Optional[list[Context]]
-    :param meta_data: The metadata of the evaluation data. Default: {}.
-    :type meta_data: dict
-    """
-
-    question: str
-    question_id: Optional[str] = None
-    contexts: Optional[list[Context]] = None
-    hard_negatives: Optional[list[Context]] = None
-    meta_data: dict = field(default_factory=dict)
-
-
-class RetrievalDatasetBase(MappingDataset[IREvalData]):
+class RetrievalDatasetBase(MappingDataset[IRSample]):
     """Base class for Information Retrieval (IR) datasets.
 
     This class provides a unified interface for accessing IR datasets, which typically consist of:
@@ -162,7 +136,7 @@ class RetrievalDatasetBase(MappingDataset[IREvalData]):
         """The number of queries in the qrels."""
         return len(self._qids)
 
-    def get_item(self, index: int) -> IREvalData:
+    def get_item(self, index: int) -> IRSample:
         qid = self._qids[index]
         query = self._queries[qid]
         relevant_ctxs = []
@@ -180,12 +154,9 @@ class RetrievalDatasetBase(MappingDataset[IREvalData]):
             self._contexts.get(ctx_id, Context(context_id=ctx_id))
             for ctx_id in hard_negatives
         ]
-        return IREvalData(
+        return IRSample(
             question=query,
             question_id=qid,
             contexts=rels,
             hard_negatives=negs,
         )
-
-
-RETRIEVAL_DATASETS = Register[RetrievalDatasetBase]("retrieval_dataset")

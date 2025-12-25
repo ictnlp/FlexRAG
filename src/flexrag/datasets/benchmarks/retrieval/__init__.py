@@ -4,16 +4,14 @@ from .mldr_dataset import (
 )
 from .msmarco_dataset import MSMARCODataset, MSMARCODatasetConfig
 from .mteb_dataset import MTEBDataset, MTEBDatasetConfig
-from .retrieval_dataset import RETRIEVAL_DATASETS, IREvalData, RetrievalDatasetBase
+from .retrieval_dataset_base import RetrievalDatasetBase
 
 __all__ = [
+    "RetrievalDatasetBase",
     "MultiLongDocRetrievalDataset",
     "MultiLongDocRetrievalDatasetConfig",
-    "RETRIEVAL_DATASETS",
-    "IREvalData",
-    "RetrievalDatasetBase",
+    "MSMARCODataset",
+    "MSMARCODatasetConfig",
     "MTEBDataset",
     "MTEBDatasetConfig",
-    "MSMARCODatasetConfig",
-    "MSMARCODataset",
 ]
