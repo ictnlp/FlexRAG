@@ -5,11 +5,7 @@ from huggingface_hub import hf_hub_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Context, configure
 
-from .multiple_choice_dataset_base import (
-    KNOWLEDGE_MULTIPLE_CHOICE_DATASETS,
-    MULTIPLE_CHOICE_DATASETS,
-    KnowledgeMultipleChoiceDatasetBase,
-)
+from ...core import ContextualMCSample, DATASETS, MappingDataset
 
 
 @configure
@@ -29,9 +25,8 @@ class LongBenchV2DatasetConfig:
     data_path: Optional[str] = None
 
 
-@MULTIPLE_CHOICE_DATASETS("long_bench_v2", config_class=LongBenchV2DatasetConfig)
-@KNOWLEDGE_MULTIPLE_CHOICE_DATASETS("long_bench_v2", config_class=LongBenchV2DatasetConfig)  # fmt: skip
-class LongBenchV2Dataset(KnowledgeMultipleChoiceDatasetBase):
+@DATASETS("long_bench_v2", config_class=LongBenchV2DatasetConfig)
+class LongBenchV2Dataset(MappingDataset[ContextualMCSample]):
     def __init__(self, config: LongBenchV2DatasetConfig):
         # Download the dataset if not exists
         if config.data_path is None:
@@ -48,12 +43,11 @@ class LongBenchV2Dataset(KnowledgeMultipleChoiceDatasetBase):
             )
 
         # Load the dataset
-        self._context_data = {}
-        self._queries_data = {}
-        self._answers_data = {}
-        self._choices_data = {}
-        self._qrels_data = {}
-        self._meta_data = {}
+        self._context_data: dict[str, Context] = {}
+        self._queries_data: dict[str, str] = {}
+        self._answers_data: dict[str, list[int]] = {}
+        self._choices_data: dict[str, list[str]] = {}
+        self._meta_data: dict[str, dict[str, str]] = {}
         data_path = data_dir / "data.json"
         data = json.load(open(data_path, "r", encoding="utf-8"))
         all_keys = ("choice_A", "choice_B", "choice_C", "choice_D")
@@ -68,30 +62,24 @@ class LongBenchV2Dataset(KnowledgeMultipleChoiceDatasetBase):
                 meta_data={"length": item["length"]},
             )
             self._choices_data[qid] = [item[key] for key in all_keys]
-            self._qrels_data[qid] = {qid: 1.0}
             self._meta_data[qid] = {
                 "domain": item.get("domain", "unknown"),
                 "sub_domain": item.get("sub_domain", "unknown"),
                 "difficulty": item.get("difficulty", "unknown"),
             }
+        self._qids = list(self._queries_data.keys())
         return
 
-    @property
-    def _queries(self) -> dict[str, str]:
-        return self._queries_data
+    def __len__(self) -> int:
+        return len(self._queries_data)
 
-    @property
-    def _answers(self) -> dict[str, list[str]] | None:
-        return self._answers_data
-
-    @property
-    def _qrels(self) -> dict[str, dict[str, float]]:
-        return self._qrels_data
-
-    @property
-    def _contexts(self) -> dict[str, Context]:
-        return self._context_data
-
-    @property
-    def _choices(self) -> dict[str, list[str]]:
-        return self._choices_data
+    def get_item(self, index: int) -> ContextualMCSample:
+        qid = self._qids[index]
+        return ContextualMCSample(
+            question_id=qid,
+            question=self._queries_data[qid],
+            choices=self._choices_data[qid],
+            answers=self._answers_data[qid],
+            contexts=[self._context_data[qid]],
+            meta_data=self._meta_data[qid],
+        )

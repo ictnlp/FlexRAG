@@ -9,7 +9,7 @@ from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 from flexrag.common.dataclasses import Context
 from flexrag.common.misc import download_and_extract
 
-from .qa_dataset_base import KNOWLEDGE_QA_DATASETS, QA_DATASETS, KnowledgeQADatasetBase
+from ...core import DATASETS, MappingDataset, ContextualQASample
 
 
 @configure
@@ -51,9 +51,8 @@ class CRUDQADatasetConfig:
 RESOURCES = "https://github.com/IAAR-Shanghai/CRUD_RAG/archive/refs/heads/main.zip"
 
 
-@QA_DATASETS("crud_qa", config_class=CRUDQADatasetConfig)
-@KNOWLEDGE_QA_DATASETS("crud_qa", config_class=CRUDQADatasetConfig)
-class CRUDQADataset(KnowledgeQADatasetBase):
+@DATASETS("crud_qa", config_class=CRUDQADatasetConfig)
+class CRUDQADataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: CRUDQADatasetConfig):
         self._subset = config.subset
         # download the crud dataset if not exists
@@ -97,8 +96,8 @@ class CRUDQADataset(KnowledgeQADatasetBase):
                 data = json.load(f)[config.subset]
         for item in data:
             query_id = item["ID"]
-            self._queries[query_id] = item["questions"]
-            self._answers[query_id] = [item["answers"]]
+            self._queries_data[query_id] = item["questions"]
+            self._answers_data[query_id] = [item["answers"]]
             # As CRUD does not guarantee all relevant documents within 80000_docs, we
             # have to add all relevant documents from the merged dataset to context_data.
             # Blake2b hash algorithm is used to deduplicate the documents.
@@ -117,20 +116,20 @@ class CRUDQADataset(KnowledgeQADatasetBase):
                 )
                 qrels[doc_idx] = 1.0
             self._qrels_data[query_id] = qrels
+        self._qids = list(self._queries_data.keys())
         return
 
-    @property
-    def _queries(self) -> dict[str, str]:
-        return self._queries_data
+    def __len__(self) -> int:
+        return len(self._queries_data)
 
-    @property
-    def _answers(self) -> dict[str, list[str]] | None:
-        return self._answers_data
-
-    @property
-    def _qrels(self) -> dict[str, dict[str, float]]:
-        return self._qrels_data
-
-    @property
-    def _contexts(self) -> dict[str, Context]:
-        return self._context_data
+    def get_item(self, index: int) -> ContextualQASample:
+        qid = self._qids[index]
+        contexts = [
+            self._context_data[ctx_id] for ctx_id in self._qrels_data[qid].keys()
+        ]
+        return ContextualQASample(
+            question=self._queries_data[qid],
+            question_id=qid,
+            contexts=contexts,
+            answers=self._answers_data[qid],
+        )

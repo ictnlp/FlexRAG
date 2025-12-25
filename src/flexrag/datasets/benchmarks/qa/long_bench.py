@@ -6,20 +6,18 @@ from huggingface_hub import hf_hub_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, Context, configure
 
-from ..reader import LineDelimitedReader
-from .qa_dataset_base import KNOWLEDGE_QA_DATASETS, QA_DATASETS, KnowledgeQADatasetBase
+from ...core import DATASETS, MappingDataset, ContextualQASample
+from ...reader import LineDelimitedReader
 
 
 @configure
-class LongBenchQADatasetConfig:
-    """Configuration for LongBenchQADataset.
+class LongBenchDatasetConfig:
+    """Configuration for LongBenchDataset.
 
     `LongBench <https://arxiv.org/abs/2308.14508>`_ is a benchmark designed to evaluate
     the long-context understanding capabilities of large language models (LLMs).
     It features tasks that require processing and reasoning over extended contexts,
     pushing the boundaries of LLMs' abilities in handling long documents.
-
-    Note that TREC and LSHT subsets are contained in the Multiple Choice Dataset variant.
 
     :param data_path: The path to the LongBench dataset file. Default is None.
         If not provided, the dataset will be downloaded automatically.
@@ -62,13 +60,14 @@ class LongBenchQADatasetConfig:
             "lcc",
             "repobench_p",
         ),
-    ] = "narrative_qa"
+    ] = "trec"
 
 
-@QA_DATASETS("long_bench", config_class=LongBenchQADatasetConfig)
-@KNOWLEDGE_QA_DATASETS("long_bench", config_class=LongBenchQADatasetConfig)
-class LongBenchQADataset(KnowledgeQADatasetBase):
+@DATASETS("long_bench", config_class=LongBenchDatasetConfig)
+class LongBenchDataset(MappingDataset[ContextualQASample]):
     _file_name_map = {
+        "trec": "trec.jsonl",
+        "lsht": "lsht.jsonl",
         "narrative_qa": "narrativeqa.jsonl",
         "qasper": "qasper.jsonl",
         "multifield_qa_en": "multifieldqa_en.jsonl",
@@ -90,7 +89,7 @@ class LongBenchQADataset(KnowledgeQADatasetBase):
         "repobench_p": "repobench-p.jsonl",
     }
 
-    def __init__(self, config: LongBenchQADatasetConfig):
+    def __init__(self, config: LongBenchDatasetConfig):
         self._subset = config.subset
         # Download the dataset if not exists
         if config.data_path is None:
@@ -118,7 +117,6 @@ class LongBenchQADataset(KnowledgeQADatasetBase):
         self._context_data = {}
         self._queries_data = {}
         self._answers_data = {}
-        self._qrels_data = {}
         self._meta_data = {}
         data_path = data_dir / self._file_name_map[self._subset]
         reader = LineDelimitedReader(data_path)
@@ -130,28 +128,24 @@ class LongBenchQADataset(KnowledgeQADatasetBase):
                 context_id=qid,
                 data={"text": item["context"]},
                 source=f"LongBench-{self._subset}",
-                meta_data={
-                    "length": item.get("length", 0),
-                    "language": item.get("language", "unknown"),
-                },
             )
-            # all classes for classification tasks (trec, lsht)
-            self._meta_data[qid] = {"all_classes": item.get("all_classes", [])}
-            self._qrels_data[qid] = {qid: 1.0}
+            self._meta_data[qid] = {
+                "length": item.get("length", 0),
+                "language": item.get("language", "unknown"),
+                "all_classes": item.get("all_classes", []),
+            }
+        self._qids = list(self._queries_data.keys())
         return
 
-    @property
-    def _queries(self) -> dict[str, str]:
-        return self._queries_data
+    def __len__(self) -> int:
+        return len(self._queries_data)
 
-    @property
-    def _answers(self) -> dict[str, list[str]] | None:
-        return self._answers_data
-
-    @property
-    def _qrels(self) -> dict[str, dict[str, float]]:
-        return self._qrels_data
-
-    @property
-    def _contexts(self) -> dict[str, Context]:
-        return self._context_data
+    def get_item(self, index: int) -> ContextualQASample:
+        qid = self._qids[index]
+        return ContextualQASample(
+            question_id=qid,
+            question=self._queries_data[qid],
+            answers=self._answers_data[qid],
+            contexts=[self._context_data[qid]],
+            meta_data=self._meta_data[qid],
+        )

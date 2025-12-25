@@ -7,7 +7,7 @@ from huggingface_hub import snapshot_download
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import Context
 
-from .qa_dataset_base import KNOWLEDGE_QA_DATASETS, QA_DATASETS, KnowledgeQADatasetBase
+from ...core import DATASETS, MappingDataset, ContextualQASample
 
 
 @configure
@@ -25,9 +25,8 @@ class MultihopRAGDatasetConfig:
     data_path: Optional[str] = None
 
 
-@QA_DATASETS("multihop_rag", config_class=MultihopRAGDatasetConfig)
-@KNOWLEDGE_QA_DATASETS("multihop_rag", config_class=MultihopRAGDatasetConfig)
-class MultihopRAGDataset(KnowledgeQADatasetBase):
+@DATASETS("multihop_rag", config_class=MultihopRAGDatasetConfig)
+class MultihopRAGDataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: MultihopRAGDatasetConfig):
         # Download the dataset if not exists
         if config.data_path is None:
@@ -75,20 +74,21 @@ class MultihopRAGDataset(KnowledgeQADatasetBase):
                 qrels[ctx["title"]] = 1.0
                 self._meta_data[qid]["facts"].append(ctx["fact"])
             self._qrels_data[qid] = qrels
+        self._qids = list(self._queries_data.keys())
         return
 
-    @property
-    def _queries(self) -> dict[str, str]:
-        return self._queries_data
+    def __len__(self) -> int:
+        return len(self._queries_data)
 
-    @property
-    def _answers(self) -> dict[str, list[str]] | None:
-        return self._answers_data
-
-    @property
-    def _qrels(self) -> dict[str, dict[str, float]]:
-        return self._qrels_data
-
-    @property
-    def _contexts(self) -> dict[str, Context]:
-        return self._context_data
+    def get_item(self, index: int) -> ContextualQASample:
+        qid = self._qids[index]
+        contexts = [
+            self._context_data[ctx_id] for ctx_id in self._qrels_data[qid].keys()
+        ]
+        return ContextualQASample(
+            question=self._queries_data[qid],
+            question_id=qid,
+            contexts=contexts,
+            answers=self._answers_data[qid],
+            meta_data=self._meta_data[qid],
+        )

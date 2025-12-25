@@ -8,11 +8,7 @@ from huggingface_hub import hf_hub_download
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import Context
 
-from .multiple_choice_dataset_base import (
-    KNOWLEDGE_MULTIPLE_CHOICE_DATASETS,
-    MULTIPLE_CHOICE_DATASETS,
-    KnowledgeMultipleChoiceDatasetBase,
-)
+from ...core import MappingDataset, ContextualMCSample, DATASETS
 
 
 @configure
@@ -36,9 +32,8 @@ class NovelQAConfig:
     data_path: Optional[str] = None
 
 
-@MULTIPLE_CHOICE_DATASETS("novel_qa", config_class=NovelQAConfig)
-@KNOWLEDGE_MULTIPLE_CHOICE_DATASETS("novel_qa", config_class=NovelQAConfig)
-class NovelQADataset(KnowledgeMultipleChoiceDatasetBase):
+@DATASETS("novel_qa", config_class=NovelQAConfig)
+class NovelQADataset(MappingDataset[ContextualMCSample]):
     def __init__(self, config: NovelQAConfig):
         # download dataset if not exists
         if config.data_path is None:
@@ -72,9 +67,9 @@ class NovelQADataset(KnowledgeMultipleChoiceDatasetBase):
                 )
 
         # load the multiple-choice questions
-        self._queries_data = {}
-        self._choices_data = {}
-        self._qrels_data = {}
+        self._queries_data: dict[str, str] = {}
+        self._choices_data: dict[str, list[str]] = {}
+        self._qrels_data: dict[str, dict[str, float]] = {}
         qa_dir = data_path / "Data" / "PublicDomain"
         for qa_path in qa_dir.iterdir():
             doc_id = qa_path.stem
@@ -87,24 +82,18 @@ class NovelQADataset(KnowledgeMultipleChoiceDatasetBase):
                         for choice in sorted(item["Options"].keys())
                     ]
                     self._qrels_data[qid] = {doc_id: 1.0}
+        self._qids = list(self._queries_data.keys())
         return
 
-    @property
-    def _queries(self) -> dict[str, str]:
-        return self._queries_data
+    def __len__(self) -> int:
+        return len(self._queries_data)
 
-    @property
-    def _answers(self) -> None:
-        return None
-
-    @property
-    def _qrels(self) -> dict[str, dict[str, float]]:
-        return self._qrels_data
-
-    @property
-    def _contexts(self) -> dict[str, Context]:
-        return self._context_data
-
-    @property
-    def _choices(self) -> dict[str, list[str]]:
-        return self._choices_data
+    def get_item(self, index: int) -> ContextualMCSample:
+        qid = self._qids[index]
+        ctx_ids = list(self._qrels_data[qid].keys())
+        return ContextualMCSample(
+            question_id=qid,
+            question=self._queries_data[qid],
+            choices=self._choices_data[qid],
+            contexts=[self._context_data[ctx_id] for ctx_id in ctx_ids],
+        )

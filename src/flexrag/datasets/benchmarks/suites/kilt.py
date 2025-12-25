@@ -6,34 +6,49 @@ from datasets import load_dataset
 from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
-from flexrag.common.dataclasses import Context
+from flexrag.common.dataclasses import Context, ChatMessages, ChatTurn
 from flexrag.common.logging import LOGGER_MANAGER
 from flexrag.common.misc import download
 
-from ..reader import LineDelimitedReader
-from .qa_dataset_base import KNOWLEDGE_QA_DATASETS, QA_DATASETS, KnowledgeQADatasetBase
+from ...core import (
+    DATASETS,
+    MappingDataset,
+    ContextualQASample,
+    ContextualDialogueSample,
+    ContextualMCSample,
+)
+from ...reader import LineDelimitedReader
 
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.kilt_qa")
 
 
 @configure
-class KiltQADatasetConfig:
-    """Configuration for KiltQADataset.
+class KiltDatasetConfig:
+    """Configuration for KiltDataset.
 
-    `KiltQA <https://arxiv.org/abs/2009.02252>`_ is subsets of KILT benchmark
-    designed for open-domain question answering. It includes several datasets such as
-    HotpotQA, Natural Questions, TriviaQA, and ELI5.
+    `KILT <https://arxiv.org/abs/2009.02252>`_ is a unified evaluation framework
+    for knowledge-intensive language tasks that grounds multiple tasks in a shared
+    Wikipedia snapshot, enabling models to access external knowledge efficiently
+    while being evaluated on both task performance and evidence provenance.
 
-    :param data_path: The path to the KiltQA dataset file. Default is None.
+    For QA tasks, Entity Linking tasks, and Slot Filling tasks, the dataset
+    provides ContextualQASample as the data sample type.
+    For Dialogue tasks, the dataset provides ContextualDialogueSample as the data
+    sample type.
+    For Fact Checking tasks, the dataset provides ContextualMCSample as the data
+    sample type.
+
+    :param data_path: The path to the KILT dataset file. Default is None.
         If not provided, the dataset will be downloaded automatically.
     :type data_path: Optional[str]
-    :param subset: The subset of KiltQA to use. Default is `nq`.
+    :param subset: The subset of KILT to use. Default is `nq`.
         Available choices are:
 
-        - `hotpotqa`: HotpotQA subset.
-        - `nq`: Natural Questions subset.
-        - `triviaqa`: TriviaQA subset.
-        - `eli5`: ELI5 subset.
+        - QA Tasks: hotpotqa (HotpotQA), nq (Natural Questions), triviaqa (TriviaQA), eli5 (ELI5)
+        - Fact Checking Task: fever (FEVER)
+        - Entity Linking Tasks: aidayago2 (AIDA-CoNLL-YAGO), wned (WNED-WIKI), cweb (WNED-CWEB)
+        - Slot Filling Tasks: trex (T-REx), zsre (Zero Shot RE)
+        - Dialogue Task: wow (Wizard of Wikipedia)
     :type subset: str
     :param split: The data split to use. Default is `validation`.
         Available choices are:
@@ -58,7 +73,22 @@ class KiltQADatasetConfig:
     """
 
     data_path: Optional[str] = None
-    subset: Annotated[str, Choices("hotpotqa", "nq", "triviaqa", "eli5")] = "nq"
+    subset: Annotated[
+        str,
+        Choices(
+            "hotpotqa",
+            "nq",
+            "triviaqa",
+            "eli5",
+            "fever",
+            "aidayago2",
+            "wned",
+            "cweb",
+            "trex",
+            "zsre",
+            "wow",
+        ),
+    ] = "nq"
     split: Annotated[str, Choices("train", "validation", "test")] = "validation"
     load_corpus: bool = True
     corpus_path: Optional[str] = None
@@ -69,10 +99,11 @@ class KiltQADatasetConfig:
 CORPUS_URL = "http://dl.fbaipublicfiles.com/KILT/kilt_knowledgesource.json"
 
 
-@QA_DATASETS("kilt_qa", config_class=KiltQADatasetConfig)
-@KNOWLEDGE_QA_DATASETS("kilt_qa", config_class=KiltQADatasetConfig)
-class KiltQADataset(KnowledgeQADatasetBase):
-    def __init__(self, config: KiltQADatasetConfig):
+@DATASETS("kilt", config_class=KiltDatasetConfig)
+class KiltDataset(
+    MappingDataset[ContextualQASample | ContextualDialogueSample | ContextualMCSample]
+):
+    def __init__(self, config: KiltDatasetConfig):
         self._subset = config.subset
         self._split = config.split
         self._full_wiki = config.use_full_wiki
@@ -106,11 +137,13 @@ class KiltQADataset(KnowledgeQADatasetBase):
                 corpus_path, full_wiki=self._full_wiki
             )
         else:
-            self._context_data = {}
+            self._context_data = None
 
         # load the QA pairs
         if self._subset == "triviaqa":
             data_name = "triviaqa_support_only"
+        elif self._subset == "zsre":
+            data_name = "structured_zeroshot"
         else:
             data_name = self._subset
         subset = load_dataset(data_dir.as_posix(), name=data_name, split=self._split)
@@ -159,21 +192,26 @@ class KiltQADataset(KnowledgeQADatasetBase):
             self._queries_data[item["id"]] = item["input"]
             answers = []
             qrels = {}
-            meta = {"provenance": []}
+            meta = item.get("meta_data", {})
+            meta["provenance"] = []
             for ans in item["output"]:
                 # filter empty answers
                 if ans["answer"] != "":
                     answers.append(ans["answer"])
-                # the `start_paragraph_id` and `end_paragraph_id` are the same in
-                # nq, hqa, and tqa, thus we use `start_paragraph_id` only
+                # parse provenance
                 for p in ans["provenance"]:
                     wikipedia_id = p["wikipedia_id"]
-                    chunk_id = str(p["start_paragraph_id"])
+                    chunk_ids = []
+                    for cid in range(
+                        p["start_paragraph_id"], p["end_paragraph_id"] + 1
+                    ):
+                        chunk_ids.append(str(cid))
                     if self._full_wiki:
-                        context_id = wikipedia_id
+                        qrels[wikipedia_id] = 1.0
                     else:
-                        context_id = f"{wikipedia_id}_{chunk_id}"
-                    qrels[context_id] = 1.0
+                        for chunk_id in chunk_ids:
+                            qrels[f"{wikipedia_id}_{chunk_id}"] = 1.0
+                    # save original provenance info
                     meta["provenance"].append(
                         {
                             "wikipedia_id": wikipedia_id,
@@ -237,18 +275,71 @@ class KiltQADataset(KnowledgeQADatasetBase):
         logger.info(f"Loaded {len(wiki_data)} contexts from KILT corpus.")
         return wiki_data
 
-    @property
-    def _queries(self) -> dict[str, str]:
-        return self._queries_data
+    def __len__(self) -> int:
+        return len(self._queries_data)
 
-    @property
-    def _answers(self) -> dict[str, list[str]] | None:
-        return self._answers_data
+    def get_item(
+        self, index: int
+    ) -> ContextualQASample | ContextualDialogueSample | ContextualMCSample:
+        qid = list(self._queries_data.keys())[index]
+        ctx_ids = list(self._qrels_data[qid].keys())
+        # prepare contexts
+        if self._context_data is not None:
+            contexts = [self._context_data[ctx_id] for ctx_id in ctx_ids]
+        else:
+            contexts = [
+                Context(context_id=ctx_id, data={}, source="wikipedia", meta_data={})
+                for ctx_id in ctx_ids
+            ]
+        if len(contexts) == 0:
+            contexts = None
 
-    @property
-    def _qrels(self) -> dict[str, dict[str, float]]:
-        return self._qrels_data
-
-    @property
-    def _contexts(self) -> dict[str, Context]:
-        return self._context_data
+        # prepare sample for fact checking task
+        if self._subset in {"fever"}:
+            choices = ["SUPPORTS", "REFUTES", "NOT ENOUGH INFO"]
+            if self._answers_data[qid]:
+                answers = [choices.index(self._answers_data[qid][0])]
+            else:
+                answers = None
+            sample = ContextualMCSample(
+                question_id=qid,
+                question=self._queries_data[qid],
+                choices=choices,
+                answers=answers,
+                contexts=contexts,
+                meta_data=self._meta_data[qid],
+            )
+        # prepare sample for dialogue task
+        elif self._subset in {"wow"}:
+            messages = []
+            for n, turn in enumerate(self._queries_data[qid].split("\n")):
+                role = "user" if n % 2 == 0 else "assistant"
+                messages.append({"role": role, "content": turn})
+            messages = ChatMessages.from_list(messages)
+            if self._answers_data[qid]:
+                responses = [
+                    ChatTurn(
+                        role="assistant",
+                        content=self._answers_data[qid][0],
+                    )
+                ]
+            else:
+                responses = None
+            sample = ContextualDialogueSample(
+                question_id=qid,
+                messages=messages,
+                golden_responses=responses,
+                contexts=contexts,
+                meta_data=self._meta_data[qid],
+            )
+        # prepare sample for other tasks
+        else:
+            answers = self._answers_data[qid] if self._answers_data[qid] else None
+            sample = ContextualQASample(
+                question_id=qid,
+                question=self._queries_data[qid],
+                answers=answers,
+                contexts=contexts,
+                meta_data=self._meta_data[qid],
+            )
+        return sample

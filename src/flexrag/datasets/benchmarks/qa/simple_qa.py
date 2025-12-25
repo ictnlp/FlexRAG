@@ -1,9 +1,9 @@
-from typing import Mapping, Optional
+from typing import Optional
 
 from flexrag.common import FLEXRAG_CACHE_DIR, configure, download
 
-from ..reader import LineDelimitedReader
-from .qa_dataset_base import QA_DATASETS, QADatasetBase
+from ...core import DATASETS, MappingDataset, QASample
+from ...reader import LineDelimitedReader
 
 RESOURCE_URL = (
     "https://openaipublic.blob.core.windows.net/simple-evals/simple_qa_test_set.csv"
@@ -29,8 +29,8 @@ class SimpleQADatasetConfig:
     data_path: Optional[str] = None
 
 
-@QA_DATASETS("simple_qa", config_class=SimpleQADatasetConfig)
-class SimpleQADataset(QADatasetBase):
+@DATASETS("simple_qa", config_class=SimpleQADatasetConfig)
+class SimpleQADataset(MappingDataset[QASample]):
     def __init__(self, config: SimpleQADatasetConfig):
         # Download the dataset if not already present
         if config.data_path is not None:
@@ -51,17 +51,16 @@ class SimpleQADataset(QADatasetBase):
             self._queries_data[str(idx)] = row["problem"]
             self._answers_data[str(idx)] = [row["answer"]]
             self._meta_data[str(idx)] = eval(row["metadata"])
+        self._qids = list(self._queries_data.keys())
         return
 
-    @property
-    def _queries(self) -> Mapping[str, str]:
-        return self._queries_data
+    def __len__(self) -> int:
+        return len(self._queries_data)
 
-    @property
-    def _answers(self) -> Mapping[str, list[str]] | None:
-        return self._answers_data
-
-    def get_item(self, index: int):
-        data = super().get_item(index)
-        data.meta_data = self._meta_data[str(index)]
-        return data
+    def get_item(self, index: int) -> QASample:
+        qid = self._qids[index]
+        return QASample(
+            question=self._queries_data[qid],
+            answers=self._answers_data[qid],
+            meta_data=self._meta_data[qid],
+        )

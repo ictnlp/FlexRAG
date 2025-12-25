@@ -7,7 +7,7 @@ from huggingface_hub import hf_hub_download
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 from flexrag.common.dataclasses import Context
 
-from .qa_dataset_base import KNOWLEDGE_QA_DATASETS, QA_DATASETS, KnowledgeQADatasetBase
+from ...core import DATASETS, ContextualQASample, MappingDataset
 
 
 @configure
@@ -21,31 +21,20 @@ class GutenQADatasetConfig:
     :param data_path: The path to the GutenQA dataset file. Default is None.
         If not provided, the dataset will be downloaded automatically.
     :type data_path: Optional[str]
-    :context_mode: How contexts are organized. Default is `lumber_chunk`.
+    :param context_mode: How contexts are organized. Default is `lumber_chunk`.
         Available choices are:
 
         - `lumber_chunk`: Use pre-segmented chunks from LumberChunker.
-        - `recursive_chunk`: Use recursively chunked text segments.
-        - `semantic_chunk`: Use semantically chunked text segments.
         - `book`: Use entire books as contexts.
     :type context_mode: str
     """
 
     data_path: Optional[str] = None
-    context_mode: Annotated[
-        str,
-        Choices(
-            "lumber_chunk",
-            "recursive_chunk",
-            "semantic_chunk",
-            "book",
-        ),
-    ] = "chunk"
+    context_mode: Annotated[str, Choices("lumber_chunk", "book")] = "lumber_chunk"
 
 
-@QA_DATASETS("guten_qa", config_class=GutenQADatasetConfig)
-@KNOWLEDGE_QA_DATASETS("guten_qa", config_class=GutenQADatasetConfig)
-class GutenQADataset(KnowledgeQADatasetBase):
+@DATASETS("guten_qa", config_class=GutenQADatasetConfig)
+class GutenQADataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: GutenQADatasetConfig):
         self._context_mode = config.context_mode
         # prepare the data directory
@@ -75,24 +64,6 @@ class GutenQADataset(KnowledgeQADatasetBase):
                         filename="gutenqa_chunks.parquet",
                         local_dir=data_dir.as_posix(),
                     )
-            case "recursive_chunk":
-                corpus_path = data_dir / "GutenQA_recursive.parquet"
-                if not corpus_path.exists():
-                    hf_hub_download(
-                        repo_id="LumberChunker/GutenQA_Recursive",
-                        repo_type="dataset",
-                        filename="GutenQA_recursive.parquet",
-                        local_dir=data_dir.as_posix(),
-                    )
-            case "semantic_chunk":
-                corpus_path = data_dir / "GutenQA_semantic.parquet"
-                if not corpus_path.exists():
-                    hf_hub_download(
-                        repo_id="LumberChunker/GutenQA_Semantic",
-                        repo_type="dataset",
-                        filename="GutenQA_semantic.parquet",
-                        local_dir=data_dir.as_posix(),
-                    )
             case "book":
                 corpus_path = data_dir / "GutenQA_paragraphs.parquet"
                 if not corpus_path.exists():
@@ -105,8 +76,7 @@ class GutenQADataset(KnowledgeQADatasetBase):
             case _:
                 raise ValueError(
                     f"Invalid context_mode: {self._context_mode}. "
-                    "Choose from 'lumber_chunk', 'recursive_chunk', "
-                    "'semantic_chunk', 'propositional_chunk', 'book'."
+                    "Choose from 'lumber_chunk', 'book'."
                 )
 
         # load the corpus
@@ -156,20 +126,20 @@ class GutenQADataset(KnowledgeQADatasetBase):
             self._meta_data[query_id] = {
                 "Chunk Must Contain": row["Chunk Must Contain"]
             }
+        self._qids = list(self._queries_data.keys())
         return
 
-    @property
-    def _queries(self) -> dict[str, str]:
-        return self._queries_data
+    def __len__(self) -> int:
+        return len(self._queries_data)
 
-    @property
-    def _answers(self) -> dict[str, list[str]] | None:
-        return self._answers_data
-
-    @property
-    def _qrels(self) -> dict[str, dict[str, float]]:
-        return self._qrels_data
-
-    @property
-    def _contexts(self) -> dict[str, Context]:
-        return self._context_data
+    def get_item(self, index: int) -> ContextualQASample:
+        qid = self._qids[index]
+        ctx_ids = list(self._qrels_data[qid].keys())
+        contexts = [self._context_data[ctx_id] for ctx_id in ctx_ids]
+        return ContextualQASample(
+            question=self._queries_data[qid],
+            answers=self._answers_data[qid],
+            contexts=contexts,
+            question_id=qid,
+            meta_data=self._meta_data[qid],
+        )

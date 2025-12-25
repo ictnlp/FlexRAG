@@ -4,8 +4,8 @@ from typing import Annotated
 from flexrag.common import Choices, configure
 from flexrag.common.dataclasses import Context
 
-from ..reader import LineDelimitedReader
-from .qa_dataset_base import KNOWLEDGE_QA_DATASETS, QA_DATASETS, KnowledgeQADatasetBase
+from ...core import DATASETS, MappingDataset, ContextualQASample
+from ...reader import LineDelimitedReader
 
 
 @configure
@@ -29,9 +29,8 @@ class LiteraryQADatasetConfig:
     split: Annotated[str, Choices("train", "validation", "test")] = "test"
 
 
-@QA_DATASETS("literary_qa", config_class=LiteraryQADatasetConfig)
-@KNOWLEDGE_QA_DATASETS("literary_qa", config_class=LiteraryQADatasetConfig)
-class LiteraryQADataset(KnowledgeQADatasetBase):
+@DATASETS("literary_qa", config_class=LiteraryQADatasetConfig)
+class LiteraryQADataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: LiteraryQADatasetConfig):
         # load the dataset
         assert (
@@ -62,20 +61,21 @@ class LiteraryQADataset(KnowledgeQADatasetBase):
                 self._queries_data[qid] = qa_pair["question"]
                 self._qrels_data[qid] = {row["document_id"]: 1.0}
                 self._answers_data[qid] = qa_pair["answers"]
+        self._qids = list(self._queries_data.keys())
         return
 
-    @property
-    def _queries(self) -> dict[str, str]:
-        return self._queries_data
+    def __len__(self) -> int:
+        return len(self._queries_data)
 
-    @property
-    def _qrels(self) -> dict[str, dict[str, float]]:
-        return self._qrels_data
-
-    @property
-    def _contexts(self) -> dict[str, Context]:
-        return self._context_data
-
-    @property
-    def _answers(self) -> dict[str, list[str]]:
-        return self._answers_data
+    def get_item(self, index: int) -> ContextualQASample:
+        qid = self._qids[index]
+        contexts = [
+            self._context_data[ctx_id] for ctx_id in self._qrels_data[qid].keys()
+        ]
+        answers = self._answers_data[qid]
+        return ContextualQASample(
+            question=self._queries_data[qid],
+            question_id=qid,
+            contexts=contexts,
+            answers=answers,
+        )

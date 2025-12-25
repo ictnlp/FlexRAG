@@ -8,7 +8,7 @@ from huggingface_hub import snapshot_download
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 from flexrag.common.dataclasses import Context
 
-from .qa_dataset_base import KNOWLEDGE_QA_DATASETS, QA_DATASETS, KnowledgeQADatasetBase
+from ...core import DATASETS, ContextualQASample, MappingDataset
 
 
 @configure
@@ -36,13 +36,12 @@ class SQuADDatasetConfig:
     version: Annotated[str, Choices("v1.1", "v2.0")] = "v2.0"
 
 
-@QA_DATASETS("squad", config_class=SQuADDatasetConfig)
-@KNOWLEDGE_QA_DATASETS("squad", config_class=SQuADDatasetConfig)
-class SQuADDataset(KnowledgeQADatasetBase):
+@DATASETS("squad", config_class=SQuADDatasetConfig)
+class SQuADDataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: SQuADDatasetConfig):
         # Download the dataset if not exists
         if config.data_path is None:
-            data_dir = FLEXRAG_CACHE_DIR / "datasets" / f"squad"
+            data_dir = FLEXRAG_CACHE_DIR / "datasets" / "squad"
         else:
             data_dir = Path(config.data_path)
         data_path = data_dir / config.version
@@ -77,20 +76,20 @@ class SQuADDataset(KnowledgeQADatasetBase):
             )
             self._context_data[item["id"]] = context
             self._qrels_data[item["id"]] = {item["id"]: 1.0}
+        self._qids = list(self._queries_data.keys())
         return
 
-    @property
-    def _queries(self) -> dict[str, str]:
-        return self._queries_data
+    def __len__(self) -> int:
+        return len(self._queries_data)
 
-    @property
-    def _answers(self) -> dict[str, list[str]] | None:
-        return self._answers_data
-
-    @property
-    def _qrels(self) -> dict[str, dict[str, float]]:
-        return self._qrels_data
-
-    @property
-    def _contexts(self) -> dict[str, Context]:
-        return self._context_data
+    def get_item(self, index: int) -> ContextualQASample:
+        qid = self._qids[index]
+        contexts = [
+            self._context_data[ctx_id] for ctx_id in self._qrels_data[qid].keys()
+        ]
+        return ContextualQASample(
+            question=self._queries_data[qid],
+            question_id=qid,
+            contexts=contexts,
+            answers=self._answers_data[qid],
+        )

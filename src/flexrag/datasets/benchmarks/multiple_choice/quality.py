@@ -4,12 +4,8 @@ from typing import Annotated, Optional
 from flexrag.common import FLEXRAG_CACHE_DIR, configure, download_and_extract
 from flexrag.common.dataclasses import Context
 
-from ..reader import LineDelimitedReader
-from .multiple_choice_dataset_base import (
-    KNOWLEDGE_MULTIPLE_CHOICE_DATASETS,
-    MULTIPLE_CHOICE_DATASETS,
-    KnowledgeMultipleChoiceDatasetBase,
-)
+from ...core import DATASETS, MappingDataset, ContextualMCSample
+from ...reader import LineDelimitedReader
 
 
 @configure
@@ -41,9 +37,14 @@ class QuALITYDatasetConfig:
 RESOURCE_URL = "https://github.com/nyu-mll/quality/raw/refs/heads/main/data/v1.0.1/QuALITY.v1.0.1.zip"
 
 
-@MULTIPLE_CHOICE_DATASETS("quality", config_class=QuALITYDatasetConfig)
-@KNOWLEDGE_MULTIPLE_CHOICE_DATASETS("quality", config_class=QuALITYDatasetConfig)
-class QuALITYDataset(KnowledgeMultipleChoiceDatasetBase):
+@DATASETS("quality", config_class=QuALITYDatasetConfig)
+class QuALITYDataset(MappingDataset[ContextualMCSample]):
+    suffix_map = {
+        "train": "train",
+        "validation": "dev",
+        "test": "test",
+    }
+
     def __init__(self, config: QuALITYDatasetConfig):
         # download the dataset if not exists
         if config.data_path is not None:
@@ -55,15 +56,16 @@ class QuALITYDataset(KnowledgeMultipleChoiceDatasetBase):
             download_and_extract(RESOURCE_URL, data_dir)
 
         # load the dataset
-        self._context_data = {}
-        self._queries_data = {}
-        self._answers_data = {}
-        self._qrels_data = {}
-        self._choices_data = {}
+        self._context_data: dict[str, Context] = {}
+        self._queries_data: dict[str, str] = {}
+        self._answers_data: dict[str, list[int]] = {}
+        self._choices_data: dict[str, list[str]] = {}
+        self._qrels_data: dict[str, dict[str, float]] = {}
+        suffix = self.suffix_map[config.split]
         if config.html:
-            data_name = f"QuALITY.v1.0.1.{config.split}"
+            data_name = f"QuALITY.v1.0.1.{suffix}"
         else:
-            data_name = f"QuALITY.v1.0.1.htmlstripped.{config.split}"
+            data_name = f"QuALITY.v1.0.1.htmlstripped.{suffix}"
         reader = LineDelimitedReader(data_dir / data_name, file_format="jsonl")
         for row in reader:
             questions = row.pop("questions")
@@ -82,26 +84,24 @@ class QuALITYDataset(KnowledgeMultipleChoiceDatasetBase):
                     continue
                 self._queries_data[q["question_unique_id"]] = q["question"]
                 self._choices_data[q["question_unique_id"]] = q["options"]
-                self._answers_data[q["question_unique_id"]] = [q["gold_label"]]
+                if "gold_label" in q:
+                    self._answers_data[q["question_unique_id"]] = [q["gold_label"]]
+                else:
+                    self._answers_data[q["question_unique_id"]] = []
                 self._qrels_data[q["question_unique_id"]] = {context.context_id: 1.0}
+        self._qids = list(self._queries_data.keys())
         return
 
-    @property
-    def _queries(self) -> dict[str, str]:
-        return self._queries_data
+    def __len__(self) -> int:
+        return len(self._queries_data)
 
-    @property
-    def _answers(self) -> dict[str, list[int]]:
-        return self._answers_data
-
-    @property
-    def _qrels(self) -> dict[str, dict[str, float]]:
-        return self._qrels_data
-
-    @property
-    def _contexts(self) -> dict[str, Context]:
-        return self._context_data
-
-    @property
-    def _choices(self) -> dict[str, list[str]]:
-        return self._choices_data
+    def get_item(self, index: int) -> ContextualMCSample:
+        qid = self._qids[index]
+        ctx_ids = list(self._qrels_data[qid].keys())
+        return ContextualMCSample(
+            question_id=qid,
+            question=self._queries_data[qid],
+            choices=self._choices_data[qid],
+            answers=self._answers_data[qid],
+            contexts=[self._context_data[ctx_id] for ctx_id in ctx_ids],
+        )
