@@ -1,7 +1,7 @@
 import tempfile
 from pathlib import Path
 
-from flexrag.datasets import IterableCorpus, IterableCorpusConfig
+from flexrag.datasets.corpora import IterableCorpus
 from flexrag.models import EncoderConfig, OpenAIEncoderConfig
 from flexrag.retrievers import (
     EditableRetriever,
@@ -31,18 +31,9 @@ class TestRetrievers:
         assert len(retriever) == 0
 
         # load corpus
-        cfg1 = IterableCorpusConfig(
-            file_paths=[str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")],
-            data_ranges=[[0, 10000]],
-            id_field="id",
-        )
-        cfg2 = IterableCorpusConfig(
-            file_paths=[str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")],
-            data_ranges=[[10000, 20000]],
-            id_field="id",
-        )
-        dataset1 = IterableCorpus(cfg1)
-        dataset2 = IterableCorpus(cfg2)
+        data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
+        dataset1 = IterableCorpus.from_files(data_path)[:10000]
+        dataset2 = IterableCorpus.from_files(data_path)[10000:20000]
 
         # testing add_passages
         retriever.add_passages(dataset1)
@@ -79,18 +70,9 @@ class TestRetrievers:
 
     def test_flex_retriever(self, mock_openai_client):
         # load datasets
-        cfg1 = IterableCorpusConfig(
-            file_paths=[str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")],
-            data_ranges=[[0, 1000]],
-            id_field="id",
-        )
-        cfg2 = IterableCorpusConfig(
-            file_paths=[str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")],
-            data_ranges=[[1000, 2000]],
-            id_field="id",
-        )
-        dataset1 = IterableCorpus(cfg1)
-        dataset2 = IterableCorpus(cfg2)
+        data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
+        dataset1 = IterableCorpus.from_files(data_path)[:1000]
+        dataset2 = IterableCorpus.from_files(data_path)[1000:2000]
         with tempfile.TemporaryDirectory() as tempdir:
             # in mem retriever
             cfg = FlexRetrieverConfig(

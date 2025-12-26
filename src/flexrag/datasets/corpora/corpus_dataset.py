@@ -9,7 +9,7 @@ from flexrag.common import LOGGER_MANAGER
 from flexrag.common.dataclasses import Context
 from flexrag.processors.text_processors import TextProcessPipeline
 
-from ..dataset import IterableDataset, MappingDataset
+from ..core import IterableDataset, MappingDataset
 from ..reader import LineDelimitedReader
 
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.rag_dataset")

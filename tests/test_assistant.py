@@ -1,6 +1,6 @@
 import pytest
 
-from flexrag.assistants import BasicAssistant, BasicAssistantConfig
+from flexrag.assistants import ModularAssistant, ModularAssistantConfig
 from flexrag.models import OpenAIGeneratorConfig
 
 
@@ -9,9 +9,9 @@ class TestAssistant:
     # contexts = ["Bruce Wayne is Batman.", "Batman is a superhero."]
 
     @pytest.mark.asyncio
-    async def test_basic_assistant(self, mock_openai_client):
-        assistant = BasicAssistant(
-            BasicAssistantConfig(
+    async def test_modular_assistant(self, mock_openai_client):
+        assistant = ModularAssistant(
+            ModularAssistantConfig(
                 generator_type="openai",
                 openai_config=OpenAIGeneratorConfig(
                     model_name="gpt-4",
