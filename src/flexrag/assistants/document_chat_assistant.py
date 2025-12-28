@@ -2,7 +2,7 @@ from flexrag.common import LOGGER_MANAGER, ChatMessages, ChatTurn, configure
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.processors.chunkers import CHUNKERS, ChunkerConfig
 from flexrag.processors.document_parsers import DOCUMENTPARSERS, DocumentParserConfig
-from flexrag.ranker import RANKERS, RankerConfig
+from flexrag.processors.rankers import RANKERS, RankerConfig
 from flexrag.retrievers import FlexRetriever, FlexRetrieverConfig
 
 from .assistant import ASSISTANTS, AssistantBase, AssistantResponse

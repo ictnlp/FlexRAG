@@ -3,9 +3,9 @@ from typing import Annotated, Any, Optional
 
 from flexrag.common import LOGGER_MANAGER, Choices, configure, data
 from flexrag.common.dataclasses import ChatMessages, RetrievedContext
-from flexrag.context_refine import REFINERS, RefinerConfig
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
-from flexrag.ranker import RANKERS, RankerConfig
+from flexrag.processors.rankers import RANKERS, RankerConfig
+from flexrag.processors.refiners import REFINERS, RefinerConfig
 from flexrag.retrievers import RETRIEVERS, RetrieverConfig
 
 from .assistant import ASSISTANTS, AssistantBase, AssistantResponse

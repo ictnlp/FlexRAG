@@ -2,15 +2,15 @@ import pytest
 
 from flexrag.common import LOGGER_MANAGER
 from flexrag.models import OpenAIGeneratorConfig
-from flexrag.ranker import (
+from flexrag.processors.rankers import (
     CohereRanker,
     CohereRankerConfig,
     HFColBertRanker,
     HFColBertRankerConfig,
     HFCrossEncoderRanker,
     HFCrossEncoderRankerConfig,
-    HFSeq2SeqRanker,
-    HFSeq2SeqRankerConfig,
+    HFLogitsRanker,
+    HFLogitsRankerConfig,
     JinaRanker,
     JinaRankerConfig,
     MixedbreadRanker,
@@ -101,8 +101,8 @@ class TestRanker:
 
     @pytest.mark.asyncio
     async def test_rank_hf_seq2seq(self):
-        ranker = HFSeq2SeqRanker(
-            HFSeq2SeqRankerConfig(model_path="unicamp-dl/InRanker-small")
+        ranker = HFLogitsRanker(
+            HFLogitsRankerConfig(model_path="unicamp-dl/InRanker-small")
         )
         r1 = ranker.rank(self.query, self.candidates)
         r2 = await ranker.async_rank(self.query, self.candidates)
