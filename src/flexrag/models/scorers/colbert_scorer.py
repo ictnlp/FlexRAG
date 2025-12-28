@@ -1,150 +1,17 @@
-import asyncio
 import math
 
-import numpy as np
 import torch
-from transformers import GenerationConfig as HFGenerationConfig
+import numpy as np
 
-from flexrag.common import TIME_METER, configure
-from flexrag.models.hf_utils import HFModelConfig, load_hf_model
+from flexrag.common import configure, TIME_METER
 
-from .ranker import RANKERS, RankerBase, RankerBaseConfig
-
-
-@configure
-class HFCrossEncoderRankerConfig(RankerBaseConfig, HFModelConfig):
-    """The configuration for the HuggingFace Cross Encoder ranker.
-
-    :param max_encode_length: the maximum length for the input encoding. Default is 512.
-    :type max_encode_length: int
-    """
-
-    max_encode_length: int = 512
-
-
-@RANKERS("hf_cross_encoder", config_class=HFCrossEncoderRankerConfig)
-class HFCrossEncoderRanker(RankerBase):
-    """HFCrossEncoderRanker: The ranker based on the HuggingFace Cross Encoder model."""
-
-    def __init__(self, cfg: HFCrossEncoderRankerConfig):
-        # load model
-        super().__init__(cfg)
-        self.model, self.tokenizer = load_hf_model(
-            cfg.model_path,
-            tokenizer_path=cfg.tokenizer_path,
-            model_type="sequence_classification",
-            device_id=cfg.device_id,
-            load_dtype=cfg.load_dtype,
-            trust_remote_code=cfg.trust_remote_code,
-        )
-        self.max_encode_length = cfg.max_encode_length
-        return
-
-    @TIME_METER("ranker.hf_cross_rank")
-    @torch.no_grad()
-    def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
-        # score the candidates
-        input_texts = [(query, cand) for cand in candidates]
-        inputs = self.tokenizer(
-            input_texts,
-            return_tensors="pt",
-            max_length=self.max_encode_length,
-            padding=True,
-            truncation=True,
-        )
-        inputs = inputs.to(self.model.device)
-        scores = self.model(**inputs).logits.squeeze().cpu().numpy()
-        return None, scores
-
-    async def _async_rank(
-        self, query: str, candidates: list[str]
-    ) -> tuple[np.ndarray, np.ndarray]:
-        return await asyncio.to_thread(self._rank, query, candidates)
+from ..hf_utils import HFModelConfig, load_hf_model
+from .scorer_base import SCORERS, PairScorerBase
 
 
 @configure
-class HFSeq2SeqRankerConfig(RankerBaseConfig, HFModelConfig):
-    """The configuration for the HuggingFace Sequence-to-Sequence ranker.
-
-    :param max_encode_length: the maximum length for the input encoding. Default is 512.
-    :type max_encode_length: int
-    :param input_template: the input template for the seq2seq model.
-        Default is "Query: {query} Document: {candidate} Relevant:".
-    :type input_template: str
-    :param positive_token: the positive token for the seq2seq model. Default is "▁true".
-    :type positive_token: str
-    :param negative_token: the negative token for the seq2seq model. Default is "▁false".
-    :type negative_token: str
-    """
-
-    max_encode_length: int = 512
-    input_template: str = "Query: {query} Document: {candidate} Relevant:"
-    positive_token: str = "▁true"
-    negative_token: str = "▁false"
-
-
-@RANKERS("hf_seq2seq", config_class=HFSeq2SeqRankerConfig)
-class HFSeq2SeqRanker(RankerBase):
-    """HFSeq2SeqRanker: The ranker based on the HuggingFace Sequence-to-Sequence model."""
-
-    def __init__(self, cfg: HFSeq2SeqRankerConfig):
-        # load model
-        super().__init__(cfg)
-        self.model, self.tokenizer = load_hf_model(
-            cfg.model_path,
-            tokenizer_path=cfg.tokenizer_path,
-            model_type="seq2seq",
-            device_id=cfg.device_id,
-            load_dtype=cfg.load_dtype,
-            trust_remote_code=cfg.trust_remote_code,
-        )
-        self.max_encode_length = cfg.max_encode_length
-        self.input_template = cfg.input_template
-        self.positive_token = self.tokenizer.convert_tokens_to_ids(cfg.positive_token)
-        self.negative_token = self.tokenizer.convert_tokens_to_ids(cfg.negative_token)
-        self.generation_config = HFGenerationConfig(
-            max_new_tokens=1, output_logits=True
-        )
-        return
-
-    @TIME_METER("ranker.hf_seq2seq_rank")
-    @torch.no_grad()
-    def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
-        # prepare prompts
-        input_texts = [
-            self.input_template.format(query=query, candidate=cand)
-            for cand in candidates
-        ]
-        inputs = self.tokenizer(
-            input_texts,
-            return_tensors="pt",
-            max_length=self.max_encode_length,
-            padding=True,
-            truncation=True,
-        )
-        inputs = inputs.to(self.model.device)
-        outputs = self.model.generate(
-            **inputs,
-            generation_config=self.generation_config,
-            return_dict_in_generate=True,
-        )
-        logits = outputs.logits[0]
-        positive_scores = logits[:, self.positive_token : self.positive_token + 1]
-        negative_scores = logits[:, self.negative_token : self.negative_token + 1]
-        scores = torch.softmax(
-            torch.cat([positive_scores, negative_scores], dim=1), dim=1
-        )[:, 0].cpu().numpy()  # fmt: skip
-        return None, scores
-
-    async def _async_rank(
-        self, query: str, candidates: list[str]
-    ) -> tuple[np.ndarray, np.ndarray]:
-        return await asyncio.to_thread(self._rank, query, candidates)
-
-
-@configure
-class HFColBertRankerConfig(RankerBaseConfig, HFModelConfig):
-    """The configuration for the HuggingFace ColBERT ranker.
+class HFColBertScorerConfig(HFModelConfig):
+    """The configuration for the HuggingFace ColBERT scorer.
 
     :param base_model_type: the base model type for the ColBERT model. Default is "bert".
     :type base_model_type: str
@@ -168,13 +35,13 @@ class HFColBertRankerConfig(RankerBaseConfig, HFModelConfig):
     normalize_embeddings: bool = True
 
 
-@RANKERS("hf_colbert", config_class=HFColBertRankerConfig)
-class HFColBertRanker(RankerBase):
-    """HFColBertRanker: The ranker based on the HuggingFace ColBERT model.
+@SCORERS("hf_colbert", config_class=HFColBertScorerConfig)
+class HFColBertScorer(PairScorerBase):
+    """HFColBertScorer: The scorer based on the HuggingFace ColBERT model.
     Code adapted from https://github.com/hotchpotch/JQaRA/blob/main/evaluator/reranker/colbert_reranker.py
     """
 
-    def __init__(self, cfg: HFColBertRankerConfig) -> None:
+    def __init__(self, cfg: HFColBertScorerConfig) -> None:
         super().__init__(cfg)
         self.model, self.tokenizer = load_hf_model(
             cfg.model_path,
@@ -194,8 +61,8 @@ class HFColBertRanker(RankerBase):
         self.normalize = cfg.normalize_embeddings
         return
 
-    @TIME_METER("ranker.hf_colbert_rank")
-    def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, np.ndarray]:
+    @TIME_METER("scorer.hf_colbert")
+    def score(self, query: str, candidates: list[str]) -> np.ndarray:
         # tokenize the query & candidates
         query_inputs = self._query_encode([query])
         cand_inputs = self._document_encode(candidates)
@@ -210,12 +77,7 @@ class HFColBertRanker(RankerBase):
         scores, _ = token_scores.max(-1)
         scores = scores.sum(1) / query_inputs["attention_mask"].sum(-1, keepdim=True)
         scores = scores.cpu().squeeze().float().numpy()
-        return None, scores
-
-    async def _async_rank(
-        self, query: str, candidates: list[str]
-    ) -> tuple[np.ndarray, np.ndarray]:
-        return await asyncio.to_thread(self._rank, query, candidates)
+        return scores
 
     @torch.no_grad()
     def _tokenize(self, texts: list[str], insert_token_id: int, is_query: bool = False):

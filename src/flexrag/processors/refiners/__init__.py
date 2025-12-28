@@ -1,6 +1,6 @@
-from .arranger import ContextArranger, ContextArrangerConfig
-from .refiner import REFINERS, RefinerBase
-from .summarizer import (
+from .arrangers import ContextArranger, ContextArrangerConfig
+from .refiner_base import REFINERS, RefinerBase
+from .summarizers import (
     AbstractiveSummarizer,
     AbstractiveSummarizerConfig,
     RecompExtractiveSummarizer,

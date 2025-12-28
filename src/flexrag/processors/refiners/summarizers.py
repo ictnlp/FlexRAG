@@ -9,7 +9,7 @@ from flexrag.common import TIME_METER, configure
 from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.models import ENCODERS, GENERATORS, EncoderConfig, GeneratorConfig
 
-from .refiner import REFINERS, RefinerBase
+from .refiner_base import REFINERS, RefinerBase
 
 
 @configure

@@ -4,7 +4,7 @@ from typing import Annotated
 from flexrag.common import TIME_METER, Choices, configure
 from flexrag.common.dataclasses import RetrievedContext
 
-from .refiner import REFINERS, RefinerBase
+from .refiner_base import REFINERS, RefinerBase
 
 
 @configure

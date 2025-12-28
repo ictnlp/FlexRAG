@@ -5,10 +5,10 @@ from pathlib import Path
 import numpy as np
 
 from flexrag.common import TIME_METER, configure
-from flexrag.common.dataclasses import ChatMessages, ChatTurn
+from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.models import GENERATORS, GeneratorConfig
 
-from .ranker import RANKERS, RankerBase, RankerBaseConfig
+from .ranker_base import RANKERS, RankerBase, RankerBaseConfig, RankingResult
 
 
 @configure
@@ -49,39 +49,47 @@ class RankGPTRanker(RankerBase):
         self.max_chunk_size = cfg.max_chunk_size
         return
 
-    @TIME_METER("ranker.rankgpt_rank")
-    def _rank(self, query: str, candidates: list[str]) -> tuple[np.ndarray, None]:
+    @TIME_METER("ranker.rankgpt")
+    def rank(
+        self,
+        query: str,
+        candidates: list[RetrievedContext | str],
+    ) -> RankingResult:
         # perform slide window ranking
-        indices = list(range(len(candidates)))
-        start_idx = max(len(candidates) - self.window_size, 0)
-        end_idx = len(candidates)
+        if isinstance(candidates[0], RetrievedContext):
+            assert (
+                self.ranking_field is not None
+            ), "ranking_field must be specified when ranking RetrievedContext"
+        cands = [
+            (
+                cand.data[self.ranking_field]
+                if isinstance(cand, RetrievedContext)
+                else cand
+            )
+            for cand in candidates
+        ]
+        indices = list(range(len(cands)))
+        start_idx = max(len(cands) - self.window_size, 0)
+        end_idx = len(cands)
         while start_idx >= 0:
             start_idx = max(start_idx, 0)
-            candidates_ = [candidates[i] for i in indices[start_idx:end_idx]]
-            indices_, _ = self._rank_piece(query, candidates_)
-            indices[start_idx:end_idx] = indices_
+            current_indices = indices[start_idx:end_idx]
+            cands_ = [cands[i] for i in current_indices]
+            local_indices = self._rank_piece(query, cands_)
+            indices[start_idx:end_idx] = [current_indices[i] for i in local_indices]
+            if start_idx == 0:
+                break
             start_idx = start_idx - self.step_size
             end_idx -= self.step_size
-        return np.array(indices), None
+        if self.reserve_num > 0:
+            indices = indices[: self.reserve_num]
+        return RankingResult(
+            query=query,
+            candidates=[candidates[i] for i in indices],
+            scores=None,
+        )
 
-    @TIME_METER("ranker.rankgpt_rank")
-    async def _async_rank(
-        self, query: str, candidates: list[str]
-    ) -> tuple[np.ndarray, None]:
-        # perform slide window ranking
-        indices = list(range(len(candidates)))
-        start_idx = max(len(candidates) - self.window_size, 0)
-        end_idx = len(candidates)
-        while start_idx >= 0:
-            start_idx = max(start_idx, 0)
-            candidates_ = [candidates[i] for i in indices[start_idx:end_idx]]
-            indices_, _ = await self._async_rank_piece(query, candidates_)
-            indices[start_idx:end_idx] = indices_
-            start_idx = start_idx - self.step_size
-            end_idx -= self.step_size
-        return np.array(indices), None
-
-    def _rank_piece(self, query: str, candidates: list[str]) -> tuple[np.ndarray, None]:
+    def _rank_piece(self, query: str, candidates: list[str]) -> list[int]:
         prompt = self._get_prompt(query=query, candidates=candidates)
         response = self.generator.chat(prompts=[prompt])[0][0]
 
@@ -101,31 +109,7 @@ class RankGPTRanker(RankerBase):
         new_indices = new_indices + [
             idx for idx in ori_indices if idx not in new_indices
         ]
-        return new_indices, None
-
-    async def _async_rank_piece(
-        self, query: str, candidates: list[str]
-    ) -> tuple[np.ndarray, None]:
-        prompt = self._get_prompt(query=query, candidates=candidates)
-        response = (await self.generator.async_chat(prompts=[prompt]))[0][0]
-
-        # convert string to indices
-        response = re.sub(r"\D", " ", response)
-        indices_ = [int(x) - 1 for x in response.split()]
-
-        # deduplicate indices
-        indices = []
-        for i in indices_:
-            if i not in indices:
-                indices.append(i)
-
-        # refine indices
-        ori_indices = list(range(len(candidates)))
-        new_indices = [idx for idx in indices if idx in ori_indices]
-        new_indices = new_indices + [
-            idx for idx in ori_indices if idx not in new_indices
-        ]
-        return new_indices, None
+        return new_indices
 
     def _get_prompt(self, query: str, candidates: list[str]):
         max_length = 300
