@@ -64,7 +64,7 @@ class LMDBRetrieverDatabase(RetrieverDatabaseBase):
         with self.database.begin() as txn:
             cursor = txn.cursor()
             items = cursor.getmulti(normed_ids)
-        if any(i is None for i in items):
+        if any(i is None for i in items) or len(items) != len(normed_ids):
             raise KeyError("Some ids are not found in the database")
         items = [self.serializer.deserialize(i[1]) for i in items]
 
