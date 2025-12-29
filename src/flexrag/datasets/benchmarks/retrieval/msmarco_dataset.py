@@ -27,7 +27,7 @@ class MSMARCODatasetConfig:
     """Configuration for loading `MS MARCO <https://microsoft.github.io/msmarco>`_ Retrieval Dataset.
     The __getitem__ method will return `IREvalData` objects.
 
-    :param data_name: The name of the dataset to load. Required.
+    :param subset: The name of the dataset to load. Required.
         Supported values are:
 
             - msmarco_passage_ranking_v1
@@ -35,7 +35,7 @@ class MSMARCODatasetConfig:
             - msmarco_document_ranking_v1
             - msmarco_document_ranking_v2
 
-    :type data_name: str
+    :type subset: str
     :param split: The split of the dataset to load. Required.
     :type split: str
     :param data_path: The local path to the dataset.
@@ -48,8 +48,8 @@ class MSMARCODatasetConfig:
 
     For example, you can use the following code to load the train split of the msmarco_passage_ranking_v1:
 
-        >>> config = MSMARCOConfig(
-        ...     data_name="msmarco_passage_ranking_v1",
+        >>> config = MSMARCODatasetConfig(
+        ...     subset="msmarco_passage_ranking_v1",
         ...     split="train",
         ...     load_corpus=True,
         ... )
@@ -59,7 +59,7 @@ class MSMARCODatasetConfig:
     please refer to the `MS MARCO repository <https://github.com/microsoft/MSMARCO>`_.
     """
 
-    data_name: Annotated[
+    subset: Annotated[
         str,
         Choices(
             "msmarco_passage_ranking_v1",
@@ -78,7 +78,7 @@ class MSMARCODataset(RetrievalDatasetBase):
     """Dataset for loading MSMARCO Retrieval Dataset."""
 
     def __init__(self, config: MSMARCODatasetConfig) -> None:
-        match config.data_name:
+        match config.subset:
             case "msmarco_passage_ranking_v1":
                 loader = _MSMARCOPassageRankingV1Loader(
                     split=config.split, data_path=config.data_path
@@ -96,7 +96,7 @@ class MSMARCODataset(RetrievalDatasetBase):
                     split=config.split, data_path=config.data_path
                 )
             case _:
-                raise ValueError(f"Unsupported data_name: {config.data_name}")
+                raise ValueError(f"Unsupported subset: {config.subset}")
 
         # load corpus, queries, and qrels
         self._context_data = {}
