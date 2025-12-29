@@ -126,8 +126,11 @@ _T = TypeVar("_T")
 
 
 def _create_pydantic_dataclass(config: ConfigDict) -> Callable[[Type[_T]], Type[_T]]:
-    def decorator(cls: Type[_T]) -> Type[_T]:
-        cls = dataclass(config=config)(cls)
+    def decorator(cls: Type[_T] = None, *, frozen=False, kw_only=False) -> Type[_T]:
+        if cls is None:
+            return lambda cls: decorator(cls, frozen=frozen, kw_only=kw_only)
+
+        cls = dataclass(config=config, frozen=frozen, kw_only=kw_only)(cls)
 
         def dumps(self) -> str:
             """Dump the dataclass to a YAML string."""
