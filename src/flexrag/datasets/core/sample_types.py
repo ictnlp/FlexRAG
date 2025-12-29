@@ -1,6 +1,6 @@
 from typing import Optional
 
-from flexrag.common import ChatMessages, ChatTurn, Context, RetrievedContext, data
+from flexrag.common import ChatMessages, ChatTurn, Context, data
 
 
 @data(kw_only=True)
@@ -12,14 +12,14 @@ class IRSample:
     :param question_id: The unique identifier for the question. Default: None.
     :type question_id: Optional[str]
     :param contexts: The contexts related to the question. Default: None.
-    :type contexts: Optional[list[RetrievedContext]]
+    :type contexts: Optional[list[Context]]
     :param meta_data: The metadata of the evaluation data. Default: None.
     :type meta_data: Optional[dict]
     """
 
     question: str
     question_id: Optional[str] = None
-    contexts: Optional[list[RetrievedContext]] = None
+    contexts: Optional[list[Context]] = None
     meta_data: Optional[dict] = None
 
 
@@ -30,16 +30,16 @@ class RankingSample(IRSample):
     :param question: The question for evaluation. Required.
     :type question: str
     :param candidates: The candidate contexts to be ranked. Required.
-    :type candidates: list[RetrievedContext]
+    :type candidates: list[Context]
     :param question_id: The unique identifier for the question. Default: None.
     :type question_id: Optional[str]
     :param contexts: The contexts related to the question. Default: None.
-    :type contexts: Optional[list[RetrievedContext]]
+    :type contexts: Optional[list[Context]]
     :param meta_data: The metadata of the evaluation data. Default: None.
     :type meta_data: Optional[dict]
     """
 
-    candidates: list[RetrievedContext]
+    candidates: list[Context]
 
 
 @data(kw_only=True)
