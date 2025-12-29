@@ -44,17 +44,17 @@ class Context:
 class RetrievedContext(Context):
     """The dataclass for retrieved context.
 
-    :param retriever: The name of the retriever. Required.
-    :type retriever: str
-    :param query: The query for retrieval. Required.
-    :type query: str
-    :param score: The relevance score of the retrieved data. Default: 0.0.
-    :type score: float
+    :param retriever: The name of the retriever. Default: None.
+    :type retriever: Optional[str]
+    :param query: The query for retrieval. Default: None.
+    :type query: Optional[str]
+    :param score: The relevance score of the retrieved data. Default: None.
+    :type score: Optional[float]
     """
 
-    retriever: str = ""
-    query: str = ""
-    score: float = 0.0
+    retriever: Optional[str] = None
+    query: Optional[str] = None
+    score: Optional[float] = None
 
 
 @data

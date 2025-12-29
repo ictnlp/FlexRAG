@@ -1,9 +1,9 @@
 from typing import Optional
 
-from flexrag.common import data, Context, ChatTurn, ChatMessages
+from flexrag.common import ChatMessages, ChatTurn, Context, RetrievedContext, data
 
 
-@data
+@data(kw_only=True)
 class IRSample:
     """The dataclass for Information Retrieval evaluation.
 
@@ -12,21 +12,37 @@ class IRSample:
     :param question_id: The unique identifier for the question. Default: None.
     :type question_id: Optional[str]
     :param contexts: The contexts related to the question. Default: None.
-    :type contexts: Optional[list[Context]]
-    :param hard_negatives: The hard negatives related to the question. Default: None.
-    :type hard_negatives: Optional[list[Context]]
+    :type contexts: Optional[list[RetrievedContext]]
     :param meta_data: The metadata of the evaluation data. Default: None.
     :type meta_data: Optional[dict]
     """
 
     question: str
     question_id: Optional[str] = None
-    contexts: Optional[list[Context]] = None
-    hard_negatives: Optional[list[Context]] = None
+    contexts: Optional[list[RetrievedContext]] = None
     meta_data: Optional[dict] = None
 
 
-@data
+@data(kw_only=True)
+class RankingSample(IRSample):
+    """The dataclass for Passage / Document Ranking evaluation.
+
+    :param question: The question for evaluation. Required.
+    :type question: str
+    :param candidates: The candidate contexts to be ranked. Required.
+    :type candidates: list[RetrievedContext]
+    :param question_id: The unique identifier for the question. Default: None.
+    :type question_id: Optional[str]
+    :param contexts: The contexts related to the question. Default: None.
+    :type contexts: Optional[list[RetrievedContext]]
+    :param meta_data: The metadata of the evaluation data. Default: None.
+    :type meta_data: Optional[dict]
+    """
+
+    candidates: list[RetrievedContext]
+
+
+@data(kw_only=True)
 class MultipleChoiceSample:
     """The dataclass for Multiple Choice evaluation.
 
@@ -49,12 +65,12 @@ class MultipleChoiceSample:
     answers: Optional[list[int]] = None
 
 
-@data
+@data(kw_only=True)
 class ContextualMCSample(IRSample, MultipleChoiceSample):
     """The dataclass for Contextualized Multiple Choice evaluation data."""
 
 
-@data
+@data(kw_only=True)
 class QASample:
     """The dataclass for QA evaluation.
 
@@ -74,12 +90,12 @@ class QASample:
     answers: Optional[list[str]] = None
 
 
-@data
+@data(kw_only=True)
 class ContextualQASample(IRSample, QASample):
     """The dataclass for Contextualized QA evaluation data."""
 
 
-@data
+@data(kw_only=True)
 class DialogueSample:
     """The dataclass for Dialogue evaluation.
 
@@ -99,7 +115,7 @@ class DialogueSample:
     meta_data: Optional[dict] = None
 
 
-@data
+@data(kw_only=True)
 class ContextualDialogueSample(DialogueSample):
     """The dataclass for Contextualized Dialogue evaluation data.
 
@@ -111,8 +127,6 @@ class ContextualDialogueSample(DialogueSample):
     :type golden_responses: Optional[list[ChatTurn]]
     :param contexts: The contexts related to the dialogue. Default: None.
     :type contexts: Optional[list[Context]]
-    :param hard_negatives: The hard negative contexts related to the dialogue. Default: None.
-    :type hard_negatives: Optional[list[Context]]
     :param meta_data: The metadata of the evaluation data. Default: None.
     :type meta_data: Optional[dict]
     """
@@ -121,5 +135,4 @@ class ContextualDialogueSample(DialogueSample):
     dialogue_id: Optional[str] = None
     golden_responses: Optional[list[ChatTurn]] = None
     contexts: Optional[list[Context]] = None
-    hard_negatives: Optional[list[Context]] = None
     meta_data: Optional[dict] = None
