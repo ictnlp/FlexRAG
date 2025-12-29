@@ -1,5 +1,6 @@
 from collections import defaultdict
 from collections.abc import Mapping
+from types import MappingProxyType
 
 from datasets import load_dataset
 
@@ -89,14 +90,14 @@ class MTEBDataset(RetrievalDatasetBase):
     @property
     def _contexts(self) -> Mapping[str, Context]:
         """Return a mapping from context_id to Context object."""
-        return self._context_data
+        return MappingProxyType(self._context_data)
 
     @property
     def _queries(self) -> Mapping[str, str]:
         """Return a mapping from query_id to query text."""
-        return self._queries_data
+        return MappingProxyType(self._queries_data)
 
     @property
     def _qrels(self) -> Mapping[str, set[str]]:
         """Return a mapping from query_id to a set of relevant context_ids."""
-        return self._qrels_data
+        return MappingProxyType(self._qrels_data)

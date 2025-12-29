@@ -1,5 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
+from types import MappingProxyType
 from typing import Annotated, Mapping, Optional
 
 from huggingface_hub import snapshot_download
@@ -130,13 +131,13 @@ class MultiLongDocRetrievalDataset(RetrievalDatasetBase):
         return
 
     @property
-    def _qrels(self) -> Mapping[str, Mapping[str, float]]:
-        return self._qrels_data
+    def qrels(self) -> Mapping[str, Mapping[str, float]]:
+        return MappingProxyType(self._qrels_data)
 
     @property
-    def _queries(self) -> Mapping[str, str]:
-        return self._queries_data
+    def queries(self) -> Mapping[str, str]:
+        return MappingProxyType(self._queries_data)
 
     @property
-    def _contexts(self) -> Mapping[str, Context]:
-        return self._context_data
+    def contexts(self) -> Mapping[str, Context]:
+        return MappingProxyType(self._context_data)

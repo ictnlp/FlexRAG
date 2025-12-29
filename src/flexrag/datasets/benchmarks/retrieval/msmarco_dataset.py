@@ -1,17 +1,19 @@
 from collections import defaultdict
 from collections.abc import Iterator
 from pathlib import Path
-from typing import Literal, Mapping
+from types import MappingProxyType
+from typing import Annotated, Any, Literal, Mapping
 
 from flexrag.common import (
     FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
+    Choices,
+    Context,
     SimpleProgressLogger,
     configure,
     download,
     download_and_extract,
 )
-from flexrag.common.dataclasses import Context
 
 from ...core import DATASETS
 from ...reader import LineDelimitedReader
@@ -57,7 +59,15 @@ class MSMARCODatasetConfig:
     please refer to the `MS MARCO repository <https://github.com/microsoft/MSMARCO>`_.
     """
 
-    data_name: str
+    data_name: Annotated[
+        str,
+        Choices(
+            "msmarco_passage_ranking_v1",
+            "msmarco_passage_ranking_v2",
+            "msmarco_document_ranking_v1",
+            "msmarco_document_ranking_v2",
+        ),
+    ]
     split: str
     data_path: str | None = None
     load_corpus: bool = False
@@ -97,22 +107,28 @@ class MSMARCODataset(RetrievalDatasetBase):
                 self._context_data[context.context_id] = context
         self._qrels_data = loader.load_qrels()
         self._queries_data = loader.load_queries()
+        self._candidates = loader.load_scoreddocs()
         return
 
     @property
-    def _contexts(self) -> Mapping[str, Context]:
+    def contexts(self) -> Mapping[str, Context]:
         """Return a mapping from context_id to Context object."""
-        return self._context_data
+        return MappingProxyType(self._context_data)
 
     @property
-    def _queries(self) -> Mapping[str, str]:
+    def queries(self) -> Mapping[str, str]:
         """Return a mapping from query_id to query text."""
-        return self._queries_data
+        return MappingProxyType(self._queries_data)
 
     @property
-    def _qrels(self) -> Mapping[str, set[str]]:
+    def qrels(self) -> Mapping[str, Mapping[str, float]]:
         """Return a mapping from query_id to a set of relevant context_ids."""
-        return self._qrels_data
+        return MappingProxyType(self._qrels_data)
+
+    @property
+    def candidates(self) -> Mapping[str, list[Mapping[str, Any]]]:
+        """Return a mapping from query_id to a set of candidate context_ids and their scores."""
+        return MappingProxyType(self._candidates)
 
 
 RESOURCES = {
@@ -121,10 +137,26 @@ RESOURCES = {
         "train": {
             "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/queries.tar.gz",
             "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/qrels.train.tsv",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/top1000.train.tar.gz",
         },
         "dev": {
             "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/queries.tar.gz",
             "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/qrels.dev.tsv",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/top1000.dev.tar.gz",
+        },
+        "trec-dl-2019": {
+            "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-test2019-queries.tsv.gz",
+            "qrels": "https://trec.nist.gov/data/deep/2019qrels-pass.txt",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-passagetest2019-top1000.tsv.gz",
+        },
+        "trec-dl-2020": {
+            "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-test2020-queries.tsv.gz",
+            "qrels": "https://trec.nist.gov/data/deep/2020qrels-pass.txt",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-passagetest2020-top1000.tsv.gz",
+        },
+        # queries and scoreddocs can be loaded from trec-dl-2019 and trec-dl-2020
+        "trec-dl-hard": {
+            "qrels": "https://raw.githubusercontent.com/grill-lab/DL-Hard/main/dataset/dl_hard-passage.qrels"
         },
     },
     "msmarco_passage_ranking_v2": {
@@ -132,14 +164,27 @@ RESOURCES = {
         "train": {
             "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/passv2_train_queries.tsv",
             "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/passv2_train_qrels.tsv",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/passv2_train_top100.txt.gz",
         },
         "dev1": {
             "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/passv2_dev_queries.tsv",
             "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/passv2_dev_qrels.tsv",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/passv2_dev_top100.txt.gz",
         },
         "dev2": {
             "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/passv2_dev2_queries.tsv",
             "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/passv2_dev2_qrels.tsv",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/passv2_dev2_top100.txt.gz",
+        },
+        "trec-dl-2021": {
+            "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/2021_queries.tsv",
+            "qrels": "https://trec.nist.gov/data/deep/2021.qrels.pass.final.txt",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/2021_passage_top100.txt.gz",
+        },
+        "trec-dl-2022": {
+            "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/2022_queries.tsv",
+            "qrels": "https://trec.nist.gov/data/deep/2022.qrels.pass.withDupes.txt",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/2022_passage_top100.txt.gz",
         },
     },
     "msmarco_document_ranking_v1": {
@@ -147,10 +192,31 @@ RESOURCES = {
         "train": {
             "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-doctrain-queries.tsv.gz",
             "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-doctrain-qrels.tsv.gz",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-doctrain-top100.gz",
         },
         "dev": {
             "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-docdev-queries.tsv.gz",
             "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-docdev-qrels.tsv.gz",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-docdev-top100.gz",
+        },
+        "trec-dl-2019": {
+            "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-test2019-queries.tsv.gz",
+            "qrels": "https://trec.nist.gov/data/deep/2019qrels-docs.txt",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-doctest2019-top100.gz",
+        },
+        "trec-dl-2020": {
+            "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-test2020-queries.tsv.gz",
+            "qrels": "https://trec.nist.gov/data/deep/2020qrels-docs.txt",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-doctest2020-top100.gz",
+        },
+        "orcas": {
+            "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/orcas-doctrain-queries.tsv.gz",
+            "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/orcas-doctrain-qrels.tsv.gz",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/orcas-doctrain-top100.gz",
+        },
+        # queries and scoreddocs can be loaded from trec-dl-2019 and trec-dl-2020
+        "trec-dl-hard": {
+            "qrels": "https://raw.githubusercontent.com/grill-lab/DL-Hard/main/dataset/dl_hard-doc.qrels",
         },
     },
     "msmarco_document_ranking_v2": {
@@ -158,14 +224,39 @@ RESOURCES = {
         "train": {
             "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/docv2_train_queries.tsv",
             "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/docv2_train_qrels.tsv",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/docv2_train_top100.txt.gz",
         },
         "dev1": {
             "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/docv2_dev_queries.tsv",
             "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/docv2_dev_qrels.tsv",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/docv2_dev_top100.txt.gz",
         },
         "dev2": {
             "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/docv2_dev2_queries.tsv",
             "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/docv2_dev2_qrels.tsv",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/docv2_dev2_top100.txt.gz",
+        },
+        "trec-dl-2019": {
+            "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-test2019-queries.tsv.gz",
+            "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/docv2_trec2019_qrels.txt.gz",
+        },
+        "trec-dl-2020": {
+            "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/msmarco-test2020-queries.tsv.gz",
+            "qrels": "https://msmarco.z22.web.core.windows.net/msmarcoranking/docv2_trec2020_qrels.txt.gz",
+        },
+        "trec-dl-2021": {
+            "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/2021_queries.tsv",
+            "qrels": "https://trec.nist.gov/data/deep/2021.qrels.docs.final.txt",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/2021_document_top100.txt.gz",
+        },
+        "trec-dl-2022": {
+            "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/2022_queries.tsv",
+            "qrels": "https://trec.nist.gov/data/deep/2022.qrels.docs.inferred.txt",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/2022_document_top100.txt.gz",
+        },
+        "trec-dl-2023": {
+            "queries": "https://msmarco.z22.web.core.windows.net/msmarcoranking/2023_queries.tsv",
+            "scoreddocs": "https://msmarco.z22.web.core.windows.net/msmarcoranking/2023_document_top100.txt.gz",
         },
     },
 }
@@ -174,7 +265,17 @@ RESOURCES = {
 class _MSMARCOPassageRankingV1Loader:
     """Dataset for loading MSMARCO Passage Ranking V1 Dataset."""
 
-    def __init__(self, split: Literal["train", "dev"], data_path: str = None) -> None:
+    def __init__(
+        self,
+        split: Literal[
+            "train",
+            "dev",
+            "trec-dl-2019",
+            "trec-dl-2020",
+            "trec-dl-hard",
+        ],
+        data_path: str = None,
+    ) -> None:
         self.data_path = data_path
         self.split = split
         return
@@ -216,22 +317,34 @@ class _MSMARCOPassageRankingV1Loader:
                 )
         return
 
-    def load_queries(self) -> dict[str, str]:
+    def load_queries(self, split: str = None) -> dict[str, str]:
         """Load the queries from the given path."""
+        split = split if split else self.split
+        if split == "trec-dl-hard":
+            return self.load_queries(split="trec-dl-2019") | self.load_queries(
+                split="trec-dl-2020"
+            )
+        query_url = RESOURCES["msmarco_passage_ranking_v1"][split]["queries"]
+        query_name = Path(query_url).name
         if self.data_path is not None:
-            queries_path = Path(self.data_path, f"queries.{self.split}.tsv")
+            queries_path = Path(self.data_path, query_name)
         else:
             queries_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_passage_ranking_v1",
-                f"queries.{self.split}.tsv",
+                query_name,
             )
         # download the queries if not exists
-        if not queries_path.exists():
-            url = RESOURCES["msmarco_passage_ranking_v1"][self.split]["queries"]
-            logger.info(f"Downloading queries from {url} to {queries_path.parent}.")
-            download_and_extract(url, queries_path.parent)
+        if split in {"train", "dev"}:
+            queries_path = queries_path.parent / f"queries.{split}.tsv"
+            if not queries_path.exists():
+                logger.info(f"Downloading queries from {query_url} to {queries_path}.")
+                download_and_extract(query_url, queries_path.parent)
+        else:
+            if not queries_path.exists():
+                logger.info(f"Downloading queries from {query_url} to {queries_path}.")
+                download(query_url, queries_path)
         # load the queries
         queries = {}
         reader = LineDelimitedReader(
@@ -244,26 +357,28 @@ class _MSMARCOPassageRankingV1Loader:
             queries[data["_id"]] = data["query"]
         return queries
 
-    def load_qrels(self) -> dict[str, dict[str, float]]:
+    def load_qrels(self, split: str = None) -> dict[str, dict[str, float]]:
         """Load the qrels from the given path.
 
         :return: A dictionary mapping from query id to a set of relevant context ids.
         :rtype: dict[str, dict[str, float]]
         """
+        split = split if split else self.split
+        qrels_url = RESOURCES["msmarco_passage_ranking_v1"][split]["qrels"]
+        qrels_name = Path(qrels_url).name
         if self.data_path is not None:
-            qrels_path = Path(self.data_path, f"qrels.{self.split}.tsv")
+            qrels_path = Path(self.data_path, qrels_name)
         else:
             qrels_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_passage_ranking_v1",
-                f"qrels.{self.split}.tsv",
+                qrels_name,
             )
         # download the qrels if not exists
         if not qrels_path.exists():
-            url = RESOURCES["msmarco_passage_ranking_v1"][self.split]["qrels"]
-            logger.info(f"Downloading qrels from {url} to {qrels_path}.")
-            download(url, qrels_path)
+            logger.info(f"Downloading qrels from {qrels_url} to {qrels_path}.")
+            download(qrels_url, qrels_path)
         # load the qrels
         qrels = defaultdict(dict)
         reader = LineDelimitedReader(
@@ -276,6 +391,59 @@ class _MSMARCOPassageRankingV1Loader:
         for data in reader:
             qrels[data["qid"]][data["ctx_id"]] = float(data["rel"])
         return qrels
+
+    def load_scoreddocs(self, split: str = None) -> dict[str, list[dict[str, Any]]]:
+        """Load the scoredocs from the given path.
+
+        :return: A dictionary mapping from query id to a dictionary of context ids and their scores.
+        :rtype: dict[str, list[dict[str, Any]]]
+        """
+        # parse split
+        split = split if split else self.split
+        if split == "trec-dl-hard":
+            return self.load_scoreddocs(split="trec-dl-2019") | self.load_scoreddocs(
+                split="trec-dl-2020"
+            )
+        if "scoreddocs" not in RESOURCES["msmarco_passage_ranking_v1"][split]:
+            return {}
+        cands_url = RESOURCES["msmarco_passage_ranking_v1"][split]["scoreddocs"]
+        cands_name = Path(cands_url).name
+        if self.data_path is not None:
+            cands_path = Path(self.data_path, cands_name)
+        else:
+            cands_path = Path(
+                FLEXRAG_CACHE_DIR,
+                "datasets",
+                "msmarco_passage_ranking_v1",
+                cands_name,
+            )
+        # download the scoredocs if not exists
+        if split in {"train", "dev"}:
+            cands_path = cands_path.parent / f"top1000.{split}"
+            if not cands_path.exists():
+                logger.info(f"Downloading scoredocs from {cands_url} to {cands_path}.")
+                download_and_extract(cands_url, cands_path.parent)
+            reader = LineDelimitedReader(
+                cands_path,
+                titles=["qid", "ctx_id", "query", "ctx"],
+                encoding="utf-8",
+                file_format="tsv",
+            )
+        else:
+            if not cands_path.exists():
+                logger.info(f"Downloading scoredocs from {cands_url} to {cands_path}.")
+                download(cands_url, cands_path)
+            reader = LineDelimitedReader(
+                cands_path,
+                titles=["qid", "ctx_id", "query", "ctx"],
+                encoding="utf-8",
+                file_format="tsv",
+            )
+        # load the scoredocs
+        scoredocs = defaultdict(list)
+        for data in reader:
+            scoredocs[data["qid"]].append({"ctx_id": data["ctx_id"]})
+        return scoredocs
 
 
 class _MSMARCODocumentRankingV1Loader:
@@ -323,25 +491,28 @@ class _MSMARCODocumentRankingV1Loader:
                 )
         return
 
-    def load_queries(self) -> dict[str, str]:
+    def load_queries(self, split: str = None) -> dict[str, str]:
         """Load the queries from the given path."""
-        # msmarco-doctrain-queries.tsv
-        if self.data_path is not None:
-            queries_path = Path(
-                self.data_path, f"msmarco-doc{self.split}-queries.tsv.gz"
+        split = split if split else self.split
+        if split == "trec-dl-hard":
+            return self.load_queries(split="trec-dl-2019") | self.load_queries(
+                split="trec-dl-2020"
             )
+        query_url = RESOURCES["msmarco_document_ranking_v1"][split]["queries"]
+        query_name = Path(query_url).name
+        if self.data_path is not None:
+            queries_path = Path(self.data_path, query_name)
         else:
             queries_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_document_ranking_v1",
-                f"msmarco-doc{self.split}-queries.tsv.gz",
+                query_name,
             )
         # download the queries if not exists
         if not queries_path.exists():
-            url = RESOURCES["msmarco_document_ranking_v1"][self.split]["queries"]
-            logger.info(f"Downloading queries from {url} to {queries_path}.")
-            download(url, queries_path)
+            logger.info(f"Downloading queries from {query_url} to {queries_path}.")
+            download(query_url, queries_path)
         # load the queries
         queries = {}
         reader = LineDelimitedReader(
@@ -360,20 +531,21 @@ class _MSMARCODocumentRankingV1Loader:
         :return: A dictionary mapping from query id to a set of relevant context ids.
         :rtype: dict[str, dict[str, float]]
         """
+        qrels_url = RESOURCES["msmarco_document_ranking_v1"][self.split]["qrels"]
+        qrels_name = Path(qrels_url).name
         if self.data_path is not None:
-            qrels_path = Path(self.data_path, f"msmarco-doc{self.split}-qrels.tsv.gz")
+            qrels_path = Path(self.data_path, qrels_name)
         else:
             qrels_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_document_ranking_v1",
-                f"msmarco-doc{self.split}-qrels.tsv.gz",
+                qrels_name,
             )
         # download the qrels if not exists
         if not qrels_path.exists():
-            url = RESOURCES["msmarco_document_ranking_v1"][self.split]["qrels"]
-            logger.info(f"Downloading qrels from {url} to {qrels_path}.")
-            download(url, qrels_path)
+            logger.info(f"Downloading qrels from {qrels_url} to {qrels_path}.")
+            download(qrels_url, qrels_path)
         # load the qrels
         qrels = defaultdict(dict)
         reader = LineDelimitedReader(
@@ -387,12 +559,68 @@ class _MSMARCODocumentRankingV1Loader:
             qrels[data["qid"]][data["ctx_id"]] = float(data["rel"])
         return qrels
 
+    def load_scoreddocs(self, split: str = None) -> dict[str, list[dict[str, Any]]]:
+        """Load the scoredocs from the given path.
+
+        :return: A dictionary mapping from query id to a dictionary of context ids and their scores.
+        :rtype: dict[str, list[dict[str, Any]]]
+        """
+        split = split if split else self.split
+        if split == "trec-dl-hard":
+            return self.load_scoreddocs(split="trec-dl-2019") | self.load_scoreddocs(
+                split="trec-dl-2020"
+            )
+        if "scoreddocs" not in RESOURCES["msmarco_document_ranking_v1"][split]:
+            return {}
+        cands_url = RESOURCES["msmarco_document_ranking_v1"][split]["scoreddocs"]
+        cands_name = Path(cands_url).name
+        if self.data_path is not None:
+            cands_path = Path(self.data_path, cands_name)
+        else:
+            cands_path = Path(
+                FLEXRAG_CACHE_DIR,
+                "datasets",
+                "msmarco_document_ranking_v1",
+                cands_name,
+            )
+        # download the scoredocs if not exists
+        if not cands_path.exists():
+            logger.info(f"Downloading scoredocs from {cands_url} to {cands_path}.")
+            download(cands_url, cands_path)
+        # load the scoredocs
+        scoredocs = defaultdict(list)
+        reader = LineDelimitedReader(
+            cands_path,
+            titles=["qid", "q0", "ctx_id", "rank", "score", "retriever"],
+            encoding="utf-8",
+            file_format="tsv",
+            delimiter=r"\s+",
+        )
+        for data in reader:
+            scoredocs[data["qid"]].append(
+                {
+                    "ctx_id": data["ctx_id"],
+                    "score": float(data["score"]),
+                    "rank": int(data["rank"]),
+                    "retriever": data["retriever"],
+                }
+            )
+        return scoredocs
+
 
 class _MSMARCOPassageRankingV2Loader:
     """Dataset for loading MSMARCO Passage Ranking V2 Dataset."""
 
     def __init__(
-        self, split: Literal["train", "dev1", "dev2"], data_path: str = None
+        self,
+        split: Literal[
+            "train",
+            "dev1",
+            "dev2",
+            "trec-dl-2021",
+            "trec-dl-2022",
+        ],
+        data_path: str = None,
     ) -> None:
         self.data_path = data_path
         self.split = split
@@ -435,20 +663,21 @@ class _MSMARCOPassageRankingV2Loader:
 
     def load_queries(self) -> dict[str, str]:
         """Load the queries from the given path."""
+        query_url = RESOURCES["msmarco_passage_ranking_v2"][self.split]["queries"]
+        query_name = Path(query_url).name
         if self.data_path is not None:
-            queries_path = Path(self.data_path, f"passv2_{self.split}_queries.tsv")
+            queries_path = Path(self.data_path, query_name)
         else:
             queries_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_passage_ranking_v2",
-                f"passv2_{self.split}_queries.tsv",
+                query_name,
             )
         # download the queries if not exists
         if not queries_path.exists():
-            url = RESOURCES["msmarco_passage_ranking_v2"][self.split]["queries"]
-            logger.info(f"Downloading queries from {url} to {queries_path}.")
-            download(url, queries_path)
+            logger.info(f"Downloading queries from {query_url} to {queries_path}.")
+            download(query_url, queries_path)
         # load the queries
         queries = {}
         reader = LineDelimitedReader(
@@ -467,20 +696,21 @@ class _MSMARCOPassageRankingV2Loader:
         :return: A dictionary mapping from query id to a set of relevant context ids.
         :rtype: dict[str, dict[str, float]]
         """
+        qrels_url = RESOURCES["msmarco_passage_ranking_v2"][self.split]["qrels"]
+        qrels_name = Path(qrels_url).name
         if self.data_path is not None:
-            qrels_path = Path(self.data_path, f"passv2_{self.split}_qrels.tsv")
+            qrels_path = Path(self.data_path, qrels_name)
         else:
             qrels_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_passage_ranking_v2",
-                f"passv2_{self.split}_qrels.tsv",
+                qrels_name,
             )
         # download the qrels if not exists
         if not qrels_path.exists():
-            url = RESOURCES["msmarco_passage_ranking_v2"][self.split]["qrels"]
-            logger.info(f"Downloading qrels from {url} to {qrels_path}.")
-            download(url, qrels_path)
+            logger.info(f"Downloading qrels from {qrels_url} to {qrels_path}.")
+            download(qrels_url, qrels_path)
         # load the qrels
         qrels = defaultdict(dict)
         reader = LineDelimitedReader(
@@ -494,12 +724,65 @@ class _MSMARCOPassageRankingV2Loader:
             qrels[data["qid"]][data["ctx_id"]] = float(data["rel"])
         return qrels
 
+    def load_scoreddocs(self) -> dict[str, list[dict[str, Any]]]:
+        """Load the scoredocs from the given path.
+
+        :return: A dictionary mapping from query id to a dictionary of context ids and their scores.
+        :rtype: dict[str, list[dict[str, Any]]]
+        """
+        if "scoreddocs" not in RESOURCES["msmarco_passage_ranking_v2"][self.split]:
+            return {}
+        cands_url = RESOURCES["msmarco_passage_ranking_v2"][self.split]["scoreddocs"]
+        cands_name = Path(cands_url).name
+        if self.data_path is not None:
+            cands_path = Path(self.data_path, cands_name)
+        else:
+            cands_path = Path(
+                FLEXRAG_CACHE_DIR,
+                "datasets",
+                "msmarco_passage_ranking_v2",
+                cands_name,
+            )
+        # download the scoredocs if not exists
+        if not cands_path.exists():
+            logger.info(f"Downloading scoredocs from {cands_url} to {cands_path}.")
+            download(cands_url, cands_path)
+        # load the scoredocs
+        scoredocs = defaultdict(list)
+        reader = LineDelimitedReader(
+            cands_path,
+            titles=["qid", "q0", "ctx_id", "rank", "score", "retriever"],
+            encoding="utf-8",
+            file_format="tsv",
+            delimiter=r"\s+",
+        )
+        for data in reader:
+            scoredocs[data["qid"]].append(
+                {
+                    "ctx_id": data["ctx_id"],
+                    "score": float(data["score"]),
+                    "rank": int(data["rank"]),
+                    "retriever": data["retriever"],
+                }
+            )
+        return scoredocs
+
 
 class _MSMARCODocumentRankingV2Loader:
     """Dataset for loading MSMARCO Document Ranking V2 Dataset."""
 
     def __init__(
-        self, split: Literal["train", "dev1", "dev2"], data_path: str = None
+        self,
+        split: Literal[
+            "train",
+            "dev1",
+            "dev2",
+            "trec-dl-2019",
+            "trec-dl-2020",
+            "trec-dl-2021",
+            "trec-dl-2022",
+        ],
+        data_path: str = None,
     ) -> None:
         self.data_path = data_path
         self.split = split
@@ -542,20 +825,21 @@ class _MSMARCODocumentRankingV2Loader:
 
     def load_queries(self) -> dict[str, str]:
         """Load the queries from the given path."""
+        query_url = RESOURCES["msmarco_document_ranking_v2"][self.split]["queries"]
+        query_name = Path(query_url).name
         if self.data_path is not None:
-            queries_path = Path(self.data_path, f"docv2_{self.split}_queries.tsv")
+            queries_path = Path(self.data_path, query_name)
         else:
             queries_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_document_ranking_v2",
-                f"docv2_{self.split}_queries.tsv",
+                query_name,
             )
         # download the queries if not exists
         if not queries_path.exists():
-            url = RESOURCES["msmarco_document_ranking_v2"][self.split]["queries"]
-            logger.info(f"Downloading queries from {url} to {queries_path}.")
-            download(url, queries_path)
+            logger.info(f"Downloading queries from {query_url} to {queries_path}.")
+            download(query_url, queries_path)
         # load the queries
         queries = {}
         reader = LineDelimitedReader(
@@ -574,20 +858,21 @@ class _MSMARCODocumentRankingV2Loader:
         :return: A dictionary mapping from query id to a set of relevant context ids.
         :rtype: dict[str, dict[str, float]]
         """
+        qrels_url = RESOURCES["msmarco_document_ranking_v2"][self.split]["qrels"]
+        qrels_name = Path(qrels_url).name
         if self.data_path is not None:
-            qrels_path = Path(self.data_path, f"docv2_{self.split}_qrels.tsv")
+            qrels_path = Path(self.data_path, qrels_name)
         else:
             qrels_path = Path(
                 FLEXRAG_CACHE_DIR,
                 "datasets",
                 "msmarco_document_ranking_v2",
-                f"docv2_{self.split}_qrels.tsv",
+                qrels_name,
             )
         # download the qrels if not exists
         if not qrels_path.exists():
-            url = RESOURCES["msmarco_document_ranking_v2"][self.split]["qrels"]
-            logger.info(f"Downloading qrels from {url} to {qrels_path}.")
-            download(url, qrels_path)
+            logger.info(f"Downloading qrels from {qrels_url} to {qrels_path}.")
+            download(qrels_url, qrels_path)
         # load the qrels
         qrels = defaultdict(dict)
         reader = LineDelimitedReader(
@@ -600,3 +885,46 @@ class _MSMARCODocumentRankingV2Loader:
         for data in reader:
             qrels[data["qid"]][data["ctx_id"]] = float(data["rel"])
         return qrels
+
+    def load_scoreddocs(self) -> dict[str, list[dict[str, Any]]]:
+        """Load the scoredocs from the given path.
+
+        :return: A dictionary mapping from query id to a dictionary of context ids and their scores.
+        :rtype: dict[str, list[dict[str, Any]]]
+        """
+        if "scoreddocs" not in RESOURCES["msmarco_document_ranking_v2"][self.split]:
+            return {}
+        cands_url = RESOURCES["msmarco_document_ranking_v2"][self.split]["scoreddocs"]
+        cands_name = Path(cands_url).name
+        if self.data_path is not None:
+            cands_path = Path(self.data_path, cands_name)
+        else:
+            cands_path = Path(
+                FLEXRAG_CACHE_DIR,
+                "datasets",
+                "msmarco_document_ranking_v2",
+                cands_name,
+            )
+        # download the scoredocs if not exists
+        if not cands_path.exists():
+            logger.info(f"Downloading scoredocs from {cands_url} to {cands_path}.")
+            download(cands_url, cands_path)
+        # load the scoredocs
+        scoredocs = defaultdict(list)
+        reader = LineDelimitedReader(
+            cands_path,
+            titles=["qid", "q0", "ctx_id", "rank", "score", "retriever"],
+            encoding="utf-8",
+            file_format="tsv",
+            delimiter=r"\s+",
+        )
+        for data in reader:
+            scoredocs[data["qid"]].append(
+                {
+                    "ctx_id": data["ctx_id"],
+                    "score": float(data["score"]),
+                    "rank": int(data["rank"]),
+                    "retriever": data["retriever"],
+                }
+            )
+        return scoredocs
