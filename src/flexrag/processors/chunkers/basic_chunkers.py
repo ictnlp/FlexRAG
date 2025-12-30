@@ -112,21 +112,21 @@ class TokenChunker(ChunkerBase):
 
     def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
         tokens = self.tokenizer.tokenize(text)
-        chunks = []
+        chunks: list[Chunk] = []
         current_index = 0
         for i in range(0, len(tokens), self.chunk_size - self.overlap):
-            text = self.tokenizer.detokenize(tokens[i : i + self.chunk_size])
+            chunk_text = self.tokenizer.detokenize(tokens[i : i + self.chunk_size])
             chunks.append(
                 Chunk(
-                    text=text,
+                    text=chunk_text,
                     start=current_index,
-                    end=current_index + len(text),
+                    end=current_index + len(chunk_text),
                 )
             )
             overlap_text = self.tokenizer.detokenize(
                 tokens[i + self.chunk_size - self.overlap : i + self.chunk_size]
             )
-            current_index += len(text) - len(overlap_text)
+            current_index += len(chunk_text) - len(overlap_text)
         if return_str:
             return [chunk.text for chunk in chunks]
         return chunks
@@ -178,10 +178,12 @@ class RecursiveChunkerConfig(TokenizerConfig):
 class RecursiveChunker(ChunkerBase):
     """RecursiveChunker splits text into chunks recursively using the specified seperators.
 
-    The order of the seperators matters. The text will be split recursively based on the seperators in the order of the list.
+    The order of the seperators matters.
+    The text will be split recursively based on the seperators in the order of the list.
     The default seperators are defined in ``PREDEFINED_SPLIT_PATTERNS``.
 
-    If the text is still too long after splitting with the last level seperators, the text will be split into tokens.
+    If the text is still too long after splitting with the last level seperators,
+    the text will be split into tokens.
     """
 
     def __init__(self, cfg: RecursiveChunkerConfig) -> None:
@@ -258,8 +260,6 @@ class SentenceChunkerConfig(TokenizerConfig, SentenceSplitterConfig):
     :type max_sents: Optional[int]
     :param max_tokens: The maximum number of tokens in each chunk. Default is None.
     :type max_tokens: Optional[int]
-    :param max_chars: The maximum number of characters in each chunk. Default is None.
-    :type max_chars: Optional[int]
     :param overlap: The number of sentences to overlap between chunks. Default is 0.
     :type overlap: int
 
@@ -272,30 +272,28 @@ class SentenceChunkerConfig(TokenizerConfig, SentenceSplitterConfig):
         cfg = SentenceChunkerConfig(max_sents=10)
         chunker = SentenceChunker(cfg)
 
-    Note that the ``SentenceChunker`` relies on the sentence splitter to split the text,
-    thus the space between may be lost if the sentence splitter is not reversible.
+    Note that sentences longer than ``max_tokens`` will be further split into smaller
+    chunks.
     """
 
     max_sents: Optional[int] = None
     max_tokens: Optional[int] = None
-    max_chars: Optional[int] = None
     overlap: int = 0
 
 
 @CHUNKERS("sentence_chunker", config_class=SentenceChunkerConfig)
 class SentenceChunker(ChunkerBase):
-    """SentenceChunker first splits text into sentences using the specified sentence splitter,
-    then merges the sentences into chunks based on the specified constraints.
+    """SentenceChunker first splits text into sentences using the specified sentence
+    splitter, then merges the sentences into chunks based on the specified constraints.
     """
 
     def __init__(self, cfg: SentenceChunkerConfig) -> None:
         # set arguments
         assert not all(
-            i is None for i in [cfg.max_sents, cfg.max_tokens, cfg.max_chars]
-        ), "At least one of max_sentences, max_tokens, max_chars should be set."
+            i is None for i in [cfg.max_sents, cfg.max_tokens]
+        ), "At least one of max_sentences, max_tokens should be set."
         self.max_sents = cfg.max_sents if cfg.max_sents else float("inf")
         self.max_tokens = cfg.max_tokens if cfg.max_tokens else float("inf")
-        self.max_chars = cfg.max_chars if cfg.max_chars else float("inf")
         self.overlap = cfg.overlap
         self.tokenizer = TOKENIZERS.load(cfg)
         if not self.tokenizer.reversible:
@@ -306,18 +304,41 @@ class SentenceChunker(ChunkerBase):
 
         # load splitter
         self.splitter = SENTENCE_SPLITTERS.load(cfg)
-
-        self.long_sentence_counter = 0
         return
 
     def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
-        sentences = self.splitter.split(text)
+        # split document into sentences
+        sentences_ = self.splitter.split(text)
+
+        # make sure all sentences lengths are less than max_tokens
+        sentences = []
+        for sent in sentences_:
+            if (self.max_tokens == float("inf")) or (
+                len(self.tokenizer.tokenize(sent["text"])) <= self.max_tokens
+            ):
+                sentences.append(sent)
+                continue
+
+            # split the long sentence
+            char_start, _ = sent["char_span"]
+            tokens = self.tokenizer.tokenize(sent["text"])
+            curr_pos = 0
+            for i in range(0, len(tokens), self.max_tokens):
+                sub_text = self.tokenizer.detokenize(tokens[i : i + self.max_tokens])
+                span = (
+                    (char_start + curr_pos, char_start + curr_pos + len(sub_text))
+                    if char_start != -1
+                    else (-1, -1)
+                )
+                sentences.append({"text": sub_text, "char_span": span})
+                curr_pos += len(sub_text)
+
         if self.max_tokens != float("inf"):
             token_counts = [len(self.tokenizer.tokenize(s["text"])) for s in sentences]
         else:
             token_counts = [0] * len(sentences)
-        char_counts = [len(s["text"]) for s in sentences]
 
+        # merge sentences into chunks
         chunks = []
         start_pointer = 0
         end_pointer = 0
@@ -328,20 +349,11 @@ class SentenceChunker(ChunkerBase):
                     sum(token_counts[start_pointer : end_pointer + 1])
                     <= self.max_tokens
                 )
-                and (
-                    sum(char_counts[start_pointer : end_pointer + 1]) <= self.max_chars
-                )
             ):
                 end_pointer += 1
 
             if end_pointer == start_pointer:
                 end_pointer += 1
-                self.long_sentence_counter += 1
-                if self.long_sentence_counter == 100:
-                    logger.warning(
-                        "There are 100 sentences have more than `max_tokens` tokens or `max_chars` characters. "
-                        "Please check the configuration of SentenceChunker."
-                    )
             try:
                 char_start = sentences[start_pointer]["char_span"][0]
                 char_end = sentences[end_pointer - 1]["char_span"][1]
