@@ -26,9 +26,9 @@ class HFEncoderConfig(HFModelConfig):
     :type encode_method: str
     :param normalize: Whether to normalize the embedding. Default is False.
     :type normalize: bool
-    :param prompt: A Python template for the prompt. Default is None.
+    :param prefix: A Python prefix before encoding query / passage. Default is None.
         The `query` variable will be replaced with the input text.
-    :type prompt: Optional[str]
+    :type prefix: Optional[str]
     :param task: The task to use. Default is None.
     :type task: Optional[str]
 
@@ -39,17 +39,16 @@ class HFEncoderConfig(HFModelConfig):
     .. code-block:: python
         from flexrag.models import HFEncoder, HFEncoderConfig
 
-        prompt = (
-            'Instruct: '
-            'Given a web search query, retrieve relevant passages that answer the query\n'
-            'Query:{query}'
+        prefix = (
+            'Instruct: Given a web search query, retrieve'
+            'relevant passages that answer the query\nQuery:'
         )
 
         query_encoder = HFEncoder(
             HFEncoderConfig(
                 model_path="Qwen/Qwen3-Embedding-0.6B",
                 device_id=[0],
-                prompt=prompt,
+                prefix=prefix,
                 normalize=True,
                 encode_method="last",
             )
@@ -60,7 +59,7 @@ class HFEncoderConfig(HFModelConfig):
     max_encode_length: int = 512
     encode_method: Annotated[str, Choices("cls", "mean", "last")] = "mean"
     normalize: bool = False
-    prompt: Optional[str] = None  # used in nomic-text-embedding
+    prefix: Optional[str] = None  # used in nomic-text-embedding
     task: Optional[str] = None  # used in jina-embedding
 
 
@@ -98,7 +97,7 @@ class HFEncoder(EncoderBase):
         self.max_encode_length = cfg.max_encode_length
         self.encode_method = cfg.encode_method
         self.normalize = cfg.normalize
-        self.prompt = cfg.prompt
+        self.prefix = cfg.prefix
         self.task = cfg.task
         return
 
@@ -144,8 +143,8 @@ class HFEncoder(EncoderBase):
             )
 
         # add prompt if needed
-        if self.prompt:
-            texts = [self.prompt.format(query=text) for text in texts]
+        if self.prefix:
+            texts = [self.prefix + text for text in texts]
 
         # prepare encoder
         if (len(texts) >= len(self.devices) * 8) and (self.dp_model is not None):
