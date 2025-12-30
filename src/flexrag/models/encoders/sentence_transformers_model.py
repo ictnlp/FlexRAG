@@ -59,12 +59,6 @@ class SentenceTransformerEncoder(EncoderBase):
             prompts=config.prompt_dict,
             model_kwargs=config.model_kwargs,
         )
-        if len(config.device_id) > 1:
-            self.pool = self.model.start_multi_process_pool(
-                target_devices=[f"cuda:{i}" for i in config.device_id]
-            )
-        else:
-            self.pool = None
 
         # set args
         self.prompt_name = config.prompt_name
@@ -74,7 +68,7 @@ class SentenceTransformerEncoder(EncoderBase):
         return
 
     @TIME_METER("encoder.st_encode")
-    def _encode(self, texts: list[str], **kwargs) -> np.ndarray:
+    def encode(self, texts: list[str], **kwargs) -> np.ndarray:
         args = {
             "sentences": texts,
             "batch_size": len(texts),
@@ -88,12 +82,12 @@ class SentenceTransformerEncoder(EncoderBase):
             args["prompt_name"] = self.prompt_name
         if kwargs.get("prompt", self.prompt) is not None:
             args["prompt"] = self.prompt
-        if (len(texts) >= len(self.devices) * 8) and (self.pool is not None):
-            args["pool"] = self.pool
-            args["batch_size"] = math.ceil(args["batch_size"] / len(self.devices))
-            embeddings = self.model.encode_multi_process(**args)
-        else:
-            embeddings = self.model.encode(**args)
+        args["batch_size"] = math.ceil(args["batch_size"] / max(1, len(self.devices)))
+        # Data Parallel Encoding is currently disabled for SentenceTransformer as
+        # we are working to employ `ray` for more efficient multi-GPU encoding.
+        # if len(self.devices) > 0:
+        #     args["device"] = [f"cuda:{i}" for i in self.devices]
+        embeddings = self.model.encode(**args)
         return embeddings
 
     @property

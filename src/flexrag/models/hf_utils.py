@@ -140,8 +140,9 @@ def configure_attn(
         return {}
 
     # check code availability
-    support_flash = getattr(cls, "_supports_flash_attn_2", False)
+    support_flash = getattr(cls, "_supports_flash_attn", False)
     support_sdpa = getattr(cls, "_supports_sdpa", False)
+    support_flex = getattr(cls, "_supports_flex_attn", False)
 
     # check FlashAttention availability
     has_flash_attn = True
@@ -167,26 +168,32 @@ def configure_attn(
         torch.backends.cuda.enable_flash_sdp(True)
         torch.backends.cuda.enable_mem_efficient_sdp(True)
         torch.backends.cuda.enable_math_sdp(True)
-        logger.warning("Enable flash_attention_2.")
+        logger.info("Enable flash_attention_2.")
+    elif support_flex and (gpu_cap >= 8.0):
+        attn_args["attn_implementation"] = "flex_attention"
+        torch.backends.cuda.enable_flash_sdp(True)
+        torch.backends.cuda.enable_mem_efficient_sdp(True)
+        torch.backends.cuda.enable_math_sdp(True)
+        logger.info("Enable flex attention.")
     elif support_sdpa and (gpu_cap >= 8.0):
         attn_args["attn_implementation"] = "sdpa"
         torch.backends.cuda.enable_flash_sdp(True)
         torch.backends.cuda.enable_mem_efficient_sdp(True)
         torch.backends.cuda.enable_math_sdp(True)
-        logger.warning("Enable pytorch flash_attn SDPA kernel.")
+        logger.info("Enable pytorch flash_attn SDPA kernel.")
     elif support_sdpa and (7.0 <= gpu_cap < 8.0):
         attn_args["attn_implementation"] = "sdpa"
         torch.backends.cuda.enable_flash_sdp(False)
         torch.backends.cuda.enable_mem_efficient_sdp(True)
         torch.backends.cuda.enable_math_sdp(True)
-        logger.warning("Enable pytorch memory efficient SDPA kernel.")
-        logger.warning("SDPA memory efficient mode does not support bf16.")
+        logger.info("Enable pytorch memory efficient SDPA kernel.")
+        logger.info("SDPA memory efficient mode does not support bf16.")
     elif support_sdpa and (0 < gpu_cap < 7.0):
         attn_args["attn_implementation"] = "sdpa"
         torch.backends.cuda.enable_flash_sdp(False)
         torch.backends.cuda.enable_mem_efficient_sdp(False)
         torch.backends.cuda.enable_math_sdp(True)
-        logger.warning("Enable pytorch math SDPA kernel.")
+        logger.info("Enable pytorch math SDPA kernel.")
     else:
         attn_args["attn_implementation"] = "eager"
         logger.info(f"flash attention is not available.")
