@@ -155,11 +155,12 @@ def configure_attn(
     if load_dtype not in {torch.float16, torch.bfloat16}:
         if support_flash:
             logger.warning(
-                "FlashAttention/Pytorch SDPA only supports float16 and bfloat16. "
+                "FlashAttention/SDPA/FlexAttention only supports float16 and bfloat16. "
                 "Please explicitly set `load_dtype` to one of them to enable FlashAttention."
             )
         support_flash = False
         support_sdpa = False
+        support_flex = False
 
     # set attention implementation
     attn_args = {}
