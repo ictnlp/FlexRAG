@@ -22,12 +22,19 @@ class HFEncoderConfig(HFModelConfig):
 
     :param max_encode_length: The maximum length of the input sequence. Default is 512.
     :type max_encode_length: int
-    :param encode_method: The method to get the embedding. Default is "mean". Available choices are "cls", "mean".
+    :param encode_method: The method to get the embedding. Default is "mean".
+        Available choices:
+
+        - `cls`: Use the [CLS] token representation.
+        - `mean`: Use the mean pooling of all token representations.
+        - `last`: Use the last token representation (usually used in decoder-only models).
+        - `late`: Use `Late Chunking <https://arxiv.org/abs/2409.04701>`_ to get the embeddings.
+            If this method is chosen, the input texts will be concatenated as a single document.
+            The final embeddings will be computed by mean pooling over each text chunk hiddens.
     :type encode_method: str
     :param normalize: Whether to normalize the embedding. Default is False.
     :type normalize: bool
     :param prefix: A Python prefix before encoding query / passage. Default is None.
-        The `query` variable will be replaced with the input text.
     :type prefix: Optional[str]
     :param task: The task to use. Default is None.
     :type task: Optional[str]
@@ -57,7 +64,7 @@ class HFEncoderConfig(HFModelConfig):
     """
 
     max_encode_length: int = 512
-    encode_method: Annotated[str, Choices("cls", "mean", "last")] = "mean"
+    encode_method: Annotated[str, Choices("cls", "mean", "last", "late")] = "mean"
     normalize: bool = False
     prefix: Optional[str] = None  # used in nomic-text-embedding
     task: Optional[str] = None  # used in jina-embedding
@@ -132,7 +139,8 @@ class HFEncoder(EncoderBase):
     @torch.no_grad()
     def encode(self, texts: str | list[str]) -> np.ndarray:
         texts = texts if isinstance(texts, list) else [texts]
-        if self.is_jina:  # for jina-embedding
+        # for jina-embedding
+        if self.is_jina:
             return self.model.encode(
                 texts,
                 task=self.task,
@@ -142,7 +150,11 @@ class HFEncoder(EncoderBase):
                 convert_to_numpy=True,
             )
 
-        # add prompt if needed
+        # for late chunking
+        if self.encode_method == "late":
+            return self.contextual_encode(texts)
+
+        # add prefix if needed
         if self.prefix:
             texts = [self.prefix + text for text in texts]
 
@@ -168,8 +180,85 @@ class HFEncoder(EncoderBase):
         embeddings = self.get_embedding(output, mask)
         return embeddings
 
-    async def async_encode(self, texts: list[str]) -> np.ndarray:
-        return await asyncio.to_thread(self.encode, texts)
+    @torch.no_grad()
+    def contextual_encode(self, texts: list[str]) -> np.ndarray:
+        """Encode texts using late chunking method.
+
+        :param texts: A list of input texts.
+            All inputs will be considered as chunks of a single document.
+        :type texts: list[str]
+        :return: The encoded embeddings.
+        :rtype: np.ndarray
+        """
+        # prepare input text with prefix
+        chunk_boundaries = []
+        full_text = ""
+        for idx, text in enumerate(texts):
+            if idx == 0 and self.prefix:
+                full_text += self.prefix + " " + text
+                chunk_boundaries.append((len(self.prefix) + 1, len(full_text)))
+            elif idx == 0:
+                full_text += text
+                chunk_boundaries.append((0, len(full_text)))
+            else:
+                full_text += " " + text
+                chunk_boundaries.append(
+                    (len(full_text) - len(text) - 1, len(full_text))
+                )
+
+        # tokenize full text
+        encoding = self.tokenizer(
+            full_text,
+            return_offsets_mapping=True,
+            add_special_tokens=True,
+            truncation=False,
+        )
+
+        # prepare chunk ids
+        chunk_ids = []
+        current_chunk_idx = 0
+        for start, end in encoding["offset_mapping"]:
+            if start == end == 0:
+                chunk_ids.append(0)  # special token
+                continue
+            while (start > chunk_boundaries[current_chunk_idx][1]) and (
+                current_chunk_idx < len(chunk_boundaries)
+            ):
+                current_chunk_idx += 1
+            if (
+                (current_chunk_idx < len(chunk_boundaries))
+                and (end >= chunk_boundaries[current_chunk_idx][0])
+                and (start <= chunk_boundaries[current_chunk_idx][1])
+            ):
+                chunk_ids.append(current_chunk_idx + 1)  # chunk_id starts from 1
+            else:
+                chunk_ids.append(0)  # space between chunks or prefix or suffix tokens.
+        chunk_ids = torch.tensor(chunk_ids, dtype=torch.long, device=self.model.device)
+        input_ids = torch.tensor(
+            encoding["input_ids"], device=self.model.device, dtype=torch.long
+        ).unsqueeze(0)
+        attn_mask = torch.tensor(
+            encoding["attention_mask"], device=self.model.device, dtype=torch.long
+        ).unsqueeze(0)
+
+        # forward for hiddens
+        outputs = self.model(input_ids=input_ids, attention_mask=attn_mask)
+        hidden_states = outputs.last_hidden_state.squeeze(0)  # [seq, hidden_dim]
+
+        # mean pooling for each chunk
+        embeddings = torch.zeros(
+            (len(texts) + 1, hidden_states.size(-1)),
+            device=hidden_states.device,
+        )
+        # index_reduce_ is in beta, use index_add_ for stability.
+        embeddings.index_add_(0, chunk_ids, hidden_states)
+        token_counts = torch.bincount(chunk_ids)[1:]
+        embeddings = embeddings[1:] / torch.clamp(token_counts, min=1).unsqueeze(1)
+
+        # normalize
+        if self.normalize:
+            embeddings = F.normalize(embeddings, dim=1)
+        return embeddings.float().cpu().numpy()
 
     @property
     def embedding_size(self) -> int:
