@@ -29,16 +29,15 @@ class HFEncoderConfig(HFModelConfig):
         - `mean`: Use the mean pooling of all token representations.
         - `last`: Use the last token representation (usually used in decoder-only models).
         - `late`: Use `Late Chunking <https://arxiv.org/abs/2409.04701>`_ to get the embeddings.
-            If this method is chosen, the input texts will be concatenated as a single document.
-            The final embeddings will be computed by mean pooling over each text chunk hiddens.
+          If this method is chosen, the input texts will be concatenated as a single document.
+          The final embeddings will be computed by mean pooling over each text chunk hiddens.
     :type encode_method: str
     :param normalize: Whether to normalize the embedding. Default is False.
     :type normalize: bool
-    :param prefix: A Python prefix before encoding query / passage. Default is None.
+    :param prefix: A string prefix before encoding query / passage. Default is None.
     :type prefix: Optional[str]
     :param task: The task to use. Default is None.
     :type task: Optional[str]
-
 
     For example, if you want to use the Qwen3-Embedding-0.6B model as an query encoder,
     you can use the following code:
@@ -81,24 +80,6 @@ class HFEncoder(EncoderBase):
             device_id=cfg.device_id,
             trust_remote_code=cfg.trust_remote_code,
         )
-        # setup model
-        self.devices = cfg.device_id
-        if len(self.devices) > 1:
-            if self.is_jina:
-                logger.warning("Data parallel does not support self implemented model.")
-                self.dp_model = None
-            elif not torch.cuda.is_available():
-                logger.warning("Data parallel is not supported on CPU.")
-                self.dp_model = None
-            elif torch.cuda.device_count() <= max(self.devices):
-                logger.warning(
-                    f"Invalid device ids: {self.devices}. Using single device mode."
-                )
-                self.dp_model = None
-            else:
-                self.dp_model = DP(self.model, device_ids=self.devices)
-        else:
-            self.dp_model = None
 
         # setup arguments
         self.max_encode_length = cfg.max_encode_length
@@ -139,16 +120,6 @@ class HFEncoder(EncoderBase):
     @torch.no_grad()
     def encode(self, texts: str | list[str]) -> np.ndarray:
         texts = texts if isinstance(texts, list) else [texts]
-        # for jina-embedding
-        if self.is_jina:
-            return self.model.encode(
-                texts,
-                task=self.task,
-                max_length=self.max_encode_length,
-                batch_size=len(texts),
-                show_progress_bar=False,
-                convert_to_numpy=True,
-            )
 
         # for late chunking
         if self.encode_method == "late":
@@ -158,25 +129,29 @@ class HFEncoder(EncoderBase):
         if self.prefix:
             texts = [self.prefix + text for text in texts]
 
-        # prepare encoder
-        if (len(texts) >= len(self.devices) * 8) and (self.dp_model is not None):
-            encoder = self.dp_model
-        else:
-            encoder = self.model
-
-        # encode
+        # prepare input_dict
         # PERFORMANCE NOTE: tokenize takes significant time for encoding.
-        input_dict = self.tokenizer.batch_encode_plus(
+        input_dict = self.tokenizer(
             texts,
             return_tensors="pt",
-            max_length=self.max_encode_length,
+            # max_length=self.max_encode_length,
             padding=True,
             truncation=True,
         )
-        if not isinstance(encoder, DP):
-            input_dict = input_dict.to(encoder.device)
+        # for jina-embedding v3
+        if hasattr(self.model, "_adaptation_map") and (self.task is not None):
+            task_id = self.model._adaptation_map.get(self.task, None)
+            if task_id is not None:
+                input_dict["adapter_mask"] = torch.full(
+                    (len(texts),), task_id, dtype=torch.int32
+                )
+        input_dict = input_dict.to(self.model.device)
+
+        # get hidden states
         mask = input_dict["attention_mask"]
-        output = encoder(**input_dict).last_hidden_state
+        output = self.model(**input_dict).last_hidden_state
+
+        # get embeddings
         embeddings = self.get_embedding(output, mask)
         return embeddings
 
@@ -240,9 +215,18 @@ class HFEncoder(EncoderBase):
         attn_mask = torch.tensor(
             encoding["attention_mask"], device=self.model.device, dtype=torch.long
         ).unsqueeze(0)
+        input_dict = {"input_ids": input_ids, "attention_mask": attn_mask}
+
+        # for jina embedding v3
+        if hasattr(self.model, "_adaptation_map") and (self.task is not None):
+            task_id = self.model._adaptation_map.get(self.task, None)
+            if task_id is not None:
+                input_dict["adapter_mask"] = torch.full(
+                    (1,), task_id, dtype=torch.int32, device=self.model.device
+                )
 
         # forward for hiddens
-        outputs = self.model(input_ids=input_ids, attention_mask=attn_mask)
+        outputs = self.model(**input_dict)
         hidden_states = outputs.last_hidden_state.squeeze(0)  # [seq, hidden_dim]
 
         # mean pooling for each chunk
@@ -263,12 +247,6 @@ class HFEncoder(EncoderBase):
     @property
     def embedding_size(self) -> int:
         return self.model.config.hidden_size
-
-    @property
-    def is_jina(self) -> bool:
-        return self.model.__class__.__name__ == "XLMRobertaLoRA" and hasattr(
-            self.model, "encode"
-        )
 
 
 @configure
