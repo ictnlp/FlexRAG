@@ -20,8 +20,8 @@ logger = LOGGER_MANAGER.get_logger("flexrag.models.hf_model")
 class HFEncoderConfig(HFModelConfig):
     """Configuration for HFEncoder.
 
-    :param max_encode_length: The maximum length of the input sequence. Default is 512.
-    :type max_encode_length: int
+    :param max_encode_length: The maximum length of the input sequence. Default is None.
+    :type max_encode_length: Optional[int]
     :param encode_method: The method to get the embedding. Default is "mean".
         Available choices:
 
@@ -62,7 +62,7 @@ class HFEncoderConfig(HFModelConfig):
         emb = query_encoder.encode(["Who is Bruce Wayne?"])
     """
 
-    max_encode_length: int = 512
+    max_encode_length: Optional[int] = None
     encode_method: Annotated[str, Choices("cls", "mean", "last", "late")] = "mean"
     normalize: bool = False
     prefix: Optional[str] = None  # used in nomic-text-embedding
@@ -82,11 +82,16 @@ class HFEncoder(EncoderBase):
         )
 
         # setup arguments
-        self.max_encode_length = cfg.max_encode_length
         self.encode_method = cfg.encode_method
         self.normalize = cfg.normalize
         self.prefix = cfg.prefix
         self.task = cfg.task
+        self.encoding_args = {
+            "padding": True,
+        }
+        if cfg.max_encode_length is not None:
+            self.encoding_args["max_length"] = cfg.max_encode_length
+            self.encoding_args["truncation"] = True
         return
 
     def get_embedding(
@@ -134,9 +139,7 @@ class HFEncoder(EncoderBase):
         input_dict = self.tokenizer(
             texts,
             return_tensors="pt",
-            # max_length=self.max_encode_length,
-            padding=True,
-            truncation=True,
+            **self.encoding_args,
         )
         # for jina-embedding v3
         if hasattr(self.model, "_adaptation_map") and (self.task is not None):
@@ -186,7 +189,7 @@ class HFEncoder(EncoderBase):
             full_text,
             return_offsets_mapping=True,
             add_special_tokens=True,
-            truncation=False,
+            **self.encoding_args,
         )
 
         # prepare chunk ids
