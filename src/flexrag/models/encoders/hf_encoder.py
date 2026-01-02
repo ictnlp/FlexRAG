@@ -240,7 +240,7 @@ class HFEncoder(EncoderBase):
         )
         # index_reduce_ is in beta, use index_add_ for stability.
         embeddings.index_add_(0, chunk_ids, hidden_states)
-        token_counts = torch.bincount(chunk_ids)[1:]
+        token_counts = torch.bincount(chunk_ids, minlength=len(texts) + 1)[1:]
         embeddings = embeddings[1:] / torch.clamp(token_counts, min=1).unsqueeze(1)
 
         # normalize
