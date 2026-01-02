@@ -236,6 +236,7 @@ class HFEncoder(EncoderBase):
         embeddings = torch.zeros(
             (len(texts) + 1, hidden_states.size(-1)),
             device=hidden_states.device,
+            dtype=hidden_states.dtype,
         )
         # index_reduce_ is in beta, use index_add_ for stability.
         embeddings.index_add_(0, chunk_ids, hidden_states)
