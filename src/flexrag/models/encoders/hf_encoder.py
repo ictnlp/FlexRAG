@@ -86,12 +86,7 @@ class HFEncoder(EncoderBase):
         self.normalize = cfg.normalize
         self.prefix = cfg.prefix
         self.task = cfg.task
-        self.encoding_args = {
-            "padding": True,
-        }
-        if cfg.max_encode_length is not None:
-            self.encoding_args["max_length"] = cfg.max_encode_length
-            self.encoding_args["truncation"] = True
+        self.max_encoding_length = cfg.max_encode_length
         return
 
     def get_embedding(
@@ -136,10 +131,14 @@ class HFEncoder(EncoderBase):
 
         # prepare input_dict
         # PERFORMANCE NOTE: tokenize takes significant time for encoding.
+        encoding_args = {"padding": True}
+        if self.max_encoding_length is not None:
+            encoding_args["max_length"] = self.max_encoding_length
+            encoding_args["truncation"] = True
         input_dict = self.tokenizer(
             texts,
             return_tensors="pt",
-            **self.encoding_args,
+            **encoding_args,
         )
         # for jina-embedding v3
         if hasattr(self.model, "_adaptation_map") and (self.task is not None):
@@ -159,94 +158,146 @@ class HFEncoder(EncoderBase):
         return embeddings
 
     @torch.no_grad()
-    def contextual_encode(self, texts: list[str]) -> np.ndarray:
-        """Encode texts using late chunking method.
+    def contextual_encode(
+        self, documents: list[list[str]] | list[str], overlap_size: int = 512
+    ) -> list[np.ndarray]:
+        """Encode documents using `late chunking <http://arxiv.org/abs/2409.04701>`_ method.
 
-        :param texts: A list of input texts.
-            All inputs will be considered as chunks of a single document.
-        :type texts: list[str]
-        :return: The encoded embeddings.
-        :rtype: np.ndarray
+        :param documents: A list of input documents, each document is a list of text chunks.
+        :type documents: list[list[str]] | list[str]
+        :param overlap_size: The size of overlap between two encoding windows. Default is 512.
+            This is used to reduce the boundary effect when encoding documents longer than the
+            maximum encoding length of the model.
+        :type overlap_size: int
+        :return: The encoded embeddings for each document.
+        :rtype: list[np.ndarray]
         """
+        if isinstance(documents[0], str):
+            documents = [documents]
+
         # prepare input text with prefix
-        chunk_boundaries = []
-        full_text = ""
-        for idx, text in enumerate(texts):
-            if idx == 0 and self.prefix:
-                full_text += self.prefix + " " + text
-                chunk_boundaries.append((len(self.prefix) + 1, len(full_text)))
-            elif idx == 0:
-                full_text += text
-                chunk_boundaries.append((0, len(full_text)))
-            else:
-                full_text += " " + text
-                chunk_boundaries.append(
-                    (len(full_text) - len(text) - 1, len(full_text))
-                )
+        full_documents: list[str] = []
+        doc_boundaries: list[list[tuple[int, int]]] = []
+        for doc_chunks in documents:
+            full_text = ""
+            chunk_boundaries: list[tuple[int, int]] = []
+            for idx, text in enumerate(doc_chunks):
+                if idx == 0 and self.prefix:
+                    full_text += self.prefix + " " + text
+                    chunk_boundaries.append((len(self.prefix) + 1, len(full_text)))
+                elif idx == 0:
+                    full_text += text
+                    chunk_boundaries.append((0, len(full_text)))
+                else:
+                    full_text += " " + text
+                    chunk_boundaries.append(
+                        (len(full_text) - len(text) - 1, len(full_text))
+                    )
+            full_documents.append(full_text)
+            doc_boundaries.append(chunk_boundaries)
 
         # tokenize full text
-        encoding = self.tokenizer(
-            full_text,
+        encoding_args = {"padding": True, "truncation": False}
+        input_dict = self.tokenizer(
+            full_documents,
             return_offsets_mapping=True,
+            return_tensors="pt",
             add_special_tokens=True,
-            **self.encoding_args,
-        )
+            **encoding_args,
+        ).to(self.model.device)
 
         # prepare chunk ids
-        chunk_ids = []
-        current_chunk_idx = 0
-        for start, end in encoding["offset_mapping"]:
-            if start == end == 0:
-                chunk_ids.append(0)  # special token
-                continue
-            while (start > chunk_boundaries[current_chunk_idx][1]) and (
-                current_chunk_idx < len(chunk_boundaries)
-            ):
-                current_chunk_idx += 1
-            if (
-                (current_chunk_idx < len(chunk_boundaries))
-                and (end >= chunk_boundaries[current_chunk_idx][0])
-                and (start <= chunk_boundaries[current_chunk_idx][1])
-            ):
-                chunk_ids.append(current_chunk_idx + 1)  # chunk_id starts from 1
-            else:
-                chunk_ids.append(0)  # space between chunks or prefix or suffix tokens.
-        chunk_ids = torch.tensor(chunk_ids, dtype=torch.long, device=self.model.device)
-        input_ids = torch.tensor(
-            encoding["input_ids"], device=self.model.device, dtype=torch.long
-        ).unsqueeze(0)
-        attn_mask = torch.tensor(
-            encoding["attention_mask"], device=self.model.device, dtype=torch.long
-        ).unsqueeze(0)
-        input_dict = {"input_ids": input_ids, "attention_mask": attn_mask}
+        chunk_ids_mask: list[torch.Tensor] = []
+        for doc_idx, chunk_boundaries in enumerate(doc_boundaries):
+            chunk_ids = []
+            current_chunk_idx = 0
+            for start, end in input_dict["offset_mapping"][doc_idx].tolist():
+                if start == end == 0:
+                    chunk_ids.append(0)  # special token
+                    continue
+                while (current_chunk_idx < len(chunk_boundaries)) and (
+                    start > chunk_boundaries[current_chunk_idx][1]
+                ):
+                    current_chunk_idx += 1
+                if (
+                    (current_chunk_idx < len(chunk_boundaries))
+                    and (end >= chunk_boundaries[current_chunk_idx][0])
+                    and (start <= chunk_boundaries[current_chunk_idx][1])
+                ):
+                    chunk_ids.append(current_chunk_idx + 1)  # chunk_id starts from 1
+                else:
+                    chunk_ids.append(0)  # prefix / suffix / space tokens.
+            chunk_ids = torch.tensor(
+                chunk_ids, dtype=torch.long, device=self.model.device
+            )
+            chunk_ids_mask.append(chunk_ids)
 
         # for jina embedding v3
         if hasattr(self.model, "_adaptation_map") and (self.task is not None):
+            bsz = input_dict["input_ids"].size(0)
             task_id = self.model._adaptation_map.get(self.task, None)
             if task_id is not None:
                 input_dict["adapter_mask"] = torch.full(
-                    (1,), task_id, dtype=torch.int32, device=self.model.device
+                    (bsz,), task_id, dtype=torch.int32, device=self.model.device
                 )
 
-        # forward for hiddens
-        outputs = self.model(**input_dict)
-        hidden_states = outputs.last_hidden_state.squeeze(0)  # [seq, hidden_dim]
+        # divide long document into sliding windows
+        window_indices: list[tuple[int, int]] = []
+        if (self.max_encoding_length is not None) and (
+            input_dict["input_ids"].size(1) > self.max_encoding_length
+        ):
+            assert (
+                overlap_size < self.max_encoding_length
+            ), "`overlap_size` must be smaller than `max_encoding_length`"
+            for i in range(
+                0,
+                input_dict["input_ids"].size(1),
+                self.max_encoding_length - overlap_size,
+            ):
+                start = i
+                end = min(i + self.max_encoding_length, input_dict["input_ids"].size(1))
+                window_indices.append((start, end))
+        else:
+            window_indices.append((0, input_dict["input_ids"].size(1)))
+
+        # forward for hiddens with sliding window
+        hidden_states = []
+        for start, end in window_indices:
+            batch_input_ids = input_dict["input_ids"][:, start:end]
+            batch_attn_mask = input_dict["attention_mask"][:, start:end]
+            batch_input_dict = {
+                "input_ids": batch_input_ids,
+                "attention_mask": batch_attn_mask,
+            }
+            if "adapter_mask" in input_dict:
+                batch_input_dict["adapter_mask"] = input_dict["adapter_mask"]
+            outputs = self.model(**batch_input_dict)
+            if start > 0:
+                hidden_states.append(outputs.last_hidden_state[:, overlap_size:, :])
+            else:
+                hidden_states.append(outputs.last_hidden_state)
+        hidden_states = torch.cat(hidden_states, dim=1)
 
         # mean pooling for each chunk
-        embeddings = torch.zeros(
-            (len(texts) + 1, hidden_states.size(-1)),
-            device=hidden_states.device,
-            dtype=hidden_states.dtype,
-        )
-        # index_reduce_ is in beta, use index_add_ for stability.
-        embeddings.index_add_(0, chunk_ids, hidden_states)
-        token_counts = torch.bincount(chunk_ids, minlength=len(texts) + 1)[1:]
-        embeddings = embeddings[1:] / torch.clamp(token_counts, min=1).unsqueeze(1)
+        document_embeddings: list[np.ndarray] = []
+        for idx, texts in enumerate(documents):
+            embeddings = torch.zeros(
+                (len(texts) + 1, hidden_states.size(-1)),
+                device=hidden_states.device,
+                dtype=hidden_states.dtype,
+            )
+            # index_reduce_ is in beta, use index_add_ for stability.
+            embeddings.index_add_(0, chunk_ids_mask[idx], hidden_states[idx])
+            token_counts = torch.bincount(
+                chunk_ids_mask[idx], minlength=len(texts) + 1
+            )[1:]
+            embeddings = embeddings[1:] / torch.clamp(token_counts, min=1).unsqueeze(1)
+            if self.normalize:
+                embeddings = F.normalize(embeddings, dim=1)
+            embeddings = embeddings.float().cpu().numpy()
+            document_embeddings.append(embeddings)
 
-        # normalize
-        if self.normalize:
-            embeddings = F.normalize(embeddings, dim=1)
-        return embeddings.float().cpu().numpy()
+        return document_embeddings
 
     @property
     def embedding_size(self) -> int:
