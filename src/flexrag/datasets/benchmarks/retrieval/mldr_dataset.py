@@ -80,7 +80,11 @@ class MultiLongDocRetrievalDataset(RetrievalDatasetBase):
         # download the dataset if not exists
         if not data_path.exists():
             logger.info(f"Downloading MLDR dataset to {data_path.as_posix()}...")
-            snapshot_download(repo_id="Shitao/MLDR", local_dir=data_path.as_posix())
+            snapshot_download(
+                repo_id="Shitao/MLDR",
+                local_dir=data_path.as_posix(),
+                repo_type="dataset",
+            )
 
         # load the corpus
         corpus_path = data_path / f"mldr-v1.0-{config.lang}" / "corpus.jsonl.gz"
