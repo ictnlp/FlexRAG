@@ -117,10 +117,11 @@ class TokenizerBase(ABC):
         return
 
     @property
-    @abstractmethod
     def vocab_size(self) -> int:
-        """Return the size of the tokenizer vocabulary."""
-        return
+        """Return the size of the tokenizer vocabulary. If the tokenizer
+        does not support `encode` and `decode` methods, it should return 0.
+        """
+        return 0
 
 
 TOKENIZERS = Register[TokenizerBase]("tokenizer")
@@ -175,12 +176,6 @@ class MosesTokenizer(TokenizerBase):
         """MosesTokenizer is not reversible as it may lose sapces and punctuations."""
         return False
 
-    @property
-    def vocab_size(self) -> int:
-        raise NotImplementedError(
-            "MosesTokenizer does not support `vocab_size` property."
-        )
-
 
 @configure
 class NLTKTokenizerConfig:
@@ -230,12 +225,6 @@ class NLTKTokenizer(TokenizerBase):
     def reversible(self) -> bool:
         """NLTKTokenizer is not reversible as it may lose spaces."""
         return False
-
-    @property
-    def vocab_size(self) -> int:
-        raise NotImplementedError(
-            "NLTKTokenizer does not support `vocab_size` property."
-        )
 
 
 @configure
@@ -292,12 +281,6 @@ class JiebaTokenizer(TokenizerBase):
     def reversible(self) -> bool:
         """JiebaTokenizer is reversible."""
         return True
-
-    @property
-    def vocab_size(self) -> int:
-        raise NotImplementedError(
-            "JiebaTokenizer does not support `vocab_size` property."
-        )
 
 
 @configure

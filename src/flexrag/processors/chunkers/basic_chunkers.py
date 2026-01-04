@@ -111,11 +111,18 @@ class TokenChunker(ChunkerBase):
         return
 
     def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
-        tokens = self.tokenizer.tokenize(text)
+        # employ encode and decode for faster processing
+        if self.tokenizer.vocab_size > 0:
+            encode_fn = self.tokenizer.encode
+            decode_fn = self.tokenizer.decode
+        else:
+            encode_fn = self.tokenizer.tokenize
+            decode_fn = self.tokenizer.detokenize
+        tokens = encode_fn(text)
         chunks: list[Chunk] = []
         current_index = 0
         for i in range(0, len(tokens), self.chunk_size - self.overlap):
-            chunk_text = self.tokenizer.detokenize(tokens[i : i + self.chunk_size])
+            chunk_text = decode_fn(tokens[i : i + self.chunk_size])
             chunks.append(
                 Chunk(
                     text=chunk_text,
@@ -123,7 +130,7 @@ class TokenChunker(ChunkerBase):
                     end=current_index + len(chunk_text),
                 )
             )
-            overlap_text = self.tokenizer.detokenize(
+            overlap_text = decode_fn(
                 tokens[i + self.chunk_size - self.overlap : i + self.chunk_size]
             )
             current_index += len(chunk_text) - len(overlap_text)
@@ -218,13 +225,17 @@ class RecursiveChunker(ChunkerBase):
         return chunks
 
     def _recursive_chunk(self, text: str, level: int) -> list[str]:
+        if self.tokenizer.vocab_size > 0:
+            encode_fn = self.tokenizer.encode
+            decode_fn = self.tokenizer.decode
+        else:
+            encode_fn = self.tokenizer.tokenize
+            decode_fn = self.tokenizer.detokenize
         if level == len(self.splitter):
-            tokens = self.tokenizer.tokenize(text)
+            tokens = encode_fn(text)
             chunks = []
             for i in range(0, len(tokens), self.chunk_size):
-                chunks.append(
-                    self.tokenizer.detokenize(tokens[i : i + self.chunk_size])
-                )
+                chunks.append(decode_fn(tokens[i : i + self.chunk_size]))
             return chunks
         else:
             chunks = [s["text"] for s in self.splitter[level].split(text)]
@@ -232,7 +243,7 @@ class RecursiveChunker(ChunkerBase):
             chunk = ""
             chunk_token_count = 0
             for chunk_ in chunks:
-                token_count_ = len(self.tokenizer.tokenize(chunk_))
+                token_count_ = len(encode_fn(chunk_))
                 if chunk_token_count + token_count_ <= self.chunk_size:
                     chunk += chunk_
                     chunk_token_count += token_count_
