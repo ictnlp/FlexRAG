@@ -9,6 +9,7 @@ from .basic_chunkers import (
     TokenChunkerConfig,
 )
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
+from .densex_chunker import DenseXChunker, DenseXChunkerConfig
 from .lumber_chunker import LumberChunker, LumberChunkerConfig
 from .semantic_chunker import SemanticChunker, SemanticChunkerConfig
 
@@ -34,4 +35,6 @@ __all__ = [
     "SemanticChunkerConfig",
     "LumberChunker",
     "LumberChunkerConfig",
+    "DenseXChunker",
+    "DenseXChunkerConfig",
 ]
