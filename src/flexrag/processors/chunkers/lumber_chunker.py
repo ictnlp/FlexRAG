@@ -27,9 +27,9 @@ class LumberChunkerConfig(GeneratorConfig):
 
     :param system_prompt: The system prompt for the LLM.
     :type system_prompt: str
-    :param max_tokens: The maximum number of tokens in each group of
+    :param window_size: The maximum number of tokens in each group of
         paragraphs sent to the LLM. Default is 550.
-    :type max_tokens: int
+    :type window_size: int
     :param min_paragraphs: The minimum number of paragraphs to keep
         at the end of the document. Default is 5.
     :type min_paragraphs: int
@@ -39,7 +39,7 @@ class LumberChunkerConfig(GeneratorConfig):
     """
 
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
-    max_tokens: int = 550
+    window_size: int = 550
     min_paragraphs: int = 5
     pre_chunk_config: RecursiveChunkerConfig = field(
         default_factory=lambda: DEFAULT_PRE_CHUNKER_CONFIG
@@ -61,11 +61,11 @@ class LumberChunker(ChunkerBase):
         # load pre-chunker
         self.pre_chunker = RecursiveChunker(cfg.pre_chunk_config)
         assert (
-            self.pre_chunker.chunk_size < cfg.max_tokens
-        ), "Pre-chunker chunk size must be less than max_tokens"
+            self.pre_chunker.chunk_size < cfg.window_size
+        ), "Pre-chunker chunk size must be less than window_size"
         # other configs
         self.system_prompt = cfg.system_prompt
-        self.max_tokens = cfg.max_tokens
+        self.window_size = cfg.window_size
         self.min_paragraphs = cfg.min_paragraphs
         return
 
@@ -90,7 +90,7 @@ class LumberChunker(ChunkerBase):
             token_count = 0
             i = 0
             while (
-                token_count < self.max_tokens
+                token_count < self.window_size
                 and i + chunk_number < total_paragraphs - 1
             ):
                 i += 1
