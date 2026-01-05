@@ -10,6 +10,9 @@ from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 logger = LOGGER_MANAGER.get_logger("flexrag.processors.chunkers.densex_chunker")
 
 
+DEFAULT_PRE_CHUNKER_CONFIG = RecursiveChunkerConfig(chunk_size=120)
+
+
 @configure
 class DenseXChunkerConfig:
     """Configuration for DenseXChunker.
@@ -28,7 +31,7 @@ class DenseXChunkerConfig:
     model_path: str = "chentong00/propositionizer-wiki-flan-t5-large"
     device_id: list[int] = field(default_factory=list)
     pre_chunk_config: RecursiveChunkerConfig = field(
-        default_factory=RecursiveChunkerConfig
+        default_factory=lambda: DEFAULT_PRE_CHUNKER_CONFIG
     )
 
 
