@@ -18,7 +18,7 @@ Output: Return the ID of the paragraph with the content shift as in the exemplif
 Additional Considerations: Avoid very long groups of paragraphs. Aim for a good balance between identifying content shifts and keeping groups manageable."""
 
 
-DEFAULT_PRE_CHUNKER_CONFIG = RecursiveChunkerConfig(chunk_size=120)
+DEFAULT_PRE_CHUNKER_CONFIG = RecursiveChunkerConfig(max_tokens=120)
 
 
 @configure

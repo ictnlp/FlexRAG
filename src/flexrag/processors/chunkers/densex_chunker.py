@@ -10,7 +10,7 @@ from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 logger = LOGGER_MANAGER.get_logger("flexrag.processors.chunkers.densex_chunker")
 
 
-DEFAULT_PRE_CHUNKER_CONFIG = RecursiveChunkerConfig(chunk_size=120)
+DEFAULT_PRE_CHUNKER_CONFIG = RecursiveChunkerConfig(max_tokens=120)
 
 
 @configure
