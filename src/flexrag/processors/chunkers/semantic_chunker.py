@@ -9,7 +9,7 @@ from flexrag.models import ENCODERS, EncoderConfig
 from .basic_chunkers import SentenceChunker, SentenceChunkerConfig
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 
-logger = LOGGER_MANAGER.get_logger("flexrag.chunking.semantic_chunker")
+logger = LOGGER_MANAGER.get_logger("flexrag.processors.chunkers.semantic_chunker")
 
 
 @configure
