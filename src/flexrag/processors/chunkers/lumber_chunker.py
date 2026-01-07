@@ -18,9 +18,6 @@ Output: Return the ID of the paragraph with the content shift as in the exemplif
 Additional Considerations: Avoid very long groups of paragraphs. Aim for a good balance between identifying content shifts and keeping groups manageable."""
 
 
-DEFAULT_PRE_CHUNKER_CONFIG = RecursiveChunkerConfig(max_tokens=120)
-
-
 @configure
 class LumberChunkerConfig(GeneratorConfig):
     """Configuration for LumberChunker.
@@ -42,7 +39,7 @@ class LumberChunkerConfig(GeneratorConfig):
     window_size: int = 550
     min_paragraphs: int = 5
     pre_chunk_config: RecursiveChunkerConfig = field(
-        default_factory=lambda: DEFAULT_PRE_CHUNKER_CONFIG
+        default_factory=lambda: RecursiveChunkerConfig(max_tokens=120)
     )
 
 

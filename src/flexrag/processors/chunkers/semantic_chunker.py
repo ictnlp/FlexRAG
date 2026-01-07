@@ -1,19 +1,19 @@
+from dataclasses import field
 from typing import Annotated, Optional
 
 import numpy as np
 
 from flexrag.common import LOGGER_MANAGER, Choices, configure
 from flexrag.models import ENCODERS, EncoderConfig
-from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
 
+from .basic_chunkers import SentenceChunker, SentenceChunkerConfig
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
-from .sentence_splitter import SENTENCE_SPLITTERS, SentenceSplitterConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.chunking.semantic_chunker")
 
 
 @configure
-class SemanticChunkerConfig(SentenceSplitterConfig, EncoderConfig, TokenizerConfig):
+class SemanticChunkerConfig(EncoderConfig):
     """Configuration for SemanticChunker.
 
     :param max_tokens: The maximum number of tokens in each chunk. Default is None.
@@ -30,6 +30,9 @@ class SemanticChunkerConfig(SentenceSplitterConfig, EncoderConfig, TokenizerConf
     :param similarity_function: The similarity function to use. Default is "COS".
         Available choices are "L2" for the reciprocal of euclidean distance, "IP" for inner product, and "COS" for cosine similarity.
     :type similarity_function: str
+    :param pre_chunk_config: The configuration for the pre-chunker used to split the text into sentences.
+        Default is SentenceChunkerConfig with max_sents=1, max_tokens=128, and overlap=0.
+    :type pre_chunk_config: SentenceChunkerConfig
 
     The similarity higher than the threshold will be considered as coherent, and the chunks will be split at the points where the similarity is below the threshold.
     Thus, at least one of `max_tokens`, `threshold`, or `threshold_percentile` should be provided.
@@ -37,6 +40,7 @@ class SemanticChunkerConfig(SentenceSplitterConfig, EncoderConfig, TokenizerConf
     If `threshold_percentile` is provided, the threshold will be calculated automatically based on the similarity distribution.
     If `max_tokens` is provided, the threshold will be calculated to ensure the chunks are within the token limit.
 
+    The tokenizer used in the pre-chunker will be shared with the SemanticChunker.
 
     For example, to split the text into chunks with a maximum of 512 tokens, you can use the following configuration:
 
@@ -69,11 +73,15 @@ class SemanticChunkerConfig(SentenceSplitterConfig, EncoderConfig, TokenizerConf
     """
 
     max_tokens: Optional[int] = None
-    max_tokens_per_sentence: Optional[int] = None
     threshold: Optional[float] = None
     threshold_percentile: Optional[float] = None
     similarity_window: int = 1
     similarity_function: Annotated[str, Choices("L2", "IP", "COS")] = "COS"
+    pre_chunk_config: SentenceChunkerConfig = field(
+        default_factory=lambda: SentenceChunkerConfig(
+            max_sents=1, max_tokens=128, overlap=0
+        )
+    )
 
 
 @CHUNKERS("semantic_chunker", config_class=SemanticChunkerConfig)
@@ -90,28 +98,45 @@ class SemanticChunker(ChunkerBase):
         self.similarity_window = cfg.similarity_window
         self.threshold_percentile = cfg.threshold_percentile
         self.similarity_function = cfg.similarity_function
-        if cfg.max_tokens_per_sentence is not None:
-            self.max_tokens_per_sentence = cfg.max_tokens_per_sentence
-        elif self.max_tokens is not None:
-            self.max_tokens_per_sentence = cfg.max_tokens
-        else:
-            self.max_tokens_per_sentence = None
 
         # load the sentence splitter
-        self.splitter = SENTENCE_SPLITTERS.load(cfg)
+        if cfg.pre_chunk_config.max_tokens is not None:
+            if (
+                cfg.max_tokens is not None
+                and cfg.pre_chunk_config.max_tokens > cfg.max_tokens
+            ):
+                cfg.pre_chunk_config.max_tokens = cfg.max_tokens
+                logger.warning(
+                    f"pre_chunk_config.max_tokens is greater than max_tokens, "
+                    f"setting pre_chunk_config.max_tokens to {cfg.max_tokens}"
+                )
+        else:
+            if cfg.max_tokens is not None:
+                cfg.pre_chunk_config.max_tokens = cfg.max_tokens
+                logger.warning(
+                    f"pre_chunk_config.max_tokens is not set, "
+                    f"setting pre_chunk_config.max_tokens to {cfg.max_tokens}"
+                )
+        assert cfg.pre_chunk_config.overlap == 0, "pre_chunk_config.overlap must be 0"
+        self.prechunker = SentenceChunker(cfg.pre_chunk_config)
 
         # load the encoder
         self.encoder = ENCODERS.load(cfg)
-
-        # load the tokenizer
-        self.tokenizer = TOKENIZERS.load(cfg)
+        assert self.encoder is not None, "Encoder is not configured properly."
         return
 
     def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
-        # split the text into sentences
-        sentences = self._split_sentences(text)
+        # prepare length function
+        if self.prechunker.tokenizer.vocab_size > 0:
+            length_fn = lambda x: len(self.prechunker.tokenizer.encode(x))
+        else:
+            length_fn = lambda x: len(self.prechunker.tokenizer.tokenize(x))
+
+        # split the text into base chunks
+        base_chunks = self.prechunker.chunk(text)
+        sentences = [s.text for s in base_chunks]
         if len(sentences) == 1:
-            chunks = [Chunk(text, 0, len(text))]
+            chunks = base_chunks
             if return_str:
                 return [chunk.text for chunk in chunks]
             return chunks
@@ -160,37 +185,18 @@ class SemanticChunker(ChunkerBase):
 
         # group the sentences into chunks based on the threshold
         if threshold is not None:
-            chunks = self._group_sentences(sentences, similarity, threshold)
+            chunks = self._group_chunks(base_chunks, similarity, threshold, text)
         else:
-            # check if the max_tokens is feasible
-            max_tokens = max(len(self.tokenizer.tokenize(sent)) for sent in sentences)
-            if max_tokens == self.max_tokens:
-                chunks = sentences
-                chunks = self._form_chunks(chunks)
-                if return_str:
-                    return [chunk.text for chunk in chunks]
-                return chunks
-            elif max_tokens > self.max_tokens:
-                logger.warning(
-                    f"The maximum number of tokens in a sentence is {max_tokens}, "
-                    f"which is greater than the specified max_tokens {self.max_tokens}."
-                )
-                chunks = sentences
-                chunks = self._form_chunks(chunks)
-                if return_str:
-                    return [chunk.text for chunk in chunks]
-                return chunks
-
             # try to find the threshold that best fits the max_tokens
+            base_chunk_lens = [length_fn(s) for s in sentences]
             thresholds = np.sort(similarity)
             left_pointer = 0
             right_threshold = len(thresholds) - 1
             while True:
                 mid_pointer = (left_pointer + right_threshold) // 2
                 threshold = thresholds[mid_pointer] + 1e-6
-                chunks_ = self._group_sentences(sentences, similarity, threshold)
-                max_tokens = max(
-                    len(self.tokenizer.tokenize(chunk)) for chunk in chunks_
+                max_tokens = self._get_max_tokens(
+                    base_chunk_lens, similarity, threshold
                 )
                 if left_pointer >= right_threshold:
                     break
@@ -208,51 +214,69 @@ class SemanticChunker(ChunkerBase):
                     threshold = thresholds[mid_pointer] + 1e-6
             else:
                 threshold = thresholds[mid_pointer] + 1e-6
-            chunks = self._group_sentences(sentences, similarity, threshold)
-        chunks = self._form_chunks(chunks)
+            chunks = self._group_chunks(base_chunks, similarity, threshold, text)
         if return_str:
             return [chunk.text for chunk in chunks]
         return chunks
 
-    def _group_sentences(
-        self, sentences: list[str], similarity: np.ndarray, threshold: float
-    ) -> list[str]:
-        chunks = []
-        chunk = sentences[0]
-        for i in range(1, len(sentences)):
+    def _get_max_tokens(
+        self,
+        base_chunk_lens: list[int],
+        similarity: np.ndarray,
+        threshold: float,
+    ) -> int:
+        max_tokens = 0
+        current_len = base_chunk_lens[0]
+        for i in range(1, len(base_chunk_lens)):
             if similarity[i - 1] < threshold:
-                chunks.append(chunk)
-                chunk = sentences[i]
+                if current_len > max_tokens:
+                    max_tokens = current_len
+                current_len = base_chunk_lens[i]
             else:
-                chunk += " " + sentences[i]
-        chunks.append(chunk)
-        return chunks
+                current_len += base_chunk_lens[i]
+        if current_len > max_tokens:
+            max_tokens = current_len
+        return max_tokens
 
-    def _split_sentences(self, text: str) -> list[setattr]:
-        """Split the text into sentences."""
-        sents = [s["text"] for s in self.splitter.split(text)]
-        if self.max_tokens_per_sentence is None:
-            return [s["text"] for s in sents]
-
-        # split the sentences that are longer than `max_tokens_per_sentence`
-        new_sents = []
-        for sent in sents:
-            tokens = self.tokenizer.tokenize(sent["text"])
-            if len(tokens) <= self.max_tokens_per_sentence:
-                new_sents.append(sent["text"])
-                continue
-            splitted_sents = []
-            for i in range(0, len(tokens), self.max_tokens_per_sentence):
-                splitted_sents.append(
-                    self.tokenizer.detokenize(
-                        tokens[i : i + self.max_tokens_per_sentence]
-                    )
-                )
-            new_sents.extend(splitted_sents)
-        return new_sents
-
-    def _form_chunks(self, texts: list[str]) -> list[Chunk]:
+    def _group_chunks(
+        self,
+        base_chunks: list[Chunk],
+        similarity: np.ndarray,
+        threshold: float,
+        text: str,
+    ) -> list[Chunk]:
         chunks = []
-        for text in texts:
-            chunks.append(Chunk(text=text))
+        if not base_chunks:
+            return chunks
+
+        start_index = 0
+        for i in range(1, len(base_chunks)):
+            if similarity[i - 1] < threshold:
+                start_chunk = base_chunks[start_index]
+                end_chunk = base_chunks[i - 1]
+                if start_chunk.start is not None and end_chunk.end is not None:
+                    chunk_text = text[start_chunk.start : end_chunk.end]
+                    chunks.append(
+                        Chunk(
+                            text=chunk_text,
+                            start=start_chunk.start,
+                            end=end_chunk.end,
+                        )
+                    )
+                else:
+                    chunk_text = " ".join([c.text for c in base_chunks[start_index:i]])
+                    chunks.append(Chunk(text=chunk_text))
+                start_index = i
+
+        # Last chunk
+        start_chunk = base_chunks[start_index]
+        end_chunk = base_chunks[-1]
+        if start_chunk.start is not None and end_chunk.end is not None:
+            chunk_text = text[start_chunk.start : end_chunk.end]
+            chunks.append(
+                Chunk(text=chunk_text, start=start_chunk.start, end=end_chunk.end)
+            )
+        else:
+            chunk_text = " ".join([c.text for c in base_chunks[start_index:]])
+            chunks.append(Chunk(text=chunk_text))
         return chunks
