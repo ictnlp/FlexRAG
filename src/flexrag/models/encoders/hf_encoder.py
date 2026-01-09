@@ -1,4 +1,5 @@
 import asyncio
+from functools import cached_property
 from typing import Annotated, Optional
 
 import numpy as np
@@ -27,6 +28,8 @@ class HFEncoderConfig(HFModelConfig):
 
         - `cls`: Use the [CLS] token representation.
         - `mean`: Use the mean pooling of all token representations.
+        - `mean_without_prefix`: Use the mean pooling of all token representations without
+          considering the prefix tokens (only for models with prefix).
         - `last`: Use the last token representation (usually used in decoder-only models).
         - `late`: Use `Late Chunking <https://arxiv.org/abs/2409.04701>`_ to get the embeddings.
           If this method is chosen, the input texts will be concatenated as a single document.
@@ -63,7 +66,16 @@ class HFEncoderConfig(HFModelConfig):
     """
 
     max_encode_length: Optional[int] = None
-    encode_method: Annotated[str, Choices("cls", "mean", "last", "late")] = "mean"
+    encode_method: Annotated[
+        str,
+        Choices(
+            "cls",
+            "mean",
+            "mean_without_prefix",
+            "last",
+            "late",
+        ),
+    ] = "mean"
     normalize: bool = False
     prefix: Optional[str] = None  # used in nomic-text-embedding
     task: Optional[str] = None  # used in jina-embedding
@@ -96,7 +108,17 @@ class HFEncoder(EncoderBase):
             case "mean":
                 attn_mask = attn_mask.to(hidden.device)
                 embeddings = hidden.masked_fill(~attn_mask[..., None].bool(), 0.0)
-                embeddings = embeddings.sum(dim=1) / attn_mask.sum(dim=1)[..., None]
+                embeddings = embeddings.sum(dim=1) / torch.clamp(
+                    attn_mask.sum(dim=1)[..., None], min=1e-6
+                )
+            case "mean_without_prefix":
+                attn_mask = attn_mask.to(hidden.device)
+                if self.prefix_length > 0:
+                    attn_mask[:, : self.prefix_length] = 0
+                embeddings = hidden.masked_fill(~attn_mask[..., None].bool(), 0.0)
+                embeddings = embeddings.sum(dim=1) / torch.clamp(
+                    attn_mask.sum(dim=1)[..., None], min=1e-6
+                )
             case "cls":
                 embeddings = hidden[:, 0]
             case "last":
@@ -302,6 +324,21 @@ class HFEncoder(EncoderBase):
     @property
     def embedding_size(self) -> int:
         return self.model.config.hidden_size
+
+    @cached_property
+    def prefix_length(self) -> int:
+        if self.prefix:
+            prefix_toks = self.tokenizer(self.prefix.rstrip())["input_ids"]
+            if (
+                hasattr(self.tokenizer, "all_special_ids")
+                and prefix_toks[-1] in self.tokenizer.all_special_ids
+            ):
+                prefix_lengths = len(prefix_toks) - 1
+            else:
+                prefix_lengths = len(prefix_toks)
+        else:
+            prefix_lengths = 0
+        return prefix_lengths
 
 
 @configure
