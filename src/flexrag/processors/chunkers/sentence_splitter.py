@@ -84,15 +84,15 @@ class NLTKSentenceSplitter(SentenceSplitterBase):
 # \R only supported in regex module, not re module
 PREDEFINED_SPLIT_PATTERNS = {
     "en": {
-        "big_paragraph": r"(?<=\R{2,})",
-        "paragraph": r"(?<=\R)",
-        "sentence": r"(?<=[.?!]+[\"')\]]*)(?=\s+)",
-        "subsentence": r"(?<=[,;\"'{}<>\[\]`~])",
-        "word": r"(?<=\s)",
+        "big_paragraph": r"\R{2,}",
+        "paragraph": r"\R",
+        "sentence": r"(?<=[.?!]+[\"')\]]*)\s+",
+        "subsentence": r"(?<=[,;\"'{}<>\[\]`~])\s*",
+        "word": r"\s+",
     },
     "zh": {
-        "big_paragraph": r"(?<=\R{2,})",
-        "paragraph": r"(?<=\R)",
+        "big_paragraph": r"\R{2,}",
+        "paragraph": r"\R",
         "sentence": r"(?<=[。！？])",
         "subsentence": r"(?<=[，；：“”‘’《》【】、])",
     },
@@ -136,12 +136,12 @@ class RegexSplitter(SentenceSplitterBase):
 
         last_idx = 0
         for matched in self.pattern.finditer(text):
-            end = matched.end()
-            if end > last_idx:
-                sent = text[last_idx:end]
+            start, end = matched.start(), matched.end()
+            if start > last_idx:
+                sent = text[last_idx:start]
                 sents.append(sent)
-                spans.append((last_idx, end))
-                last_idx = end
+                spans.append((last_idx, start))
+            last_idx = end
 
         # Tail after the last match
         if last_idx < len(text):

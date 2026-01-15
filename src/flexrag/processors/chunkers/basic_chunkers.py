@@ -170,9 +170,6 @@ class RecursiveChunkerConfig(TokenizerConfig):
         )
         chunker = RecursiveChunker(cfg)
 
-    Note that the ``RecursiveChunker`` relies on the regex pattern to split the text,
-    thus you need to make sure your pattern will not consume the splitter.
-    A good practice is to use the lookbehind and lookahead assertion to avoid consuming the splitter.
     """
 
     max_tokens: int = 512
@@ -208,23 +205,14 @@ class RecursiveChunker(ChunkerBase):
         return
 
     def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
-        texts = self._recursive_chunk(text, 0)
-        chunks = []
-        current_index = 0
-        for text in texts:
-            chunks.append(
-                Chunk(
-                    text=text,
-                    start=current_index,
-                    end=current_index + len(text),
-                )
-            )
-            current_index += len(text)
+        chunks = self._recursive_chunk(text, 0, (0, len(text)))
         if return_str:
             return [chunk.text for chunk in chunks]
         return chunks
 
-    def _recursive_chunk(self, text: str, level: int) -> list[str]:
+    def _recursive_chunk(
+        self, text: str, level: int, span: tuple[int, int]
+    ) -> list[Chunk]:
         if self.tokenizer.vocab_size > 0:
             encode_fn = self.tokenizer.encode
             decode_fn = self.tokenizer.decode
@@ -234,32 +222,122 @@ class RecursiveChunker(ChunkerBase):
         if level == len(self.splitter):
             tokens = encode_fn(text)
             chunks = []
+            current_index = span[0]
+            # Warning: token chunking loses exact character span information
             for i in range(0, len(tokens), self.chunk_size):
-                chunks.append(decode_fn(tokens[i : i + self.chunk_size]))
+                chunk_text = decode_fn(tokens[i : i + self.chunk_size])
+                chunks.append(
+                    Chunk(
+                        text=chunk_text,
+                        start=current_index,
+                        end=current_index + len(chunk_text),
+                    )
+                )
+                current_index += len(chunk_text)
             return chunks
         else:
-            chunks = [s["text"] for s in self.splitter[level].split(text)]
+            sub_chunks = self.splitter[level].split(text)
             new_chunks = []
-            chunk = ""
-            chunk_token_count = 0
-            for chunk_ in chunks:
-                token_count_ = len(encode_fn(chunk_))
-                if chunk_token_count + token_count_ <= self.chunk_size:
-                    chunk += chunk_
-                    chunk_token_count += token_count_
-                elif token_count_ <= self.chunk_size:
-                    if chunk:
-                        new_chunks.append(chunk)
-                    chunk = chunk_
-                    chunk_token_count = token_count_
+
+            # temporary storage for the current chunk
+            current_sub_chunks = []
+            current_tokens = 0
+
+            for sub_chunk in sub_chunks:
+                text_ = sub_chunk["text"]
+                local_span = sub_chunk["char_span"]
+
+                # fix span to global
+                if span[0] != -1 and local_span[0] != -1:
+                    global_span = (span[0] + local_span[0], span[0] + local_span[1])
                 else:
-                    if chunk:
-                        new_chunks.append(chunk)
-                    new_chunks.extend(self._recursive_chunk(chunk_, level + 1))
-                    chunk = ""
-                    chunk_token_count = 0
-            if chunk:
-                new_chunks.append(chunk)
+                    global_span = (-1, -1)
+
+                tokens_count = len(encode_fn(text_))
+
+                if current_tokens + tokens_count <= self.chunk_size:
+                    current_sub_chunks.append((text_, local_span, global_span))
+                    current_tokens += tokens_count
+
+                elif tokens_count <= self.chunk_size:
+                    # Flush current
+                    if current_sub_chunks:
+                        # try to retrieve text from original text
+                        if (
+                            current_sub_chunks[0][1][0] != -1
+                            and current_sub_chunks[-1][1][1] != -1
+                        ):
+                            chunk_text = text[
+                                current_sub_chunks[0][1][0] : current_sub_chunks[-1][1][
+                                    1
+                                ]
+                            ]
+                        else:
+                            chunk_text = "".join([c[0] for c in current_sub_chunks])
+
+                        new_chunks.append(
+                            Chunk(
+                                text=chunk_text,
+                                start=current_sub_chunks[0][2][0],
+                                end=current_sub_chunks[-1][2][1],
+                            )
+                        )
+                        current_sub_chunks = []
+                        current_tokens = 0
+
+                    # Add new
+                    current_sub_chunks.append((text_, local_span, global_span))
+                    current_tokens = tokens_count
+
+                else:
+                    # Flush current
+                    if current_sub_chunks:
+                        if (
+                            current_sub_chunks[0][1][0] != -1
+                            and current_sub_chunks[-1][1][1] != -1
+                        ):
+                            chunk_text = text[
+                                current_sub_chunks[0][1][0] : current_sub_chunks[-1][1][
+                                    1
+                                ]
+                            ]
+                        else:
+                            chunk_text = "".join([c[0] for c in current_sub_chunks])
+
+                        new_chunks.append(
+                            Chunk(
+                                text=chunk_text,
+                                start=current_sub_chunks[0][2][0],
+                                end=current_sub_chunks[-1][2][1],
+                            )
+                        )
+                        current_sub_chunks = []
+                        current_tokens = 0
+
+                    # Recurse
+                    new_chunks.extend(
+                        self._recursive_chunk(text_, level + 1, global_span)
+                    )
+
+            # Final flush
+            if current_sub_chunks:
+                if (
+                    current_sub_chunks[0][1][0] != -1
+                    and current_sub_chunks[-1][1][1] != -1
+                ):
+                    chunk_text = text[
+                        current_sub_chunks[0][1][0] : current_sub_chunks[-1][1][1]
+                    ]
+                else:
+                    chunk_text = "".join([c[0] for c in current_sub_chunks])
+
+                new_chunks.append(
+                    Chunk(
+                        text=chunk_text,
+                        start=current_sub_chunks[0][2][0],
+                        end=current_sub_chunks[-1][2][1],
+                    )
+                )
             return new_chunks
 
 
