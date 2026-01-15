@@ -1,3 +1,4 @@
+import re
 import shutil
 from typing import Annotated, Optional
 from zipfile import ZipFile
@@ -6,7 +7,7 @@ from huggingface_hub import hf_hub_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, Context, configure
 
-from ...core import DATASETS, MappingDataset, ContextualQASample
+from ...core import DATASETS, ContextualQASample, MappingDataset
 from ...reader import LineDelimitedReader
 
 
@@ -32,6 +33,8 @@ class LongBenchDatasetConfig:
         - Synthetic Tasks: `passage_count`, `passage_retrieval_en`, `passage_retrieval_zh`.
         - Code Completion Tasks: `lcc`, `repobench_p`.
     :type subset: str
+    :param fix_line_endings: Whether to fix line endings of narrative_qa dataset. Default is True.
+    :type fix_line_endings: bool
     """
 
     data_path: Optional[str] = None
@@ -61,6 +64,17 @@ class LongBenchDatasetConfig:
             "repobench_p",
         ),
     ] = "trec"
+    fix_line_endings: bool = True
+
+
+def _fix_narrative_qa_doc(doc: str) -> str:
+    # unify line endings
+    doc = doc.replace("\r\n", "\n")
+    # reserve paragraph breaks
+    doc = re.sub(r"\n{2,}", "\n\n", doc)
+    # remove single line breaks
+    doc = re.sub(r"(?<!\n)\n(?!\n)", " ", doc)
+    return doc
 
 
 @DATASETS("long_bench", config_class=LongBenchDatasetConfig)
@@ -124,9 +138,14 @@ class LongBenchDataset(MappingDataset[ContextualQASample]):
             qid = item["_id"]
             self._queries_data[qid] = item["input"]
             self._answers_data[qid] = item["answers"]
+            # Fix line endings for narrative_qa
+            if self._subset == "narrative_qa" and config.fix_line_endings:
+                ctx_text = _fix_narrative_qa_doc(item["context"])
+            else:
+                ctx_text = item["context"]
             self._context_data[qid] = Context(
                 context_id=qid,
-                data={"text": item["context"]},
+                data={"text": ctx_text},
                 source=f"LongBench-{self._subset}",
             )
             self._meta_data[qid] = {
