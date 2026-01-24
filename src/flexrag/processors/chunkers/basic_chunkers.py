@@ -231,6 +231,7 @@ class RecursiveChunker(ChunkerBase):
                         text=chunk_text,
                         start=current_index,
                         end=current_index + len(chunk_text),
+                        meta_data={"split_level": level},
                     )
                 )
                 current_index += len(chunk_text)
@@ -280,6 +281,7 @@ class RecursiveChunker(ChunkerBase):
                                 text=chunk_text,
                                 start=current_sub_chunks[0][2][0],
                                 end=current_sub_chunks[-1][2][1],
+                                meta_data={"split_level": level},
                             )
                         )
                         current_sub_chunks = []
@@ -309,6 +311,7 @@ class RecursiveChunker(ChunkerBase):
                                 text=chunk_text,
                                 start=current_sub_chunks[0][2][0],
                                 end=current_sub_chunks[-1][2][1],
+                                meta_data={"split_level": level},
                             )
                         )
                         current_sub_chunks = []
@@ -336,6 +339,7 @@ class RecursiveChunker(ChunkerBase):
                         text=chunk_text,
                         start=current_sub_chunks[0][2][0],
                         end=current_sub_chunks[-1][2][1],
+                        meta_data={"split_level": level},
                     )
                 )
             return new_chunks
