@@ -1,8 +1,8 @@
 import re
 from dataclasses import field
 
-from flexrag.common import LOGGER_MANAGER, configure
-from flexrag.models import GENERATORS, GeneratorConfig
+from flexrag.common import LOGGER_MANAGER, ChatMessages, ChatTurn, configure
+from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 
 from .basic_chunkers import RecursiveChunker, RecursiveChunkerConfig
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
@@ -27,17 +27,21 @@ class LumberChunkerConfig(GeneratorConfig):
     :param window_size: The maximum number of tokens in each group of
         paragraphs sent to the LLM. Default is 550.
     :type window_size: int
-    :param min_paragraphs: The minimum number of paragraphs to keep
+    :param min_tail_chunks: The minimum number of paragraphs to keep
         at the end of the document. Default is 5.
-    :type min_paragraphs: int
+    :type min_tail_chunks: int
     :param pre_chunk_config: The configuration for the pre-chunker
         used to split the text into paragraphs.
     :type pre_chunk_config: RecursiveChunkerConfig
+    :param use_chat: Whether to use chat-based generation. Default is False.
+        This is useful if using chat-based LLMs.
+    :type use_chat: bool
     """
 
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
+    use_chat: bool = False
     window_size: int = 550
-    min_paragraphs: int = 5
+    min_tail_chunks: int = 5
     pre_chunk_config: RecursiveChunkerConfig = field(
         default_factory=lambda: RecursiveChunkerConfig(max_tokens=120)
     )
@@ -57,13 +61,15 @@ class LumberChunker(ChunkerBase):
         self.generator = GENERATORS.load(cfg)
         # load pre-chunker
         self.pre_chunker = RecursiveChunker(cfg.pre_chunk_config)
-        assert (
-            self.pre_chunker.chunk_size < cfg.window_size
-        ), "Pre-chunker chunk size must be less than window_size"
+        assert self.pre_chunker.chunk_size < (
+            cfg.window_size // 2
+        ), "Pre-chunker chunk size must be less than window_size // 2"
         # other configs
+        self.use_chat = cfg.use_chat
         self.system_prompt = cfg.system_prompt
         self.window_size = cfg.window_size
-        self.min_paragraphs = cfg.min_paragraphs
+        self.min_tail_chunks = cfg.min_tail_chunks
+        self.gen_cfg = GenerationConfig(do_sample=False)
         return
 
     def chunk(self, text: str, return_str: bool = False) -> list[Chunk] | list[str]:
@@ -79,58 +85,55 @@ class LumberChunker(ChunkerBase):
         # 2. Add IDs to paragraphs
         id_paragraphs = [f"ID {i}: {p}" for i, p in enumerate(paragraphs)]
 
-        new_id_list = []
-        chunk_number = 0
+        # 3. Slide window to find content shifts
         total_paragraphs = len(id_paragraphs)
+        left_idx = 0
+        split_poses = []
+        while left_idx < total_paragraphs - self.min_tail_chunks:
+            right_idx = left_idx
+            while right_idx < total_paragraphs:
+                current_window = "\n".join(id_paragraphs[left_idx : right_idx + 1])
+                token_count = len(encode_fn(current_window))
+                if token_count > self.window_size:
+                    break
+                right_idx += 1
+            if right_idx - left_idx <= 1:
+                logger.warning("No sufficient paragraphs to analyze for content shift.")
+                left_idx = max(right_idx, left_idx + 1)
+                continue
 
-        while chunk_number < total_paragraphs - self.min_paragraphs:
-            token_count = 0
-            i = 0
-            while (
-                token_count < self.window_size
-                and i + chunk_number < total_paragraphs - 1
-            ):
-                i += 1
-                final_document = "\n".join(
-                    id_paragraphs[chunk_number : i + chunk_number]
-                )
-                token_count = len(encode_fn(final_document))
-
-            if i == 1:
-                final_document = id_paragraphs[chunk_number]
-            else:
-                final_document = "\n".join(
-                    id_paragraphs[chunk_number : i - 1 + chunk_number]
-                )
-
-            prompt = f"{self.system_prompt}\n\nDocument:\n{final_document}"
-
-            # Default move forward
-            chunk_number = chunk_number + i - 1
-
+            current_window = "\n".join(id_paragraphs[left_idx:right_idx])
             try:
-                response = self.generator.generate(prompt)[0][0]
-                match = re.search(r"Answer: ID (\d+)", response)
-                if match:
-                    llm_id = int(match.group(1))
-                    # Ensure llm_id is valid and progressing
-                    if llm_id < total_paragraphs:
-                        chunk_number = llm_id
-                        new_id_list.append(chunk_number)
-                        chunk_number += 1
+                if self.use_chat:
+                    usr_prompt = f"Document:\n{current_window}"
+                    prompt = ChatMessages.from_list(
+                        [
+                            ChatTurn(role="system", content=self.system_prompt),
+                            ChatTurn(role="user", content=usr_prompt),
+                        ]
+                    )
+                    response = self.generator.chat([prompt], self.gen_cfg)[0][0]
+                    response = response.text_content
                 else:
-                    logger.warning(f"No ID found in LLM response: {response}")
+                    prompt = f"{self.system_prompt}\n\nDocument:\n{current_window}"
+                    response = self.generator.generate(prompt)[0][0]
+                match = re.search(r"Answer: ID (\d+)", response)
+                assert match is not None
+                split_id = int(match.group(1))
+                assert left_idx < split_id < right_idx
+                split_poses.append(split_id)
+                left_idx = split_id
             except Exception as e:
-                logger.error(f"Error during LLM generation: {e}")
-                chunk_number += 1
+                logger.warning(f"Error during LLM generation: {e}")
+                left_idx = max(right_idx, left_idx + 1)
 
         # Add the last chunk index
-        new_id_list.append(total_paragraphs)
+        split_poses.append(total_paragraphs)
 
         # Create chunks
         chunks = []
         start_idx = 0
-        for end_idx in new_id_list:
+        for end_idx in split_poses:
             if end_idx > start_idx:
                 chunk_text = "\n\n".join(paragraphs[start_idx:end_idx])
                 chunks.append(Chunk(text=chunk_text))

@@ -2,7 +2,7 @@ import os
 from typing import Optional
 
 import httpx
-from openai import AsyncAzureOpenAI, AsyncOpenAI
+from openai import AsyncAzureOpenAI, AsyncOpenAI, omit
 from openai.types.responses import Response
 
 from flexrag.common import TIME_METER, ChatMessages, ChatTurn, configure
@@ -99,6 +99,8 @@ class OpenAIGenerator(RemoteGeneratorBase):
     ) -> str:
         """Perform the async generate call using the OpenAI client."""
         gen_cfg = self._get_options(generation_config)
+        if "max_output_tokens" in gen_cfg:
+            gen_cfg["max_tokens"] = gen_cfg.pop("max_output_tokens")
         response = await client.completions.create(prompt=prompt, **gen_cfg)
         return response.choices[0].text
 
@@ -111,10 +113,18 @@ class OpenAIGenerator(RemoteGeneratorBase):
             extra_body = {"stop_token_ids": [128009]}
         else:
             extra_body = None
+        if generation_config.top_p is None:
+            top_p = omit
+        else:
+            top_p = generation_config.top_p
+        if generation_config.max_new_tokens is None:
+            max_new_tokens = omit
+        else:
+            max_new_tokens = generation_config.max_new_tokens
         options = {
             "extra_body": extra_body,
-            "top_p": generation_config.top_p,
-            "max_output_tokens": generation_config.max_new_tokens,
+            "top_p": top_p,
+            "max_output_tokens": max_new_tokens,
             "model": self._model_name,
         }
         if generation_config.do_sample:
