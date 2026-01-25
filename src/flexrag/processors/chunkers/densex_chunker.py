@@ -23,6 +23,8 @@ class DenseXChunkerConfig:
     :param pre_chunk_config: The configuration for the pre-chunker
         used to split the text into paragraphs.
     :type pre_chunk_config: RecursiveChunkerConfig
+    :param batch_size: The batch size for processing paragraphs. Default is 8.
+    :type batch_size: int
     """
 
     model_path: str = "chentong00/propositionizer-wiki-flan-t5-large"
@@ -30,6 +32,7 @@ class DenseXChunkerConfig:
     pre_chunk_config: RecursiveChunkerConfig = field(
         default_factory=lambda: RecursiveChunkerConfig(max_tokens=120)
     )
+    batch_size: int = 8
 
 
 @CHUNKERS("densex", config_class=DenseXChunkerConfig)
@@ -47,6 +50,7 @@ class DenseXChunker(ChunkerBase):
                 model_type="seq2seq",
             )
         )
+        self.batch_size = cfg.batch_size
         self.gen_cfg = GenerationConfig(max_new_tokens=512, do_sample=False)
         # load pre-chunker
         self.pre_chunker = RecursiveChunker(cfg.pre_chunk_config)
@@ -68,20 +72,23 @@ class DenseXChunker(ChunkerBase):
             return []
 
         prop_list = []
-        for para in paragraphs:
-            input_text = f"Title: . Section: . Content: {para}"
-            output_text = self.generator.generate(
-                input_text, generation_config=self.gen_cfg
+        input_texts = [f"Title: . Section: . Content: {para}" for para in paragraphs]
+        for i in range(0, len(input_texts), self.batch_size):
+            batch_inputs = input_texts[i : i + self.batch_size]
+            batch_outputs = self.generator.generate(
+                batch_inputs, generation_config=self.gen_cfg
             )
-            try:
-                props = json.loads(output_text)
-                if not isinstance(props, list):
-                    logger.warning(f"Output text is not a list: {output_text}")
-                    props = [output_text]
-                prop_list.extend(props)
-            except json.JSONDecodeError:
-                logger.error(f"Failed to parse output text as JSON: {output_text}")
-                prop_list = []
+            for output in batch_outputs:
+                output_text = output[0]
+                try:
+                    props = json.loads(output_text)
+                    if not isinstance(props, list):
+                        logger.warning(f"Output text is not a list: {output_text}")
+                        props = [output_text]
+                    prop_list.extend(props)
+                except json.JSONDecodeError:
+                    logger.error(f"Failed to parse output text as JSON: {output_text}")
+                    continue
 
         if return_str:
             return prop_list

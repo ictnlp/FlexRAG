@@ -55,9 +55,11 @@ class HFGenerator(GeneratorBase):
     @torch.no_grad()
     def generate(
         self,
-        prefixes: list[str],
+        prefixes: list[str] | str,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[str]]:
+        if isinstance(prefixes, str):
+            prefixes = [prefixes]
         bsz = len(prefixes)
         inputs = self.tokenizer(
             prefixes, return_tensors="pt", padding=True, truncation=True
@@ -73,10 +75,11 @@ class HFGenerator(GeneratorBase):
             inputs["eos_token_id"] = self.tokenizer.eos_token_id
 
         # generate
+        if hf_gen_cfg.stop_strings is not None:
+            inputs["tokenizer"] = self.tokenizer  # for stop_strings
         outputs = self.model.generate(
             **inputs,
             generation_config=hf_gen_cfg,
-            tokenizer=self.tokenizer,  # for stop_strings
         )
 
         # truncate the input tokens and decode

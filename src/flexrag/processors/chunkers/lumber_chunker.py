@@ -90,6 +90,7 @@ class LumberChunker(ChunkerBase):
         left_idx = 0
         split_poses = []
         while left_idx < total_paragraphs - self.min_tail_chunks:
+            # Preare window
             right_idx = left_idx
             while right_idx < total_paragraphs:
                 current_window = "\n".join(id_paragraphs[left_idx : right_idx + 1])
@@ -102,6 +103,7 @@ class LumberChunker(ChunkerBase):
                 left_idx = max(right_idx, left_idx + 1)
                 continue
 
+            # Find split position using LLM
             current_window = "\n".join(id_paragraphs[left_idx:right_idx])
             try:
                 if self.use_chat:
@@ -112,8 +114,8 @@ class LumberChunker(ChunkerBase):
                             ChatTurn(role="user", content=usr_prompt),
                         ]
                     )
-                    response = self.generator.chat([prompt], self.gen_cfg)[0][0]
-                    response = response.text_content
+                    response = self.generator.chat([prompt], self.gen_cfg)
+                    response = response[0][0].text_content
                 else:
                     prompt = f"{self.system_prompt}\n\nDocument:\n{current_window}"
                     response = self.generator.generate(prompt)[0][0]
@@ -126,11 +128,10 @@ class LumberChunker(ChunkerBase):
             except Exception as e:
                 logger.warning(f"Error during LLM generation: {e}")
                 left_idx = max(right_idx, left_idx + 1)
-
         # Add the last chunk index
         split_poses.append(total_paragraphs)
 
-        # Create chunks
+        # 4. Create chunks
         chunks = []
         start_idx = 0
         for end_idx in split_poses:
