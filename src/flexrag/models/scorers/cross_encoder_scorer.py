@@ -1,7 +1,7 @@
-import torch
 import numpy as np
+import torch
 
-from flexrag.common import configure, TIME_METER
+from flexrag.common import TIME_METER, configure
 
 from ..hf_utils import HFModelConfig, load_hf_model
 from .scorer_base import SCORERS, PairScorerBase
@@ -24,7 +24,6 @@ class HFCrossEncoderScorer(PairScorerBase):
 
     def __init__(self, cfg: HFCrossEncoderScorerConfig):
         # load model
-        super().__init__(cfg)
         self.model, self.tokenizer = load_hf_model(
             cfg.model_path,
             tokenizer_path=cfg.tokenizer_path,

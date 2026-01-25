@@ -1,9 +1,9 @@
 import math
 
-import torch
 import numpy as np
+import torch
 
-from flexrag.common import configure, TIME_METER
+from flexrag.common import TIME_METER, configure
 
 from ..hf_utils import HFModelConfig, load_hf_model
 from .scorer_base import SCORERS, PairScorerBase
@@ -42,7 +42,6 @@ class HFColBertScorer(PairScorerBase):
     """
 
     def __init__(self, cfg: HFColBertScorerConfig) -> None:
-        super().__init__(cfg)
         self.model, self.tokenizer = load_hf_model(
             cfg.model_path,
             tokenizer_path=cfg.tokenizer_path,
