@@ -96,6 +96,8 @@ class MemoryAgentBenchDataset(
             for j, qid in enumerate(item["metadata"]["qa_pair_ids"]):
                 # parse question and answer
                 question, answer = item["questions"][j], item["answers"][j]
+                if "recsys" in qid:
+                    continue  # skip Movie Recsys
                 # parse metadata
                 metadata = {"source": item["metadata"]["source"]}
                 if item["metadata"].get("question_ids", None) is not None:
