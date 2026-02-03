@@ -12,6 +12,7 @@ from .sample_types import (
     DialogueSample,
     IRSample,
     MultipleChoiceSample,
+    MultiSessionQASample,
     QASample,
     RankingSample,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "DialogueSample",
     "IRSample",
     "MultipleChoiceSample",
+    "MultiSessionQASample",
     "QASample",
     "RankingSample",
 ]

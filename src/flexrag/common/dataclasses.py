@@ -5,7 +5,7 @@ from dataclasses import field
 from os import PathLike
 from typing import Annotated, Any, MutableSequence, Optional, Sequence
 
-from pydantic import AfterValidator
+from pydantic import AfterValidator, Field, ValidationInfo
 from rich.console import Console
 from rich.markdown import Markdown
 
@@ -57,7 +57,22 @@ class RetrievedContext(Context):
     score: Optional[float] = None
 
 
-@data
+def _valid_chat_role(role: str, info: ValidationInfo) -> str:
+    """Validates the chat role.
+
+    :param role: The role to validate.
+    :type role: str
+    :return: The validated role.
+    :rtype: str
+    """
+    strict_mode = info.data.get("strict_mode", True)
+    valid_roles = {"user", "assistant", "system"}
+    if role not in valid_roles and strict_mode:
+        raise ValueError(f"Invalid role: {role}. Must be one of {valid_roles}.")
+    return role
+
+
+@data(kw_only=True)
 class ChatTurn:
     """ChatTurn is a dataclass that represents a single turn in a chat session.
 
@@ -65,6 +80,11 @@ class ChatTurn:
     :type role: str
     :param content: The content of the chat turn, can be a string or a list of dictionaries.
     :type content: str | list[dict[str, Any]]
+    :param turn_id: The unique identifier for the chat turn. Default: None.
+    :type turn_id: Optional[str]
+    :param strict_mode: Whether to enforce strict role validation. Default: True.
+        If True, only "user", "assistant", and "system" are allowed as roles.
+    :type strict_mode: bool
 
     For standard text-based messages, `content` is typically a string.
 
@@ -103,8 +123,10 @@ class ChatTurn:
         - Video by binary data: ``{"type": "video", "binary": <bytes or bytearray>}``
     """
 
-    role: Annotated[str, Choices("user", "assistant", "system")]
+    strict_mode: bool = field(default=True, repr=False)
+    role: Annotated[str, AfterValidator(_valid_chat_role)]
     content: str | list[dict[str, Any]]
+    turn_id: Optional[str] = None
 
     def to_dict(self, pure_text: bool = False) -> dict[str, str | list[dict[str, Any]]]:
         """Converts the ChatTurn instance to a dictionary.
@@ -119,10 +141,18 @@ class ChatTurn:
         :rtype: dict[str, str | list[dict[str, Any]]]
         """
         if not pure_text:
-            return {"role": self.role, "content": self.content}
+            return {
+                "role": self.role,
+                "content": self.content,
+                "strict_mode": self.strict_mode,
+            }
 
         if isinstance(self.content, str):
-            return {"role": self.role, "content": self.content}
+            return {
+                "role": self.role,
+                "content": self.content,
+                "strict_mode": self.strict_mode,
+            }
 
         encoded_content: list[dict[str, Any]] = []
         for part in self.content:
@@ -137,16 +167,21 @@ class ChatTurn:
                     new_part["binary"] = binary_to_base64(new_part["binary"])
                     new_part["encoding"] = "base64"
             encoded_content.append(new_part)
-        return {"role": self.role, "content": encoded_content}
+        return {
+            "role": self.role,
+            "content": encoded_content,
+            "strict_mode": self.strict_mode,
+        }
 
     @classmethod
     def from_dict(cls, chat_turn: dict[str, str | list[dict[str, Any]]]) -> ChatTurn:
         role = chat_turn.get("role")
         content = chat_turn.get("content")
+        strict_mode = chat_turn.get("strict_mode", True)
         if role is None or content is None:
             raise ValueError("chat_turn must have 'role' and 'content' fields")
         if isinstance(content, str):
-            return cls(role=role, content=content)
+            return cls(role=role, content=content, strict_mode=strict_mode)
         if not isinstance(content, list):
             raise ValueError("content must be either str or list[dict]")
 
@@ -163,7 +198,7 @@ class ChatTurn:
                 new_part.pop("encoding")
             restored_content.append(new_part)
 
-        return cls(role=role, content=restored_content)
+        return cls(role=role, content=restored_content, strict_mode=strict_mode)
 
     def pretty_print(self) -> None:
         header = f"[bold cyan]{self.role.upper()}[/bold cyan]"
@@ -192,7 +227,9 @@ class ChatTurn:
         return "".join(texts) if texts else None
 
 
-def validate_chat_messages(chat_messages: list[ChatTurn]) -> list[ChatTurn]:
+def _validate_chat_messages(
+    chat_messages: list[ChatTurn], info: ValidationInfo
+) -> list[ChatTurn]:
     """Validates the chat messages.
 
     Steps:
@@ -214,6 +251,9 @@ def validate_chat_messages(chat_messages: list[ChatTurn]) -> list[ChatTurn]:
     for n, turn in enumerate(chat_messages):
         if not isinstance(turn, ChatTurn):
             raise TypeError(f"The item at index {n} is not a ChatTurn instance")
+
+    if info.data.get("strict_mode", True) is False:
+        return chat_messages
 
     # step 3: check role alternation
     if len(chat_messages) == 0:
@@ -247,7 +287,7 @@ def validate_chat_messages(chat_messages: list[ChatTurn]) -> list[ChatTurn]:
     return chat_messages
 
 
-@data
+@data(kw_only=True)
 class ChatMessages(MutableSequence[ChatTurn]):
     """
     ChatMessages represents the full message history in a single chat session.
@@ -312,9 +352,10 @@ class ChatMessages(MutableSequence[ChatTurn]):
     objects, JSON files, and model-specific input formats.
     """
 
+    strict_mode: bool = field(default=True, repr=False)
     history: Annotated[
         list[ChatTurn],
-        AfterValidator(validate_chat_messages),
+        AfterValidator(_validate_chat_messages),
     ] = field(default_factory=list)
 
     def __getitem__(self, index: int) -> ChatTurn:
@@ -360,10 +401,15 @@ class ChatMessages(MutableSequence[ChatTurn]):
         return
 
     @classmethod
-    def from_list(cls, messages: Sequence[ChatTurn | dict[str, Any]]) -> ChatMessages:
+    def from_list(
+        cls, messages: Sequence[ChatTurn | dict[str, Any]], strict_mode: bool = True
+    ) -> ChatMessages:
         """Creates a ChatMessages instance from a sequence of dictionaries.
         :param messages: A sequence of dictionaries representing chat turns.
         :type messages: Sequence[ChatTurn | dict[str, Any]]
+        :param strict_mode: Whether to enforce strict role validation. Default: True.
+            If True, only "user", "assistant", and "system" are allowed as roles.
+        :type strict_mode: bool
         :return: An instance of ChatMessages.
         :rtype: ChatMessages
         """
@@ -373,10 +419,10 @@ class ChatMessages(MutableSequence[ChatTurn]):
                 turns.append(ChatTurn.from_dict(turn))
             else:
                 turns.append(turn)
-        return cls(history=turns)
+        return cls(history=turns, strict_mode=strict_mode)
 
     @classmethod
-    def from_json(cls, path: str | PathLike) -> ChatMessages:
+    def from_json(cls, path: str | PathLike, strict_mode: bool = True) -> ChatMessages:
         """Loads the chat messages from a JSON file.
 
         :param path: The path to the JSON file.
@@ -386,7 +432,7 @@ class ChatMessages(MutableSequence[ChatTurn]):
         """
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        return cls.from_list(data)
+        return cls.from_list(data, strict_mode=strict_mode)
 
     @property
     def system(self) -> Optional[str]:
@@ -415,7 +461,7 @@ class ChatMessages(MutableSequence[ChatTurn]):
 
     def copy(self) -> ChatMessages:
         """Creates a copy of the ChatMessages instance."""
-        return ChatMessages(history=self.history.copy())
+        return ChatMessages(history=self.history.copy(), strict_mode=self.strict_mode)
 
     def pretty_print(self) -> None:
         turn_num = 0

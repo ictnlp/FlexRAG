@@ -136,3 +136,22 @@ class ContextualDialogueSample(DialogueSample):
     golden_responses: Optional[list[ChatTurn]] = None
     contexts: Optional[list[Context]] = None
     meta_data: Optional[dict] = None
+
+
+@data(kw_only=True)
+class MultiSessionQASample(QASample):
+    """The dataclass for Multi-Session QA evaluation data.
+
+    :param question: The question for evaluation. Required.
+    :type question: str
+    :param question_id: The unique identifier for the question. Default: None.
+    :type question_id: Optional[str]
+    :param answers: The golden answers for the question. Default: None.
+    :type answers: Optional[list[str]]
+    :param sessions: A list of completed conversation sessions.
+    :type sessions: list[ChatMessages]
+    :param meta_data: The metadata of the evaluation data. Default: None.
+    :type meta_data: Optional[dict]
+    """
+
+    sessions: list[ChatMessages]
