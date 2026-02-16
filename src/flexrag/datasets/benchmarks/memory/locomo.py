@@ -1,10 +1,10 @@
 import json
 import re
 from pathlib import Path
-from typing import Annotated, Optional
+from typing import Optional
 
-from flexrag.common import FLEXRAG_CACHE_DIR, ChatTurn, Choices, configure
-from flexrag.common.dataclasses import ChatMessages, Context
+from flexrag.common import FLEXRAG_CACHE_DIR, configure
+from flexrag.common.dataclasses import ChatMessages
 from flexrag.common.misc import download
 
 from ...core import DATASETS, MappingDataset, MultiSessionQASample
