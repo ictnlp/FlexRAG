@@ -1,3 +1,15 @@
+from .memory import (
+    ConvoMemDataset,
+    ConvoMemDatasetConfig,
+    LoCoMoDataset,
+    LoCoMoDatasetConfig,
+    LongMemEvalDataset,
+    LongMemEvalDatasetConfig,
+    MemoryAgentBenchDataset,
+    MemoryAgentBenchDatasetConfig,
+    MSCSelfInstructDataset,
+    MSCSelfInstructDatasetConfig,
+)
 from .multiple_choice import (
     LongBenchV2Dataset,
     LongBenchV2DatasetConfig,
@@ -42,6 +54,16 @@ from .retrieval import (
 from .suites import KiltDataset, KiltDatasetConfig
 
 __all__ = [
+    "ConvoMemDataset",
+    "ConvoMemDatasetConfig",
+    "LoCoMoDataset",
+    "LoCoMoDatasetConfig",
+    "LongMemEvalDataset",
+    "LongMemEvalDatasetConfig",
+    "MemoryAgentBenchDataset",
+    "MemoryAgentBenchDatasetConfig",
+    "MSCSelfInstructDataset",
+    "MSCSelfInstructDatasetConfig",
     "LongBenchV2Dataset",
     "LongBenchV2DatasetConfig",
     "NovelQADataset",

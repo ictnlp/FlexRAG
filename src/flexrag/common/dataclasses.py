@@ -174,10 +174,12 @@ class ChatTurn:
         }
 
     @classmethod
-    def from_dict(cls, chat_turn: dict[str, str | list[dict[str, Any]]]) -> ChatTurn:
+    def from_dict(
+        cls, chat_turn: dict[str, str | list[dict[str, Any]]], strict_mode: bool = True
+    ) -> ChatTurn:
         role = chat_turn.get("role")
         content = chat_turn.get("content")
-        strict_mode = chat_turn.get("strict_mode", True)
+        strict_mode = chat_turn.get("strict_mode", strict_mode)
         if role is None or content is None:
             raise ValueError("chat_turn must have 'role' and 'content' fields")
         if isinstance(content, str):
@@ -416,7 +418,7 @@ class ChatMessages(MutableSequence[ChatTurn]):
         turns: list[ChatTurn] = []
         for turn in messages:
             if isinstance(turn, dict):
-                turns.append(ChatTurn.from_dict(turn))
+                turns.append(ChatTurn.from_dict(turn, strict_mode=strict_mode))
             else:
                 turns.append(turn)
         return cls(history=turns, strict_mode=strict_mode)
