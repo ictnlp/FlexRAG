@@ -9,6 +9,8 @@ from .memory import (
     MemoryAgentBenchDatasetConfig,
     MSCSelfInstructDataset,
     MSCSelfInstructDatasetConfig,
+    PerLTQADataset,
+    PerLTQADatasetConfig,
 )
 from .multiple_choice import (
     LongBenchV2Dataset,
@@ -64,6 +66,8 @@ __all__ = [
     "MemoryAgentBenchDatasetConfig",
     "MSCSelfInstructDataset",
     "MSCSelfInstructDatasetConfig",
+    "PerLTQADataset",
+    "PerLTQADatasetConfig",
     "LongBenchV2Dataset",
     "LongBenchV2DatasetConfig",
     "NovelQADataset",
