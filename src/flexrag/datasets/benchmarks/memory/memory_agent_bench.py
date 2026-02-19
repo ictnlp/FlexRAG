@@ -25,22 +25,17 @@ class MemoryAgentBenchDatasetConfig:
     competencies—accurate retrieval, test-time learning, long-range understanding, and
     selective forgetting—under realistic, incremental interaction settings.
 
-    :param data_path: The path to the MemoryAgentBench dataset file. Default is None.
-        If not provided, the dataset will be downloaded automatically.
+    :param data_path: The path to the MemoryAgentBench dataset directory.
+        If not provided, the dataset will be downloaded automatically. Default is None.
     :type data_path: Optional[str]
     :param split: The dataset split to use. Default is `Accurate_Retrieval`.
         Available choices are:
-        `Accurate_Retrieval`, `Test_Time_Learning`,
-        `Long_Range_Understanding`, `Conflict_Resolution`.
-    :type split: Literal[
-        "Accurate_Retrieval",
-        "Test_Time_Learning",
-        "Long_Range_Understanding",
-        "Conflict_Resolution",
-    ]
-    :param parse_contexts: Whether to parse contexts into structured format.
-        Default is False.
-    :type parse_contexts: bool
+
+        - `Accurate_Retrieval`
+        - `Test_Time_Learning`
+        - `Long_Range_Understanding`
+        - `Conflict_Resolution`
+    :type split: str
     """
 
     data_path: Optional[str] = None
@@ -50,7 +45,6 @@ class MemoryAgentBenchDatasetConfig:
         "Long_Range_Understanding",
         "Conflict_Resolution",
     ] = "Accurate_Retrieval"
-    parse_contexts: bool = False
 
 
 @DATASETS("memory_agent_bench", config_class=MemoryAgentBenchDatasetConfig)
@@ -58,7 +52,6 @@ class MemoryAgentBenchDataset(
     MappingDataset[MultiSessionQASample | ContextualQASample]
 ):
     def __init__(self, config: MemoryAgentBenchDatasetConfig):
-        self._parse_contexts = config.parse_contexts
         # prepare the data directory
         if config.data_path is None:
             data_dir = FLEXRAG_CACHE_DIR / "datasets" / "memory_agent_bench"
@@ -85,13 +78,10 @@ class MemoryAgentBenchDataset(
         for i, item in enumerate(raw_data):
             # parse contexts
             context_id = f"{config.split}_context_{i}"
-            if self._parse_contexts:
-                raise NotImplementedError
-            else:
-                self._contexts[context_id] = Context(
-                    context_id=context_id,
-                    data={"text": item["context"]},
-                )
+            self._contexts[context_id] = Context(
+                context_id=context_id,
+                data={"text": item["context"]},
+            )
             # parse qa pairs
             for j, qid in enumerate(item["metadata"]["qa_pair_ids"]):
                 # parse question and answer
