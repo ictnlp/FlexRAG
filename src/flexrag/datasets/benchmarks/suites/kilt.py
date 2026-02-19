@@ -1,22 +1,18 @@
 import os
+from functools import cached_property
 from pathlib import Path
-from typing import Annotated, Optional
+from types import MappingProxyType
+from typing import Annotated, Iterator, Mapping, Optional
 
 from datasets import load_dataset
 from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
-from flexrag.common.dataclasses import Context, ChatMessages, ChatTurn
+from flexrag.common.dataclasses import ChatMessages, ChatTurn, Context
 from flexrag.common.logging import LOGGER_MANAGER
 from flexrag.common.misc import download
 
-from ...core import (
-    DATASETS,
-    MappingDataset,
-    ContextualQASample,
-    ContextualDialogueSample,
-    ContextualMCSample,
-)
+from ...core import DATASETS, IRDialogueSample, IRMCSample, IRQASample, MappingDataset
 from ...reader import LineDelimitedReader
 
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.kilt_qa")
@@ -32,10 +28,10 @@ class KiltDatasetConfig:
     while being evaluated on both task performance and evidence provenance.
 
     For QA tasks, Entity Linking tasks, and Slot Filling tasks, the dataset
-    provides ContextualQASample as the data sample type.
-    For Dialogue tasks, the dataset provides ContextualDialogueSample as the data
+    provides IRQASample as the data sample type.
+    For Dialogue tasks, the dataset provides IRDialogueSample as the data
     sample type.
-    For Fact Checking tasks, the dataset provides ContextualMCSample as the data
+    For Fact Checking tasks, the dataset provides IRMCSample as the data
     sample type.
 
     :param data_path: The path to the KILT dataset file. Default is None.
@@ -100,9 +96,7 @@ CORPUS_URL = "http://dl.fbaipublicfiles.com/KILT/kilt_knowledgesource.json"
 
 
 @DATASETS("kilt", config_class=KiltDatasetConfig)
-class KiltDataset(
-    MappingDataset[ContextualQASample | ContextualDialogueSample | ContextualMCSample]
-):
+class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
     def __init__(self, config: KiltDatasetConfig):
         self._subset = config.subset
         self._split = config.split
@@ -278,9 +272,7 @@ class KiltDataset(
     def __len__(self) -> int:
         return len(self._queries_data)
 
-    def get_item(
-        self, index: int
-    ) -> ContextualQASample | ContextualDialogueSample | ContextualMCSample:
+    def get_item(self, index: int) -> IRQASample | IRDialogueSample | IRMCSample:
         qid = list(self._queries_data.keys())[index]
         ctx_ids = list(self._qrels_data[qid].keys())
         # prepare contexts
@@ -291,8 +283,6 @@ class KiltDataset(
                 Context(context_id=ctx_id, data={}, source="wikipedia", meta_data={})
                 for ctx_id in ctx_ids
             ]
-        if len(contexts) == 0:
-            contexts = None
 
         # prepare sample for fact checking task
         if self._subset in {"fever"}:
@@ -301,7 +291,7 @@ class KiltDataset(
                 answers = [choices.index(self._answers_data[qid][0])]
             else:
                 answers = None
-            sample = ContextualMCSample(
+            sample = IRMCSample(
                 question_id=qid,
                 question=self._queries_data[qid],
                 choices=choices,
@@ -324,8 +314,8 @@ class KiltDataset(
                     )
                 ]
             else:
-                responses = None
-            sample = ContextualDialogueSample(
+                responses = []
+            sample = IRDialogueSample(
                 question_id=qid,
                 messages=messages,
                 golden_responses=responses,
@@ -335,7 +325,7 @@ class KiltDataset(
         # prepare sample for other tasks
         else:
             answers = self._answers_data[qid] if self._answers_data[qid] else None
-            sample = ContextualQASample(
+            sample = IRQASample(
                 question_id=qid,
                 question=self._queries_data[qid],
                 answers=answers,
@@ -343,3 +333,32 @@ class KiltDataset(
                 meta_data=self._meta_data[qid],
             )
         return sample
+
+    @property
+    def contexts(self) -> Mapping[str, Context]:
+        """The contexts of the dataset."""
+        return MappingProxyType(self._context_data)
+
+    @property
+    def queries(self) -> Mapping[str, str]:
+        """The queries of the dataset."""
+        return MappingProxyType(self._queries_data)
+
+    @property
+    def qrels(self) -> Mapping[str, Mapping[str, float]]:
+        """The qrels of the dataset."""
+        return MappingProxyType(self._qrels_data)
+
+    @cached_property
+    def query_ids(self) -> list[str]:
+        """The index of the queries in the qrels."""
+        return sorted(self.qrels.keys())
+
+    @property
+    def context_ids(self) -> Iterator[str]:
+        """Get all context ids in the dataset.
+
+        :return: An iterator of context ids.
+        :rtype: Iterator[str]
+        """
+        yield from self.contexts.keys()
