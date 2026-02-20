@@ -2,7 +2,6 @@ from pathlib import Path
 from typing import Annotated, Literal, Optional
 
 from datasets import load_dataset
-from dill.tests.test_registered import q
 from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, ChatTurn, Choices, configure
@@ -48,9 +47,7 @@ class MemoryAgentBenchDatasetConfig:
 
 
 @DATASETS("memory_agent_bench", config_class=MemoryAgentBenchDatasetConfig)
-class MemoryAgentBenchDataset(
-    MappingDataset[MultiSessionQASample | ContextualQASample]
-):
+class MemoryAgentBenchDataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: MemoryAgentBenchDatasetConfig):
         # prepare the data directory
         if config.data_path is None:
@@ -117,16 +114,14 @@ class MemoryAgentBenchDataset(
     def __len__(self) -> int:
         return len(self._query_data)
 
-    def get_item(self, index: int) -> MultiSessionQASample | ContextualQASample:
+    def get_item(self, index: int) -> ContextualQASample:
         qid = list(self._query_data.keys())[index]
         data = self._query_data[qid]
         context = self._contexts[data["context_id"]]
-        if isinstance(context, Context):
-            return ContextualQASample(
-                question=data["question"],
-                answers=data["answer"],
-                contexts=[context],
-                question_id=qid,
-                meta_data=data["meta_data"],
-            )
-        raise NotImplementedError
+        return ContextualQASample(
+            question=data["question"],
+            answers=data["answer"],
+            contexts=[context],
+            question_id=qid,
+            meta_data=data["meta_data"],
+        )
