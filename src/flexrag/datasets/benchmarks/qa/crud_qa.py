@@ -9,7 +9,7 @@ from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 from flexrag.common.dataclasses import Context
 from flexrag.common.misc import download_and_extract
 
-from ...core import DATASETS, MappingDataset, ContextualQASample
+from ...core import DATASETS, ContextualQASample, MappingDataset
 
 
 @configure
@@ -93,7 +93,7 @@ class CRUDQADataset(MappingDataset[ContextualQASample]):
         data_path = data_dir / "data" / "crud" / "merged.zip"
         with zipfile.ZipFile(data_path, "r") as zip_ref:
             with zip_ref.open("merged.json", "r") as f:
-                data = json.load(f)[config.subset]
+                data = json.load(f)[self._subset]
         for item in data:
             query_id = item["ID"]
             self._queries_data[query_id] = item["questions"]

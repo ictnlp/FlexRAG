@@ -1,3 +1,4 @@
+from .contextual_dialogue import MTRAGDataset, MTRAGDatasetConfig
 from .memory import (
     ConvoMemDataset,
     ConvoMemDatasetConfig,
@@ -56,6 +57,8 @@ from .retrieval import (
 from .suites import KiltDataset, KiltDatasetConfig
 
 __all__ = [
+    "MTRAGDataset",
+    "MTRAGDatasetConfig",
     "ConvoMemDataset",
     "ConvoMemDatasetConfig",
     "LoCoMoDataset",
