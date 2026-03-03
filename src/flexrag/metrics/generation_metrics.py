@@ -1,9 +1,11 @@
+from dataclasses import field
 from typing import Annotated
 
 import rouge
 import sacrebleu
 
 from flexrag.common import TIME_METER, Choices, configure
+from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
 
 from .metrics_base import METRICS, MetricsBase
 
@@ -85,6 +87,21 @@ class chrF(MetricsBase):
         return {"response_chrf": chrf.score}, vars(chrf)
 
 
+@configure
+class RougeConfig:
+    """Configuration for ``Rouge`` metric.
+    The computation of Rouge score is based on `rouge <https://github.com/pltrdy/rouge>`_.
+
+    :param tokenizer_config: The tokenizer used for splitting the answer into tokens.
+        Defaults to a space tokenizer.
+    :type tokenizer_config: TokenizerConfig
+    """
+
+    tokenizer_config: TokenizerConfig = field(
+        default_factory=lambda: TokenizerConfig(tokenizer_type="space")
+    )
+
+
 @METRICS("generation_rouge")
 class Rouge(MetricsBase):
     """The Rouge metric.
@@ -92,8 +109,9 @@ class Rouge(MetricsBase):
     This metric will return the average of the Rouge-1, Rouge-2, and Rouge-L F1 scores.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, cfg: RougeConfig) -> None:
         self.scorer = rouge.Rouge(metrics=["rouge-1", "rouge-2", "rouge-l"])
+        self.tokenizer = TOKENIZERS.load(cfg.tokenizer_config)
         return
 
     @TIME_METER("metrics.generation_rouge")
@@ -133,6 +151,8 @@ class Rouge(MetricsBase):
             "rouge-l": {"r": 0.0, "p": 0.0, "f": 0.0},
         }
         for gold in golds:
+            gold = " ".join(self.tokenizer.tokenize(gold))
+            response = " ".join(self.tokenizer.tokenize(response))
             rouge_score = self.scorer.get_scores(response, gold)[0]
             for metric in score_dict.keys():
                 for key in ["r", "p", "f"]:

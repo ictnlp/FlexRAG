@@ -1,3 +1,6 @@
+from collections.abc import MutableMapping
+from typing import Any, Protocol, TypeAlias, runtime_checkable
+
 from flexrag.common import LOGGER_MANAGER, configure
 from flexrag.common.dataclasses import RetrievedContext
 
@@ -12,12 +15,60 @@ class EvaluatorConfig(MetricConfig):
     round: int = 2
 
 
-class Evaluator:
-    def __init__(self, cfg: EvaluatorConfig) -> None:
-        self.metrics: dict[str, MetricsBase] = {
-            name: metric for name, metric in zip(cfg.metrics_type, METRICS.load(cfg))
-        }
-        self.round = cfg.round
+MetricReturn: TypeAlias = tuple[dict[str, float], dict[str, Any]]
+SimpleMetricReturn: TypeAlias = float | int | MetricReturn
+
+
+@runtime_checkable
+class MetricCallable(Protocol):
+    def __call__(
+        self,
+        *,
+        questions: list[str] | None = None,
+        responses: list[str] | None = None,
+        golden_responses: list[list[str]] | None = None,
+        retrieved_contexts: list[list[Any]] | None = None,
+        golden_contexts: list[list[str]] | None = None,
+        **kwargs: Any,
+    ) -> SimpleMetricReturn: ...
+
+
+class Evaluator(MutableMapping[str, MetricCallable]):
+    """Evaluator is a container and orchestrator for multiple evaluation metrics.
+
+    It manages a collection of metrics invoked by the configuration or added dynamically,
+    and provides a unified interface to compute these metrics on the given data.
+
+    Besides using the built-in metrics initialized via `EvaluatorConfig`, it also
+    accepts custom functions as long as they conform to the `MetricCallable` protocol.
+
+    Example:
+        ```python
+        evaluator = Evaluator({})
+
+        # Custom metric functions MUST accept `**kwargs` to ignore unrelated arguments
+        def exact_match(responses: list[str], golden_responses: list[list[str]], **kwargs):
+            score = sum(r == g[0] for r, g in zip(responses, golden_responses)) / len(responses)
+            return {"exact_match": score}, {}
+
+        evaluator["em"] = exact_match
+        results, details = evaluator.evaluate(responses=[...], golden_responses=[...])
+        ```
+    """
+
+    def __init__(self, cfg: EvaluatorConfig | dict[str, MetricCallable]) -> None:
+        self.metrics: dict[str, MetricCallable] = {}
+        if isinstance(cfg, EvaluatorConfig):
+            for name, metric in zip(cfg.metrics_type, METRICS.load(cfg)):
+                self.metrics[name] = metric
+            self.round = cfg.round
+        else:
+            for name, metric in cfg.items():
+                assert isinstance(
+                    metric, MetricCallable
+                ), f"Metric {name} must implement the MetricCallable protocol."
+            self.metrics = {name: metric for name, metric in cfg.items()}
+            self.round = 2
         return
 
     def evaluate(
@@ -82,3 +133,29 @@ class Evaluator:
             evaluation_results.update(r)
             evaluation_details[metric] = r_detail
         return evaluation_results, evaluation_details
+
+    async def async_evaluate(self):
+        raise NotImplementedError("Async evaluation is not implemented yet.")
+
+    def __getitem__(self, key: str) -> MetricCallable:
+        return self.metrics[key]
+
+    def __setitem__(self, key: str, value: MetricCallable):
+        assert isinstance(
+            value, MetricCallable
+        ), f"Metric {key} must implement the MetricCallable protocol."
+        self.metrics[key] = value
+        return
+
+    def __delitem__(self, key: str):
+        del self.metrics[key]
+        return
+
+    def __len__(self) -> int:
+        return len(self.metrics)
+
+    def __iter__(self):
+        return iter(self.metrics)
+
+    def __repr__(self) -> str:
+        return f"Evaluator(metrics={list(self.metrics.keys())})"

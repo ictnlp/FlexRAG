@@ -1,12 +1,17 @@
-from .generation_metrics import BLEU, BLEUConfig, Rouge, chrF, chrFConfig
+from .generation_metrics import BLEU, BLEUConfig, Rouge, RougeConfig, chrF, chrFConfig
 from .llm_as_a_judge import ShortformCorrectness, ShortformCorrectnessConfig
 from .matching_metrics import (
     F1,
     Accuracy,
+    AccuracyConfig,
     ExactMatch,
+    ExactMatchConfig,
+    F1Config,
     MatchingMetrics,
     Precision,
+    PrecisionConfig,
     Recall,
+    RecallConfig,
 )
 from .metrics_base import MetricsBase
 from .retrieval_metrics import (
@@ -30,13 +35,19 @@ __all__ = [
     "MetricsBase",
     "MatchingMetrics",
     "Accuracy",
+    "AccuracyConfig",
     "ExactMatch",
+    "ExactMatchConfig",
     "F1",
+    "F1Config",
     "Recall",
+    "RecallConfig",
     "Precision",
+    "PrecisionConfig",
     "BLEU",
     "BLEUConfig",
     "Rouge",
+    "RougeConfig",
     "chrF",
     "chrFConfig",
     "ShortformCorrectness",

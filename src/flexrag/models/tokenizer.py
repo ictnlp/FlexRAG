@@ -127,6 +127,38 @@ class TokenizerBase(ABC):
 TOKENIZERS = Register[TokenizerBase]("tokenizer")
 
 
+@TOKENIZERS("space")
+class SpaceTokenizer(TokenizerBase):
+    """A simple tokenizer that splits text by spaces."""
+
+    def tokenize(self, texts: str) -> list[str]:
+        return texts.split()
+
+    def detokenize(self, tokens: list[str]) -> str:
+        return " ".join(tokens)
+
+    def encode(self, text: str) -> list[int]:
+        raise NotImplementedError("SpaceTokenizer does not support `encode` method.")
+
+    def decode(self, tokens: list[int]) -> str:
+        raise NotImplementedError("SpaceTokenizer does not support `decode` method.")
+
+    def tokens_to_ids(self, tokens: list[str]) -> list[int]:
+        raise NotImplementedError(
+            "SpaceTokenizer does not support `tokens_to_ids` method."
+        )
+
+    def ids_to_tokens(self, token_ids: list[int]) -> list[str]:
+        raise NotImplementedError(
+            "SpaceTokenizer does not support `ids_to_tokens` method."
+        )
+
+    @property
+    def reversible(self) -> bool:
+        """SpaceTokenizer is not reversible as it may lose spaces."""
+        return False
+
+
 @configure
 class MosesTokenizerConfig:
     """Configuration for MosesTokenizer.

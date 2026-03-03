@@ -1,7 +1,9 @@
 from abc import abstractmethod
 from collections import Counter
+from dataclasses import field
 
 from flexrag.common import TIME_METER, configure
+from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
 from flexrag.processors.text_processors import AnswerSimplifier
 
 from .metrics_base import METRICS, MetricsBase
@@ -11,7 +13,8 @@ from .metrics_base import METRICS, MetricsBase
 class MatchingMetricsConfig:
     """Configuration class for MatchingMetrics.
 
-    :param simplify: Whether to simplify the answer before computing the matching score. Defaults to True.
+    :param simplify: Whether to simplify the answer before computing the matching score.
+        Defaults to True.
     :type simplify: bool
     """
 
@@ -72,9 +75,11 @@ class Accuracy(MatchingMetrics):
         return float(any(gold in response for gold in golds))
 
 
-def f1_recall_precision(golds: list[str], response: str) -> tuple[float, float, float]:
-    true_counters = [Counter(gold.split()) for gold in golds]
-    pred_counter = Counter(response.split())
+def f1_recall_precision(
+    golds_tokens: list[list[str]], response_tokens: list[str]
+) -> tuple[float, float, float]:
+    true_counters = [Counter(gold_tokens) for gold_tokens in golds_tokens]
+    pred_counter = Counter(response_tokens)
     precision = 0.0
     recall = 0.0
     f1 = 0.0
@@ -91,9 +96,23 @@ def f1_recall_precision(golds: list[str], response: str) -> tuple[float, float, 
     return f1, recall, precision
 
 
-F1Config = MatchingMetricsConfig
-RecallConfig = MatchingMetricsConfig
-PrecisionConfig = MatchingMetricsConfig
+@configure
+class F1RecallPrecisionConfig(MatchingMetricsConfig):
+    """Configuration class for F1RecallPrecision metric.
+
+    :param tokenizer_config: The tokenizer used for splitting the answer into tokens.
+        Defaults to a space tokenizer.
+    :type tokenizer_config: TokenizerConfig
+    """
+
+    tokenizer_config: TokenizerConfig = field(
+        default_factory=lambda: TokenizerConfig(tokenizer_type="space")
+    )
+
+
+F1Config = F1RecallPrecisionConfig
+RecallConfig = F1RecallPrecisionConfig
+PrecisionConfig = F1RecallPrecisionConfig
 
 
 @METRICS("generation_f1", config_class=F1Config)
@@ -102,8 +121,17 @@ class F1(MatchingMetrics):
 
     name = "generation_f1"
 
+    def __init__(self, cfg: F1Config) -> None:
+        super().__init__(cfg)
+        self.tokenizer = TOKENIZERS.load(cfg.tokenizer_config)
+        return
+
     def compute_item(self, golds: list[str], response: str) -> float:
-        return f1_recall_precision(golds, response)[0]
+        golds_tokens: list[list[str]] = [
+            self.tokenizer.tokenize(gold) for gold in golds
+        ]
+        response_tokens: list[str] = self.tokenizer.tokenize(response)
+        return f1_recall_precision(golds_tokens, response_tokens)[0]
 
 
 @METRICS("generation_recall", config_class=RecallConfig)
@@ -112,8 +140,17 @@ class Recall(MatchingMetrics):
 
     name = "generation_recall"
 
+    def __init__(self, cfg: RecallConfig) -> None:
+        super().__init__(cfg)
+        self.tokenizer = TOKENIZERS.load(cfg.tokenizer_config)
+        return
+
     def compute_item(self, golds: list[str], response: str) -> float:
-        return f1_recall_precision(golds, response)[1]
+        golds_tokens: list[list[str]] = [
+            self.tokenizer.tokenize(gold) for gold in golds
+        ]
+        response_tokens: list[str] = self.tokenizer.tokenize(response)
+        return f1_recall_precision(golds_tokens, response_tokens)[1]
 
 
 @METRICS("generation_precision", config_class=PrecisionConfig)
@@ -122,5 +159,14 @@ class Precision(MatchingMetrics):
 
     name = "generation_precision"
 
+    def __init__(self, cfg: PrecisionConfig) -> None:
+        super().__init__(cfg)
+        self.tokenizer = TOKENIZERS.load(cfg.tokenizer_config)
+        return
+
     def compute_item(self, golds: list[str], response: str) -> float:
-        return f1_recall_precision(golds, response)[2]
+        golds_tokens: list[list[str]] = [
+            self.tokenizer.tokenize(gold) for gold in golds
+        ]
+        response_tokens: list[str] = self.tokenizer.tokenize(response)
+        return f1_recall_precision(golds_tokens, response_tokens)[2]
