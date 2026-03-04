@@ -120,13 +120,19 @@ class Evaluator(MutableMapping[str, MetricCallable]):
         evaluation_details = {}
         for metric in self.metrics:
             metric = str(metric)  # make json serializable
-            r, r_detail = self.metrics[metric](
+            res = self.metrics[metric](
                 questions=questions,
                 responses=responses,
                 golden_responses=golden_responses,
                 retrieved_contexts=retrieved_contexts,
                 golden_contexts=golden_contexts,
             )
+            if isinstance(res, (float, int)):
+                r = {metric: float(res)}
+                r_detail = {}
+            else:
+                r, r_detail = res
+
             if log:
                 for name, score in r.items():
                     logger.info(f"{name}: {score*100:.{self.round}f}%")

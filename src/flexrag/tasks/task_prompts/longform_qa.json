@@ -1,6 +1,0 @@
-[
-    {
-        "role": "system",
-        "content": "Answer the question based on the given contexts. Note that the context might not always contain relevant information to answer the question. If no context is provided, answer the question based on your general knowledge."
-    }
-]

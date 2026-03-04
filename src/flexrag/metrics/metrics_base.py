@@ -1,11 +1,10 @@
-from abc import abstractmethod
-from collections.abc import Callable
+from abc import ABC, abstractmethod
 
 from flexrag.common import Register
 from flexrag.common.dataclasses import RetrievedContext
 
 
-class MetricsBase(Callable):
+class MetricsBase(ABC):
     def __call__(
         self,
         *,
