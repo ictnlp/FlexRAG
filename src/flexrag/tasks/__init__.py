@@ -1,3 +1,9 @@
+from .contextual_mc import (
+    ContextualMCTask,
+    ContextualMCTaskConfig,
+    LongBenchV2Task,
+    LongBenchV2TaskConfig,
+)
 from .contextual_qa import (
     ContextualQATask,
     ContextualQATaskConfig,
@@ -16,7 +22,16 @@ from .open_qa import (
     SimpleQATask,
     SimpleQATaskConfig,
 )
-from .retrieval_task import RetrievalTask, RetrievalTaskConfig
+from .retrieval_task import (
+    MLDRRetrievalTask,
+    MLDRRetrievalTaskConfig,
+    MSMARCORetrievalTask,
+    MSMARCORetrievalTaskConfig,
+    MTEBRetrievalTask,
+    MTEBRetrievalTaskConfig,
+    RetrievalTask,
+    RetrievalTaskConfig,
+)
 from .task_base import TASKS, TaskBase, TaskBaseConfig
 
 TaskConfig = TASKS.make_config()
@@ -27,6 +42,8 @@ __all__ = [
     "TaskBaseConfig",
     "TASKS",
     "TaskConfig",
+    "MTEBRetrievalTask",
+    "MTEBRetrievalTaskConfig",
     "RetrievalTask",
     "RetrievalTaskConfig",
     "ContextualQATask",
@@ -37,6 +54,10 @@ __all__ = [
     "NarrativeQATaskConfig",
     "SQuADTask",
     "SQuADTaskConfig",
+    "ContextualMCTask",
+    "ContextualMCTaskConfig",
+    "LongBenchV2Task",
+    "LongBenchV2TaskConfig",
     "BrowseCompTask",
     "BrowseCompTaskConfig",
     "OpenQATask",

@@ -2,8 +2,8 @@ import pytest
 
 from flexrag.common import Context
 from flexrag.datasets.benchmarks import (
-    CRUDQADataset,
-    CRUDQADatasetConfig,
+    CRUDRAGDataset,
+    CRUDRAGDatasetConfig,
     GutenQADataset,
     GutenQADatasetConfig,
     LongBenchDataset,
@@ -76,7 +76,7 @@ class TestContextualQA:
         ],
     )
     def test_crud_qa(self, subset):
-        dataset = CRUDQADataset(CRUDQADatasetConfig(subset=subset))
+        dataset = CRUDRAGDataset(CRUDRAGDatasetConfig(subset=subset))
         for item in dataset:
             self.valid_contextual_qa_sample(item)
         print(f"CRUD QA-{subset} dataset length: {len(dataset)}")
