@@ -1,4 +1,4 @@
-from .assistant import ASSISTANTS, AssistantBase
+from .assistant_base import ASSISTANTS, AssistantBase, AssistantResponse
 from .chatqa_assistant import ChatQAAssistant
 from .modular_rag_assistant import ModularAssistant, ModularAssistantConfig
 from .online_assistant import (
@@ -14,6 +14,7 @@ AssistantConfig = ASSISTANTS.make_config(config_name="AssistantConfig")
 __all__ = [
     "ASSISTANTS",
     "AssistantBase",
+    "AssistantResponse",
     "ModularAssistant",
     "ModularAssistantConfig",
     "ChatQAAssistant",

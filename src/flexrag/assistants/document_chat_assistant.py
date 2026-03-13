@@ -5,7 +5,7 @@ from flexrag.processors.document_parsers import DOCUMENTPARSERS, DocumentParserC
 from flexrag.processors.rankers import RANKERS, RankerConfig
 from flexrag.retrievers import FlexRetriever, FlexRetrieverConfig
 
-from .assistant import ASSISTANTS, AssistantBase, AssistantResponse
+from .assistant_base import ASSISTANTS, AssistantBase, AssistantResponse
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant.modular")
 

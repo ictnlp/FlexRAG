@@ -9,7 +9,7 @@ from flexrag.common import LOGGER_MANAGER, Choices, configure
 from flexrag.common.dataclasses import ChatMessages, RetrievedContext
 from flexrag.models import GenerationConfig
 
-from .assistant import ASSISTANTS, AssistantBase, AssistantResponse
+from .assistant_base import ASSISTANTS, AssistantBase, AssistantResponse
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant")
 

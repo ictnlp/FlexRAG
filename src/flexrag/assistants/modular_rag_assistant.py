@@ -8,7 +8,7 @@ from flexrag.processors.rankers import RANKERS, RankerConfig
 from flexrag.processors.refiners import REFINERS, RefinerConfig
 from flexrag.retrievers import RETRIEVERS, RetrieverConfig
 
-from .assistant import ASSISTANTS, AssistantBase, AssistantResponse
+from .assistant_base import ASSISTANTS, AssistantBase, AssistantResponse
 
 logger = LOGGER_MANAGER.get_logger("flexrag.assistant.modular")
 
@@ -38,20 +38,9 @@ class ModularAssistantConfig(
 
     :param used_fields: The fields to use in the context. Defaults to [].
     :type used_fields: list[str], optional
-    :param context_incorporation: How to incorporate context into the messages.
-    Defaults to "user_prompt". Available options are:
-
-        * "system_prompt": Incorporate context into the system prompt.
-        * "user_prompt": Incorporate context into the last user prompt.
-
-    :type context_incorporation: str
     """
 
     used_fields: list[str] = field(default_factory=list)
-    context_incorporation: Annotated[
-        str,
-        Choices("system_prompt", "user_prompt"),
-    ] = "user_prompt"
 
 
 @ASSISTANTS("modular", config_class=ModularAssistantConfig)
@@ -65,7 +54,6 @@ class ModularAssistant(AssistantBase):
             logger.warning("Sample num > 1 is not supported for Assistant")
             self.gen_cfg.sample_num = 1
         self.used_fields = cfg.used_fields
-        self.context_incorporation = cfg.context_incorporation
 
         # load generator
         self.generator = GENERATORS.load(cfg)
@@ -84,18 +72,15 @@ class ModularAssistant(AssistantBase):
     def answer(
         self,
         messages: ChatMessages | list[dict],
-        disable_retrieval: bool = False,
+        additional_sessions: list[ChatMessages] | None = None,
     ) -> AssistantResponse:
         if isinstance(messages, list):
             messages = ChatMessages.from_list(messages)
-        if not disable_retrieval:
-            ctxs, history = self.search(messages[-1].content)
-            response = self.answer_with_contexts(messages, ctxs)
-        else:
-            ctxs = []
-            history = []
-            response = self.answer_with_contexts(messages)
-        response.metadata["search_histories"] = history
+        ctxs, search_history = [], []
+        if self.retriever is not None:
+            ctxs, search_history = self.search(messages[-1].content)
+        response = self.generate_response(messages, ctxs)
+        response.metadata["search_histories"] = search_history
         return response
 
     def search(self, query: str) -> tuple[list[RetrievedContext], list[SearchResult]]:
@@ -132,7 +117,7 @@ class ModularAssistant(AssistantBase):
 
         return ctxs, search_histories
 
-    def answer_with_contexts(
+    def generate_response(
         self,
         messages: ChatMessages | list[dict],
         contexts: list[RetrievedContext] = [],
@@ -167,34 +152,11 @@ class ModularAssistant(AssistantBase):
 
         # incorporate context into messages
         prompt = messages.copy()
-        match self.context_incorporation:
-            case "system_prompt":
-                if prompt.system is not None:
-                    prompt.system = (
-                        f"{prompt.system}\n\n"
-                        "Here are some context documents that may be relevant to this conversation:\n\n"
-                        f"{context_str}"
-                    )
-                else:
-                    prompt.system = (
-                        "You are a helpful and knowledgeable AI assistant. "
-                        "You may be provided with one or more context documents alongside user messages. "
-                        "These documents may or may not be relevant to the current query."
-                        "If unsure about the relevance or completeness of contexts, "
-                        "please answer based on your own knowledge."
-                        "Here are some context documents that may be relevant to this conversation:\n\n"
-                        f"{context_str}"
-                    )
-            case "user_prompt":
-                prompt[-1].content = (
-                    f"Here are some context documents that may be relevant to this conversation:\n\n"
-                    f"{context_str}\n"
-                    f"{prompt[-1].content}"
-                )
-            case _:
-                raise ValueError(
-                    f"Unknown context incorporation method: {self.context_incorporation}"
-                )
+        prompt[-1].content = (
+            f"Here are some context documents that may be relevant to this conversation:\n\n"
+            f"{context_str}\n"
+            f"{prompt[-1].content}"
+        )
 
         # generate response
         response = self.generator.chat([prompt], generation_config=self.gen_cfg)
