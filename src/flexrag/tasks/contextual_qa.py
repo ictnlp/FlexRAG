@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from abc import abstractmethod
+from dataclasses import field
 from pathlib import Path
 from typing import Optional
 
@@ -10,6 +11,10 @@ from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
 from flexrag.common.database import json_dump
 from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.datasets.benchmarks import (
+    GutenQADataset,
+    GutenQADatasetConfig,
+    LiteraryQADataset,
+    LiteraryQADatasetConfig,
     LongBenchDataset,
     LongBenchDatasetConfig,
     NarrativeQADataset,
@@ -28,6 +33,7 @@ from flexrag.metrics import (
     Rouge,
     RougeConfig,
 )
+from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.models.tokenizer import TokenizerConfig
 
 from .task_base import TASKS, TaskBase
@@ -90,7 +96,10 @@ class ContextualQATask(TaskBase):
                 questions.append(item.question)
                 golden_answers.append(item.answers)
                 response = self.evaluate(assistant=assistant, sample=item)
-                responses.append(response.response.text_content)
+                if response.response.text_content is not None:
+                    responses.append(response.response.text_content)
+                else:
+                    responses.append("")
                 contexts.append(item.contexts)
                 f.write(
                     json_dump(
@@ -542,6 +551,168 @@ class SQuADTask(ContextualQATask):
         prompt = self.instructions[self.config.version].format(
             context=sample.contexts[0].data["text"], question=sample.question
         )
+        response = assistant.answer(
+            messages=ChatMessages.from_list([ChatTurn(role="user", content=prompt)])
+        )
+        return response
+
+
+@configure
+class GutenQATaskConfig(ContextualQATaskConfig, GutenQADatasetConfig):
+    """Configuration for GutenQA Task."""
+
+
+@TASKS("guten_qa", config_class=GutenQATaskConfig)
+class GutenQATask(ContextualQATask):
+    """Contextualized QA Task on GutenQA dataset."""
+
+    instructions = {
+        "book": (
+            "You are given a question and the complete text of a book. Answer the"
+            " question based on the information in the book. If the answer cannot be"
+            ' determined from the book, output "Insufficient information".\n\n'
+            "Question:\n{question}\n\nBook:\n{context}\n\nReturn only the final answer"
+            " text, with no extra commentary."
+        ),
+        "chunk": (
+            "You are given a question and several context chunks extracted from a book."
+            " Answer the question based on the information in the context chunks. If"
+            ' the answer cannot be determined from the contexts, output "Insufficient'
+            ' information".\n\nQuestion:\n{question}\n\nContexts:\n{context}\n\nReturn'
+            " only the final answer text, with no extra commentary."
+        ),
+    }
+
+    def load_dataset(self) -> GutenQADataset:
+        return GutenQADataset(self.config)
+
+    def load_evaluator(self) -> Evaluator:
+        metrics = {
+            "f1": F1(F1Config()),
+            "exact_match": ExactMatch(ExactMatchConfig()),
+        }
+        return Evaluator(metrics)
+
+    def evaluate(
+        self, assistant: AssistantBase, sample: ContextualQASample
+    ) -> AssistantResponse:
+        if self.config.context_mode == "book":
+            context_text = sample.contexts[0].data["text"]
+            template = self.instructions["book"]
+        else:
+            context_text = ""
+            for context in sample.contexts:
+                context_text += context.data["text"] + "\n"
+            context_text = context_text.strip()
+            template = self.instructions["chunk"]
+        # construct the prompt
+        prompt = template.format(context=context_text, question=sample.question)
+        response = assistant.answer(
+            messages=ChatMessages.from_list([ChatTurn(role="user", content=prompt)])
+        )
+        return response
+
+
+class _LiteraryQAMetric:
+    """The LLM-as-a-Judge evaluation metric for LiteraryQA Task."""
+
+    template = (
+        Path(__file__).parent / "task_prompts" / "literaryqa_metric_prompt.txt"
+    ).read_text(encoding="utf-8")
+
+    def __init__(self, cfg: GeneratorConfig):
+        self.generator = GENERATORS.load(cfg)
+        self.gen_cfg = GenerationConfig(do_sample=False)
+        assert self.generator is not None, "Generator is not loaded."
+        return
+
+    def __call__(
+        self,
+        questions: list[str],
+        responses: list[str],
+        golden_responses: list[list[str]],
+        golden_contexts: list[list[RetrievedContext]],
+        **kwargs,
+    ):
+        prompts = []
+        for question, response, golden_response, ctx in zip(
+            questions,
+            responses,
+            golden_responses,
+            golden_contexts,
+        ):
+            ctx = ctx[0]
+            prompt = self.template.format(
+                title=ctx.data["title"],
+                summary=ctx.data["summary"],
+                question=question,
+                response=response,
+                reference_answer="\n".join(golden_response),
+            )
+            prompts.append(
+                ChatMessages.from_list([{"role": "user", "content": prompt}])
+            )
+        outputs = self.generator.chat(prompts, self.gen_cfg)
+
+        # compute accuracy
+        scores = []
+        for output in outputs:
+            text = output[0].text_content or ""
+            match = re.findall(r"(1|2|3|4|5)", text)
+            grade = match[-1] if match else "1"
+            scores.append(float(grade))
+        average_score = sum(scores) / len(scores) if scores else 0.0
+        return {"average_score": average_score}, {"detailed_scores": scores}
+
+
+@configure
+class LiteraryQATaskConfig(ContextualQATaskConfig, LiteraryQADatasetConfig):
+    """Configuration for LiteraryQA Task.
+
+    :param llm_judger: The configuration for the LLM judger used in evaluation.
+        If not specified, the LLM judger will not be used and the evaluation will only
+        include traditional metrics like F1 and Exact Match. Default is None.
+    :type llm_judger: GeneratorConfig
+    """
+
+    llm_judger: GeneratorConfig = field(default_factory=GeneratorConfig)
+
+
+@TASKS("literary_qa", config_class=LiteraryQATaskConfig)
+class LiteraryQATask(ContextualQATask):
+    """Contextualized QA Task on LiteraryQA dataset."""
+
+    instruction = (
+        "You are given a question and several context paragraphs extracted from a"
+        " literary work. Answer the question based on the information in the context"
+        " paragraphs. If the answer cannot be determined from the contexts, output"
+        ' "Insufficient information".\n\nQuestion:\n{question}\n\nContexts:\n{context}'
+        "\n\nReturn only the final answer text, with no extra commentary."
+    )
+
+    def load_dataset(self) -> LiteraryQADataset:
+        return LiteraryQADataset(self.config)
+
+    def load_evaluator(self) -> Evaluator:
+        metrics = {
+            "f1": F1(F1Config()),
+            "exact_match": ExactMatch(ExactMatchConfig()),
+            "rouge": Rouge(RougeConfig()),
+        }
+        if self.config.llm_judger.generator_type is not None:
+            metrics["llm_judger"] = _LiteraryQAMetric(self.config.llm_judger)
+            self.logger.info("LLM judger is included in the evaluation metrics.")
+        return Evaluator(metrics)
+
+    def evaluate(
+        self, assistant: AssistantBase, sample: ContextualQASample
+    ) -> AssistantResponse:
+        context_text = ""
+        for context in sample.contexts:
+            context_text += context.data["text"] + "\n"
+        context_text = context_text.strip()
+        # construct the prompt
+        prompt = self.instruction.format(context=context_text, question=sample.question)
         response = assistant.answer(
             messages=ChatMessages.from_list([ChatTurn(role="user", content=prompt)])
         )

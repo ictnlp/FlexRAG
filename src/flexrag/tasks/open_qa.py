@@ -2,6 +2,7 @@ import logging
 import os
 import re
 from abc import abstractmethod
+from dataclasses import field
 from pathlib import Path
 from typing import Optional
 
@@ -21,7 +22,15 @@ from flexrag.datasets.benchmarks import (
     SimpleQADatasetConfig,
 )
 from flexrag.datasets.core import MappingDataset, QASample
-from flexrag.metrics import Evaluator
+from flexrag.metrics import (
+    F1,
+    Evaluator,
+    ExactMatch,
+    ExactMatchConfig,
+    F1Config,
+    Rouge,
+    RougeConfig,
+)
 from flexrag.models.generators import GENERATORS, GenerationConfig, GeneratorConfig
 
 from .task_base import TASKS, TaskBase
@@ -29,7 +38,15 @@ from .task_base import TASKS, TaskBase
 
 @configure
 class OpenQATaskConfig:
-    """Configuration for Open Domain QA Task."""
+    """Configuration for Open Domain QA Task.
+
+    :param log_interval: The interval for logging progress during evaluation.
+        Default is 10.
+    :type log_interval: int
+    :param output_path: The path to save the evaluation results and logs.
+        If not specified results and logs will not be saved. Default is None.
+    :type output_path: Optional[str]
+    """
 
     log_interval: int = 10
     output_path: Optional[str] = None
@@ -158,7 +175,7 @@ class OpenQATask(TaskBase):
         return
 
 
-class BrowseCompMetric:
+class _BrowseCompMetric:
     """The evaluation metric for BrowseComp Task."""
 
     template = (
@@ -203,8 +220,16 @@ class BrowseCompMetric:
 
 
 @configure
-class BrowseCompTaskConfig(OpenQATaskConfig, BrowseCompDatasetConfig, GeneratorConfig):
-    """Configuration for BrowseComp Task."""
+class BrowseCompTaskConfig(OpenQATaskConfig, BrowseCompDatasetConfig):
+    """Configuration for BrowseComp Task.
+
+    :param llm_judger: The configuration for the LLM judger used in evaluation.
+        If not specified, the LLM judger will not be used and the evaluation will only
+        include traditional metrics like F1 and Exact Match. Default is None.
+    :type llm_judger: GeneratorConfig
+    """
+
+    llm_judger: GeneratorConfig = field(default_factory=GeneratorConfig)
 
 
 @TASKS("browsecomp", config_class=BrowseCompTaskConfig)
@@ -222,8 +247,15 @@ class BrowseCompTask(OpenQATask):
         return BrowseCompDataset(self.config)
 
     def load_evaluator(self) -> Evaluator:
-        metric = BrowseCompMetric(self.config)
-        return Evaluator({"browsecomp_accuracy": metric})
+        metrics = {
+            "f1": F1(F1Config()),
+            "exact_match": ExactMatch(ExactMatchConfig()),
+            "rouge": Rouge(RougeConfig()),
+        }
+        if self.config.llm_judger.generator_type is not None:
+            metrics["llm_judger"] = _BrowseCompMetric(self.config.llm_judger)
+            self.logger.info("LLM judger is enabled for evaluation.")
+        return Evaluator(metrics)
 
     def evaluate(self, assistant: AssistantBase, sample: QASample) -> AssistantResponse:
         prompt = self.template.format(Question=sample.question)
@@ -231,7 +263,7 @@ class BrowseCompTask(OpenQATask):
         return response
 
 
-class SimpleQAMetric:
+class _SimpleQAMetric:
     """The evaluation metric for SimpleQA Task."""
 
     template = (
@@ -285,8 +317,16 @@ class SimpleQAMetric:
 
 
 @configure
-class SimpleQATaskConfig(OpenQATaskConfig, SimpleQADatasetConfig, GeneratorConfig):
-    """Configuration for SimpleQA Task."""
+class SimpleQATaskConfig(OpenQATaskConfig, SimpleQADatasetConfig):
+    """Configuration for SimpleQA Task.
+
+    :param llm_judger: The configuration for the LLM judger used in evaluation.
+        If not specified, the LLM judger will not be used and the evaluation will only
+        include traditional metrics like F1 and Exact Match. Default is None.
+    :type llm_judger: GeneratorConfig
+    """
+
+    llm_judger: GeneratorConfig = field(default_factory=GeneratorConfig)
 
 
 @TASKS("simple_qa", config_class=SimpleQATaskConfig)
@@ -297,8 +337,15 @@ class SimpleQATask(OpenQATask):
         return SimpleQADataset(self.config)
 
     def load_evaluator(self) -> Evaluator:
-        metric = SimpleQAMetric(self.config)
-        return Evaluator({"simple_qa_accuracy": metric})
+        metrics = {
+            "f1": F1(F1Config()),
+            "exact_match": ExactMatch(ExactMatchConfig()),
+            "rouge": Rouge(RougeConfig()),
+        }
+        if self.config.llm_judger.generator_type is not None:
+            self.logger.info("LLM judger is enabled for evaluation.")
+            metrics["llm_judger"] = _SimpleQAMetric(self.config.llm_judger)
+        return Evaluator(metrics)
 
     def evaluate(self, assistant: AssistantBase, sample: QASample) -> AssistantResponse:
         response = assistant.answer([{"role": "user", "content": sample.question}])

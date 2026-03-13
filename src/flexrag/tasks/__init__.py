@@ -7,6 +7,8 @@ from .contextual_mc import (
 from .contextual_qa import (
     ContextualQATask,
     ContextualQATaskConfig,
+    GutenQATask,
+    GutenQATaskConfig,
     LongBenchTask,
     LongBenchTaskConfig,
     NarrativeQATask,
@@ -48,6 +50,8 @@ __all__ = [
     "RetrievalTaskConfig",
     "ContextualQATask",
     "ContextualQATaskConfig",
+    "GutenQATask",
+    "GutenQATaskConfig",
     "LongBenchTask",
     "LongBenchTaskConfig",
     "NarrativeQATask",
