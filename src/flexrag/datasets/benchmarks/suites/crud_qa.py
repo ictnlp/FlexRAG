@@ -1,9 +1,11 @@
 import json
 import shutil
 import zipfile
+from functools import cached_property
 from hashlib import blake2b
 from pathlib import Path
-from typing import Annotated, Optional
+from types import MappingProxyType
+from typing import Annotated, Iterator, Mapping, Optional
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 from flexrag.common.dataclasses import Context
@@ -13,10 +15,10 @@ from ...core import DATASETS, ContextualQASample, MappingDataset
 
 
 @configure
-class CRUDQADatasetConfig:
-    """Configuration for CRUDQADataset.
+class CRUDRAGDatasetConfig:
+    """Configuration for CRUDRAGDataset.
 
-    `CRUD-QA <https://arxiv.org/abs/2401.17043>`_ is subsets of CRUD RAG benchmark
+    `CRUD-RAG <https://arxiv.org/abs/2401.17043>`_ is subsets of CRUD RAG benchmark
     consisting of three knowledge-intensive datasets, 1-doc QA, 2-doc QA, and
     3-doc QA, designed to evaluate RAG systems.
 
@@ -51,9 +53,9 @@ class CRUDQADatasetConfig:
 RESOURCES = "https://github.com/IAAR-Shanghai/CRUD_RAG/archive/refs/heads/main.zip"
 
 
-@DATASETS("crud_qa", config_class=CRUDQADatasetConfig)
-class CRUDQADataset(MappingDataset[ContextualQASample]):
-    def __init__(self, config: CRUDQADatasetConfig):
+@DATASETS("crud_rag", config_class=CRUDRAGDatasetConfig)
+class CRUDRAGDataset(MappingDataset[ContextualQASample]):
+    def __init__(self, config: CRUDRAGDatasetConfig):
         self._subset = config.subset
         # download the crud dataset if not exists
         if config.data_path is None:
@@ -133,3 +135,32 @@ class CRUDQADataset(MappingDataset[ContextualQASample]):
             contexts=contexts,
             answers=self._answers_data[qid],
         )
+
+    @property
+    def contexts(self) -> Mapping[str, Context]:
+        """The contexts of the dataset."""
+        return MappingProxyType(self._context_data)
+
+    @property
+    def queries(self) -> Mapping[str, str]:
+        """The queries of the dataset."""
+        return MappingProxyType(self._queries_data)
+
+    @property
+    def qrels(self) -> Mapping[str, Mapping[str, float]]:
+        """The qrels of the dataset."""
+        return MappingProxyType(self._qrels_data)
+
+    @cached_property
+    def query_ids(self) -> list[str]:
+        """The index of the queries in the qrels."""
+        return sorted(self.qrels.keys())
+
+    @property
+    def context_ids(self) -> Iterator[str]:
+        """Get all context ids in the dataset.
+
+        :return: An iterator of context ids.
+        :rtype: Iterator[str]
+        """
+        yield from self.contexts.keys()

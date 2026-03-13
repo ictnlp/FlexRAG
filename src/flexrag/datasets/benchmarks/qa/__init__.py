@@ -1,5 +1,4 @@
 from .browsecomp import BrowseCompDataset, BrowseCompDatasetConfig
-from .crud_qa import CRUDQADataset, CRUDQADatasetConfig
 from .deepsearch_qa import DeepSearchQADataset, DeepSearchQADatasetConfig
 from .gaia import GAIADataset, GAIADatasetConfig
 from .guten_qa import GutenQADataset, GutenQADatasetConfig
@@ -13,8 +12,6 @@ from .squad import SQuADDataset, SQuADDatasetConfig
 __all__ = [
     "BrowseCompDataset",
     "BrowseCompDatasetConfig",
-    "CRUDQADataset",
-    "CRUDQADatasetConfig",
     "DeepSearchQADataset",
     "DeepSearchQADatasetConfig",
     "GAIADataset",

@@ -24,8 +24,6 @@ from .multiple_choice import (
 from .qa import (
     BrowseCompDataset,
     BrowseCompDatasetConfig,
-    CRUDQADataset,
-    CRUDQADatasetConfig,
     DeepSearchQADataset,
     DeepSearchQADatasetConfig,
     GAIADataset,
@@ -54,7 +52,7 @@ from .retrieval import (
     MultiLongDocRetrievalDatasetConfig,
     RetrievalDatasetBase,
 )
-from .suites import KiltDataset, KiltDatasetConfig
+from .suites import CRUDRAGDataset, CRUDRAGDatasetConfig, KiltDataset, KiltDatasetConfig
 
 __all__ = [
     "MTRAGDataset",
@@ -79,8 +77,6 @@ __all__ = [
     "QuALITYDatasetConfig",
     "BrowseCompDataset",
     "BrowseCompDatasetConfig",
-    "CRUDQADataset",
-    "CRUDQADatasetConfig",
     "DeepSearchQADataset",
     "DeepSearchQADatasetConfig",
     "GAIADataset",
@@ -106,6 +102,8 @@ __all__ = [
     "MultiLongDocRetrievalDataset",
     "MultiLongDocRetrievalDatasetConfig",
     "RetrievalDatasetBase",
+    "CRUDRAGDataset",
+    "CRUDRAGDatasetConfig",
     "KiltDataset",
     "KiltDatasetConfig",
 ]
