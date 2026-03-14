@@ -17,6 +17,8 @@ from flexrag.datasets.benchmarks import (
     LiteraryQADatasetConfig,
     LongBenchDataset,
     LongBenchDatasetConfig,
+    MultihopRAGDataset,
+    MultihopRAGDatasetConfig,
     NarrativeQADataset,
     NarrativeQADatasetConfig,
     SQuADDataset,
@@ -25,6 +27,8 @@ from flexrag.datasets.benchmarks import (
 from flexrag.datasets.core import ContextualQASample, MappingDataset
 from flexrag.metrics import (
     F1,
+    Accuracy,
+    AccuracyConfig,
     Evaluator,
     ExactMatch,
     ExactMatchConfig,
@@ -702,6 +706,49 @@ class LiteraryQATask(ContextualQATask):
         if self.config.llm_judger.generator_type is not None:
             metrics["llm_judger"] = _LiteraryQAMetric(self.config.llm_judger)
             self.logger.info("LLM judger is included in the evaluation metrics.")
+        return Evaluator(metrics)
+
+    def evaluate(
+        self, assistant: AssistantBase, sample: ContextualQASample
+    ) -> AssistantResponse:
+        context_text = ""
+        for context in sample.contexts:
+            context_text += context.data["text"] + "\n"
+        context_text = context_text.strip()
+        # construct the prompt
+        prompt = self.instruction.format(context=context_text, question=sample.question)
+        response = assistant.answer(
+            messages=ChatMessages.from_list([ChatTurn(role="user", content=prompt)])
+        )
+        return response
+
+
+@configure
+class MultihopRAGTaskConfig(ContextualQATaskConfig, MultihopRAGDatasetConfig):
+    """Configuration for MultihopRAG Task."""
+
+
+@TASKS("multihop_rag", config_class=MultihopRAGTaskConfig)
+class MultihopRAGTask(ContextualQATask):
+    """Contextualized QA Task on Multihop RAG dataset."""
+
+    instruction = (
+        "Below is a question followed by some context from different sources. Please"
+        " answer the question based on the context. The answer to the question is a"
+        " word or entity. If the provided information is insufficient to answer the"
+        " question, respond 'Insufficient Information'. Answer directly without"
+        " explanation.\n\nQuestion:{question}\n\nContext:{context}"
+    )
+
+    def load_dataset(self) -> MultihopRAGDataset:
+        return MultihopRAGDataset(self.config)
+
+    def load_evaluator(self) -> Evaluator:
+        metrics = {
+            "f1": F1(F1Config()),
+            "exact_match": ExactMatch(ExactMatchConfig()),
+            "accuracy": Accuracy(AccuracyConfig()),
+        }
         return Evaluator(metrics)
 
     def evaluate(
