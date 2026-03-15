@@ -186,11 +186,15 @@ class MultiSessionQASample(QASample):
     :type answers: Optional[list[str]]
     :param sessions: A list of completed conversation sessions. Default: [].
     :type sessions: list[ChatMessages]
+    :param sessions_id: The unique identifier for the conversation sessions.
+        Default: None.
+    :type sessions_id: Optional[str]
     :param meta_data: The metadata of the evaluation data. Default: None.
     :type meta_data: Optional[dict]
     """
 
     sessions: list[ChatMessages] = field(default_factory=list)
+    sessions_id: Optional[str] = None
 
 
 @data(kw_only=True)

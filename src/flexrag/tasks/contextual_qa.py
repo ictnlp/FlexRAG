@@ -636,7 +636,6 @@ class _LiteraryQAMetric:
         responses: list[str],
         golden_responses: list[list[str]],
         golden_contexts: list[list[RetrievedContext]],
-        **kwargs,
     ):
         prompts = []
         for question, response, golden_response, ctx in zip(

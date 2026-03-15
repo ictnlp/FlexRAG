@@ -3,7 +3,7 @@ import keyword
 import os
 import types
 from copy import deepcopy
-from dataclasses import field, fields, is_dataclass
+from dataclasses import asdict, field, fields, is_dataclass
 from pathlib import Path
 from typing import Annotated, Callable, Generic, Optional, Type, TypeVar
 
@@ -134,7 +134,7 @@ def _create_pydantic_dataclass(config: ConfigDict) -> Callable[[Type[_T]], Type[
 
         def dumps(self) -> str:
             """Dump the dataclass to a YAML string."""
-            return OmegaConf.to_yaml(self, resolve=True)
+            return yaml.safe_dump(asdict(self))
 
         def dump(self, path: str | Path):
             """Dump the dataclass to a YAML file."""
@@ -153,7 +153,7 @@ def _create_pydantic_dataclass(config: ConfigDict) -> Callable[[Type[_T]], Type[
         def load(cls, path: str | Path) -> _T:
             """Load the dataclass from a YAML file."""
             path = Path(path)
-            return cls(**OmegaConf.to_container(OmegaConf.load(path)))
+            return cls.loads(path.read_text(encoding="utf-8"))
 
         setattr(cls, "dumps", dumps)
         setattr(cls, "dump", dump)

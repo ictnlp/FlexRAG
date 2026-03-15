@@ -119,6 +119,7 @@ class LoCoMoDataset(MappingDataset[MultiSessionQASample]):
             response = str(self._qa_data[qid]["answer"])
         return MultiSessionQASample(
             question_id=qid,
+            sessions_id=group_id,
             sessions=self._conv_data[group_id],
             question=self._qa_data[qid]["question"],
             answers=[response],

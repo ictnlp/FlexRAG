@@ -193,7 +193,6 @@ class _BrowseCompMetric:
         questions: list[str],
         responses: list[str],
         golden_responses: list[list[str]],
-        **kwargs,
     ):
         prompts = []
         for question, response, golden_response in zip(
@@ -281,7 +280,6 @@ class _SimpleQAMetric:
         questions: list[str],
         responses: list[str],
         golden_responses: list[list[str]],
-        **kwargs,
     ):
         prompts = []
         for question, response, golden_response in zip(
