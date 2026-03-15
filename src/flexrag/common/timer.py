@@ -2,6 +2,7 @@ import inspect
 import resource
 from collections import defaultdict
 from copy import deepcopy
+from functools import wraps
 from time import perf_counter
 
 import numpy as np
@@ -25,6 +26,7 @@ class _ResourceMeter:
 
     def __call__(self, timer_name: str):
         def time_it(func):
+            @wraps(func)
             def wrapper(*args, **kwargs):
                 start_time = perf_counter()
                 start_usage = resource.getrusage(resource.RUSAGE_SELF)
@@ -41,6 +43,7 @@ class _ResourceMeter:
                 self.memory_usage[timer_name].append(end_usage.ru_maxrss)
                 return result
 
+            @wraps(func)
             async def async_wrapper(*args, **kwargs):
                 start_time = perf_counter()
                 start_usage = resource.getrusage(resource.RUSAGE_SELF)

@@ -33,10 +33,10 @@ from flexrag.metrics import (
     ExactMatch,
     ExactMatchConfig,
     F1Config,
-    MetricsBase,
     Rouge,
     RougeConfig,
 )
+from flexrag.metrics.metrics_base import MetricCallable
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.models.tokenizer import TokenizerConfig
 
@@ -302,7 +302,7 @@ class LongBenchTask(ContextualQATask):
         return LongBenchDataset(self.config)
 
     def load_evaluator(
-        self, additional_metrics: dict[str, MetricsBase] | None = None
+        self, additional_metrics: dict[str, MetricCallable] | None = None
     ) -> Evaluator:
         metrics = {}
         match self.config.subset:
