@@ -5,7 +5,7 @@ from flexrag.common.dataclasses import ChatMessages
 from flexrag.common.timer import TIME_METER
 from flexrag.models.generators import GENERATORS, GenerationConfig, GeneratorConfig
 
-from ..metrics_base import METRICS, MetricsBase
+from ..metrics_base import METRICS
 
 # The template was adapted from openai/simple-evals/simpleqa_eval.py
 
@@ -98,7 +98,7 @@ class ShortformCorrectnessConfig(GeneratorConfig):
 
 
 @METRICS("shortform_correctness", config_class=ShortformCorrectnessConfig)
-class ShortformCorrectness(MetricsBase):
+class ShortformCorrectness:
     """Metric to evaluate the correctness of LLM-generated answers using another LLM as a judge."""
 
     def __init__(self, cfg: ShortformCorrectnessConfig) -> None:
@@ -108,12 +108,11 @@ class ShortformCorrectness(MetricsBase):
         return
 
     @TIME_METER("metrics.shortform_correctness")
-    def compute(
+    def __call__(
         self,
         questions: list[str],
         responses: list[str],
         golden_responses: list[list[str]],
-        **kwargs,
     ) -> tuple[dict[str, float], dict[str, float]]:
         # prepare prompts
         prompts = []

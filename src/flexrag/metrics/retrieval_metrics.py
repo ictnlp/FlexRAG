@@ -8,7 +8,7 @@ from flexrag.common import TIME_METER, Choices, configure
 from flexrag.common.dataclasses import Context, RetrievedContext
 from flexrag.processors.text_processors import AnswerSimplifier
 
-from .metrics_base import METRICS, MetricsBase
+from .metrics_base import METRICS
 
 
 def get_contain_map(evidences: list[str], retrieved: list[str]) -> list[list[bool]]:
@@ -37,7 +37,7 @@ class SuccessRateConfig:
 
 
 @METRICS("retrieval_success_rate", config_class=SuccessRateConfig)
-class SuccessRate(MetricsBase):
+class SuccessRate:
     """The SuccessRate metric computes whether the retrieved contexts contain any of the golden responses."""
 
     def __init__(self, cfg: SuccessRateConfig) -> None:
@@ -49,11 +49,10 @@ class SuccessRate(MetricsBase):
         return
 
     @TIME_METER("metrics.retrieval_success_rate")
-    def compute(
+    def __call__(
         self,
         golden_responses: list[list[str]] = None,
         retrieved_contexts: list[list[str | Context]] = None,
-        **kwargs,
     ) -> tuple[dict[str, float], dict]:
         # compute relevance map
         success_map: list[bool] = []
@@ -193,7 +192,7 @@ class RetrievalRecallConfig:
 
 
 @METRICS("retrieval_recall", config_class=RetrievalRecallConfig)
-class RetrievalRecall(MetricsBase):
+class RetrievalRecall:
     """The RetrievalRecall metric computes the recall of the retrieved contexts."""
 
     def __init__(self, cfg: RetrievalRecallConfig) -> None:
@@ -201,11 +200,10 @@ class RetrievalRecall(MetricsBase):
         return
 
     @TIME_METER("metrics.retrieval_recall")
-    def compute(
+    def __call__(
         self,
         retrieved_contexts: list[list[RetrievedContext]] = None,
         golden_contexts: list[list[Context]] = None,
-        **kwargs,
     ) -> tuple[dict[str, float], dict]:
         scores, details = pytrec_evaluate(
             retrieved_contexts=retrieved_contexts,
@@ -230,7 +228,7 @@ class RetrievalPrecisionConfig:
 
 
 @METRICS("retrieval_precision", config_class=RetrievalPrecisionConfig)
-class RetrievalPrecision(MetricsBase):
+class RetrievalPrecision:
     """The RetrievalPrecision metric computes the precision of the retrieved contexts."""
 
     def __init__(self, cfg: RetrievalPrecisionConfig) -> None:
@@ -238,11 +236,10 @@ class RetrievalPrecision(MetricsBase):
         return
 
     @TIME_METER("metrics.retrieval_precision")
-    def compute(
+    def __call__(
         self,
         retrieved_contexts: list[list[RetrievedContext]] = None,
         golden_contexts: list[list[Context]] = None,
-        **kwargs,
     ) -> tuple[float, object]:
         scores, details = pytrec_evaluate(
             retrieved_contexts=retrieved_contexts,
@@ -267,7 +264,7 @@ class RetrievalMAPConfig:
 
 
 @METRICS("retrieval_map", config_class=RetrievalMAPConfig)
-class RetrievalMAP(MetricsBase):
+class RetrievalMAP:
     """The RetrievalMAP metric computes the Mean Average Precision (MAP) of the retrieved contexts."""
 
     def __init__(self, cfg: RetrievalMAPConfig) -> None:
@@ -275,11 +272,10 @@ class RetrievalMAP(MetricsBase):
         return
 
     @TIME_METER("metrics.retrieval_map")
-    def compute(
+    def __call__(
         self,
         retrieved_contexts: list[list[RetrievedContext]] = None,
         golden_contexts: list[list[Context]] = None,
-        **kwargs,
     ) -> tuple[dict[str, float], dict]:
         scores, details = pytrec_evaluate(
             retrieved_contexts=retrieved_contexts,
@@ -304,7 +300,7 @@ class RetrievalNDCGConfig:
 
 
 @METRICS("retrieval_ndcg", config_class=RetrievalNDCGConfig)
-class RetrievalNDCG(MetricsBase):
+class RetrievalNDCG:
     """The RetrievalNDCG metric computes the Normalized Discounted Cumulative Gain (nDCG) of the retrieved contexts."""
 
     def __init__(self, cfg: RetrievalNDCGConfig) -> None:
@@ -312,11 +308,10 @@ class RetrievalNDCG(MetricsBase):
         return
 
     @TIME_METER("metrics.retrieval_ndcg")
-    def compute(
+    def __call__(
         self,
         retrieved_contexts: list[list[RetrievedContext]] = None,
         golden_contexts: list[list[Context]] = None,
-        **kwargs,
     ) -> tuple[dict[str, float], dict]:
         scores, details = pytrec_evaluate(
             retrieved_contexts=retrieved_contexts,
@@ -328,15 +323,14 @@ class RetrievalNDCG(MetricsBase):
 
 
 @METRICS("retrieval_mrr")
-class RetrievalMRR(MetricsBase):
+class RetrievalMRR:
     """The RetrievalMRR metric computes the Mean Reciprocal Rank (MRR) of the retrieved contexts."""
 
     @TIME_METER("metrics.retrieval_mrr")
-    def compute(
+    def __call__(
         self,
         retrieved_contexts: list[list[RetrievedContext]] = None,
         golden_contexts: list[list[Context]] = None,
-        **kwargs,
     ) -> tuple[dict[str, float], dict]:
         scores, details = pytrec_evaluate(
             retrieved_contexts=retrieved_contexts,

@@ -7,7 +7,7 @@ import sacrebleu
 from flexrag.common import TIME_METER, Choices, configure
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
 
-from .metrics_base import METRICS, MetricsBase
+from .metrics_base import METRICS
 
 
 @configure
@@ -26,17 +26,16 @@ class BLEUConfig:
 
 
 @METRICS("generation_bleu", config_class=BLEUConfig)
-class BLEU(MetricsBase):
+class BLEU:
     """The BLEU metric."""
 
     def __init__(self, cfg: BLEUConfig):
-        super().__init__(cfg)
         self.tokenizer = cfg.tokenizer
         return
 
     @TIME_METER("metrics.generation_bleu")
-    def compute(
-        self, responses: list[str], golden_responses: list[list[str]], **kwargs
+    def __call__(
+        self, responses: list[str], golden_responses: list[list[str]]
     ) -> tuple[dict[str, float], dict[str, float]]:
         bleu = sacrebleu.corpus_bleu(
             hypotheses=responses,
@@ -65,19 +64,18 @@ class chrFConfig:
 
 
 @METRICS("generation_chrf", config_class=chrFConfig)
-class chrF(MetricsBase):
+class chrF:
     """The chrF metric."""
 
     def __init__(self, cfg: chrFConfig) -> None:
-        super().__init__(cfg)
         self.beta = cfg.chrf_beta
         self.char_order = cfg.chrf_char_order
         self.word_order = cfg.chrf_word_order
         return
 
     @TIME_METER("metrics.generation_chrf")
-    def compute(
-        self, responses: list[str], golden_responses: list[list[str]], **kwargs
+    def __call__(
+        self, responses: list[str], golden_responses: list[list[str]]
     ) -> tuple[dict[str, float], dict[str, float]]:
         chrf = sacrebleu.corpus_chrf(
             hypotheses=responses,
@@ -103,7 +101,7 @@ class RougeConfig:
 
 
 @METRICS("generation_rouge")
-class Rouge(MetricsBase):
+class Rouge:
     """The Rouge metric.
     The computation of Rouge score is based on `rouge <https://github.com/pltrdy/rouge>`_.
     This metric will return the average of the Rouge-1, Rouge-2, and Rouge-L F1 scores.
@@ -115,8 +113,8 @@ class Rouge(MetricsBase):
         return
 
     @TIME_METER("metrics.generation_rouge")
-    def compute(
-        self, responses: list[str], golden_responses: list[list[str]], **kwargs
+    def __call__(
+        self, responses: list[str], golden_responses: list[list[str]]
     ) -> tuple[dict[str, float], dict[str, float]]:
         score_dict = {
             "rouge-1": {"r": [], "p": [], "f": []},

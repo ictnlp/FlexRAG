@@ -1,10 +1,11 @@
+import inspect
 from collections.abc import MutableMapping
-from typing import Any, Protocol, TypeAlias, runtime_checkable
+from typing import Any
 
 from flexrag.common import LOGGER_MANAGER, configure
 from flexrag.common.dataclasses import RetrievedContext
 
-from .metrics_base import METRICS, MetricsBase
+from .metrics_base import METRICS, MetricCallable
 
 logger = LOGGER_MANAGER.get_logger("flexrag.metrics")
 MetricConfig = METRICS.make_config(allow_multiple=True)
@@ -13,24 +14,6 @@ MetricConfig = METRICS.make_config(allow_multiple=True)
 @configure
 class EvaluatorConfig(MetricConfig):
     round: int = 2
-
-
-MetricReturn: TypeAlias = tuple[dict[str, float], dict[str, Any]]
-SimpleMetricReturn: TypeAlias = float | int | MetricReturn
-
-
-@runtime_checkable
-class MetricCallable(Protocol):
-    def __call__(
-        self,
-        *,
-        questions: list[str] | None = None,
-        responses: list[str] | None = None,
-        golden_responses: list[list[str]] | None = None,
-        retrieved_contexts: list[list[Any]] | None = None,
-        golden_contexts: list[list[str]] | None = None,
-        **kwargs: Any,
-    ) -> SimpleMetricReturn: ...
 
 
 class Evaluator(MutableMapping[str, MetricCallable]):
@@ -74,74 +57,67 @@ class Evaluator(MutableMapping[str, MetricCallable]):
     def evaluate(
         self,
         *,
-        questions: list[str] = None,
-        responses: list[str] = None,
-        golden_responses: list[list[str]] = None,
-        retrieved_contexts: list[list[str | RetrievedContext]] = None,
-        golden_contexts: list[list[str]] = None,
         log: bool = True,
+        **kwargs: Any,
     ):
-        """Evaluate the generated responses against the ground truth responses.
+        """Evaluate the provided data using registered metrics.
 
-        :param questions: A list of questions. Defaults to None.
-        :param responses: A list of responses. Defaults to None.
-        :param golden_responses: A list of golden responses. Defaults to None.
-        :param retrieved_contexts: A list of retrieved contexts. Defaults to None.
-        :param golden_contexts: A list of golden contexts. Defaults to None.
         :param log: Whether to log the evaluation results. Defaults to True.
-        :type questions: list[str], optional
-        :type responses: list[str], optional
-        :type golden_responses: list[list[str]], optional
-        :type retrieved_contexts: list[list[str | RetrievedContext]], optional
-        :type golden_contexts: list[list[str]], optional
         :type log: bool, optional
+        :param kwargs: Keyword arguments to be passed to the metric functions.
+                       All list arguments must have the same length.
         :return: The evaluation results and the evaluation details.
         :rtype: tuple[dict[str, float], dict[str, Any]]
         """
         # check the input arguments
-        not_none_args = [
-            arg
-            for arg in [
-                questions,
-                responses,
-                golden_responses,
-                retrieved_contexts,
-                golden_contexts,
-            ]
-            if arg is not None
-        ]
-        assert len(not_none_args) > 1, "At least one argument must be provided."
-        assert all(
-            len(i) == len(not_none_args[0]) for i in not_none_args
-        ), "All arguments must have the same length."
+        list_args = [v for v in kwargs.values() if isinstance(v, list)]
+        if not list_args:
+            raise ValueError("At least one list argument must be provided.")
+        lengths = {len(v) for v in list_args}
+        assert len(lengths) == 1, "All list arguments must have the same length."
 
         # evaluate
         evaluation_results = {}
         evaluation_details = {}
-        for metric in self.metrics:
-            metric = str(metric)  # make json serializable
-            res = self.metrics[metric](
-                questions=questions,
-                responses=responses,
-                golden_responses=golden_responses,
-                retrieved_contexts=retrieved_contexts,
-                golden_contexts=golden_contexts,
+        for name, metric in self.metrics.items():
+            name = str(name)  # make json serializable
+
+            # Use inspect.signature to find required params
+            # metric might be an object with __call__ or a function
+            callable_target = (
+                metric
+                if inspect.isfunction(metric)
+                else getattr(metric, "__call__", metric)
             )
+            sig = inspect.signature(callable_target)
+
+            metric_kwargs = {}
+            for param_name, param in sig.parameters.items():
+                if param_name in kwargs:
+                    metric_kwargs[param_name] = kwargs[param_name]
+                elif param.default == inspect.Parameter.empty and param.kind not in (
+                    inspect.Parameter.VAR_KEYWORD,
+                    inspect.Parameter.VAR_POSITIONAL,
+                ):
+                    if param_name == "self":
+                        continue
+                    raise ValueError(
+                        f"Metric '{name}' requires '{param_name}', but it was not provided."
+                    )
+
+            res = metric(**metric_kwargs)
             if isinstance(res, (float, int)):
-                r = {metric: float(res)}
+                r = {name: float(res)}
                 r_detail = {}
             else:
                 r, r_detail = res
 
             if log:
-                for name, score in r.items():
-                    logger.info(f"{name}: {score*100:.{self.round}f}%")
+                for metric_name, score in r.items():
+                    logger.info(f"{metric_name}: {score:.{self.round}f}")
             evaluation_results.update(r)
-            evaluation_details[metric] = r_detail
+            evaluation_details[name] = r_detail
         return evaluation_results, evaluation_details
-
-    async def async_evaluate(self):
-        raise NotImplementedError("Async evaluation is not implemented yet.")
 
     def __getitem__(self, key: str) -> MetricCallable:
         return self.metrics[key]

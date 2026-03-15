@@ -13,7 +13,6 @@ from .matching_metrics import (
     Recall,
     RecallConfig,
 )
-from .metrics_base import MetricsBase
 from .retrieval_metrics import (
     RetrievalMAP,
     RetrievalMAPConfig,
@@ -32,7 +31,6 @@ from .evaluator import Evaluator, EvaluatorConfig  # isort: skip
 
 
 __all__ = [
-    "MetricsBase",
     "MatchingMetrics",
     "Accuracy",
     "AccuracyConfig",

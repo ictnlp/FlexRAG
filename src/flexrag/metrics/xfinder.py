@@ -3,7 +3,7 @@ from typing import Annotated
 
 from flexrag.common import TIME_METER, Choices, configure
 
-from .metrics_base import METRICS, MetricsBase
+from .metrics_base import METRICS
 from .xfinder_utils import Evaluator
 
 
@@ -20,7 +20,7 @@ class xFinderConfig:
 
 
 @METRICS("generation_xfinder")
-class xFinder(MetricsBase):
+class xFinder:
     def __init__(self, config: xFinderConfig):
         if config.model_type == "qwen":
             model_name = "xFinder-qwen1505"
@@ -37,13 +37,12 @@ class xFinder(MetricsBase):
         return
 
     @TIME_METER("metrics.xfinder_score")
-    def compute(
+    def __call__(
         self,
         questions: list[str],
         responses: list[str],
         golden_responses: list[list[str]],
         choices: list[list[str]],
-        **kwargs,
     ) -> tuple[float, dict[str, list[float]]]:
         results = []
         for question, response, goldens, choice in zip(

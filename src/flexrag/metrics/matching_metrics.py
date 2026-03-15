@@ -6,7 +6,7 @@ from flexrag.common import TIME_METER, configure
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
 from flexrag.processors.text_processors import AnswerSimplifier
 
-from .metrics_base import METRICS, MetricsBase
+from .metrics_base import METRICS
 
 
 @configure
@@ -21,7 +21,7 @@ class MatchingMetricsConfig:
     simplify: bool = True
 
 
-class MatchingMetrics(MetricsBase):
+class MatchingMetrics:
     name: str
 
     def __init__(self, cfg: MatchingMetricsConfig) -> None:
@@ -36,9 +36,9 @@ class MatchingMetrics(MetricsBase):
         return
 
     @TIME_METER("metrics.matching_score")
-    def compute(
-        self, responses: list[str], golden_responses: list[list[str]], **kwargs
-    ) -> tuple[float, dict[str, list[float]]]:
+    def __call__(
+        self, responses: list[str], golden_responses: list[list[str]]
+    ) -> tuple[dict[str, float], dict[str, list[float]]]:
         if self.simplifier is not None:
             responses = [self.simplifier(response) for response in responses]
             golden_responses = [
