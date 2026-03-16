@@ -20,6 +20,8 @@ from flexrag.datasets.benchmarks import (
     ConvoMemDatasetConfig,
     LoCoMoDataset,
     LoCoMoDatasetConfig,
+    LongMemEvalDataset,
+    LongMemEvalDatasetConfig,
 )
 from flexrag.datasets.core import MappingDataset, MultiSessionQASample
 from flexrag.metrics import (
@@ -335,6 +337,114 @@ class ConvoMemTask(MultiSessionQATask):
             metrics["llm_judger"] = _ConvoMemMetric(
                 self.config.llm_judger, self.config.subset
             )
+        return Evaluator(metrics)
+
+    def evaluate(
+        self, assistant: AssistantBase, sample: MultiSessionQASample
+    ) -> AssistantResponse:
+        return assistant.answer([{"role": "user", "content": sample.question}])
+
+
+class _LongMemEvalMetric:
+
+    templates = json.load(
+        open(
+            Path(__file__).parent / "task_prompts" / "longmemeval_metric_prompt.json",
+            mode="r",
+            encoding="utf-8",
+        )
+    )
+
+    def __init__(self, cfg: GeneratorConfig):
+        self.generator = GENERATORS.load(cfg)
+        self.gen_cfg = GenerationConfig(do_sample=False)
+        self.default = False
+        assert self.generator is not None, "Generator is not loaded"
+        return
+
+    def __call__(
+        self,
+        questions: list[str],
+        responses: list[str],
+        golden_responses: list[list[str]],
+        retrieved_contexts: list[list[RetrievedContext]],
+        metadata: list[dict],
+    ):
+        prompts = []
+        for question, response, golden, meta in zip(
+            questions, responses, golden_responses, metadata
+        ):
+            if meta["abstention"]:
+                template = self.templates["abstention"]
+            elif meta["question_type"] in {
+                "single-session-user",
+                "single-session-assistant",
+                "multi-session",
+            }:
+                template = self.templates["single-session-user"]
+            elif meta["question_type"] == "temporal-reasoning":
+                template = self.templates["temporal-reasoning"]
+            elif meta["question_type"] == "knowledge-update":
+                template = self.templates["knowledge-update"]
+            elif meta["question_type"] == "single-session-preference":
+                template = self.templates["single-session-preference"]
+            else:
+                raise ValueError(f"Unsupported question type: {meta['question_type']}")
+            prompt = template.format(
+                question=question,
+                response=response,
+                answer=golden[0],
+            )
+            prompts.append([{"role": "user", "content": prompt}])
+        outputs = self.generator.chat(prompts, self.gen_cfg)
+
+        # parse scores from outputs
+        labels = defaultdict(list)
+        for meta, output in zip(metadata, outputs):
+            if output[0].text_content is None:
+                label = self.default
+            else:
+                label = "yes" in output[0].text_content.lower()
+            if meta["abstention"]:
+                labels["abstention"].append(label)
+            else:
+                labels[meta["question_type"]].append(label)
+        overall_score = sum([sum(v) for v in labels.values()]) / sum(
+            [len(v) for v in labels.values()]
+        )
+        scores = {k: sum(v) / len(v) if len(v) > 0 else 0.0 for k, v in labels.items()}
+        scores["overall"] = overall_score
+        return scores, {"details": labels}
+
+
+@configure
+class LongMemEvalTaskConfig(MultiSessionQATaskConfig, LongMemEvalDatasetConfig):
+    """Configuration for LongMemEval Task.
+
+    :param llm_judger: The configuration for the LLM judger used in evaluation.
+        If not specified, the LLM judger will not be used and the evaluation will only
+        include traditional metrics like F1 and Exact Match. Default is None.
+    :type llm_judger: GeneratorConfig
+    """
+
+    llm_judger: GeneratorConfig = field(default_factory=GeneratorConfig)
+
+
+class LongMemEvalTask(MultiSessionQATask):
+    """LongMemEval Task."""
+
+    def load_dataset(self) -> LongMemEvalDataset:
+        return LongMemEvalDataset(self.config)
+
+    def load_evaluator(self) -> Evaluator:
+        metrics = {
+            "f1": F1(F1Config()),
+            "exact_match": ExactMatch(ExactMatchConfig()),
+            "rouge": Rouge(RougeConfig()),
+        }
+        if self.config.llm_judger.generator_type is not None:
+            self.logger.info("LLM judger is enabled for evaluation.")
+            metrics["llm_judger"] = _LongMemEvalMetric(self.config.llm_judger)
         return Evaluator(metrics)
 
     def evaluate(

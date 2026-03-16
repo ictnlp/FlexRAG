@@ -20,6 +20,14 @@ from .contextual_qa import (
     SQuADTask,
     SQuADTaskConfig,
 )
+from .multisession_qa import (
+    ConvoMemTask,
+    ConvoMemTaskConfig,
+    LoCoMoTask,
+    LoCoMoTaskConfig,
+    LongMemEvalTask,
+    LongMemEvalTaskConfig,
+)
 from .open_qa import (
     BrowseCompTask,
     BrowseCompTaskConfig,
@@ -66,6 +74,12 @@ __all__ = [
     "NarrativeQATaskConfig",
     "SQuADTask",
     "SQuADTaskConfig",
+    "ConvoMemTask",
+    "ConvoMemTaskConfig",
+    "LoCoMoTask",
+    "LoCoMoTaskConfig",
+    "LongMemEvalTask",
+    "LongMemEvalTaskConfig",
     "ContextualMCTask",
     "ContextualMCTaskConfig",
     "LongBenchV2Task",

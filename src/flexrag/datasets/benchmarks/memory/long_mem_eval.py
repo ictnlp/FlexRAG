@@ -63,6 +63,7 @@ class LongMemEvalDataset(MappingDataset[MultiSessionQASample]):
                 sessions.append(ChatMessages.from_list(session, strict_mode=False))
             # parse metadata
             metadata = {
+                "abstention": qid.endswith("_abs"),
                 "question_type": item["question_type"],
                 "question_date": item["question_date"],
                 "answer_session_ids": item["answer_session_ids"],
