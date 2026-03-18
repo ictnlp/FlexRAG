@@ -1,8 +1,7 @@
 from collections import defaultdict
 from collections.abc import Iterator
 from pathlib import Path
-from types import MappingProxyType
-from typing import Annotated, Any, Literal, Mapping
+from typing import Annotated, Any, Literal
 
 from flexrag.common import (
     FLEXRAG_CACHE_DIR,
@@ -16,6 +15,7 @@ from flexrag.common import (
 )
 
 from ...core import DATASETS
+from ...corpora.corpus_dataset import _ContextMappingCorpus
 from ...reader import LineDelimitedReader
 from .retrieval_dataset_base import RetrievalDatasetBase
 
@@ -105,30 +105,26 @@ class MSMARCODataset(RetrievalDatasetBase):
             for context in loader.load_corpus():
                 p_logger.update(1, desc="Loading corpus")
                 self._context_data[context.context_id] = context
+            self._corpus = _ContextMappingCorpus(self._context_data)
+        else:
+            self._corpus = None
         self._qrels_data = loader.load_qrels()
         self._queries_data = loader.load_queries()
         self._candidates = loader.load_scoreddocs()
+        self._qids = sorted(self._qrels_data.keys())
         return
 
-    @property
-    def contexts(self) -> Mapping[str, Context]:
-        """Return a mapping from context_id to Context object."""
-        return MappingProxyType(self._context_data)
+    def __len__(self) -> int:
+        return len(self._qids)
 
-    @property
-    def queries(self) -> Mapping[str, str]:
-        """Return a mapping from query_id to query text."""
-        return MappingProxyType(self._queries_data)
-
-    @property
-    def qrels(self) -> Mapping[str, Mapping[str, float]]:
-        """Return a mapping from query_id to a set of relevant context_ids."""
-        return MappingProxyType(self._qrels_data)
-
-    @property
-    def candidates(self) -> Mapping[str, list[Mapping[str, Any]]]:
-        """Return a mapping from query_id to a set of candidate context_ids and their scores."""
-        return MappingProxyType(self._candidates)
+    def get_item(self, index: int):
+        qid = self._qids[index]
+        return self.build_sample(
+            question=self._queries_data[qid],
+            question_id=qid,
+            qrels=dict(self._qrels_data[qid]),
+            candidates=self._candidates.get(qid, []),
+        )
 
 
 RESOURCES = {

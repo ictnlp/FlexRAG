@@ -46,9 +46,7 @@ class TestMSMARCODataset:
         )
         for item in dataset:
             self.valid_ir_sample(item)
-        assert isinstance(dataset.contexts, Mapping)
-        assert isinstance(dataset.qrels, Mapping)
-        assert isinstance(dataset.context_ids, Iterable)
+        assert dataset.corpus is None
         print(f"MSMARCO Document Ranking V1 {split} split passed.")
         print(f"Number of samples: {len(dataset)}")
         return
@@ -76,9 +74,7 @@ class TestMSMARCODataset:
         )
         for item in dataset:
             self.valid_ir_sample(item)
-        assert isinstance(dataset.contexts, Mapping)
-        assert isinstance(dataset.qrels, Mapping)
-        assert isinstance(dataset.context_ids, Iterable)
+        assert dataset.corpus is None
         print(f"MSMARCO Document Ranking V2 {split} split passed.")
         print(f"Number of samples: {len(dataset)}")
         return
@@ -104,9 +100,7 @@ class TestMSMARCODataset:
         )
         for item in dataset:
             self.valid_ir_sample(item)
-        assert isinstance(dataset.contexts, Mapping)
-        assert isinstance(dataset.qrels, Mapping)
-        assert isinstance(dataset.context_ids, Iterable)
+        assert dataset.corpus is None
         print(f"MSMARCO Passage Ranking V1 {split} split passed.")
         print(f"Number of samples: {len(dataset)}")
         return
@@ -132,9 +126,7 @@ class TestMSMARCODataset:
         )
         for item in dataset:
             self.valid_ir_sample(item)
-        assert isinstance(dataset.contexts, Mapping)
-        assert isinstance(dataset.qrels, Mapping)
-        assert isinstance(dataset.context_ids, Iterable)
+        assert dataset.corpus is None
         print(f"MSMARCO Passage Ranking V2 {split} split passed.")
         print(f"Number of samples: {len(dataset)}")
         return
@@ -175,9 +167,9 @@ class TestMultiLongDocRetrievalDataset:
         )
         for item in dataset:
             self.valid_ir_sample(item, True)
-        assert isinstance(dataset.contexts, Mapping)
-        assert isinstance(dataset.qrels, Mapping)
-        assert isinstance(dataset.context_ids, Iterable)
+        assert dataset.corpus is not None
+        assert isinstance(dataset.corpus.contexts, Mapping)
+        assert isinstance(dataset.corpus.context_ids, Iterable)
         print(f"MLDR-{split}-{lang} dataset length: {len(dataset)}")
         print(f"MLDR-{split}-{lang} dataset test passed.")
         return
@@ -203,9 +195,9 @@ class TestMTEBDataset:
         )
         for item in dataset:
             self.valid_ir_sample(item)
-        assert isinstance(dataset.contexts, Mapping)
-        assert isinstance(dataset.qrels, Mapping)
-        assert isinstance(dataset.context_ids, Iterable)
+        assert dataset.corpus is not None
+        assert isinstance(dataset.corpus.contexts, Mapping)
+        assert isinstance(dataset.corpus.context_ids, Iterable)
         print(f"MTEB-{subset}-test dataset length: {len(dataset)}")
         print(f"MTEB-{subset}-test dataset test passed.")
         return
@@ -229,9 +221,9 @@ class TestMTEBDataset:
         )
         for item in dataset:
             self.valid_ir_sample(item)
-        assert isinstance(dataset.contexts, Mapping)
-        assert isinstance(dataset.qrels, Mapping)
-        assert isinstance(dataset.context_ids, Iterable)
+        assert dataset.corpus is not None
+        assert isinstance(dataset.corpus.contexts, Mapping)
+        assert isinstance(dataset.corpus.context_ids, Iterable)
         print(f"MTEB-{subset}-{split} dataset length: {len(dataset)}")
         print(f"MTEB-{subset}-{split} dataset test passed.")
         return
@@ -259,6 +251,7 @@ class TestKILTDataset:
         dataset = KiltDataset(
             KiltDatasetConfig(subset=subset, split=split, load_corpus=False)
         )
+        assert dataset.corpus is None
         for item in dataset:
             if split == "validation":
                 if hasattr(item, "answers"):

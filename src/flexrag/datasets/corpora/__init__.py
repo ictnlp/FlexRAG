@@ -1,18 +1,30 @@
-"""
-The corpora submodule provides helper classes for loading public corpora.
-"""
+"""Corpus protocols and concrete corpus providers."""
 
-from .corpus_dataset import IterableCorpus, MappingCorpus
-from .wikipedia_atlas import load_wikipedia_atlas_corpus
-from .wikipedia_attributeqa import load_wikipedia_attributedqa_corpus
-from .wikipedia_dpr import load_wikipedia_dpr_corpus
-from .wikipedia_kilt import load_wikipedia_kilt_corpus
+from .corpus_dataset import CORPORA, IterableCorpus, MappingCorpus
+from .wikipedia_atlas import WikipediaAtlasCorpus, WikipediaAtlasCorpusConfig
+from .wikipedia_attributeqa import (
+    WikipediaAttributedQACorpus,
+    WikipediaAttributedQACorpusConfig,
+)
+from .wikipedia_dpr import WikipediaDPRCorpus, WikipediaDPRCorpusConfig
+from .wikipedia_kilt import WikipediaKILTCorpus, WikipediaKILTCorpusConfig
+from .wikipedia_wikimedia import (
+    WikipediaWikimediaCorpus,
+    WikipediaWikimediaCorpusConfig,
+)
 
 __all__ = [
+    "CORPORA",
     "IterableCorpus",
     "MappingCorpus",
-    "load_wikipedia_atlas_corpus",
-    "load_wikipedia_attributedqa_corpus",
-    "load_wikipedia_dpr_corpus",
-    "load_wikipedia_kilt_corpus",
+    "WikipediaAtlasCorpus",
+    "WikipediaAtlasCorpusConfig",
+    "WikipediaAttributedQACorpus",
+    "WikipediaAttributedQACorpusConfig",
+    "WikipediaDPRCorpus",
+    "WikipediaDPRCorpusConfig",
+    "WikipediaKILTCorpus",
+    "WikipediaKILTCorpusConfig",
+    "WikipediaWikimediaCorpus",
+    "WikipediaWikimediaCorpusConfig",
 ]

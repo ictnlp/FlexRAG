@@ -1,17 +1,16 @@
 import json
 import shutil
 import zipfile
-from functools import cached_property
 from hashlib import blake2b
 from pathlib import Path
-from types import MappingProxyType
-from typing import Annotated, Iterator, Mapping, Optional
+from typing import Annotated, Optional
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 from flexrag.common.dataclasses import Context
 from flexrag.common.misc import download_and_extract
 
 from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...corpora.corpus_dataset import _ContextMappingCorpus
 
 
 @configure
@@ -70,8 +69,8 @@ class CRUDRAGDataset(MappingDataset[ContextualQASample]):
             (data_dir / "CRUD_RAG-main").rmdir()
 
         # load the corpus
-        self._context_data = {}
         if config.load_corpus:
+            self._context_data = {}
             corpus_dir = data_dir / "data" / "80000_docs"
             for doc_file in corpus_dir.iterdir():
                 # skip hallucinated documents
@@ -87,6 +86,8 @@ class CRUDRAGDataset(MappingDataset[ContextualQASample]):
                             data={"text": doc},
                             source="crud",
                         )
+        else:
+            self._context_data = None
 
         # load qa pairs
         self._queries_data = {}
@@ -113,12 +114,17 @@ class CRUDRAGDataset(MappingDataset[ContextualQASample]):
                 docs.append(item["news3"])
             for doc in docs:
                 doc_idx = blake2b(doc.encode("utf-8"), digest_size=16).hexdigest()
-                self._context_data[doc_idx] = Context(
-                    context_id=doc_idx, data={"text": doc}, source="crud"
-                )
+                if self._context_data is not None:
+                    self._context_data[doc_idx] = Context(
+                        context_id=doc_idx, data={"text": doc}, source="crud"
+                    )
                 qrels[doc_idx] = 1.0
             self._qrels_data[query_id] = qrels
         self._qids = list(self._queries_data.keys())
+        if self._context_data is not None:
+            self._corpus = _ContextMappingCorpus(self._context_data)
+        else:
+            self._corpus = None
         return
 
     def __len__(self) -> int:
@@ -137,30 +143,5 @@ class CRUDRAGDataset(MappingDataset[ContextualQASample]):
         )
 
     @property
-    def contexts(self) -> Mapping[str, Context]:
-        """The contexts of the dataset."""
-        return MappingProxyType(self._context_data)
-
-    @property
-    def queries(self) -> Mapping[str, str]:
-        """The queries of the dataset."""
-        return MappingProxyType(self._queries_data)
-
-    @property
-    def qrels(self) -> Mapping[str, Mapping[str, float]]:
-        """The qrels of the dataset."""
-        return MappingProxyType(self._qrels_data)
-
-    @cached_property
-    def query_ids(self) -> list[str]:
-        """The index of the queries in the qrels."""
-        return sorted(self.qrels.keys())
-
-    @property
-    def context_ids(self) -> Iterator[str]:
-        """Get all context ids in the dataset.
-
-        :return: An iterator of context ids.
-        :rtype: Iterator[str]
-        """
-        yield from self.contexts.keys()
+    def corpus(self):
+        return self._corpus

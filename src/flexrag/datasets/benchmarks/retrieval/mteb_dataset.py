@@ -1,7 +1,5 @@
 from collections import defaultdict
-from collections.abc import Mapping
 from pathlib import Path
-from types import MappingProxyType
 
 from datasets import Dataset, DatasetDict, get_dataset_config_names, load_dataset
 from huggingface_hub import snapshot_download
@@ -10,6 +8,7 @@ from flexrag.common import FLEXRAG_CACHE_DIR, LOGGER_MANAGER, configure
 from flexrag.common.dataclasses import Context
 
 from ...core import DATASETS
+from ...corpora.corpus_dataset import _ContextMappingCorpus
 from .retrieval_dataset_base import RetrievalDatasetBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.mteb_dataset")
@@ -96,6 +95,9 @@ class MTEBDataset(RetrievalDatasetBase):
                     data=item,
                     source=repo_id,
                 )
+            self._corpus = _ContextMappingCorpus(self._context_data)
+        else:
+            self._corpus = None
 
         # load queries
         if "queries" in config_name:
@@ -139,19 +141,16 @@ class MTEBDataset(RetrievalDatasetBase):
         self._qrels_data = defaultdict(dict)
         for qrel in qrels:
             self._qrels_data[qrel["query-id"]][qrel["corpus-id"]] = float(qrel["score"])
+        self._qids = sorted(self._qrels_data.keys())
         return
 
-    @property
-    def contexts(self) -> Mapping[str, Context]:
-        """Return a mapping from context_id to Context object."""
-        return MappingProxyType(self._context_data)
+    def __len__(self) -> int:
+        return len(self._qids)
 
-    @property
-    def queries(self) -> Mapping[str, str]:
-        """Return a mapping from query_id to query text."""
-        return MappingProxyType(self._queries_data)
-
-    @property
-    def qrels(self) -> Mapping[str, Mapping[str, float]]:
-        """Return a mapping from query_id to a set of relevant context_ids."""
-        return MappingProxyType(self._qrels_data)
+    def get_item(self, index: int):
+        qid = self._qids[index]
+        return self.build_sample(
+            question=self._queries_data[qid],
+            question_id=qid,
+            qrels=dict(self._qrels_data[qid]),
+        )

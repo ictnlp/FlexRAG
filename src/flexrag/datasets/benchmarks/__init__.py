@@ -56,7 +56,14 @@ from .retrieval import (
     MultiLongDocRetrievalDatasetConfig,
     RetrievalDatasetBase,
 )
-from .suites import CRUDRAGDataset, CRUDRAGDatasetConfig, KiltDataset, KiltDatasetConfig
+from .suites import (
+    CRUDRAGDataset,
+    CRUDRAGDatasetConfig,
+    FramesDataset,
+    FramesDatasetConfig,
+    KiltDataset,
+    KiltDatasetConfig,
+)
 
 __all__ = [
     "MTRAGDataset",
@@ -112,6 +119,8 @@ __all__ = [
     "RetrievalDatasetBase",
     "CRUDRAGDataset",
     "CRUDRAGDatasetConfig",
+    "FramesDataset",
+    "FramesDatasetConfig",
     "KiltDataset",
     "KiltDatasetConfig",
 ]

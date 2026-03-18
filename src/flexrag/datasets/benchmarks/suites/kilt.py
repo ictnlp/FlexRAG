@@ -1,8 +1,6 @@
 import os
-from functools import cached_property
 from pathlib import Path
-from types import MappingProxyType
-from typing import Annotated, Iterator, Mapping, Optional
+from typing import Annotated, Optional
 
 from datasets import load_dataset
 from huggingface_hub import snapshot_download
@@ -13,6 +11,7 @@ from flexrag.common.logging import LOGGER_MANAGER
 from flexrag.common.misc import download
 
 from ...core import DATASETS, IRDialogueSample, IRMCSample, IRQASample, MappingDataset
+from ...corpora.corpus_dataset import _ContextMappingCorpus
 from ...reader import LineDelimitedReader
 
 logger = LOGGER_MANAGER.get_logger("flexrag.datasets.kilt_qa")
@@ -130,8 +129,10 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
             self._context_data = self._load_corpus(
                 corpus_path, full_wiki=self._full_wiki
             )
+            self._corpus = _ContextMappingCorpus(self._context_data)
         else:
             self._context_data = None
+            self._corpus = None
 
         # load the QA pairs
         if self._subset == "triviaqa":
@@ -335,30 +336,5 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
         return sample
 
     @property
-    def contexts(self) -> Mapping[str, Context]:
-        """The contexts of the dataset."""
-        return MappingProxyType(self._context_data)
-
-    @property
-    def queries(self) -> Mapping[str, str]:
-        """The queries of the dataset."""
-        return MappingProxyType(self._queries_data)
-
-    @property
-    def qrels(self) -> Mapping[str, Mapping[str, float]]:
-        """The qrels of the dataset."""
-        return MappingProxyType(self._qrels_data)
-
-    @cached_property
-    def query_ids(self) -> list[str]:
-        """The index of the queries in the qrels."""
-        return sorted(self.qrels.keys())
-
-    @property
-    def context_ids(self) -> Iterator[str]:
-        """Get all context ids in the dataset.
-
-        :return: An iterator of context ids.
-        :rtype: Iterator[str]
-        """
-        yield from self.contexts.keys()
+    def corpus(self):
+        return self._corpus

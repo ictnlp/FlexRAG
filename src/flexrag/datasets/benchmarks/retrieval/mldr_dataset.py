@@ -1,7 +1,6 @@
 from collections import defaultdict
 from pathlib import Path
-from types import MappingProxyType
-from typing import Annotated, Mapping, Optional
+from typing import Annotated, Optional
 
 from huggingface_hub import snapshot_download
 
@@ -9,6 +8,7 @@ from flexrag.common import FLEXRAG_CACHE_DIR, LOGGER_MANAGER, Choices, configure
 from flexrag.common.dataclasses import Context
 
 from ...core import DATASETS
+from ...corpora.corpus_dataset import _ContextMappingCorpus
 from ...reader import LineDelimitedReader
 from .retrieval_dataset_base import RetrievalDatasetBase
 
@@ -132,16 +132,17 @@ class MultiLongDocRetrievalDataset(RetrievalDatasetBase):
                 self._qrels_data[query_id][p["docid"]] = 1.0
             for n in item["negative_passages"]:
                 self._qrels_data[query_id][n["docid"]] = 0.0
+        self._corpus = _ContextMappingCorpus(self._context_data)
+        self._qids = sorted(self._qrels_data.keys())
         return
 
-    @property
-    def qrels(self) -> Mapping[str, Mapping[str, float]]:
-        return MappingProxyType(self._qrels_data)
+    def __len__(self) -> int:
+        return len(self._qids)
 
-    @property
-    def queries(self) -> Mapping[str, str]:
-        return MappingProxyType(self._queries_data)
-
-    @property
-    def contexts(self) -> Mapping[str, Context]:
-        return MappingProxyType(self._context_data)
+    def get_item(self, index: int):
+        qid = self._qids[index]
+        return self.build_sample(
+            question=self._queries_data[qid],
+            question_id=qid,
+            qrels=dict(self._qrels_data[qid]),
+        )

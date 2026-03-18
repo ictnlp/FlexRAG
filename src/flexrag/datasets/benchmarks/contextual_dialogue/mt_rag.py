@@ -1,13 +1,12 @@
 import json
-from functools import cached_property
 from pathlib import Path
-from types import MappingProxyType
-from typing import Annotated, Iterator, Literal, Mapping, Optional
+from typing import Literal, Optional
 
 from flexrag.common import FLEXRAG_CACHE_DIR, configure, download, download_and_extract
 from flexrag.common.dataclasses import ChatMessages, ChatTurn, Context
 
 from ...core import DATASETS, IRDialogueSample, MappingDataset
+from ...corpora.corpus_dataset import _ContextMappingCorpus
 
 RESOURCES = {
     "corpus": {
@@ -127,6 +126,7 @@ class MTRAGDataset(MappingDataset[IRDialogueSample]):
             self._answers_data[qid] = ref
             self._qrels_data[qid] = ctx_ids
         self._qids = sorted(self._queries_data.keys())
+        self._corpus = _ContextMappingCorpus(self._context_data)
         return
 
     def __len__(self) -> int:
@@ -134,9 +134,11 @@ class MTRAGDataset(MappingDataset[IRDialogueSample]):
 
     def get_item(self, index: int) -> IRDialogueSample:
         qid = self._qids[index]
-        query = self.queries[qid]
+        query = self._queries_data[qid]
         answer = self._answers_data[qid]
-        ctxs = [self.contexts[ctx_id] for ctx_id in self.qrels[qid].keys()]
+        ctxs = [
+            self._corpus.contexts[ctx_id] for ctx_id in self._qrels_data[qid].keys()
+        ]
         return IRDialogueSample(
             dialogue_id=qid,
             messages=query,
@@ -145,30 +147,5 @@ class MTRAGDataset(MappingDataset[IRDialogueSample]):
         )
 
     @property
-    def contexts(self) -> Mapping[str, Context]:
-        """The contexts of the dataset."""
-        return MappingProxyType(self._context_data)
-
-    @property
-    def queries(self) -> Mapping[str, str]:
-        """The queries of the dataset."""
-        return MappingProxyType(self._queries_data)
-
-    @property
-    def qrels(self) -> Mapping[str, Mapping[str, float]]:
-        """The qrels of the dataset."""
-        return MappingProxyType(self._qrels_data)
-
-    @cached_property
-    def query_ids(self) -> list[str]:
-        """The index of the queries in the qrels."""
-        return sorted(self.qrels.keys())
-
-    @property
-    def context_ids(self) -> Iterator[str]:
-        """Get all context ids in the dataset.
-
-        :return: An iterator of context ids.
-        :rtype: Iterator[str]
-        """
-        yield from self.contexts.keys()
+    def corpus(self):
+        return self._corpus

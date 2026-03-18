@@ -1,7 +1,8 @@
 import tempfile
 from pathlib import Path
 
-from flexrag.datasets.corpora import IterableCorpus
+from flexrag.common import Context
+from flexrag.datasets.reader import LineDelimitedReader
 from flexrag.models import EncoderConfig, OpenAIEncoderConfig
 from flexrag.retrievers import (
     EditableRetriever,
@@ -20,6 +21,20 @@ from flexrag.retrievers.index import (
 )
 
 
+def load_test_corpus_slice(path: Path, start: int, stop: int) -> list[Context]:
+    contexts = []
+    reader = LineDelimitedReader(path)
+    for idx, data in enumerate(reader):
+        if idx < start:
+            continue
+        if idx >= stop:
+            break
+        payload = dict(data)
+        context_id = payload.pop("id")
+        contexts.append(Context(context_id=context_id, data=payload))
+    return contexts
+
+
 class TestRetrievers:
     query = [
         "Who is Bruce Wayne?",
@@ -32,8 +47,8 @@ class TestRetrievers:
 
         # load corpus
         data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
-        dataset1 = IterableCorpus.from_files(data_path)[:10000]
-        dataset2 = IterableCorpus.from_files(data_path)[10000:20000]
+        dataset1 = load_test_corpus_slice(data_path, 0, 10000)
+        dataset2 = load_test_corpus_slice(data_path, 10000, 20000)
 
         # testing add_passages
         retriever.add_passages(dataset1)
@@ -71,8 +86,8 @@ class TestRetrievers:
     def test_flex_retriever(self, mock_openai_client):
         # load datasets
         data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
-        dataset1 = IterableCorpus.from_files(data_path)[:1000]
-        dataset2 = IterableCorpus.from_files(data_path)[1000:2000]
+        dataset1 = load_test_corpus_slice(data_path, 0, 1000)
+        dataset2 = load_test_corpus_slice(data_path, 1000, 2000)
         with tempfile.TemporaryDirectory() as tempdir:
             # in mem retriever
             cfg = FlexRetrieverConfig(

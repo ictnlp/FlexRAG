@@ -1,18 +1,20 @@
 """
-Helpers for loading Wikipedia corpus provided by
+Corpus provider for Wikipedia snapshots distributed by
 `facebookresearch/atlas <https://github.com/facebookresearch/atlas>`_.
 """
 
-from os import PathLike
-from pathlib import Path
-from typing import Literal, Optional
+from __future__ import annotations
 
-from flexrag.common import FLEXRAG_CACHE_DIR
+from pathlib import Path
+from typing import Annotated, Iterator, Mapping, Optional
+
+from flexrag.common import FLEXRAG_CACHE_DIR, Choices, Context, configure
 from flexrag.common.misc import download
 
-from .corpus_dataset import IterableCorpus, MappingCorpus
+from ..reader import LineDelimitedReader
+from .corpus_dataset import CORPORA
 
-RESOURCES = {
+_RESOURCES = {
     "enwiki_2017_atlas": {
         "infobox": "https://dl.fbaipublicfiles.com/atlas/corpora/wiki/enwiki-dec2017/infobox.jsonl",
         "text": "https://dl.fbaipublicfiles.com/atlas/corpora/wiki/enwiki-dec2017/text-list-100-sec.jsonl",
@@ -36,63 +38,93 @@ RESOURCES = {
 }
 
 
-def load_wikipedia_atlas_corpus(
-    data_path: Optional[PathLike] = None,
-    data_version: Literal[
-        "enwiki_2017_atlas",
-        "enwiki_2018_atlas",
-        "enwiki_2019_atlas",
-        "enwiki_2020_atlas",
-        "enwiki_2021_atlas",
-    ] = "enwiki_2021_atlas",
-    load_in_memory: bool = False,
-    include_infobox: bool = True,
-) -> IterableCorpus | MappingCorpus:
-    """
-    Load the Wikipedia corpus provided by Atlas.
+@configure
+class WikipediaAtlasCorpusConfig:
+    data_path: Optional[str] = None
+    data_version: Annotated[
+        str,
+        Choices(
+            "enwiki_2017_atlas",
+            "enwiki_2018_atlas",
+            "enwiki_2019_atlas",
+            "enwiki_2020_atlas",
+            "enwiki_2021_atlas",
+        ),
+    ] = "enwiki_2021_atlas"
+    load_in_memory: bool = False
+    include_infobox: bool = True
 
-    :param data_path: The path to the data directory.
-        If None, the data will be downloaded to the default cache directory.
-    :type data_path: Optional[PathLike]
-    :param data_version: The version of the Wikipedia corpus to load.
-        Defaults to "enwiki_2021_atlas".
-        Available choices are: `enwiki_2017_atlas`, `enwiki_2018_atlas`,
-        `enwiki_2019_atlas`, `enwiki_2020_atlas`, `enwiki_2021_atlas`.
-    :type data_version: str
-    :param load_in_memory: Whether to load the corpus into memory. Defaults to False.
-    :type load_in_memory: bool
-    :param include_infobox: Whether to include the infobox data. Defaults to True.
-    :type include_infobox: bool
-    :return: The loaded corpus.
-    :rtype: IterableCorpus | MappingCorpus
-    """
-    # Download the corpus if not exists
-    if data_path is None:
-        data_path = FLEXRAG_CACHE_DIR / "corpora" / data_version
-    else:
-        data_path = Path(data_path)
-    text_file = data_path / "text-list-100-sec.jsonl"
-    infobox_file = data_path / "infobox.jsonl"
-    file_paths = []
-    if not text_file.exists():
-        download(RESOURCES[data_version]["text"], text_file.parent.as_posix())
-    file_paths.append(text_file)
-    if include_infobox:
-        if not infobox_file.exists():
-            download(RESOURCES[data_version]["infobox"], infobox_file.parent.as_posix())
-        file_paths.append(infobox_file)
 
-    # Load the corpus
-    if load_in_memory:
-        corpus = MappingCorpus.from_files(
-            file_paths=file_paths,
-            saving_fields=["title", "section", "text"],
-            id_field="id",
-        )
-    else:
-        corpus = IterableCorpus.from_files(
-            file_paths=file_paths,
-            saving_fields=["title", "section", "text"],
-            id_field="id",
-        )
-    return corpus
+@CORPORA("wikipedia_atlas", config_class=WikipediaAtlasCorpusConfig)
+class WikipediaAtlasCorpus:
+    def __init__(self, config: WikipediaAtlasCorpusConfig):
+        self._config = config
+        self._file_paths = self._ensure_files(config)
+        self._contexts: dict[str, Context] | None = None
+        if config.load_in_memory:
+            self._contexts = {}
+            for context in self._iter_contexts():
+                self._contexts[context.context_id] = context
+        return
+
+    @staticmethod
+    def _ensure_files(config: WikipediaAtlasCorpusConfig) -> list[Path]:
+        if config.data_path is None:
+            data_path = FLEXRAG_CACHE_DIR / "corpora" / config.data_version
+        else:
+            data_path = Path(config.data_path)
+        text_file = data_path / "text-list-100-sec.jsonl"
+        infobox_file = data_path / "infobox.jsonl"
+        file_paths = []
+        if not text_file.exists():
+            download(
+                _RESOURCES[config.data_version]["text"], text_file.parent.as_posix()
+            )
+        file_paths.append(text_file)
+        if config.include_infobox:
+            if not infobox_file.exists():
+                download(
+                    _RESOURCES[config.data_version]["infobox"],
+                    infobox_file.parent.as_posix(),
+                )
+            file_paths.append(infobox_file)
+        return file_paths
+
+    def _iter_contexts(self) -> Iterator[Context]:
+        for file_path in self._file_paths:
+            reader = LineDelimitedReader(file_path=file_path)
+            for data in reader:
+                context_id = data["id"]
+                yield Context(
+                    context_id=context_id,
+                    data={
+                        "title": data.get("title", ""),
+                        "section": data.get("section", ""),
+                        "text": data.get("text", ""),
+                    },
+                )
+        return
+
+    def __iter__(self) -> Iterator[Context]:
+        if self._contexts is not None:
+            yield from self._contexts.values()
+            return
+        yield from self._iter_contexts()
+        return
+
+    @property
+    def contexts(self) -> Mapping[str, Context]:
+        if self._contexts is None:
+            raise RuntimeError(
+                "WikipediaAtlasCorpus.contexts requires load_in_memory=True."
+            )
+        return self._contexts
+
+    @property
+    def context_ids(self) -> Iterator[str]:
+        if self._contexts is not None:
+            yield from self._contexts.keys()
+            return
+        for context in self._iter_contexts():
+            yield context.context_id
+        return
