@@ -19,7 +19,7 @@ from ...core import (
 class MemoryAgentBenchDatasetConfig:
     """Configuration for MemoryAgentBench.
 
-    `MemoryAgentBench <http://arxiv.org/abs/2410.10813>`_ is a comprehensive multi-turn
+    `MemoryAgentBench <https://arxiv.org/abs/2507.05257>`_ is a comprehensive multi-turn
     benchmark for evaluating memory agents, systematically assessing four core memory
     competencies—accurate retrieval, test-time learning, long-range understanding, and
     selective forgetting—under realistic, incremental interaction settings.
