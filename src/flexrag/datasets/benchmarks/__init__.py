@@ -46,6 +46,8 @@ from .qa import (
     SimpleQADatasetConfig,
     SQuADDataset,
     SQuADDatasetConfig,
+    WideSearchDataset,
+    WideSearchDatasetConfig,
 )
 from .retrieval import (
     MSMARCODataset,
@@ -112,6 +114,8 @@ __all__ = [
     "SimpleQADatasetConfig",
     "SQuADDataset",
     "SQuADDatasetConfig",
+    "WideSearchDataset",
+    "WideSearchDatasetConfig",
     "MSMARCODataset",
     "MSMARCODatasetConfig",
     "MTEBDataset",

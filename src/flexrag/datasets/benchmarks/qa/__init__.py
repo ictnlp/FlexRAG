@@ -10,6 +10,7 @@ from .multihop_rag import MultihopRAGDataset, MultihopRAGDatasetConfig
 from .narrative_qa import NarrativeQADataset, NarrativeQADatasetConfig
 from .simple_qa import SimpleQADataset, SimpleQADatasetConfig
 from .squad import SQuADDataset, SQuADDatasetConfig
+from .wide_search import WideSearchDataset, WideSearchDatasetConfig
 
 __all__ = [
     "BrowseCompDataset",
@@ -36,4 +37,6 @@ __all__ = [
     "SimpleQADatasetConfig",
     "SQuADDataset",
     "SQuADDatasetConfig",
+    "WideSearchDataset",
+    "WideSearchDatasetConfig",
 ]
