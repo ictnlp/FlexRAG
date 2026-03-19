@@ -7,6 +7,7 @@ from .literary_qa import LiteraryQADataset, LiteraryQADatasetConfig
 from .long_bench import LongBenchDataset, LongBenchDatasetConfig
 from .med_browsecomp import MedBrowseCompDataset, MedBrowseCompDatasetConfig
 from .multihop_rag import MultihopRAGDataset, MultihopRAGDatasetConfig
+from .musique import MuSiQueDataset, MuSiQueDatasetConfig
 from .narrative_qa import NarrativeQADataset, NarrativeQADatasetConfig
 from .simple_qa import SimpleQADataset, SimpleQADatasetConfig
 from .squad import SQuADDataset, SQuADDatasetConfig
@@ -31,6 +32,8 @@ __all__ = [
     "MedBrowseCompDatasetConfig",
     "MultihopRAGDataset",
     "MultihopRAGDatasetConfig",
+    "MuSiQueDataset",
+    "MuSiQueDatasetConfig",
     "NarrativeQADataset",
     "NarrativeQADatasetConfig",
     "SimpleQADataset",
