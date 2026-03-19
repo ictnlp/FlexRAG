@@ -31,7 +31,7 @@ dependencies = [
     "omegaconf>=2.3.0",
     "pillow",
     "colorama",
-    "torch==2.9.0",
+    "torch>=2.9.0",
     "pandas",
     "sentencepiece",
     "orjson",
