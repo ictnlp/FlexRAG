@@ -7,6 +7,8 @@ from flexrag.datasets.benchmarks import (
     DeepSearchQADatasetConfig,
     GAIADataset,
     GAIADatasetConfig,
+    PopQADataset,
+    PopQADatasetConfig,
     SimpleQADataset,
     SimpleQADatasetConfig,
 )
@@ -58,4 +60,21 @@ class TestOpenDomainQA:
             self.valid_qa_sample(item)
         print(f"SimpleQA dataset length: {len(dataset)}")
         print("SimpleQA dataset test passed.")
+        return
+
+    def test_popqa(self):
+        dataset = PopQADataset(PopQADatasetConfig())
+        for item in dataset:
+            self.valid_qa_sample(item)
+            assert item.question_id is not None
+            assert len(item.answers) > 0
+            assert "subj" in item.meta_data
+            assert "prop" in item.meta_data
+            assert "obj" in item.meta_data
+            assert "possible_answers" in item.meta_data
+            assert isinstance(item.meta_data["possible_answers"], list)
+            assert isinstance(item.meta_data["s_aliases"], list)
+            assert isinstance(item.meta_data["o_aliases"], list)
+        print(f"PopQA dataset length: {len(dataset)}")
+        print("PopQA dataset test passed.")
         return

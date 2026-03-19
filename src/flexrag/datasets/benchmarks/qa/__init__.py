@@ -9,6 +9,7 @@ from .med_browsecomp import MedBrowseCompDataset, MedBrowseCompDatasetConfig
 from .multihop_rag import MultihopRAGDataset, MultihopRAGDatasetConfig
 from .musique import MuSiQueDataset, MuSiQueDatasetConfig
 from .narrative_qa import NarrativeQADataset, NarrativeQADatasetConfig
+from .popqa import PopQADataset, PopQADatasetConfig
 from .simple_qa import SimpleQADataset, SimpleQADatasetConfig
 from .squad import SQuADDataset, SQuADDatasetConfig
 from .wide_search import WideSearchDataset, WideSearchDatasetConfig
@@ -36,6 +37,8 @@ __all__ = [
     "MuSiQueDatasetConfig",
     "NarrativeQADataset",
     "NarrativeQADatasetConfig",
+    "PopQADataset",
+    "PopQADatasetConfig",
     "SimpleQADataset",
     "SimpleQADatasetConfig",
     "SQuADDataset",
