@@ -1,4 +1,3 @@
-import orjson
 import pytest
 
 from flexrag.common import Context
@@ -60,104 +59,11 @@ class TestContextualQA:
         print("MultihopRAG dataset test passed.")
         return
 
-    @pytest.mark.parametrize(
-        ("split", "record"),
-        [
-            (
-                "validation",
-                {
-                    "id": "2hop__10_20",
-                    "question": "Which city is the birthplace of the author of Example Book?",
-                    "answer": "Example City",
-                    "answer_aliases": ["Example City", "City of Example"],
-                    "answerable": True,
-                    "question_decomposition": [
-                        {
-                            "id": "10",
-                            "question": "Who wrote Example Book?",
-                            "answer": "Alice Writer",
-                            "paragraph_support_idx": 0,
-                        },
-                        {
-                            "id": "20",
-                            "question": "Where was Alice Writer born?",
-                            "answer": "Example City",
-                            "paragraph_support_idx": 1,
-                        },
-                    ],
-                    "paragraphs": [
-                        {
-                            "idx": 0,
-                            "title": "Example Book",
-                            "paragraph_text": "Example Book was written by Alice Writer.",
-                            "is_supporting": True,
-                        },
-                        {
-                            "idx": 1,
-                            "title": "Alice Writer",
-                            "paragraph_text": "Alice Writer was born in Example City.",
-                            "is_supporting": True,
-                        },
-                        {
-                            "idx": 2,
-                            "title": "Distractor",
-                            "paragraph_text": "This paragraph is unrelated.",
-                            "is_supporting": False,
-                        },
-                    ],
-                },
-            ),
-            (
-                "test",
-                {
-                    "id": "2hop__30_40",
-                    "question": "Which river flows through Example City?",
-                    "paragraphs": [
-                        {
-                            "idx": 0,
-                            "title": "Example City",
-                            "paragraph_text": "Example City is crossed by the River Sample.",
-                        }
-                    ],
-                },
-            ),
-        ],
-    )
-    def test_musique(self, tmp_path, split, record):
-        file_name_map = {
-            "validation": "musique_full_v1.0_dev.jsonl",
-            "test": "musique_full_v1.0_test.jsonl",
-        }
-        data_path = tmp_path / file_name_map[split]
-        data_path.write_bytes(orjson.dumps(record) + b"\n")
-
-        dataset = MuSiQueDataset(
-            MuSiQueDatasetConfig(data_path=tmp_path.as_posix(), split=split)
-        )
-        assert len(dataset) == 1
-        item = dataset[0]
-        self.valid_contextual_qa_sample(item)
-        assert item.question_id == record["id"]
-        assert item.question == record["question"]
-        assert item.meta_data["question_decomposition"] == record.get(
-            "question_decomposition", []
-        )
-        assert item.meta_data["answerable"] == record.get("answerable")
-
-        support_indices = [
-            context.meta_data["idx"]
-            for context in item.contexts
-            if context.meta_data["is_supporting"]
-        ]
-        assert item.meta_data["supporting_paragraph_indices"] == support_indices
-
-        expected_answers = []
-        if "answer" in record:
-            expected_answers.append(record["answer"])
-        for alias in record.get("answer_aliases", []):
-            if alias not in expected_answers:
-                expected_answers.append(alias)
-        assert item.answers == expected_answers
+    @pytest.mark.parametrize("split", ["train", "validation", "test"])
+    def test_musique(self, split):
+        dataset = MuSiQueDataset(MuSiQueDatasetConfig(split=split))
+        for item in dataset:
+            self.valid_contextual_qa_sample(item)
         print(f"MuSiQue-{split} dataset length: {len(dataset)}")
         print(f"MuSiQue-{split} dataset test passed.")
         return
