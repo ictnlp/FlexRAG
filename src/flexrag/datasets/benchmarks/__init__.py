@@ -50,6 +50,8 @@ from .qa import (
     SimpleQADatasetConfig,
     SQuADDataset,
     SQuADDatasetConfig,
+    TwoWikiMultihopQADataset,
+    TwoWikiMultihopQADatasetConfig,
     WideSearchDataset,
     WideSearchDatasetConfig,
 )
@@ -122,6 +124,8 @@ __all__ = [
     "SimpleQADatasetConfig",
     "SQuADDataset",
     "SQuADDatasetConfig",
+    "TwoWikiMultihopQADataset",
+    "TwoWikiMultihopQADatasetConfig",
     "WideSearchDataset",
     "WideSearchDatasetConfig",
     "MSMARCODataset",

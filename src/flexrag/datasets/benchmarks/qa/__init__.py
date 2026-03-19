@@ -12,6 +12,10 @@ from .narrative_qa import NarrativeQADataset, NarrativeQADatasetConfig
 from .popqa import PopQADataset, PopQADatasetConfig
 from .simple_qa import SimpleQADataset, SimpleQADatasetConfig
 from .squad import SQuADDataset, SQuADDatasetConfig
+from .twowiki_multihop_qa import (
+    TwoWikiMultihopQADataset,
+    TwoWikiMultihopQADatasetConfig,
+)
 from .wide_search import WideSearchDataset, WideSearchDatasetConfig
 
 __all__ = [
@@ -43,6 +47,8 @@ __all__ = [
     "SimpleQADatasetConfig",
     "SQuADDataset",
     "SQuADDatasetConfig",
+    "TwoWikiMultihopQADataset",
+    "TwoWikiMultihopQADatasetConfig",
     "WideSearchDataset",
     "WideSearchDatasetConfig",
 ]

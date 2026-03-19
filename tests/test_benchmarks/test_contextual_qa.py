@@ -20,6 +20,8 @@ from flexrag.datasets.benchmarks import (
     PerLTQADatasetConfig,
     SQuADDataset,
     SQuADDatasetConfig,
+    TwoWikiMultihopQADataset,
+    TwoWikiMultihopQADatasetConfig,
 )
 from flexrag.datasets.core import ContextualQASample
 
@@ -57,6 +59,19 @@ class TestContextualQA:
             self.valid_contextual_qa_sample(item, True)
         print(f"MultihopRAG dataset length: {len(dataset)}")
         print("MultihopRAG dataset test passed.")
+        return
+
+    @pytest.mark.parametrize("split", ["train", "dev", "test"])
+    def test_twowiki_multihop_qa(self, split):
+        dataset = TwoWikiMultihopQADataset(TwoWikiMultihopQADatasetConfig(split=split))
+        for item in dataset:
+            self.valid_contextual_qa_sample(item)
+            assert item.question_id is not None
+            assert item.meta_data is not None
+            assert "supporting_facts" in item.meta_data
+            assert "evidences" in item.meta_data
+        print(f"2WikiMultihopQA-{split} dataset length: {len(dataset)}")
+        print(f"2WikiMultihopQA-{split} dataset test passed.")
         return
 
     @pytest.mark.parametrize("split", ["train", "validation", "test"])
