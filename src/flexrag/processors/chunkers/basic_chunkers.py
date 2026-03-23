@@ -145,9 +145,9 @@ class RecursiveChunkerConfig(TokenizerConfig):
 
     :param max_tokens: The maximum number of tokens in each chunk. Default is 512.
     :type max_tokens: int
-    :param seperators: The seperators used to split text recursively.
-        The order of the seperators matters. Default is ``PREDEFINED_SPLIT_PATTERNS["en"]``.
-    :type seperators: dict[str, str]
+    :param separators: The separators used to split text recursively.
+        The order of the separators matters. Default is ``PREDEFINED_SPLIT_PATTERNS["en"]``.
+    :type separators: dict[str, str]
 
     For example, to split a text recursively with 256 tokens in each chunk:
 
@@ -180,13 +180,13 @@ class RecursiveChunkerConfig(TokenizerConfig):
 
 @CHUNKERS("recursive_chunker", config_class=RecursiveChunkerConfig)
 class RecursiveChunker(ChunkerBase):
-    """RecursiveChunker splits text into chunks recursively using the specified seperators.
+    """RecursiveChunker splits text into chunks recursively using the specified separators.
 
-    The order of the seperators matters.
-    The text will be split recursively based on the seperators in the order of the list.
-    The default seperators are defined in ``PREDEFINED_SPLIT_PATTERNS``.
+    The order of the separators matters.
+    The text will be split recursively based on the separators in the order of the list.
+    The default separators are defined in ``PREDEFINED_SPLIT_PATTERNS``.
 
-    If the text is still too long after splitting with the last level seperators,
+    If the text is still too long after splitting with the last level separators,
     the text will be split into tokens.
     """
 

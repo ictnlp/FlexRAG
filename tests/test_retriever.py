@@ -176,7 +176,7 @@ class TestRetrievers:
             assert len(ctxs[0]) == 5
             assert len(ctxs[1]) == 5
 
-            # save index to loacl
+            # save index to local
             retriever.save_to_local(tempdir)
             del retriever
             assert Path(tempdir).exists()

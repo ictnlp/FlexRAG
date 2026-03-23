@@ -92,8 +92,8 @@ class GeneratorBase(ABC):
         :rtype: list[list[ChatTurn]]
         """
         logger.warning(
-            "Current model does not support asyncronous chat,"
-            " thus the code will be run in syncronous mode"
+            "Current model does not support asynchronous chat,"
+            " thus the code will be run in synchronous mode"
         )
         return self.chat(messages=messages, generation_config=generation_config)
 
@@ -129,8 +129,8 @@ class GeneratorBase(ABC):
         :rtype: list[list[str]]
         """
         logger.warning(
-            "Current generator does not support asyncronous generate,"
-            " thus the code will be run in syncronous mode"
+            "Current generator does not support asynchronous generate,"
+            " thus the code will be run in synchronous mode"
         )
         return self.generate(prefixes=prefixes, generation_config=generation_config)
 

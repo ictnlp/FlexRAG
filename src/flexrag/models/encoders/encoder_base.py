@@ -33,8 +33,8 @@ class EncoderBase(ABC):
         :rtype: np.ndarray
         """
         logger.warning(
-            "Current encoder does not support asyncronous encode,"
-            "thus the code will be run in syncronous mode."
+            "Current encoder does not support asynchronous encode,"
+            "thus the code will be run in synchronous mode."
         )
         return self.encode(texts)
 

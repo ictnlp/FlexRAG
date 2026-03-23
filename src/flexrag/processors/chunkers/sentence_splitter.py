@@ -107,7 +107,7 @@ class RegexSplitterConfig:
         Default is ``PREDEFINED_SPLIT_PATTERNS["en"]["sentence"]``
     :type pattern: str
 
-    Note that some patterns may lose the seperators between sentences.
+    Note that some patterns may lose the separators between sentences.
     A good practice is to use the lookbehind and lookahead assertion to avoid consuming the splitter.
     """
 
