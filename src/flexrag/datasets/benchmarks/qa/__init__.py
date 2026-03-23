@@ -2,6 +2,7 @@ from .browsecomp import BrowseCompDataset, BrowseCompDatasetConfig
 from .deepresearch_9k import DeepResearch9KDataset, DeepResearch9KDatasetConfig
 from .deepsearch_qa import DeepSearchQADataset, DeepSearchQADatasetConfig
 from .gaia import GAIADataset, GAIADatasetConfig
+from .gisa import GISADataset, GISADatasetConfig
 from .guten_qa import GutenQADataset, GutenQADatasetConfig
 from .literary_qa import LiteraryQADataset, LiteraryQADatasetConfig
 from .long_bench import LongBenchDataset, LongBenchDatasetConfig
@@ -27,6 +28,8 @@ __all__ = [
     "DeepSearchQADatasetConfig",
     "GAIADataset",
     "GAIADatasetConfig",
+    "GISADataset",
+    "GISADatasetConfig",
     "GutenQADataset",
     "GutenQADatasetConfig",
     "LiteraryQADataset",

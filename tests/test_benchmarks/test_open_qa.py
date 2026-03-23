@@ -9,6 +9,8 @@ from flexrag.datasets.benchmarks import (
     DeepSearchQADatasetConfig,
     GAIADataset,
     GAIADatasetConfig,
+    GISADataset,
+    GISADatasetConfig,
     MedBrowseCompDataset,
     MedBrowseCompDatasetConfig,
     PopQADataset,
@@ -111,4 +113,12 @@ class TestOpenDomainQA:
             self.valid_qa_sample(item)
         print(f"WideSearch dataset length: {len(dataset)}")
         print("WideSearch dataset test passed.")
+        return
+
+    def test_gisa(self):
+        dataset = GISADataset(GISADatasetConfig())
+        for item in dataset:
+            self.valid_qa_sample(item)
+        print(f"GISA dataset length: {len(dataset)}")
+        print("GISA dataset test passed.")
         return
