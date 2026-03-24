@@ -1,200 +1,7 @@
 import types
-from typing import Optional
 
 import numpy as np
 import pytest
-
-
-@pytest.fixture
-def mock_jina_client(mocker):
-    """Mock JinaEncoder HTTP clients to avoid actual API calls."""
-
-    # Store base_url for both sync and async clients
-    client_configs = {"sync_base_url": None, "async_base_url": None}
-
-    def create_mock_response(url, json: dict):
-        """Create mock response data for Jina API."""
-        if "rerank" in url:
-            assert "query" in json, "Query must be provided in json"
-            scores = []
-            for doc in json["documents"]:
-                # Create deterministic scores based on document content
-                rng = np.random.default_rng(hash(doc) % 2**32)
-                scores.append(rng.random())
-            scores = np.array(scores)
-            indices = np.argsort(scores)[-json["top_n"] :][::-1]
-            return {
-                "model": json["model"],
-                "usage": np.random.randint(100, 1000),
-                "results": [
-                    {"index": i, "relevance_score": scores[i]} for i in indices
-                ],
-            }
-        elif "embed" in url:
-            # Mock embeddings with fixed dimensions (1024 as per default config)
-            embeddings = []
-            for i, text in enumerate(json["input"]):
-                # Create deterministic embeddings based on text content
-                rng = np.random.default_rng(hash(text) % 2**32)
-                embedding = rng.random(1024).tolist()
-                embeddings.append({"embedding": embedding})
-            return {
-                "data": embeddings,
-                "model": "jina-embeddings-v3",
-                "usage": {
-                    "total_tokens": sum(len(text.split()) for text in json["input"])
-                },
-            }
-        else:
-            raise ValueError(f"Unexpected URL: {url}")
-
-    # Mock synchronous client
-    mock_sync_response = mocker.MagicMock()
-    mock_sync_response.raise_for_status.return_value = None
-
-    def mock_sync_post(url, json=None):
-        base_url = client_configs["sync_base_url"]
-        full_url = (
-            url if url.startswith("http") else f"{base_url}{url}" if base_url else url
-        )
-        mock_sync_response.json.return_value = create_mock_response(full_url, json)
-        return mock_sync_response
-
-    # Mock asynchronous client
-    mock_async_response = mocker.AsyncMock()
-    mock_async_response.raise_for_status.return_value = None
-
-    async def mock_async_post(url, json=None):
-        base_url = client_configs["async_base_url"]
-        full_url = (
-            url if url.startswith("http") else f"{base_url}{url}" if base_url else url
-        )
-        mock_async_response.json.return_value = create_mock_response(full_url, json)
-        return mock_async_response
-
-    # Create mock client instances that capture base_url
-    def create_mock_sync_client(base_url=None, **kwargs):
-        client_configs["sync_base_url"] = base_url
-        mock_instance = mocker.MagicMock()
-        mock_instance.base_url = base_url
-        mock_instance.post = mock_sync_post
-        return mock_instance
-
-    def create_mock_async_client(base_url=None, **kwargs):
-        client_configs["async_base_url"] = base_url
-        mock_instance = mocker.AsyncMock()
-        mock_instance.base_url = base_url
-        mock_instance.post = mock_async_post
-        return mock_instance
-
-    # Patch httpx clients
-    mock_sync_client = mocker.patch("flexrag.models.jina_model.httpx.Client")
-    mock_async_client = mocker.patch("flexrag.models.jina_model.httpx.AsyncClient")
-
-    # Configure mock clients to use our factory functions
-    mock_sync_client.side_effect = create_mock_sync_client
-    mock_async_client.side_effect = create_mock_async_client
-
-    # Configure mock clients
-    mock_sync_client.return_value.post = mock_sync_post
-    mock_async_client.return_value.post = mock_async_post
-
-    return {
-        "sync_client": mock_sync_client,
-        "async_client": mock_async_client,
-        "sync_response": mock_sync_response,
-        "async_response": mock_async_response,
-    }
-
-
-@pytest.fixture
-def mock_cohere_client(mocker):
-    """Mock Cohere ClientV2 for testing CohereEncoder"""
-
-    # Mock embedding response
-    class MockEmbeddingResponse:
-        def __init__(
-            self,
-            texts: list[str],
-            model: str = "embed-v4.0",
-            dimention: Optional[int] = None,
-        ):
-            match model:
-                case "embed-multilingual-light-v3.0":
-                    dim = 384
-                case "embed-multilingual-v3.0":
-                    dim = 1024
-                case "embed-english-light-v3.0":
-                    dim = 384
-                case "embed-english-v3.0":
-                    dim = 1024
-                case "embed-v4.0":
-                    if dimention is not None:
-                        dim = dimention
-                    dim = 1536
-            self.embeddings = mocker.MagicMock()
-            self.embeddings.float = []
-            for text in texts:
-                rng = np.random.default_rng(hash(text) % 2**32)
-                self.embeddings.float.append(rng.random(dim).tolist())
-
-    # Mock rerank response
-    class MockRerankResponse:
-        def __init__(self, documents: list[str], top_n: int, **kwargs):
-            scores = []
-            for doc in documents:
-                rng = np.random.default_rng(hash(doc) % 2**32)
-                scores.append(rng.random())
-            scores = np.array(scores)
-            indices = np.argsort(scores)[-top_n:][::-1]
-            documents = [documents[i] for i in indices]
-            self.results = [{"index": i, "relevance_score": scores[i]} for i in indices]
-            self.id = "07734bd2-2473-4f07-94e1-0d9f0e6843cf"
-            self.meta = {
-                "api_version": {"version": "2", "is_experimental": False},
-                "billed_units": {"search_units": 1},
-            }
-
-    # Mock ClientV2
-    mock_client = mocker.MagicMock()
-
-    def mock_embed(
-        texts,
-        model=None,
-        output_dimension=None,
-        **kwargs,
-    ):
-        return MockEmbeddingResponse(
-            texts,
-            model=model,
-            dimention=output_dimension,
-        )
-
-    def mock_rerank(
-        query: str,
-        documents: list[str],
-        model: str = "rerank-v3.5",
-        top_n: int = 10,
-        **kwargs,
-    ):
-        return MockRerankResponse(
-            query=query,
-            documents=documents,
-            model=model,
-            top_n=top_n,
-            **kwargs,
-        )
-
-    mock_client.embed = mock_embed
-    mock_client.rerank = mock_rerank
-
-    # Mock the entire cohere module to handle lazy import
-    mock_cohere_module = mocker.MagicMock()
-    mock_cohere_module.ClientV2.return_value = mock_client
-
-    # Patch the module import itself
-    mocker.patch.dict("sys.modules", {"cohere": mock_cohere_module})
-    return mock_client
 
 
 @pytest.fixture
@@ -228,6 +35,7 @@ def mock_litellm_client(mocker):
         "acompletion": [],
         "atext_completion": [],
         "aembedding": [],
+        "arerank": [],
     }
 
     async def mock_acompletion(*, model, messages, **kwargs):
@@ -287,6 +95,32 @@ def mock_litellm_client(mocker):
             response.data.append(data_item)
         return response
 
+    async def mock_arerank(
+        *, model, query, documents, top_n, return_documents=False, **kwargs
+    ):
+        calls["arerank"].append(
+            {
+                "model": model,
+                "query": query,
+                "documents": documents,
+                "top_n": top_n,
+                "return_documents": return_documents,
+                "kwargs": kwargs,
+            }
+        )
+        scores = []
+        for doc in documents:
+            rng = np.random.default_rng(hash(doc) % 2**32)
+            scores.append(rng.random())
+        scores = np.array(scores)
+        indices = np.argsort(scores)[-top_n:][::-1]
+        return types.SimpleNamespace(
+            results=[
+                types.SimpleNamespace(index=idx, relevance_score=scores[idx])
+                for idx in indices
+            ]
+        )
+
     import litellm
 
     mocked_module = types.SimpleNamespace(
@@ -299,9 +133,11 @@ def mock_litellm_client(mocker):
         aembedding=mocker.patch.object(
             litellm, "aembedding", side_effect=mock_aembedding
         ),
+        arerank=mocker.patch.object(litellm, "arerank", side_effect=mock_arerank),
         completion=mocker.patch.object(litellm, "completion"),
         text_completion=mocker.patch.object(litellm, "text_completion"),
         embedding=mocker.patch.object(litellm, "embedding"),
+        rerank=mocker.patch.object(litellm, "rerank"),
     )
     return {"module": mocked_module, "calls": calls}
 
@@ -578,79 +414,4 @@ def mock_ts_client(mocker):
     # Patch the module import itself
     mocker.patch.dict("sys.modules", {"typesense": mock_typesense_module})
 
-    return mock_client
-
-
-@pytest.fixture
-def mock_mixedbread_client(mocker):
-    """Mock Mixedbread client for testing MixedbreadRanker"""
-
-    # Mock the MixedbreadAI client
-    mock_client = mocker.MagicMock()
-
-    def mock_reranking(input, model, top_k, **kwargs):
-        scores = []
-        for doc in input:
-            rng = np.random.default_rng(hash(doc) % 2**32)
-            scores.append(rng.random())
-        scores = np.array(scores)
-        indices = np.argsort(scores)[-top_k:][::-1]
-        return mocker.MagicMock(
-            data=[
-                mocker.MagicMock(score=scores[idx], index=idx, input=None)
-                for idx in indices
-            ],
-            model=model,
-            usage=mocker.MagicMock(
-                total_tokens=np.random.randint(100, 1000),
-                prompt_tokens=np.random.randint(50, 500),
-                completion_tokens=np.random.randint(50, 500),
-            ),
-        )
-
-    mock_client.rerank = mock_reranking
-
-    # Mock the entire mixedbread module to handle lazy import
-    mock_mixedbread_module = mocker.MagicMock()
-    mock_mixedbread_module.Mixedbread.return_value = mock_client
-
-    # Patch the module import itself
-    mocker.patch.dict("sys.modules", {"mixedbread": mock_mixedbread_module})
-    return mock_client
-
-
-@pytest.fixture
-def mock_voyage_client(mocker):
-    """Mock Mixedbread client for testing MixedbreadRanker"""
-
-    # Mock the Voyage client
-    mock_client = mocker.MagicMock()
-
-    def mock_reranking(documents, top_k, **kwargs):
-        scores = []
-        for doc in documents:
-            rng = np.random.default_rng(hash(doc) % 2**32)
-            scores.append(rng.random())
-        scores = np.array(scores)
-        indices = np.argsort(scores)[-top_k:][::-1]
-        return mocker.MagicMock(
-            results=[
-                mocker.MagicMock(
-                    relevance_score=scores[idx],
-                    index=idx,
-                    document=documents[idx],
-                )
-                for idx in indices
-            ],
-            total_tokens=np.random.randint(100, 1000),
-        )
-
-    mock_client.rerank = mock_reranking
-
-    # Mock the entire voyage module to handle lazy import
-    mock_voyage_module = mocker.MagicMock()
-    mock_voyage_module.Client.return_value = mock_client
-
-    # Patch the module import itself
-    mocker.patch.dict("sys.modules", {"voyageai": mock_voyage_module})
     return mock_client

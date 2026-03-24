@@ -37,7 +37,7 @@ class RankingResult:
     """
 
     query: str
-    candidates: list[RetrievedContext]
+    candidates: list[RetrievedContext | str]
     scores: Optional[list[float]] = None
 
 

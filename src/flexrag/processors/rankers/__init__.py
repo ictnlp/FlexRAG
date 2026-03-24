@@ -1,4 +1,3 @@
-from .cohere_ranker import CohereRanker, CohereRankerConfig
 from .gpt_ranker import RankGPTRanker, RankGPTRankerConfig
 from .hf_ranker import (
     HFColBertRanker,
@@ -8,16 +7,12 @@ from .hf_ranker import (
     HFLogitsRanker,
     HFLogitsRankerConfig,
 )
-from .jina_ranker import JinaRanker, JinaRankerConfig
-from .mixedbread_ranker import MixedbreadRanker, MixedbreadRankerConfig
+from .litellm_ranker import LiteLLMRanker, LiteLLMRankerConfig
 from .ranker_base import RANKERS, RankerBase, RankerBaseConfig, RankingResult
-from .voyage_ranker import VoyageRanker, VoyageRankerConfig
 
 RankerConfig = RANKERS.make_config(config_name="RankerConfig")
 
 __all__ = [
-    "CohereRanker",
-    "CohereRankerConfig",
     "RankGPTRanker",
     "RankGPTRankerConfig",
     "HFColBertRanker",
@@ -26,15 +21,11 @@ __all__ = [
     "HFCrossEncoderRankerConfig",
     "HFLogitsRanker",
     "HFLogitsRankerConfig",
-    "JinaRanker",
-    "JinaRankerConfig",
-    "MixedbreadRanker",
-    "MixedbreadRankerConfig",
+    "LiteLLMRanker",
+    "LiteLLMRankerConfig",
     "RankerBase",
     "RankerBaseConfig",
     "RankingResult",
-    "VoyageRanker",
-    "VoyageRankerConfig",
     "RANKERS",
     "RankerConfig",
 ]
