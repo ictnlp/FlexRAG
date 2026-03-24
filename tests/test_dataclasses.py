@@ -4,6 +4,20 @@ from flexrag.common.dataclasses import ChatMessages, ChatTurn
 
 
 class TestChatTurn:
+    def test_tool_result_roundtrip(self):
+        turn = ChatTurn(
+            role="tool",
+            tool_call_id="call_1",
+            name="add",
+            content="98305.0",
+        )
+
+        restored = ChatTurn.from_dict(turn.to_dict())
+        assert restored.role == "tool"
+        assert restored.tool_call_id == "call_1"
+        assert restored.name == "add"
+        assert restored.content == "98305.0"
+
     def test_tool_calls_reasoning_and_metadata_roundtrip(self):
         tool_call = {
             "type": "tool_call",
@@ -87,7 +101,12 @@ class TestChatMessages:
                         }
                     ],
                 ),
-                ChatTurn(role="tool", content='{"temperature": 24}'),
+                ChatTurn(
+                    role="tool",
+                    tool_call_id="call_1",
+                    name="get_weather",
+                    content='{"temperature": 24}',
+                ),
                 ChatTurn(role="assistant", content="It is 24 degrees in Beijing."),
             ]
         )
@@ -99,10 +118,46 @@ class TestChatMessages:
                 history=[
                     ChatTurn(role="user", content="Check the weather."),
                     ChatTurn(role="assistant", content="I will help."),
-                    ChatTurn(role="tool", content='{"temperature": 24}'),
+                    ChatTurn(
+                        role="tool",
+                        tool_call_id="call_1",
+                        name="get_weather",
+                        content='{"temperature": 24}',
+                    ),
                 ]
             )
 
     def test_invalid_first_role(self):
         with pytest.raises(ValueError):
-            ChatMessages(history=[ChatTurn(role="tool", content='{"temperature": 24}')])
+            ChatMessages(
+                history=[
+                    ChatTurn(
+                        role="tool",
+                        tool_call_id="call_1",
+                        name="get_weather",
+                        content='{"temperature": 24}',
+                    )
+                ]
+            )
+
+    def test_tool_turn_requires_tool_call_id(self):
+        with pytest.raises(ValueError):
+            ChatMessages(
+                history=[
+                    ChatTurn(role="user", content="Check the weather."),
+                    ChatTurn(
+                        role="assistant",
+                        content=[
+                            {
+                                "type": "tool_call",
+                                "id": "call_1",
+                                "name": "get_weather",
+                                "arguments": {"city": "Beijing"},
+                            }
+                        ],
+                    ),
+                    ChatTurn(
+                        role="tool", name="get_weather", content='{"temperature": 24}'
+                    ),
+                ]
+            )

@@ -227,6 +227,45 @@ class TestLiteLLMGenerator:
         assert "reasoning_content" not in turn.metadata
         assert "thinking_blocks" not in turn.metadata
 
+    def test_tool_result_message_includes_tool_call_id(self, mock_litellm_client):
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(provider="openai", model_name="gpt-4o-mini")
+        )
+        messages = ChatMessages(
+            history=[
+                ChatTurn(
+                    role="user",
+                    content="Please add 32767.5 and 65537.5.",
+                ),
+                ChatTurn(
+                    role="assistant",
+                    content=[
+                        {
+                            "type": "tool_call",
+                            "id": "call_1",
+                            "name": "add",
+                            "arguments": {"a": 32767.5, "b": 65537.5},
+                        }
+                    ],
+                ),
+                ChatTurn(
+                    role="tool",
+                    tool_call_id="call_1",
+                    name="add",
+                    content="98305.0",
+                ),
+            ]
+        )
+
+        generator.chat([messages])
+        serialized_messages = mock_litellm_client["calls"]["acompletion"][0]["messages"]
+        assert serialized_messages[2] == {
+            "role": "tool",
+            "tool_call_id": "call_1",
+            "name": "add",
+            "content": "98305.0",
+        }
+
     def test_chat_passes_tools_and_reasoning_effort(self, mock_litellm_client):
         generator = LiteLLMGenerator(
             LiteLLMGeneratorConfig(provider="openai", model_name="gpt-4o-mini")

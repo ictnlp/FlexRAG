@@ -138,6 +138,13 @@ def _tool_call_payload(tool_call: dict[str, Any]) -> dict[str, Any]:
 
 
 def _turn_to_litellm_message(turn: ChatTurn) -> dict[str, Any]:
+    if turn.role == "tool":
+        message: dict[str, Any] = {"role": "tool", "content": turn.content}
+        if turn.tool_call_id is not None:
+            message["tool_call_id"] = turn.tool_call_id
+        if turn.name is not None:
+            message["name"] = turn.name
+        return message
     if isinstance(turn.content, str):
         return {"role": turn.role, "content": turn.content}
 

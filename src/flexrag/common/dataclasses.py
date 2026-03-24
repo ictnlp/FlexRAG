@@ -90,6 +90,12 @@ class ChatTurn:
     :param thinking_blocks: Provider-native structured thinking blocks for this
         turn. Default: None.
     :type thinking_blocks: Optional[list[dict[str, Any]]]
+    :param tool_call_id: The tool call ID associated with this turn.
+        Primarily used when ``role="tool"``. Default: None.
+    :type tool_call_id: Optional[str]
+    :param name: The tool name associated with this turn.
+        Primarily used when ``role="tool"``. Default: None.
+    :type name: Optional[str]
     :param metadata: Additional provider-specific metadata for the turn.
         Default: {}.
     :type metadata: dict[str, Any]
@@ -141,6 +147,8 @@ class ChatTurn:
     turn_id: Optional[str] = None
     reasoning_content: Optional[str] = None
     thinking_blocks: Optional[list[dict[str, Any]]] = None
+    tool_call_id: Optional[str] = None
+    name: Optional[str] = None
     metadata: dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self, pure_text: bool = False) -> dict[str, Any]:
@@ -161,6 +169,8 @@ class ChatTurn:
             "turn_id": self.turn_id,
             "reasoning_content": self.reasoning_content,
             "thinking_blocks": self.thinking_blocks,
+            "tool_call_id": self.tool_call_id,
+            "name": self.name,
             "metadata": dict(self.metadata),
             "strict_mode": self.strict_mode,
         }
@@ -198,6 +208,8 @@ class ChatTurn:
             "turn_id": chat_turn.get("turn_id"),
             "reasoning_content": chat_turn.get("reasoning_content"),
             "thinking_blocks": chat_turn.get("thinking_blocks"),
+            "tool_call_id": chat_turn.get("tool_call_id"),
+            "name": chat_turn.get("name"),
             "metadata": dict(chat_turn.get("metadata", {})),
             "strict_mode": strict_mode,
         }
@@ -225,6 +237,11 @@ class ChatTurn:
         header = f"[bold cyan]{self.role.upper()}[/bold cyan]"
         console.print(header)
         summaries: list[str] = []
+        if self.role == "tool":
+            tool_name = self.name or "unknown"
+            tool_call_id = self.tool_call_id or "unknown"
+            summaries.append(f"tool={tool_name}")
+            summaries.append(f"tool_call_id={tool_call_id}")
         tool_calls = self.tool_calls
         if tool_calls:
             summaries.append(f"tool_calls={len(tool_calls)}")
@@ -302,6 +319,11 @@ def _validate_chat_messages(
     # step 3: check role alternation
     if len(chat_messages) == 0:
         return chat_messages
+    for n, turn in enumerate(chat_messages):
+        if turn.role == "tool" and not turn.tool_call_id:
+            raise ValueError(
+                f"The tool chat turn at index {n} must have a tool_call_id."
+            )
     if chat_messages[0].role == "system":
         if len(chat_messages) == 1:
             return chat_messages
