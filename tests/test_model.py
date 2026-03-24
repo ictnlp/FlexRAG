@@ -6,8 +6,6 @@ import pytest
 from flexrag.common import LOGGER_MANAGER
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.models import (
-    CohereEncoder,
-    CohereEncoderConfig,
     EncoderBase,
     GenerationConfig,
     GeneratorBase,
@@ -17,14 +15,10 @@ from flexrag.models import (
     HFEncoderConfig,
     HFGenerator,
     HFGeneratorConfig,
-    JinaEncoder,
-    JinaEncoderConfig,
+    LiteLLMEncoder,
+    LiteLLMEncoderConfig,
     LiteLLMGenerator,
     LiteLLMGeneratorConfig,
-    OllamaEncoder,
-    OllamaEncoderConfig,
-    OpenAIEncoder,
-    OpenAIEncoderConfig,
     SentenceTransformerEncoder,
     SentenceTransformerEncoderConfig,
     VLLMGenerator,
@@ -221,11 +215,11 @@ class TestEncode:
         assert (r1 - r2).max() < 1e-4
 
     @pytest.mark.asyncio
-    async def test_openai(self, mock_openai_client):
-        encoder = OpenAIEncoder(
-            OpenAIEncoderConfig(
+    async def test_litellm_openai(self, mock_litellm_client):
+        encoder = LiteLLMEncoder(
+            LiteLLMEncoderConfig(
+                provider="openai",
                 model_name="text-embedding-3-small",
-                api_key="test",
                 embedding_size=512,
             )
         )
@@ -233,10 +227,10 @@ class TestEncode:
         return
 
     @pytest.mark.asyncio
-    async def test_ollama(self, mock_ollama_client):
-        encoder = OllamaEncoder(
-            OllamaEncoderConfig(
-                base_url="http://localhost:11434",
+    async def test_litellm_ollama(self, mock_litellm_client):
+        encoder = LiteLLMEncoder(
+            LiteLLMEncoderConfig(
+                provider="ollama",
                 model_name="contriever",
                 embedding_size=768,
             )
@@ -270,19 +264,26 @@ class TestEncode:
         return
 
     @pytest.mark.asyncio
-    async def test_jina(self, mock_jina_client):
-        encoder = JinaEncoder(
-            JinaEncoderConfig(
-                model="jina-embeddings-v3",
+    async def test_litellm_jina(self, mock_litellm_client):
+        encoder = LiteLLMEncoder(
+            LiteLLMEncoderConfig(
+                provider="jina_ai",
+                model_name="jina-embeddings-v3",
                 embedding_size=768,
-                api_key="test",
             )
         )
         await self.run_encoder(encoder)
         return
 
     @pytest.mark.asyncio
-    async def test_cohere(self, mock_cohere_client):
-        encoder = CohereEncoder(CohereEncoderConfig(model="embed-v4.0", api_key="test"))
+    async def test_litellm_cohere(self, mock_litellm_client):
+        encoder = LiteLLMEncoder(
+            LiteLLMEncoderConfig(
+                provider="cohere",
+                model_name="embed-v4.0",
+                embedding_size=1536,
+                input_type="search_document",
+            )
+        )
         await self.run_encoder(encoder)
         return

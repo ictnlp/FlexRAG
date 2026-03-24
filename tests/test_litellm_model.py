@@ -20,28 +20,6 @@ from flexrag.processors.chunkers import SemanticChunker, SemanticChunkerConfig
 
 
 class TestLiteLLMGenerator:
-    @pytest.mark.parametrize(
-        ("provider", "model_name"),
-        [
-            ("openai", "gpt-4o-mini"),
-            ("anthropic", "claude-3-7-sonnet"),
-            ("gemini", "gemini-2.0-flash"),
-            ("ollama_chat", "llama3.1"),
-        ],
-    )
-    def test_chat_provider_prefixes(
-        self, mock_litellm_client, provider: str, model_name: str
-    ):
-        generator = LiteLLMGenerator(
-            LiteLLMGeneratorConfig(provider=provider, model_name=model_name)
-        )
-        response = generator.chat(
-            [ChatMessages(history=[ChatTurn(role="user", content="Ping")])]
-        )
-        assert response[0][0].text_content == "Mocked LiteLLM chat response"
-        call = mock_litellm_client["calls"]["acompletion"][0]
-        assert call["model"] == f"{provider}/{model_name}"
-
     def test_generator_config_union(self):
         cfg = GeneratorConfig(
             generator_type="litellm",

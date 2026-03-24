@@ -3,7 +3,7 @@ from pathlib import Path
 
 from flexrag.common import Context
 from flexrag.datasets.reader import LineDelimitedReader
-from flexrag.models import EncoderConfig, OpenAIEncoderConfig
+from flexrag.models import EncoderConfig, LiteLLMEncoderConfig
 from flexrag.retrievers import (
     EditableRetriever,
     ElasticRetriever,
@@ -83,7 +83,7 @@ class TestRetrievers:
         assert len(retriever) == 0
         return
 
-    def test_flex_retriever(self, mock_openai_client):
+    def test_flex_retriever(self, mock_litellm_client):
         # load datasets
         data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
         dataset1 = load_test_corpus_slice(data_path, 0, 1000)
@@ -106,15 +106,19 @@ class TestRetrievers:
                         index_type="auto",
                         batch_size=512,
                         query_encoder_config=EncoderConfig(
-                            encoder_type="openai",
-                            openai_config=OpenAIEncoderConfig(
+                            encoder_type="litellm",
+                            litellm_config=LiteLLMEncoderConfig(
+                                provider="openai",
                                 model_name="text-embedding-3-small",
+                                embedding_size=8,
                             ),
                         ),
                         passage_encoder_config=EncoderConfig(
-                            encoder_type="openai",
-                            openai_config=OpenAIEncoderConfig(
+                            encoder_type="litellm",
+                            litellm_config=LiteLLMEncoderConfig(
+                                provider="openai",
                                 model_name="text-embedding-3-small",
+                                embedding_size=8,
                             ),
                         ),
                     ),

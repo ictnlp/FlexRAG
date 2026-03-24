@@ -1,6 +1,6 @@
 import re
 
-from flexrag.models import OpenAIEncoderConfig
+from flexrag.models import LiteLLMEncoderConfig
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
 from flexrag.processors.chunkers import (
     CharChunker,
@@ -106,13 +106,17 @@ class TestChunker:
             self.chunks_test(chunks, doc)
         return
 
-    def test_sementic_chunker(self, mock_openai_client):
+    def test_sementic_chunker(self, mock_litellm_client):
         for doc in self.docs:
             # chunk with threshold_percentile
             cfg = SemanticChunkerConfig(
                 threshold_percentile=50,
-                encoder_type="openai",
-                openai_config=OpenAIEncoderConfig(model_name="text-embedding-3-small"),
+                encoder_type="litellm",
+                litellm_config=LiteLLMEncoderConfig(
+                    provider="openai",
+                    model_name="text-embedding-3-small",
+                    embedding_size=8,
+                ),
             )
             chunker = SemanticChunker(cfg)
             chunks = chunker.chunk(doc, return_str=True)
@@ -121,8 +125,12 @@ class TestChunker:
             # chunk with threshold
             cfg = SemanticChunkerConfig(
                 threshold=0.95,
-                encoder_type="openai",
-                openai_config=OpenAIEncoderConfig(model_name="text-embedding-3-small"),
+                encoder_type="litellm",
+                litellm_config=LiteLLMEncoderConfig(
+                    provider="openai",
+                    model_name="text-embedding-3-small",
+                    embedding_size=8,
+                ),
             )
             chunker = SemanticChunker(cfg)
             chunks = chunker.chunk(doc, return_str=True)
@@ -131,8 +139,12 @@ class TestChunker:
             # chunk with max_tokens
             cfg = SemanticChunkerConfig(
                 max_tokens=30,
-                encoder_type="openai",
-                openai_config=OpenAIEncoderConfig(model_name="text-embedding-3-small"),
+                encoder_type="litellm",
+                litellm_config=LiteLLMEncoderConfig(
+                    provider="openai",
+                    model_name="text-embedding-3-small",
+                    embedding_size=8,
+                ),
             )
             chunker = SemanticChunker(cfg)
             chunks = chunker.chunk(doc, return_str=True)
