@@ -6,8 +6,6 @@ import pytest
 from flexrag.common import LOGGER_MANAGER
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.models import (
-    AnthropicGenerator,
-    AnthropicGeneratorConfig,
     CohereEncoder,
     CohereEncoderConfig,
     EncoderBase,
@@ -21,14 +19,12 @@ from flexrag.models import (
     HFGeneratorConfig,
     JinaEncoder,
     JinaEncoderConfig,
+    LiteLLMGenerator,
+    LiteLLMGeneratorConfig,
     OllamaEncoder,
     OllamaEncoderConfig,
-    OllamaGenerator,
-    OllamaGeneratorConfig,
     OpenAIEncoder,
     OpenAIEncoderConfig,
-    OpenAIGenerator,
-    OpenAIGeneratorConfig,
     SentenceTransformerEncoder,
     SentenceTransformerEncoderConfig,
     VLLMGenerator,
@@ -80,22 +76,48 @@ class TestGenerator:
             assert isinstance(r[0], str)
         return
 
+    def valid_chat_sampled(self, results: list[list[ChatTurn]]) -> None:
+        assert len(results) == len(self.prompts)
+        for r in results:
+            assert len(r) == self.sampled_cfg.sample_num
+            for rr in r:
+                assert isinstance(rr, ChatTurn)
+                assert isinstance(rr.text_content, str)
+        return
+
+    def valid_chat_stopped(self, results: list[list[ChatTurn]]) -> None:
+        assert len(results) == len(self.prompts)
+        for r in results:
+            assert len(r) == 1
+            assert isinstance(r[0], ChatTurn)
+            assert isinstance(r[0].text_content, str)
+            assert len(re.findall(r"\.", r[0].text_content)) <= 1
+        return
+
+    def valid_chat_default(self, results: list[list[ChatTurn]]) -> None:
+        assert len(results) == len(self.prompts)
+        for r in results:
+            assert len(r) == 1
+            assert isinstance(r[0], ChatTurn)
+            assert isinstance(r[0].text_content, str)
+        return
+
     async def valid_chat_function(self, generator: GeneratorBase):
         # test chat & async_chat with sampling
         r1 = generator.chat(self.prompts, self.sampled_cfg)
-        self.valid_sampled(r1)
+        self.valid_chat_sampled(r1)
         r2 = await generator.async_chat(self.prompts, self.sampled_cfg)
-        self.valid_sampled(r2)
+        self.valid_chat_sampled(r2)
         # test chat & async_chat with default generation config
         r1 = generator.chat(self.prompts)
-        self.valid_default(r1)
+        self.valid_chat_default(r1)
         r2 = await generator.async_chat(self.prompts)
-        self.valid_default(r2)
+        self.valid_chat_default(r2)
         # test chat & async_chat with stop strings
         r1 = generator.chat(self.prompts, self.stopped_cfg)
-        self.valid_stopped(r1)
+        self.valid_chat_stopped(r1)
         r2 = await generator.async_chat(self.prompts, self.stopped_cfg)
-        self.valid_stopped(r2)
+        self.valid_chat_stopped(r2)
         return
 
     async def valid_generate_function(self, generator: GeneratorBase):
@@ -117,21 +139,18 @@ class TestGenerator:
         return
 
     @pytest.mark.asyncio
-    async def test_openai(self, mock_openai_client):
-        generator = OpenAIGenerator(
-            OpenAIGeneratorConfig(model_name="gpt-3.5-turbo", api_key="test")
+    async def test_litellm_openai(self, mock_litellm_client):
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(provider="openai", model_name="gpt-4o-mini")
         )
         await self.valid_chat_function(generator)
         await self.valid_generate_function(generator)
         return
 
     @pytest.mark.asyncio
-    async def test_ollama(self, mock_ollama_client):
-        generator = OllamaGenerator(
-            OllamaGeneratorConfig(
-                base_url="http://localhost:11434",
-                model_name="llama2",
-            )
+    async def test_litellm_ollama(self, mock_litellm_client):
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(provider="ollama_chat", model_name="llama3.1")
         )
         await self.valid_chat_function(generator)
         await self.valid_generate_function(generator)
@@ -164,11 +183,21 @@ class TestGenerator:
         return
 
     @pytest.mark.asyncio
-    async def test_anthropic(self, mock_anthropic_client):
-        generator = AnthropicGenerator(
-            AnthropicGeneratorConfig(model_name="claude-3-7-sonnet")
+    async def test_litellm_anthropic(self, mock_litellm_client):
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(provider="anthropic", model_name="claude-3-7-sonnet")
         )
         await self.valid_chat_function(generator)
+        await self.valid_generate_function(generator)
+        return
+
+    @pytest.mark.asyncio
+    async def test_litellm_gemini(self, mock_litellm_client):
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(provider="gemini", model_name="gemini-2.0-flash")
+        )
+        await self.valid_chat_function(generator)
+        await self.valid_generate_function(generator)
         return
 
 

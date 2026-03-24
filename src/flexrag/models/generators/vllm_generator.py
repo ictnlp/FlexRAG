@@ -145,7 +145,6 @@ class VLLMGenerator(GeneratorBase):
                     "image",
                     "audio",
                     "video",
-                    "reasoning",
                 }, f"Unsupported content type: {content_part.get('type')}"
         if isinstance(turn.content, str):
             return {"role": turn.role, "content": turn.content}
@@ -154,14 +153,6 @@ class VLLMGenerator(GeneratorBase):
             if content_part.get("type") == "text":
                 data["content"].append(
                     {"type": "text", "text": content_part.get("text", "")}
-                )
-            elif content_part.get("type") == "reasoning":
-                data["content"].append(
-                    {
-                        "type": "thinking",
-                        "thinking": content_part.get("thinking", ""),
-                        "closed": True,
-                    }
                 )
             elif content_part.get("type") == "image":
                 if content_part.get("url") is not None:
@@ -193,4 +184,8 @@ class VLLMGenerator(GeneratorBase):
         return data
 
     def _vllm_to_turn(self, data) -> ChatTurn:
-        return ChatTurn(role="assistant", content=data.text)
+        return ChatTurn(
+            role="assistant",
+            content=data.text,
+            reasoning_content=getattr(data, "reasoning", None),
+        )

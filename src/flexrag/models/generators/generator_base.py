@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 from dataclasses import field
-from typing import Optional
+from typing import Any, Optional
 
 from flexrag.common import LOGGER_MANAGER, ChatMessages, ChatTurn, Register, configure
 
@@ -29,6 +29,11 @@ class GenerationConfig:
     :type eos_token_id: Optional[int]
     :param stop_str: A list of strings to stop generation. Defaults to [].
     :type stop_str: list[str]
+    :param tools: Provider-native tool definitions passed through to supported chat models.
+        Defaults to [].
+    :type tools: list[dict[str, Any]]
+    :param reasoning_effort: Provider-specific reasoning effort hint. Defaults to None.
+    :type reasoning_effort: Optional[str]
     """
 
     do_sample: bool = True
@@ -39,6 +44,8 @@ class GenerationConfig:
     top_k: Optional[int] = None
     eos_token_id: Optional[int] = None
     stop_str: list[str] = field(default_factory=list)
+    tools: list[dict[str, Any]] = field(default_factory=list)
+    reasoning_effort: Optional[str] = None
 
     def __post_init__(self):
         # check values

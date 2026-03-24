@@ -1,3 +1,4 @@
+import json
 import mimetypes
 import os
 from dataclasses import field
@@ -19,9 +20,13 @@ from .remote_generator_base import RemoteGeneratorBase, RemoteGeneratorBaseConfi
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.litellm_generator")
 
+litellm.suppress_debug_info = True
+
 
 def _generation_config_to_kwargs(
     generation_config: GenerationConfig | None,
+    *,
+    chat: bool = False,
 ) -> dict[str, Any]:
     kwargs: dict[str, Any] = {}
     if generation_config is None:
@@ -39,6 +44,10 @@ def _generation_config_to_kwargs(
         kwargs["top_k"] = generation_config.top_k
     if generation_config.stop_str:
         kwargs["stop"] = generation_config.stop_str
+    if chat and generation_config.tools:
+        kwargs["tools"] = generation_config.tools
+    if chat and generation_config.reasoning_effort is not None:
+        kwargs["reasoning_effort"] = generation_config.reasoning_effort
     return kwargs
 
 
@@ -95,17 +104,51 @@ def _file_part(
     raise ValueError("File content must have either 'url', 'file_path', or 'binary'.")
 
 
+def _parse_tool_arguments(arguments: Any) -> Any:
+    if not isinstance(arguments, str):
+        return arguments
+    try:
+        return json.loads(arguments)
+    except json.JSONDecodeError:
+        return arguments
+
+
+def _tool_call_block(tool_call: Any) -> dict[str, Any]:
+    function_data = tool_call.function
+    return {
+        "type": "tool_call",
+        "id": tool_call.id,
+        "name": function_data.name,
+        "arguments": _parse_tool_arguments(function_data.arguments),
+    }
+
+
+def _tool_call_payload(tool_call: dict[str, Any]) -> dict[str, Any]:
+    arguments = tool_call.get("arguments")
+    if isinstance(arguments, dict):
+        arguments = json.dumps(arguments, ensure_ascii=False)
+    return {
+        "id": tool_call.get("id"),
+        "type": "function",
+        "function": {
+            "name": tool_call.get("name", ""),
+            "arguments": arguments if arguments is not None else "",
+        },
+    }
+
+
 def _turn_to_litellm_message(turn: ChatTurn) -> dict[str, Any]:
     if isinstance(turn.content, str):
         return {"role": turn.role, "content": turn.content}
 
     parts: list[dict[str, Any]] = []
+    tool_calls: list[dict[str, Any]] = []
     for content_part in turn.content:
         content_type = content_part.get("type")
         if content_type == "text":
             parts.append({"type": "text", "text": content_part.get("text", "")})
-        elif content_type == "reasoning":
-            continue
+        elif content_type == "tool_call":
+            tool_calls.append(_tool_call_payload(content_part))
         elif content_type == "image":
             parts.append(_image_part(content_part))
         elif content_type == "pdf":
@@ -134,90 +177,92 @@ def _turn_to_litellm_message(turn: ChatTurn) -> dict[str, Any]:
             )
         else:
             raise ValueError(f"Unsupported content type: {content_type}")
-    return {"role": turn.role, "content": parts}
-
-
-def _choice_message_content(response: Any) -> Any:
-    if isinstance(response, dict):
-        return response["choices"][0]["message"].get("content")
-
-    choices = getattr(response, "choices", None)
-    if choices is None:
-        raise ValueError("LiteLLM completion response does not contain choices.")
-    message = getattr(choices[0], "message", None)
-    if message is None and isinstance(choices[0], dict):
-        message = choices[0].get("message")
-    if message is None:
-        raise ValueError("LiteLLM completion response does not contain a message.")
-    if isinstance(message, dict):
-        return message.get("content")
-    return getattr(message, "content", None)
+    message: dict[str, Any] = {
+        "role": turn.role,
+        "content": parts if parts else (None if tool_calls else ""),
+    }
+    if tool_calls:
+        message["tool_calls"] = tool_calls
+    return message
 
 
 def _completion_response_to_chat_turn(response: Any) -> ChatTurn:
-    content = _choice_message_content(response)
-    if isinstance(content, str):
-        return ChatTurn(role="assistant", content=content)
-
-    if not isinstance(content, list):
-        return ChatTurn(role="assistant", content="")
-
+    choice = response.choices[0]
+    message = choice.message
+    content = message.content
     normalized_parts: list[dict[str, Any]] = []
-    for part in content:
-        if not isinstance(part, dict):
-            continue
-        part_type = part.get("type")
-        if part_type in {"text", "output_text"}:
-            normalized_parts.append({"type": "text", "text": part.get("text", "")})
-        elif part_type in {"reasoning", "reasoning_text"}:
-            normalized_parts.append({"type": "reasoning", "text": part.get("text", "")})
-        elif part_type == "image_url":
-            image_url = part.get("image_url", {})
-            if isinstance(image_url, dict):
+    metadata: dict[str, Any] = {}
+    reasoning_content = getattr(message, "reasoning_content", None)
+    thinking_blocks = getattr(message, "thinking_blocks", None)
+
+    finish_reason = choice.finish_reason
+    if finish_reason is not None:
+        metadata["finish_reason"] = finish_reason
+
+    usage = getattr(response, "usage", None)
+    if usage is not None:
+        usage_dict = {
+            key: value
+            for key in ("prompt_tokens", "completion_tokens", "total_tokens")
+            if (value := getattr(usage, key, None)) is not None
+        }
+        if usage_dict:
+            metadata["usage"] = usage_dict
+
+    if isinstance(content, str):
+        if content:
+            normalized_parts.append({"type": "text", "text": content})
+    elif content is not None:
+        for part in content:
+            part_type = part["type"]
+            if part_type in {"text", "output_text"}:
+                normalized_parts.append({"type": "text", "text": part.get("text", "")})
+            elif part_type == "image_url":
                 normalized_parts.append(
-                    {"type": "image", "url": image_url.get("url", "")}
+                    {"type": "image", "url": part["image_url"]["url"]}
                 )
-        elif part_type == "file":
-            file_part = part.get("file", {})
-            if isinstance(file_part, dict):
-                file_url = file_part.get("file_url")
+            elif part_type == "file":
+                file_url = part["file"].get("file_url")
                 if file_url:
                     normalized_parts.append({"type": "pdf", "url": file_url})
+            else:
+                raise ValueError(f"Unsupported LiteLLM content type: {part_type}")
+
+    message_tool_calls = message.tool_calls or []
+    if message_tool_calls:
+        normalized_parts.extend(_tool_call_block(call) for call in message_tool_calls)
 
     if not normalized_parts:
-        return ChatTurn(role="assistant", content="")
+        return ChatTurn(
+            role="assistant",
+            content="",
+            reasoning_content=reasoning_content,
+            thinking_blocks=thinking_blocks,
+            metadata=metadata,
+        )
 
-    if all(part["type"] == "text" for part in normalized_parts):
+    if all(part.get("type") == "text" for part in normalized_parts):
         return ChatTurn(
             role="assistant",
             content="".join(part.get("text", "") for part in normalized_parts),
+            reasoning_content=reasoning_content,
+            thinking_blocks=thinking_blocks,
+            metadata=metadata,
         )
-    return ChatTurn(role="assistant", content=normalized_parts)
+    return ChatTurn(
+        role="assistant",
+        content=normalized_parts,
+        reasoning_content=reasoning_content,
+        thinking_blocks=thinking_blocks,
+        metadata=metadata,
+    )
 
 
 def _text_completion_response_to_text(response: Any) -> str:
-    if isinstance(response, dict):
-        choice = response["choices"][0]
-        if "text" in choice:
-            return choice["text"]
-        return choice["message"]["content"]
-
-    choices = getattr(response, "choices", None)
-    if choices is None:
-        raise ValueError("LiteLLM text completion response does not contain choices.")
-    choice = choices[0]
-    if hasattr(choice, "text") and choice.text is not None:
+    choice = response.choices[0]
+    if getattr(choice, "text", None) is not None:
         return choice.text
-    if isinstance(choice, dict) and choice.get("text") is not None:
-        return choice["text"]
-    message = getattr(choice, "message", None)
-    if message is None and isinstance(choice, dict):
-        message = choice.get("message")
-    if message is None:
-        raise ValueError("LiteLLM text completion response does not contain text.")
-    if isinstance(message, dict):
-        return message.get("content", "")
-    return getattr(message, "content", "")
+    return choice.message.content
 
 
 @configure
@@ -313,7 +358,9 @@ class LiteLLMGenerator(RemoteGeneratorBase):
         generation_config: GenerationConfig | None,
     ) -> ChatTurn:
         request_kwargs = dict(client["request_kwargs"])
-        request_kwargs.update(_generation_config_to_kwargs(generation_config))
+        request_kwargs.update(
+            _generation_config_to_kwargs(generation_config, chat=True)
+        )
         request_kwargs["model"] = client["model"]
         request_kwargs["messages"] = [
             _turn_to_litellm_message(turn) for turn in message
@@ -328,10 +375,6 @@ class LiteLLMGenerator(RemoteGeneratorBase):
         prompt: str,
         generation_config: GenerationConfig | None,
     ) -> str:
-        if not hasattr(litellm, "atext_completion"):
-            raise NotImplementedError(
-                "The installed LiteLLM version does not provide `atext_completion`."
-            )
         request_kwargs = dict(client["request_kwargs"])
         request_kwargs.update(_generation_config_to_kwargs(generation_config))
         request_kwargs["model"] = client["model"]

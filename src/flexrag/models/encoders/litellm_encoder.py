@@ -9,6 +9,8 @@ from flexrag.common import TIME_METER, configure
 from .encoder_base import ENCODERS
 from .remote_encoder_base import RemoteEncoderBase, RemoteEncoderBaseConfig
 
+litellm.suppress_debug_info = True
+
 
 @configure
 class LiteLLMEncoderConfig(RemoteEncoderBaseConfig):

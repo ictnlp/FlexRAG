@@ -1,7 +1,7 @@
 import pytest
 
 from flexrag.common import LOGGER_MANAGER
-from flexrag.models import OpenAIGeneratorConfig
+from flexrag.models import LiteLLMGeneratorConfig
 from flexrag.processors.rankers import (
     CohereRanker,
     CohereRankerConfig,
@@ -74,13 +74,13 @@ class TestRanker:
 
     @pytest.mark.gpu
     @pytest.mark.asyncio
-    async def test_rank_gpt(self, mock_openai_client):
+    async def test_rank_gpt(self, mock_litellm_client):
         ranker = RankGPTRanker(
             RankGPTRankerConfig(
-                generator_type="openai",
-                openai_config=OpenAIGeneratorConfig(
-                    model_name="gpt-4",
-                    api_key="test",
+                generator_type="litellm",
+                litellm_config=LiteLLMGeneratorConfig(
+                    provider="openai",
+                    model_name="gpt-4o-mini",
                 ),
             )
         )

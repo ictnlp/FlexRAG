@@ -1,4 +1,7 @@
+import types
+
 import numpy as np
+import pytest
 
 from flexrag.assistants import ModularAssistant, ModularAssistantConfig
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
@@ -17,6 +20,28 @@ from flexrag.processors.chunkers import SemanticChunker, SemanticChunkerConfig
 
 
 class TestLiteLLMGenerator:
+    @pytest.mark.parametrize(
+        ("provider", "model_name"),
+        [
+            ("openai", "gpt-4o-mini"),
+            ("anthropic", "claude-3-7-sonnet"),
+            ("gemini", "gemini-2.0-flash"),
+            ("ollama_chat", "llama3.1"),
+        ],
+    )
+    def test_chat_provider_prefixes(
+        self, mock_litellm_client, provider: str, model_name: str
+    ):
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(provider=provider, model_name=model_name)
+        )
+        response = generator.chat(
+            [ChatMessages(history=[ChatTurn(role="user", content="Ping")])]
+        )
+        assert response[0][0].text_content == "Mocked LiteLLM chat response"
+        call = mock_litellm_client["calls"]["acompletion"][0]
+        assert call["model"] == f"{provider}/{model_name}"
+
     def test_generator_config_union(self):
         cfg = GeneratorConfig(
             generator_type="litellm",
@@ -122,6 +147,165 @@ class TestLiteLLMGenerator:
         assert call["kwargs"]["timeout"] == 30.0
         assert call["kwargs"]["custom_llm_provider"] == "openai"
         assert call["kwargs"]["metadata"] == {"source": "test"}
+
+    def test_chat_tool_calls_and_metadata(self, mock_litellm_client):
+        async def mock_tool_call_response(*, model, messages, **kwargs):
+            mock_litellm_client["calls"]["acompletion"].append(
+                {"model": model, "messages": messages, "kwargs": kwargs}
+            )
+            return types.SimpleNamespace(
+                choices=[
+                    types.SimpleNamespace(
+                        finish_reason="tool_calls",
+                        message=types.SimpleNamespace(
+                            role="assistant",
+                            content=[{"type": "text", "text": "Checking the weather."}],
+                            tool_calls=[
+                                types.SimpleNamespace(
+                                    id="call_1",
+                                    function=types.SimpleNamespace(
+                                        name="get_weather",
+                                        arguments='{"city":"Beijing"}',
+                                    ),
+                                )
+                            ],
+                            reasoning_content=None,
+                            thinking_blocks=None,
+                        ),
+                    )
+                ],
+                usage=types.SimpleNamespace(
+                    prompt_tokens=11,
+                    completion_tokens=7,
+                    total_tokens=18,
+                ),
+            )
+
+        mock_litellm_client["module"].acompletion.side_effect = mock_tool_call_response
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(provider="openai", model_name="gpt-4o-mini")
+        )
+        response = generator.chat(
+            [ChatMessages(history=[ChatTurn(role="user", content="Weather?")])]
+        )
+
+        turn = response[0][0]
+        assert turn.text_content == "Checking the weather."
+        assert bool(turn.tool_calls)
+        assert turn.tool_calls[0]["name"] == "get_weather"
+        assert turn.tool_calls[0]["arguments"] == {"city": "Beijing"}
+        assert turn.metadata["finish_reason"] == "tool_calls"
+        assert turn.metadata["usage"]["total_tokens"] == 18
+
+    def test_chat_reasoning_fields_are_normalized(self, mock_litellm_client):
+        async def mock_reasoning_response(*, model, messages, **kwargs):
+            mock_litellm_client["calls"]["acompletion"].append(
+                {"model": model, "messages": messages, "kwargs": kwargs}
+            )
+            return types.SimpleNamespace(
+                choices=[
+                    types.SimpleNamespace(
+                        finish_reason="stop",
+                        message=types.SimpleNamespace(
+                            role="assistant",
+                            content="The answer is Paris.",
+                            tool_calls=None,
+                            reasoning_content="Need to reason first.",
+                            thinking_blocks=[
+                                {
+                                    "type": "thinking",
+                                    "thinking": "Need to reason first.",
+                                }
+                            ],
+                        ),
+                    )
+                ],
+                usage=types.SimpleNamespace(
+                    prompt_tokens=11,
+                    completion_tokens=7,
+                    total_tokens=18,
+                ),
+            )
+
+        mock_litellm_client["module"].acompletion.side_effect = mock_reasoning_response
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(provider="openai", model_name="gpt-4o-mini")
+        )
+        response = generator.chat(
+            [
+                ChatMessages(
+                    history=[ChatTurn(role="user", content="Capital of France?")]
+                )
+            ]
+        )
+
+        turn = response[0][0]
+        assert turn.content == "The answer is Paris."
+        assert turn.reasoning_content == "Need to reason first."
+        assert turn.thinking_blocks == [
+            {"type": "thinking", "thinking": "Need to reason first."}
+        ]
+        assert turn.metadata["finish_reason"] == "stop"
+        assert "reasoning_content" not in turn.metadata
+        assert "thinking_blocks" not in turn.metadata
+
+    def test_chat_passes_tools_and_reasoning_effort(self, mock_litellm_client):
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(provider="openai", model_name="gpt-4o-mini")
+        )
+        tools = [
+            {
+                "type": "function",
+                "function": {
+                    "name": "get_weather",
+                    "description": "Get the weather by city.",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "city": {"type": "string"},
+                        },
+                        "required": ["city"],
+                    },
+                },
+            }
+        ]
+        generator.chat(
+            [ChatMessages(history=[ChatTurn(role="user", content="Weather?")])],
+            GenerationConfig(
+                do_sample=False,
+                tools=tools,
+                reasoning_effort="high",
+            ),
+        )
+
+        call = mock_litellm_client["calls"]["acompletion"][0]
+        assert call["kwargs"]["tools"] == tools
+        assert call["kwargs"]["reasoning_effort"] == "high"
+
+    def test_generate_ignores_tools_and_reasoning_effort(self, mock_litellm_client):
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(provider="openai", model_name="gpt-4o-mini")
+        )
+        generator.generate(
+            "Weather in Beijing is",
+            GenerationConfig(
+                do_sample=False,
+                tools=[
+                    {
+                        "type": "function",
+                        "function": {
+                            "name": "get_weather",
+                            "parameters": {"type": "object"},
+                        },
+                    }
+                ],
+                reasoning_effort="high",
+            ),
+        )
+
+        call = mock_litellm_client["calls"]["atext_completion"][0]
+        assert "tools" not in call["kwargs"]
+        assert "reasoning_effort" not in call["kwargs"]
 
 
 class TestLiteLLMEncoder:

@@ -371,24 +371,36 @@ def mock_litellm_client(mocker):
         calls["acompletion"].append(
             {"model": model, "messages": messages, "kwargs": kwargs}
         )
-        response = mocker.MagicMock()
-        choice = mocker.MagicMock()
-        choice.message = {
-            "role": "assistant",
-            "content": "Mocked LiteLLM chat response",
-        }
-        response.choices = [choice]
-        return response
+        return types.SimpleNamespace(
+            choices=[
+                types.SimpleNamespace(
+                    message=types.SimpleNamespace(
+                        role="assistant",
+                        content="Mocked LiteLLM chat response",
+                        tool_calls=None,
+                        reasoning_content=None,
+                        thinking_blocks=None,
+                    ),
+                    finish_reason="stop",
+                )
+            ],
+            usage=None,
+        )
 
     async def mock_atext_completion(*, model, prompt, **kwargs):
         calls["atext_completion"].append(
             {"model": model, "prompt": prompt, "kwargs": kwargs}
         )
-        response = mocker.MagicMock()
-        choice = mocker.MagicMock()
-        choice.text = "Mocked LiteLLM text completion"
-        response.choices = [choice]
-        return response
+        return types.SimpleNamespace(
+            choices=[
+                types.SimpleNamespace(
+                    text="Mocked LiteLLM text completion",
+                    message=types.SimpleNamespace(
+                        content="Mocked LiteLLM text completion"
+                    ),
+                )
+            ]
+        )
 
     async def mock_aembedding(
         *, model, input, dimensions=None, input_type=None, **kwargs

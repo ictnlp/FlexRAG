@@ -214,8 +214,6 @@ class HFGenerator(GeneratorBase):
                         "text": content_part.get("text", ""),
                     }
                 )
-            elif content_part.get("type") == "reasoning":
-                continue  # skip reasoning parts
             elif content_part.get("type") == "image":
                 if content_part.get("url") is not None:
                     data["content"].append(

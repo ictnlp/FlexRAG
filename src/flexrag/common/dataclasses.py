@@ -66,7 +66,7 @@ def _valid_chat_role(role: str, info: ValidationInfo) -> str:
     :rtype: str
     """
     strict_mode = info.data.get("strict_mode", True)
-    valid_roles = {"user", "assistant", "system"}
+    valid_roles = {"user", "assistant", "system", "tool"}
     if role not in valid_roles and strict_mode:
         raise ValueError(f"Invalid role: {role}. Must be one of {valid_roles}.")
     return role
@@ -76,14 +76,26 @@ def _valid_chat_role(role: str, info: ValidationInfo) -> str:
 class ChatTurn:
     """ChatTurn is a dataclass that represents a single turn in a chat session.
 
-    :param role: The role of the chat turn, can be "user", "assistant", or "system".
+    :param role: The role of the chat turn, can be "user", "assistant", "system",
+        or "tool".
     :type role: str
-    :param content: The content of the chat turn, can be a string or a list of dictionaries.
+    :param content: The content of the chat turn, can be a string or a list of
+        dictionaries.
     :type content: str | list[dict[str, Any]]
     :param turn_id: The unique identifier for the chat turn. Default: None.
     :type turn_id: Optional[str]
+    :param reasoning_content: Provider-normalized reasoning text for this turn.
+        Default: None.
+    :type reasoning_content: Optional[str]
+    :param thinking_blocks: Provider-native structured thinking blocks for this
+        turn. Default: None.
+    :type thinking_blocks: Optional[list[dict[str, Any]]]
+    :param metadata: Additional provider-specific metadata for the turn.
+        Default: {}.
+    :type metadata: dict[str, Any]
     :param strict_mode: Whether to enforce strict role validation. Default: True.
-        If True, only "user", "assistant", and "system" are allowed as roles.
+        If True, only "user", "assistant", "system", and "tool" are allowed
+        as roles.
     :type strict_mode: bool
 
     For standard text-based messages, `content` is typically a string.
@@ -108,7 +120,7 @@ class ChatTurn:
     Currently, supported content types in the dictionaries include:
 
         - Text: ``{"type": "text", "text": "<text content>"}``
-        - Reasoning: ``{"type": "reasoning", "text": "<reasoning content>"}``
+        - Tool call: ``{"type": "tool_call", "id": "<call id>", "name": "<tool name>", "arguments": <dict or str>}``
         - Image by URL: ``{"type": "image", "url": "<image url>"}``
         - Image by PIL Image: ``{"type": "image", "image": <PIL Image object>}``
         - Image by file path: ``{"type": "image", "image_path": "<path to image file>"}``
@@ -127,8 +139,11 @@ class ChatTurn:
     role: Annotated[str, AfterValidator(_valid_chat_role)]
     content: str | list[dict[str, Any]]
     turn_id: Optional[str] = None
+    reasoning_content: Optional[str] = None
+    thinking_blocks: Optional[list[dict[str, Any]]] = None
+    metadata: dict[str, Any] = field(default_factory=dict)
 
-    def to_dict(self, pure_text: bool = False) -> dict[str, str | list[dict[str, Any]]]:
+    def to_dict(self, pure_text: bool = False) -> dict[str, Any]:
         """Converts the ChatTurn instance to a dictionary.
 
         :param pure_text: Whether to encode binary fields to base64. Default is False.
@@ -140,19 +155,20 @@ class ChatTurn:
         :return: A dictionary representation of the ChatTurn.
         :rtype: dict[str, str | list[dict[str, Any]]]
         """
+        data = {
+            "role": self.role,
+            "content": self.content,
+            "turn_id": self.turn_id,
+            "reasoning_content": self.reasoning_content,
+            "thinking_blocks": self.thinking_blocks,
+            "metadata": dict(self.metadata),
+            "strict_mode": self.strict_mode,
+        }
         if not pure_text:
-            return {
-                "role": self.role,
-                "content": self.content,
-                "strict_mode": self.strict_mode,
-            }
+            return data
 
         if isinstance(self.content, str):
-            return {
-                "role": self.role,
-                "content": self.content,
-                "strict_mode": self.strict_mode,
-            }
+            return data
 
         encoded_content: list[dict[str, Any]] = []
         for part in self.content:
@@ -167,23 +183,26 @@ class ChatTurn:
                     new_part["binary"] = binary_to_base64(new_part["binary"])
                     new_part["encoding"] = "base64"
             encoded_content.append(new_part)
-        return {
-            "role": self.role,
-            "content": encoded_content,
-            "strict_mode": self.strict_mode,
-        }
+        data["content"] = encoded_content
+        return data
 
     @classmethod
-    def from_dict(
-        cls, chat_turn: dict[str, str | list[dict[str, Any]]], strict_mode: bool = True
-    ) -> ChatTurn:
+    def from_dict(cls, chat_turn: dict[str, Any], strict_mode: bool = True) -> ChatTurn:
         role = chat_turn.get("role")
         content = chat_turn.get("content")
         strict_mode = chat_turn.get("strict_mode", strict_mode)
         if role is None or content is None:
             raise ValueError("chat_turn must have 'role' and 'content' fields")
+        common_kwargs = {
+            "role": role,
+            "turn_id": chat_turn.get("turn_id"),
+            "reasoning_content": chat_turn.get("reasoning_content"),
+            "thinking_blocks": chat_turn.get("thinking_blocks"),
+            "metadata": dict(chat_turn.get("metadata", {})),
+            "strict_mode": strict_mode,
+        }
         if isinstance(content, str):
-            return cls(role=role, content=content, strict_mode=strict_mode)
+            return cls(content=content, **common_kwargs)
         if not isinstance(content, list):
             raise ValueError("content must be either str or list[dict]")
 
@@ -200,11 +219,27 @@ class ChatTurn:
                 new_part.pop("encoding")
             restored_content.append(new_part)
 
-        return cls(role=role, content=restored_content, strict_mode=strict_mode)
+        return cls(content=restored_content, **common_kwargs)
 
     def pretty_print(self) -> None:
         header = f"[bold cyan]{self.role.upper()}[/bold cyan]"
         console.print(header)
+        summaries: list[str] = []
+        tool_calls = self.tool_calls
+        if tool_calls:
+            summaries.append(f"tool_calls={len(tool_calls)}")
+        if self.reasoning_content or self.thinking_blocks:
+            summaries.append("reasoning=present")
+        finish_reason = self.metadata.get("finish_reason")
+        if finish_reason:
+            summaries.append(f"finish_reason={finish_reason}")
+        usage = self.metadata.get("usage")
+        if isinstance(usage, dict):
+            total_tokens = usage.get("total_tokens")
+            if total_tokens is not None:
+                summaries.append(f"tokens={total_tokens}")
+        if summaries:
+            console.print(f"[dim]{', '.join(summaries)}[/dim]")
         if isinstance(self.content, str):
             console.print(Markdown(self.content))
         else:
@@ -227,6 +262,13 @@ class ChatTurn:
             if part.get("type") == "text":
                 texts.append(part.get("text", ""))
         return "".join(texts) if texts else None
+
+    @property
+    def tool_calls(self) -> list[dict[str, Any]]:
+        """Returns tool calls exposed inside the content blocks."""
+        if isinstance(self.content, str):
+            return []
+        return [part for part in self.content if part.get("type") == "tool_call"]
 
 
 def _validate_chat_messages(
@@ -261,31 +303,41 @@ def _validate_chat_messages(
     if len(chat_messages) == 0:
         return chat_messages
     if chat_messages[0].role == "system":
-        even_role = "assistant"
-        odd_role = "user"
-    elif chat_messages[0].role == "user":
-        even_role = "user"
-        odd_role = "assistant"
-    else:
+        if len(chat_messages) == 1:
+            return chat_messages
+        if chat_messages[1].role != "user":
+            raise ValueError(
+                "The role of the chat turn after a system prompt must be 'user', "
+                f"but got '{chat_messages[1].role}'"
+            )
+    elif chat_messages[0].role != "user":
         raise ValueError(
             f"The role of the first chat turn must be 'system' or 'user', "
             f"but got '{chat_messages[0].role}'"
         )
-    if len(chat_messages) == 1:
-        return chat_messages
-    for n, turn in enumerate(chat_messages[1:], start=1):
-        if n % 2 == 0:
-            if turn.role != even_role:
-                raise ValueError(
-                    f"The role of the chat turn at index {n} must be '{even_role}', "
-                    f"but got '{turn.role}'"
-                )
+
+    for n, turn in enumerate(chat_messages[:-1]):
+        next_turn = chat_messages[n + 1]
+        if turn.role == "system":
+            valid_next_roles = {"user"}
+        elif turn.role == "user":
+            valid_next_roles = {"assistant"}
+        elif turn.role == "assistant":
+            valid_next_roles = {"tool"} if turn.tool_calls else {"user"}
+        elif turn.role == "tool":
+            valid_next_roles = {"tool", "assistant"}
         else:
-            if turn.role != odd_role:
-                raise ValueError(
-                    f"The role of the chat turn at index {n} must be '{odd_role}', "
-                    f"but got '{turn.role}'"
-                )
+            valid_next_roles = set()
+        if next_turn.role not in valid_next_roles:
+            raise ValueError(
+                f"The role of the chat turn at index {n + 1} must be one of "
+                f"{sorted(valid_next_roles)}, but got '{next_turn.role}'"
+            )
+
+    if chat_messages[-1].role == "assistant" and chat_messages[-1].tool_calls:
+        raise ValueError(
+            "An assistant turn with tool calls must be followed by a tool turn."
+        )
     return chat_messages
 
 
@@ -319,16 +371,13 @@ class ChatMessages(MutableSequence[ChatTurn]):
     Role convention and validation rules:
 
     1. A conversation may optionally start with a system message
-       (`role="system"`). After that, messages must start with a user turn and
-       strictly alternate between user and assistant:
-       system -> user -> assistant -> user -> assistant -> ...
-    2. If the first message is system, then indices 1, 3, 5, ... must be user
-       and indices 2, 4, 6, ... must be assistant. If the first message is
-       user, then indices 1, 3, 5, ... must be assistant and indices 2, 4, 6,
-       ... must be user.
-    3. The validation function `validate_chat_messages` is applied via
-       `AfterValidator`, so constructing, inserting, or assigning items that
-       would break the role alternation will raise `ValueError`.
+       (`role="system"`), followed by a user message.
+    2. User turns must be followed by assistant turns.
+    3. Assistant turns without tool calls must be followed by a user turn or
+       terminate the conversation.
+    4. Assistant turns with tool calls must be followed by one or more tool
+       turns, and tool turns may be followed by another tool turn or an
+       assistant turn.
 
     Typical usage example:
 
@@ -364,7 +413,7 @@ class ChatMessages(MutableSequence[ChatTurn]):
         """Returns the chat turn at the specified index."""
         return self.history[index]
 
-    def __setitem__(self, index: int, chat_turn: ChatTurn | dict[str, str]) -> None:
+    def __setitem__(self, index: int, chat_turn: ChatTurn | dict[str, Any]) -> None:
         """Sets the chat turn at the specified index."""
         if isinstance(chat_turn, dict):
             chat_turn = ChatTurn.from_dict(chat_turn)
@@ -376,7 +425,7 @@ class ChatMessages(MutableSequence[ChatTurn]):
         del self.history[index]
         return
 
-    def insert(self, index: int, chat_turn: ChatTurn | dict[str, str]) -> None:
+    def insert(self, index: int, chat_turn: ChatTurn | dict[str, Any]) -> None:
         """Inserts a chat turn at the specified index."""
         if isinstance(chat_turn, dict):
             chat_turn = ChatTurn.from_dict(chat_turn)
@@ -387,7 +436,7 @@ class ChatMessages(MutableSequence[ChatTurn]):
         """Returns the total number of chat turns in the prompt"""
         return len(self.history)
 
-    def to_list(self, pure_text: bool = False) -> list[dict[str, str]]:
+    def to_list(self, pure_text: bool = False) -> list[dict[str, Any]]:
         """Converts the chat messages to a list of dictionaries."""
         return [turn.to_dict(pure_text) for turn in self.history]
 
