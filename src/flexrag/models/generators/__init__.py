@@ -2,6 +2,7 @@ from .anthropic_generator import AnthropicGenerator, AnthropicGeneratorConfig
 from .generator_base import GENERATORS, GenerationConfig, GeneratorBase
 from .google_generator import GoogleGenerator, GoogleGeneratorConfig
 from .hf_generator import HFGenerator, HFGeneratorConfig
+from .litellm_generator import LiteLLMGenerator, LiteLLMGeneratorConfig
 from .ollama_generator import OllamaGenerator, OllamaGeneratorConfig
 from .openai_generator import OpenAIGenerator, OpenAIGeneratorConfig
 from .vllm_generator import VLLMGenerator, VLLMGeneratorConfig
@@ -19,6 +20,8 @@ __all__ = [
     "GeneratorBase",
     "HFGenerator",
     "HFGeneratorConfig",
+    "LiteLLMGenerator",
+    "LiteLLMGeneratorConfig",
     "OpenAIGenerator",
     "OpenAIGeneratorConfig",
     "OllamaGenerator",

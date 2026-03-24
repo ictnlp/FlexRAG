@@ -1,4 +1,5 @@
 import re
+import types
 from typing import Optional
 
 import numpy as np
@@ -356,6 +357,78 @@ def mock_anthropic_client(mocker):
     mocker.patch.dict("sys.modules", {"anthropic": mock_anthropic_module})
 
     return mock_client
+
+
+@pytest.fixture
+def mock_litellm_client(mocker):
+    calls: dict[str, list[dict]] = {
+        "acompletion": [],
+        "atext_completion": [],
+        "aembedding": [],
+    }
+
+    async def mock_acompletion(*, model, messages, **kwargs):
+        calls["acompletion"].append(
+            {"model": model, "messages": messages, "kwargs": kwargs}
+        )
+        response = mocker.MagicMock()
+        choice = mocker.MagicMock()
+        choice.message = {
+            "role": "assistant",
+            "content": "Mocked LiteLLM chat response",
+        }
+        response.choices = [choice]
+        return response
+
+    async def mock_atext_completion(*, model, prompt, **kwargs):
+        calls["atext_completion"].append(
+            {"model": model, "prompt": prompt, "kwargs": kwargs}
+        )
+        response = mocker.MagicMock()
+        choice = mocker.MagicMock()
+        choice.text = "Mocked LiteLLM text completion"
+        response.choices = [choice]
+        return response
+
+    async def mock_aembedding(
+        *, model, input, dimensions=None, input_type=None, **kwargs
+    ):
+        calls["aembedding"].append(
+            {
+                "model": model,
+                "input": input,
+                "dimensions": dimensions,
+                "input_type": input_type,
+                "kwargs": kwargs,
+            }
+        )
+        response = mocker.MagicMock()
+        response.data = []
+        embedding_dim = dimensions or 12
+        for text in input:
+            data_item = mocker.MagicMock()
+            np.random.seed(hash(text) % 2**32)
+            data_item.embedding = np.random.randn(embedding_dim).tolist()
+            response.data.append(data_item)
+        return response
+
+    import litellm
+
+    mocked_module = types.SimpleNamespace(
+        acompletion=mocker.patch.object(
+            litellm, "acompletion", side_effect=mock_acompletion
+        ),
+        atext_completion=mocker.patch.object(
+            litellm, "atext_completion", side_effect=mock_atext_completion
+        ),
+        aembedding=mocker.patch.object(
+            litellm, "aembedding", side_effect=mock_aembedding
+        ),
+        completion=mocker.patch.object(litellm, "completion"),
+        text_completion=mocker.patch.object(litellm, "text_completion"),
+        embedding=mocker.patch.object(litellm, "embedding"),
+    )
+    return {"module": mocked_module, "calls": calls}
 
 
 @pytest.fixture
