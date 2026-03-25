@@ -19,8 +19,14 @@ T = TypeVar("T")
 
 
 def extract_config(config, config_cls: Type[T]) -> T:
-    """
-    Extracts the configuration from a pydantic dataclass, omegaconf.DictConfig or dict.
+    """Extracts the configuration from a pydantic dataclass, omegaconf.DictConfig or dict.
+
+    :param config: The configuration source; can be a ``DictConfig``, dict, or dataclass instance.
+    :param config_cls: The target pydantic dataclass type.
+    :type config_cls: Type[T]
+    :return: An instance of *config_cls* populated with the extracted values.
+    :rtype: T
+    :raises TypeError: If *config* is not a supported type.
     """
     if isinstance(config, DictConfig):
         config = OmegaConf.to_container(config, resolve=True)
@@ -113,9 +119,13 @@ def make_dataclass(
 
 
 def Choices(*args: str) -> Field:
-    """
-    A shortcut for creating a pydantic Field with a regex pattern that matches one of the provided choices.
-    This is useful as hydra-core does not support `Literal` types.
+    """Create a pydantic Field constrained to the given choices.
+
+    This is useful as hydra-core does not support ``Literal`` types.
+
+    :param args: The allowed choice strings.
+    :return: A pydantic ``Field`` with a regex constraint.
+    :rtype: Field
     """
     choices = list(args)
     pattern = f"^({'|'.join(choices)})$"
@@ -421,7 +431,11 @@ class Register(Generic[RegistedType]):
         return load_item(str(choice))
 
     def squeeze(self, config_instance):
-        """Convert the nused fields to None."""
+        """Set unused config fields to None.
+
+        :param config_instance: The config instance to squeeze.
+        :return: A copy of *config_instance* with unselected component configs set to None.
+        """
         new_instance = deepcopy(config_instance)
         choice = getattr(new_instance, f"{self.name}_type", None)
         if choice is None:

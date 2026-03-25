@@ -198,6 +198,17 @@ class ChatTurn:
 
     @classmethod
     def from_dict(cls, chat_turn: dict[str, Any], strict_mode: bool = True) -> ChatTurn:
+        """Create a ChatTurn from a dictionary.
+
+        :param chat_turn: Dictionary with at least ``role`` and ``content`` keys.
+        :type chat_turn: dict[str, Any]
+        :param strict_mode: Whether to enforce strict role validation. Defaults to True.
+        :type strict_mode: bool
+        :return: The constructed ChatTurn instance.
+        :rtype: ChatTurn
+        :raises ValueError: If ``role`` or ``content`` is missing, or ``content``
+            is neither a string nor a list of dicts.
+        """
         role = chat_turn.get("role")
         content = chat_turn.get("content")
         strict_mode = chat_turn.get("strict_mode", strict_mode)
@@ -459,7 +470,13 @@ class ChatMessages(MutableSequence[ChatTurn]):
         return len(self.history)
 
     def to_list(self, pure_text: bool = False) -> list[dict[str, Any]]:
-        """Converts the chat messages to a list of dictionaries."""
+        """Convert the chat messages to a list of dictionaries.
+
+        :param pure_text: If True, binary content (images, PDFs, etc.) is excluded.
+        :type pure_text: bool
+        :return: A list of dictionaries, one per chat turn.
+        :rtype: list[dict[str, Any]]
+        """
         return [turn.to_dict(pure_text) for turn in self.history]
 
     def to_json(self, path: str | PathLike):
