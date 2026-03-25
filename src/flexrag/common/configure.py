@@ -5,7 +5,15 @@ import types
 from copy import deepcopy
 from dataclasses import asdict, field, fields, is_dataclass
 from pathlib import Path
-from typing import Annotated, Callable, Generic, Optional, Type, TypeVar
+from typing import (
+    Annotated,
+    Callable,
+    Generic,
+    Optional,
+    Type,
+    TypeVar,
+    dataclass_transform,
+)
 
 import yaml
 from huggingface_hub import HfApi
@@ -135,6 +143,7 @@ def Choices(*args: str) -> Field:
 _T = TypeVar("_T")
 
 
+@dataclass_transform()
 def _create_pydantic_dataclass(config: ConfigDict) -> Callable[[Type[_T]], Type[_T]]:
     def decorator(cls: Type[_T] = None, *, frozen=False, kw_only=False) -> Type[_T]:
         if cls is None:
