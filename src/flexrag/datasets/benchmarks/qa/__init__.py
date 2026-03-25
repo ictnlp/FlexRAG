@@ -11,6 +11,7 @@ from .multihop_rag import MultihopRAGDataset, MultihopRAGDatasetConfig
 from .musique import MuSiQueDataset, MuSiQueDatasetConfig
 from .narrative_qa import NarrativeQADataset, NarrativeQADatasetConfig
 from .popqa import PopQADataset, PopQADatasetConfig
+from .qasper import QasperDataset, QasperDatasetConfig
 from .simple_qa import SimpleQADataset, SimpleQADatasetConfig
 from .squad import SQuADDataset, SQuADDatasetConfig
 from .twowiki_multihop_qa import (
@@ -46,6 +47,8 @@ __all__ = [
     "NarrativeQADatasetConfig",
     "PopQADataset",
     "PopQADatasetConfig",
+    "QasperDataset",
+    "QasperDatasetConfig",
     "SimpleQADataset",
     "SimpleQADatasetConfig",
     "SQuADDataset",

@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from flexrag.common import Context
@@ -18,6 +20,8 @@ from flexrag.datasets.benchmarks import (
     NarrativeQADatasetConfig,
     PerLTQADataset,
     PerLTQADatasetConfig,
+    QasperDataset,
+    QasperDatasetConfig,
     SQuADDataset,
     SQuADDatasetConfig,
     TwoWikiMultihopQADataset,
@@ -107,6 +111,135 @@ class TestContextualQA:
             self.valid_contextual_qa_sample(item)
         print(f"CRUD QA-{subset} dataset length: {len(dataset)}")
         print(f"CRUD QA-{subset} dataset test passed.")
+        return
+
+    @pytest.mark.parametrize("split", ["train", "validation", "test"])
+    @pytest.mark.parametrize("context_mode", ["paragraph", "paper"])
+    def test_qasper(self, tmp_path, split, context_mode):
+        data = {
+            "paper-1": {
+                "title": "Paper Title",
+                "abstract": "Paper Abstract",
+                "full_text": [
+                    {
+                        "section_name": "Introduction",
+                        "paragraphs": ["Paragraph 1.", "   ", "Paragraph 2."],
+                    }
+                ],
+                "figures_and_tables": [
+                    {"caption": "Figure caption.", "file": "fig1.png"},
+                    {"caption": "   ", "file": "fig2.png"},
+                ],
+                "qas": [
+                    {
+                        "question_id": "q1",
+                        "question": "What is the answer?",
+                        "question_writer": "author",
+                        "paper_read": "full",
+                        "search_query": "query",
+                        "topic_background": "high",
+                        "nlp_background": "high",
+                        "answers": [
+                            {
+                                "annotation_id": "a1",
+                                "worker_id": "w1",
+                                "answer": {
+                                    "unanswerable": False,
+                                    "yes_no": None,
+                                    "free_form_answer": "Free form answer",
+                                    "extractive_spans": ["Span 1", "Span 1"],
+                                    "evidence": [],
+                                    "highlighted_evidence": [],
+                                },
+                            }
+                        ],
+                    },
+                    {
+                        "question_id": "q2",
+                        "question": "Is it true?",
+                        "question_writer": "author",
+                        "paper_read": "full",
+                        "search_query": "query",
+                        "topic_background": "high",
+                        "nlp_background": "high",
+                        "answers": [
+                            {
+                                "annotation_id": "a2",
+                                "worker_id": "w2",
+                                "answer": {
+                                    "unanswerable": False,
+                                    "yes_no": False,
+                                    "free_form_answer": "",
+                                    "extractive_spans": [],
+                                    "evidence": [],
+                                    "highlighted_evidence": [],
+                                },
+                            }
+                        ],
+                    },
+                    {
+                        "question_id": "q3",
+                        "question": "What is missing?",
+                        "question_writer": "author",
+                        "paper_read": "full",
+                        "search_query": "query",
+                        "topic_background": "high",
+                        "nlp_background": "high",
+                        "answers": [
+                            {
+                                "annotation_id": "a3",
+                                "worker_id": "w3",
+                                "answer": {
+                                    "unanswerable": True,
+                                    "yes_no": None,
+                                    "free_form_answer": "",
+                                    "extractive_spans": [],
+                                    "evidence": [],
+                                    "highlighted_evidence": [],
+                                },
+                            }
+                        ],
+                    },
+                ],
+            }
+        }
+        for file_name in [
+            "qasper-train-v0.3.json",
+            "qasper-dev-v0.3.json",
+            "qasper-test-v0.3.json",
+        ]:
+            (tmp_path / file_name).write_text(
+                json.dumps(data, ensure_ascii=False),
+                encoding="utf-8",
+            )
+
+        dataset = QasperDataset(
+            QasperDatasetConfig(
+                data_path=tmp_path.as_posix(),
+                split=split,
+                context_mode=context_mode,
+            )
+        )
+        assert len(dataset) == 3
+
+        item = dataset[0]
+        self.valid_contextual_qa_sample(item)
+        assert item.meta_data is not None
+        assert item.meta_data["title"] == "Paper Title"
+        assert item.meta_data["abstract"] == "Paper Abstract"
+        if context_mode == "paragraph":
+            assert len(item.contexts) == 3
+            assert item.contexts[-1].meta_data["kind"] == "figure_or_table"
+        else:
+            assert len(item.contexts) == 1
+            assert (
+                item.contexts[0].data["text"]
+                == "Paragraph 1.\nParagraph 2.\nFigure caption."
+            )
+        assert dataset[1].answers == ["no"]
+        assert dataset[2].answers == ["unanswerable"]
+        print(f"Qasper-{split}-{context_mode} dataset length: {len(dataset)}")
+        print(f"Qasper-{split}-{context_mode} dataset test passed.")
         return
 
     @pytest.mark.parametrize(
