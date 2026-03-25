@@ -40,6 +40,21 @@ _RESOURCES = {
 
 @configure
 class WikipediaAtlasCorpusConfig:
+    """Configuration for :class:`WikipediaAtlasCorpus`.
+
+    :param data_path: Local directory containing the Atlas Wikipedia snapshot.
+        If omitted, the corpus is stored under the FlexRAG cache directory.
+    :type data_path: Optional[str]
+    :param data_version: The Atlas snapshot version to use.
+    :type data_version: str
+    :param load_in_memory: Whether to build an in-memory mapping of all contexts.
+        Defaults to False.
+    :type load_in_memory: bool
+    :param include_infobox: Whether to include the infobox split alongside the
+        text split. Defaults to True.
+    :type include_infobox: bool
+    """
+
     data_path: Optional[str] = None
     data_version: Annotated[
         str,
@@ -57,6 +72,12 @@ class WikipediaAtlasCorpusConfig:
 
 @CORPORA("wikipedia_atlas", config_class=WikipediaAtlasCorpusConfig)
 class WikipediaAtlasCorpus:
+    """Wikipedia corpus backed by the Atlas corpus releases.
+
+    The corpus can always be iterated. Mapping-style access through ``contexts``
+    and ``__len__`` requires ``load_in_memory=True``.
+    """
+
     def __init__(self, config: WikipediaAtlasCorpusConfig):
         self._config = config
         self._file_paths = self._ensure_files(config)
@@ -111,6 +132,13 @@ class WikipediaAtlasCorpus:
             return
         yield from self._iter_contexts()
         return
+
+    def __len__(self) -> int:
+        if self._contexts is None:
+            raise RuntimeError(
+                "WikipediaAtlasCorpus.__len__ requires load_in_memory=True."
+            )
+        return len(self._contexts)
 
     @property
     def contexts(self) -> Mapping[str, Context]:

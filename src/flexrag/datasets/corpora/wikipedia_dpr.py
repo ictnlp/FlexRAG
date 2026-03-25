@@ -19,12 +19,28 @@ _RESOURCES = "https://dl.fbaipublicfiles.com/dpr/wikipedia_split/psgs_w100.tsv.g
 
 @configure
 class WikipediaDPRCorpusConfig:
+    """Configuration for :class:`WikipediaDPRCorpus`.
+
+    :param data_path: Local directory containing the DPR Wikipedia snapshot.
+        If omitted, the corpus is stored under the FlexRAG cache directory.
+    :type data_path: Optional[str]
+    :param load_in_memory: Whether to build an in-memory mapping of all contexts.
+        Defaults to False.
+    :type load_in_memory: bool
+    """
+
     data_path: Optional[str] = None
     load_in_memory: bool = False
 
 
 @CORPORA("wikipedia_dpr", config_class=WikipediaDPRCorpusConfig)
 class WikipediaDPRCorpus:
+    """Wikipedia corpus backed by the DPR passage dataset.
+
+    The corpus can always be iterated. Mapping-style access through ``contexts``
+    and ``__len__`` requires ``load_in_memory=True``.
+    """
+
     def __init__(self, config: WikipediaDPRCorpusConfig):
         if config.data_path is None:
             data_path = FLEXRAG_CACHE_DIR / "corpora" / "enwiki_2018_dpr"
@@ -60,6 +76,13 @@ class WikipediaDPRCorpus:
             return
         yield from self._iter_contexts()
         return
+
+    def __len__(self) -> int:
+        if self._contexts is None:
+            raise RuntimeError(
+                "WikipediaDPRCorpus.__len__ requires load_in_memory=True."
+            )
+        return len(self._contexts)
 
     @property
     def contexts(self) -> Mapping[str, Context]:

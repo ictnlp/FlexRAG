@@ -18,7 +18,7 @@ class IterableCorpus(Protocol):
 
 @runtime_checkable
 class MappingCorpus(IterableCorpus, Protocol):
-    """Protocol for corpora that expose id-addressable contexts."""
+    """Protocol for corpora that expose id-addressable contexts and length."""
 
     @property
     def contexts(self) -> Mapping[str, Context]:
@@ -28,6 +28,10 @@ class MappingCorpus(IterableCorpus, Protocol):
     @property
     def context_ids(self) -> Iterator[str]:
         """Iterate over context ids in the corpus."""
+        ...
+
+    def __len__(self) -> int:
+        """Return the number of contexts in the corpus."""
         ...
 
 
@@ -44,6 +48,9 @@ class _ContextMappingCorpus:
     def __iter__(self) -> Iterator[Context]:
         yield from self._contexts.values()
         return
+
+    def __len__(self) -> int:
+        return len(self._contexts)
 
     @property
     def contexts(self) -> Mapping[str, Context]:

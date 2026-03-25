@@ -18,12 +18,27 @@ from .corpus_dataset import CORPORA
 
 @configure
 class WikipediaWikimediaCorpusConfig:
+    """Configuration for :class:`WikipediaWikimediaCorpus`.
+
+    :param data_path: Local directory containing the Wikimedia dataset snapshot.
+        If omitted, the dataset is stored under the FlexRAG cache directory.
+    :type data_path: Optional[str]
+    :param subset: The Wikimedia subset to load, e.g. ``20231101.en``.
+    :type subset: str
+    """
+
     data_path: Optional[str] = None
     subset: str = "20231101.en"
 
 
 @CORPORA("wikipedia_wikimedia", config_class=WikipediaWikimediaCorpusConfig)
 class WikipediaWikimediaCorpus:
+    """Wikipedia corpus backed by the Wikimedia dataset on Hugging Face.
+
+    This corpus always materializes its contexts in memory, so mapping access
+    and ``__len__`` are always available.
+    """
+
     def __init__(self, config: WikipediaWikimediaCorpusConfig):
         self._config = config
         if config.data_path is None:
@@ -62,6 +77,9 @@ class WikipediaWikimediaCorpus:
     def __iter__(self) -> Iterator[Context]:
         yield from self._contexts.values()
         return
+
+    def __len__(self) -> int:
+        return len(self._contexts)
 
     @property
     def contexts(self) -> Mapping[str, Context]:

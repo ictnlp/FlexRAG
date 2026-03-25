@@ -18,12 +18,29 @@ _RESOURCES = "https://storage.googleapis.com/gresearch/attributed_language_model
 
 @configure
 class WikipediaAttributedQACorpusConfig:
+    """Configuration for :class:`WikipediaAttributedQACorpus`.
+
+    :param data_path: Local directory containing the Attributed-QA Wikipedia
+        dump. If omitted, the corpus is stored under the FlexRAG cache
+        directory.
+    :type data_path: Optional[str]
+    :param load_in_memory: Whether to build an in-memory mapping of all contexts.
+        Defaults to False.
+    :type load_in_memory: bool
+    """
+
     data_path: Optional[str] = None
     load_in_memory: bool = False
 
 
 @CORPORA("wikipedia_attributedqa", config_class=WikipediaAttributedQACorpusConfig)
 class WikipediaAttributedQACorpus:
+    """Wikipedia corpus backed by the Attributed-QA Wikipedia snapshot.
+
+    The corpus can always be iterated. Mapping-style access through ``contexts``
+    and ``__len__`` requires ``load_in_memory=True``.
+    """
+
     def __init__(self, config: WikipediaAttributedQACorpusConfig):
         if config.data_path is None:
             self._data_path = (
@@ -56,6 +73,13 @@ class WikipediaAttributedQACorpus:
             return
         yield from self._iter_contexts()
         return
+
+    def __len__(self) -> int:
+        if self._contexts is None:
+            raise RuntimeError(
+                "WikipediaAttributedQACorpus.__len__ requires load_in_memory=True."
+            )
+        return len(self._contexts)
 
     @property
     def contexts(self) -> Mapping[str, Context]:

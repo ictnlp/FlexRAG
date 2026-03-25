@@ -18,12 +18,28 @@ _RESOURCES = "http://dl.fbaipublicfiles.com/KILT/kilt_knowledgesource.json"
 
 @configure
 class WikipediaKILTCorpusConfig:
+    """Configuration for :class:`WikipediaKILTCorpus`.
+
+    :param data_path: Local directory containing the KILT knowledge source file.
+        If omitted, the corpus is stored under the FlexRAG cache directory.
+    :type data_path: Optional[str]
+    :param load_in_memory: Whether to build an in-memory mapping of all contexts.
+        Defaults to False.
+    :type load_in_memory: bool
+    """
+
     data_path: Optional[str] = None
     load_in_memory: bool = False
 
 
 @CORPORA("wikipedia_kilt", config_class=WikipediaKILTCorpusConfig)
 class WikipediaKILTCorpus:
+    """Wikipedia corpus backed by the KILT knowledge source.
+
+    The corpus can always be iterated. Mapping-style access through ``contexts``
+    and ``__len__`` requires ``load_in_memory=True``.
+    """
+
     def __init__(self, config: WikipediaKILTCorpusConfig):
         if config.data_path is None:
             data_path = FLEXRAG_CACHE_DIR / "corpora" / "enwiki_2019_kilt"
@@ -57,6 +73,13 @@ class WikipediaKILTCorpus:
             return
         yield from self._iter_contexts()
         return
+
+    def __len__(self) -> int:
+        if self._contexts is None:
+            raise RuntimeError(
+                "WikipediaKILTCorpus.__len__ requires load_in_memory=True."
+            )
+        return len(self._contexts)
 
     @property
     def contexts(self) -> Mapping[str, Context]:
