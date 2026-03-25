@@ -5,15 +5,7 @@ import types
 from copy import deepcopy
 from dataclasses import asdict, field, fields, is_dataclass
 from pathlib import Path
-from typing import (
-    Annotated,
-    Callable,
-    Generic,
-    Optional,
-    Type,
-    TypeVar,
-    dataclass_transform,
-)
+from typing import Annotated, Callable, Generic, Optional, TypeVar, dataclass_transform
 
 import yaml
 from huggingface_hub import HfApi
@@ -26,12 +18,12 @@ from .default_vars import FLEXRAG_CACHE_DIR
 T = TypeVar("T")
 
 
-def extract_config(config, config_cls: Type[T]) -> T:
+def extract_config(config, config_cls: type[T]) -> T:
     """Extracts the configuration from a pydantic dataclass, omegaconf.DictConfig or dict.
 
     :param config: The configuration source; can be a ``DictConfig``, dict, or dataclass instance.
     :param config_cls: The target pydantic dataclass type.
-    :type config_cls: Type[T]
+    :type config_cls: type[T]
     :return: An instance of *config_cls* populated with the extracted values.
     :rtype: T
     :raises TypeError: If *config* is not a supported type.
@@ -144,8 +136,8 @@ _T = TypeVar("_T")
 
 
 @dataclass_transform()
-def _create_pydantic_dataclass(config: ConfigDict) -> Callable[[Type[_T]], Type[_T]]:
-    def decorator(cls: Type[_T] = None, *, frozen=False, kw_only=False) -> Type[_T]:
+def _create_pydantic_dataclass(config: ConfigDict) -> Callable[[type[_T]], type[_T]]:
+    def decorator(cls: type[_T] = None, *, frozen=False, kw_only=False) -> type[_T]:
         if cls is None:
             return lambda cls: decorator(cls, frozen=frozen, kw_only=kw_only)
 
