@@ -42,36 +42,33 @@ class RetrieverDatabaseBase(MutableMapping[str, dict]):
 
     @overload
     def __getitem__(self, idx: str) -> dict:
-        """
-        Get an item from the database.
+        """Get an item from the database.
 
-        param: idx: The index of the item to get.
-        type: idx: str
-        return: The item from the database.
-        rtype: dict
+        :param idx: The index of the item to get.
+        :type idx: str
+        :return: The item from the database.
+        :rtype: dict
         """
         return
 
     @overload
     def __getitem__(self, idx: list[str] | np.ndarray) -> list[dict]:
-        """
-        Get a batch of items from the database.
+        """Get a batch of items from the database.
 
-        param: idx: The index of the items to get.
-        type: idx: list[str] | np.ndarray
-        return: The items from the database.
-        rtype: list[dict]
+        :param idx: The index of the items to get.
+        :type idx: list[str] | np.ndarray
+        :return: The items from the database.
+        :rtype: list[dict]
         """
         return
 
     def __getitem__(self, idx: str | list[str] | np.ndarray) -> dict | list[dict]:
-        """
-        Get (a batch of) item from the database.
+        """Get (a batch of) item from the database.
 
-        param: idx: The index of the item to get.
-        type: idx: str | list[str] | np.ndarray
-        return: The item from the database.
-        rtype: dict | list[dict]
+        :param idx: The index of the item to get.
+        :type idx: str | list[str] | np.ndarray
+        :return: The item from the database.
+        :rtype: dict | list[dict]
         """
         return self.get(idx)
 
@@ -79,46 +76,43 @@ class RetrieverDatabaseBase(MutableMapping[str, dict]):
     def __setitem__(
         self, idx: str | list[str] | np.ndarray, data: dict | list[dict]
     ) -> None:
-        """
-        Set (a batch of) item in the database.
+        """Set (a batch of) item in the database.
 
-        params: idx: The index of the item to set.
-        type: idx: str | list[str] | np.ndarray
-        params: data: The data to set.
-        type: data: dict | list[dict]
-        return: None
-        rtype: None
+        :param idx: The index of the item to set.
+        :type idx: str | list[str] | np.ndarray
+        :param data: The data to set.
+        :type data: dict | list[dict]
+        :return: None
+        :rtype: None
         """
         return
 
     @abstractmethod
     def __delitem__(self, ids: str | list[str] | np.ndarray) -> None:
-        """
-        Delete (a batch of) item from the database.
-        params: ids: The index of the item to delete.
-        type: ids: str | list[str] | np.ndarray
-        return: None
-        rtype: None
+        """Delete (a batch of) item from the database.
+
+        :param ids: The index of the item to delete.
+        :type ids: str | list[str] | np.ndarray
+        :return: None
+        :rtype: None
         """
         return
 
     @property
     @abstractmethod
     def fields(self) -> list[str]:
-        """
-        Get the fields of the database.
+        """Get the fields of the database.
 
-        Returns:
-            list[str]: The fields of the database.
+        :return: The fields of the database.
+        :rtype: list[str]
         """
         return
 
     @property
     def ids(self) -> Iterable[str]:
-        """
-        Get the IDs of the items in the database.
+        """Get the IDs of the items in the database.
 
-        Returns:
-            Iterable[str]: An iterable of IDs in the database.
+        :return: An iterable of IDs in the database.
+        :rtype: Iterable[str]
         """
         return self.keys()
