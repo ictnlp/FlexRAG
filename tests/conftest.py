@@ -5,31 +5,6 @@ import pytest
 
 
 @pytest.fixture
-def mock_anthropic_client(mocker):
-    """Mock Anthropic client for testing AnthropicGenerator"""
-
-    # Mock the response content structure
-    mock_content = mocker.MagicMock()
-    mock_content.text = "This is a mocked response from Anthropic."
-
-    mock_response = mocker.MagicMock()
-    mock_response.content = [mock_content]
-
-    # Mock the Anthropic client
-    mock_client = mocker.MagicMock()
-    mock_client.messages.create.return_value = mock_response
-
-    # Mock the entire anthropic module to handle lazy import
-    mock_anthropic_module = mocker.MagicMock()
-    mock_anthropic_module.Anthropic.return_value = mock_client
-
-    # Patch the module import itself
-    mocker.patch.dict("sys.modules", {"anthropic": mock_anthropic_module})
-
-    return mock_client
-
-
-@pytest.fixture
 def mock_litellm_client(mocker):
     calls: dict[str, list[dict]] = {
         "acompletion": [],
