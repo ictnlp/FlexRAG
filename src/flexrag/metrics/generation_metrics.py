@@ -1,4 +1,5 @@
 from dataclasses import field
+from itertools import zip_longest
 from typing import Annotated
 
 import rouge
@@ -37,9 +38,13 @@ class BLEU:
     def __call__(
         self, responses: list[str], golden_responses: list[list[str]]
     ) -> tuple[dict[str, float], dict[str, float]]:
+        if not golden_responses:
+            refs = []
+        else:
+            refs = [list(item) for item in zip_longest(*golden_responses, fillvalue="")]
         bleu = sacrebleu.corpus_bleu(
             hypotheses=responses,
-            references=golden_responses,
+            references=refs,
             tokenize=self.tokenizer,
         )
         return {"response_bleu": bleu.score}, vars(bleu)
@@ -77,10 +82,16 @@ class chrF:
     def __call__(
         self, responses: list[str], golden_responses: list[list[str]]
     ) -> tuple[dict[str, float], dict[str, float]]:
+        if not golden_responses:
+            refs = []
+        else:
+            refs = [list(item) for item in zip_longest(*golden_responses, fillvalue="")]
         chrf = sacrebleu.corpus_chrf(
             hypotheses=responses,
-            references=golden_responses,
+            references=refs,
             beta=self.beta,
+            char_order=self.char_order,
+            word_order=self.word_order,
         )
         return {"response_chrf": chrf.score}, vars(chrf)
 
