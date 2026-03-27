@@ -100,7 +100,7 @@ class RougeConfig:
     )
 
 
-@METRICS("generation_rouge")
+@METRICS("generation_rouge", config_class=RougeConfig)
 class Rouge:
     """The Rouge metric.
     The computation of Rouge score is based on `rouge <https://github.com/pltrdy/rouge>`_.
@@ -148,9 +148,14 @@ class Rouge:
             "rouge-2": {"r": 0.0, "p": 0.0, "f": 0.0},
             "rouge-l": {"r": 0.0, "p": 0.0, "f": 0.0},
         }
+        response = " ".join(self.tokenizer.tokenize(response))
+        if not response.strip():
+            return score_dict
+
         for gold in golds:
             gold = " ".join(self.tokenizer.tokenize(gold))
-            response = " ".join(self.tokenizer.tokenize(response))
+            if not gold.strip():
+                continue
             rouge_score = self.scorer.get_scores(response, gold)[0]
             for metric in score_dict.keys():
                 for key in ["r", "p", "f"]:
