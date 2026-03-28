@@ -36,7 +36,7 @@ dependencies = [
     "sentencepiece",
     "orjson",
     # metrics
-    "rouge",
+    "rouge-score",
     "sacrebleu>=2.4.2",
     "pytrec_eval>=0.5",
     # datasets

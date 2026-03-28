@@ -220,9 +220,9 @@ msgstr ""
 #: ../../../docstring dfd91c96f5274189ae94ba6011e76ccf
 #: flexrag.metrics.generation_metrics.Rouge:1 of
 msgid ""
-"The Rouge metric. The computation of Rouge score is based on `rouge "
-"<https://github.com/pltrdy/rouge>`_. This metric will return the average "
-"of the Rouge-1, Rouge-2, and Rouge-L F1 scores."
+"The Rouge metric. The computation of Rouge score is based on `rouge-score "
+"<https://github.com/google-research/google-research/tree/master/rouge>`_. "
+"This metric returns the average F1 scores for Rouge-1, Rouge-2, and Rouge-L."
 msgstr ""
 
 #: ../../../docstring d873c117550a4a708ca3caafb1376362
@@ -397,4 +397,3 @@ msgstr ""
 #~ "The preprocessing pipeline for the "
 #~ "context. Defaults to TextProcessPipelineConfig."
 #~ msgstr ""
-

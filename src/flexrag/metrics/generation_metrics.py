@@ -2,8 +2,8 @@ from dataclasses import field
 from itertools import zip_longest
 from typing import Annotated
 
-import rouge
 import sacrebleu
+from rouge_score import rouge_scorer
 
 from flexrag.common import TIME_METER, Choices, configure
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
@@ -99,7 +99,8 @@ class chrF:
 @configure
 class RougeConfig:
     """Configuration for ``Rouge`` metric.
-    The computation of Rouge score is based on `rouge <https://github.com/pltrdy/rouge>`_.
+    The computation of Rouge score is based on `rouge-score
+    <https://github.com/google-research/google-research/tree/master/rouge>`_.
 
     :param tokenizer_config: The tokenizer used for splitting the answer into tokens.
         Defaults to a space tokenizer.
@@ -114,13 +115,18 @@ class RougeConfig:
 @METRICS("generation_rouge", config_class=RougeConfig)
 class Rouge:
     """The Rouge metric.
-    The computation of Rouge score is based on `rouge <https://github.com/pltrdy/rouge>`_.
-    This metric will return the average of the Rouge-1, Rouge-2, and Rouge-L F1 scores.
+    The computation of Rouge score is based on `rouge-score
+    <https://github.com/google-research/google-research/tree/master/rouge>`_.
+    This metric returns the average F1 scores for Rouge-1, Rouge-2, and Rouge-L.
     """
 
     def __init__(self, cfg: RougeConfig) -> None:
-        self.scorer = rouge.Rouge(metrics=["rouge-1", "rouge-2", "rouge-l"])
         self.tokenizer = TOKENIZERS.load(cfg.tokenizer_config)
+        self.scorer = rouge_scorer.RougeScorer(
+            ["rouge1", "rouge2", "rougeL"],
+            tokenizer=self.tokenizer,
+            use_stemmer=False,
+        )
         return
 
     @TIME_METER("metrics.generation_rouge")
@@ -152,25 +158,28 @@ class Rouge:
 
     def compute_item(
         self, golds: list[str], response: str
-    ) -> tuple[dict[str, float], dict[str, float]]:
-        # as rouge score does not support multiple references, we take the max score.
+    ) -> dict[str, dict[str, float]]:
         score_dict = {
             "rouge-1": {"r": 0.0, "p": 0.0, "f": 0.0},
             "rouge-2": {"r": 0.0, "p": 0.0, "f": 0.0},
             "rouge-l": {"r": 0.0, "p": 0.0, "f": 0.0},
         }
-        response = " ".join(self.tokenizer.tokenize(response))
-        if not response.strip():
+        if not self.tokenizer.tokenize(response):
             return score_dict
 
-        for gold in golds:
-            gold = " ".join(self.tokenizer.tokenize(gold))
-            if not gold.strip():
-                continue
-            rouge_score = self.scorer.get_scores(response, gold)[0]
-            for metric in score_dict.keys():
-                for key in ["r", "p", "f"]:
-                    score_dict[metric][key] = max(
-                        score_dict[metric][key], rouge_score[metric][key]
-                    )
+        valid_golds = [gold for gold in golds if self.tokenizer.tokenize(gold)]
+        if not valid_golds:
+            return score_dict
+
+        rouge_score = self.scorer.score_multi(valid_golds, response)
+        metric_mapping = {
+            "rouge-1": "rouge1",
+            "rouge-2": "rouge2",
+            "rouge-l": "rougeL",
+        }
+        for metric, rouge_name in metric_mapping.items():
+            score = rouge_score[rouge_name]
+            score_dict[metric]["r"] = score.recall
+            score_dict[metric]["p"] = score.precision
+            score_dict[metric]["f"] = score.fmeasure
         return score_dict
