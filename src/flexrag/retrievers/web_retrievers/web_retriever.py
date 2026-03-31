@@ -4,7 +4,7 @@ from abc import abstractmethod
 
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
-from flexrag.common import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, configure
+from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure, trace
 from flexrag.common.configure import extract_config
 from flexrag.common.dataclasses import RetrievedContext
 
@@ -53,7 +53,7 @@ class WebRetrieverBase(RetrieverBase):
 
     cfg: WebRetrieverBaseConfig
 
-    @TIME_METER("retriever.web_retriever.search")
+    @trace("retriever.web_retriever.search")
     @batched_cache
     def search(
         self,

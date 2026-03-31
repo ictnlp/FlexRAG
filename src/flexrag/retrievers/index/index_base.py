@@ -10,11 +10,11 @@ from huggingface_hub import HfApi
 from flexrag.common import (
     FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
-    TIME_METER,
     Choices,
     Register,
     SimpleProgressLogger,
     configure,
+    trace,
 )
 from flexrag.models import ENCODERS, EncoderConfig
 
@@ -125,7 +125,7 @@ class RetrieverIndexBase(ABC):
         """
         return
 
-    @TIME_METER("retriever.index.search")
+    @trace("retriever.index.search")
     def search_batch(
         self,
         query: Iterable[Any],

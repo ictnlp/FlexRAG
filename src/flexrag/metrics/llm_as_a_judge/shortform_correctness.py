@@ -1,8 +1,8 @@
 import re
 
+from flexrag.common import trace
 from flexrag.common.configure import configure
 from flexrag.common.dataclasses import ChatMessages
-from flexrag.common.timer import TIME_METER
 from flexrag.models.generators import GENERATORS, GenerationConfig, GeneratorConfig
 
 from ..metrics_base import METRICS
@@ -107,7 +107,7 @@ class ShortformCorrectness:
         self.gen_cfg = GenerationConfig(do_sample=False)
         return
 
-    @TIME_METER("metrics.shortform_correctness")
+    @trace("metrics.shortform_correctness")
     def __call__(
         self,
         questions: list[str],

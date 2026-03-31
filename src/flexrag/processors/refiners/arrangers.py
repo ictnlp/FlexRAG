@@ -1,7 +1,7 @@
 import random as rd
 from typing import Annotated
 
-from flexrag.common import TIME_METER, Choices, configure
+from flexrag.common import Choices, configure, trace
 from flexrag.common.dataclasses import RetrievedContext
 
 from .refiner_base import REFINERS, RefinerBase
@@ -33,7 +33,7 @@ class ContextArranger(RefinerBase):
         self.order = config.order
         return
 
-    @TIME_METER("repack")
+    @trace("repack")
     def refine(self, contexts: list[RetrievedContext]) -> list[RetrievedContext]:
         match self.order:
             case "ascending":

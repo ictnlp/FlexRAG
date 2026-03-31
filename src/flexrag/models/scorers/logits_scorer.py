@@ -4,7 +4,7 @@ import numpy as np
 import torch
 from transformers import GenerationConfig as HFGenerationConfig
 
-from flexrag.common import TIME_METER, Choices, configure
+from flexrag.common import Choices, configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
 from .scorer_base import SCORERS, PairScorerBase
@@ -53,7 +53,7 @@ class HFLogitsScorer(PairScorerBase):
         self.negative_token = self.tokenizer.convert_tokens_to_ids(cfg.negative_token)
         return
 
-    @TIME_METER("scorer.hf_logits")
+    @trace("scorer.hf_logits")
     @torch.no_grad()
     def score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
         # prepare prompts

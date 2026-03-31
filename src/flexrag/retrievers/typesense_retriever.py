@@ -2,10 +2,10 @@ from typing import Annotated, Generator, Iterable, Optional
 
 from flexrag.common import (
     LOGGER_MANAGER,
-    TIME_METER,
     Choices,
     SimpleProgressLogger,
     configure,
+    trace,
 )
 from flexrag.common.configure import extract_config
 from flexrag.common.dataclasses import Context, RetrievedContext
@@ -70,7 +70,7 @@ class TypesenseRetriever(EditableRetriever):
         self.index_name = cfg.index_name
         return
 
-    @TIME_METER("retriever.typesense.add_passages")
+    @trace("retriever.typesense.add_passages")
     def add_passages(self, passages: Iterable[Context]) -> None:
         def get_batch() -> Generator[list[dict[str, str]], None, None]:
             batch = []
@@ -104,7 +104,7 @@ class TypesenseRetriever(EditableRetriever):
         logger.info("Finished adding passages.")
         return
 
-    @TIME_METER("retriever.typesense.search")
+    @trace("retriever.typesense.search")
     def search(
         self,
         query: list[str],

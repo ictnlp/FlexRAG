@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from flexrag.common import TIME_METER, Choices, configure
+from flexrag.common import Choices, configure, trace
 from flexrag.common.dataclasses import RetrievedContext
 from flexrag.models import GENERATORS, GeneratorBase, GeneratorConfig
 
@@ -26,7 +26,7 @@ class HydeRewriter:
         self.generator = generator
         return
 
-    @TIME_METER("retriever.hyde_retriever.rewrite")
+    @trace("retriever.hyde_retriever.rewrite")
     def rewrite(self, queries: list[str] | str) -> list[str]:
         if isinstance(queries, str):
             queries = [queries]

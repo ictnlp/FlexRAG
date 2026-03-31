@@ -4,7 +4,7 @@ from pathlib import Path
 
 import numpy as np
 
-from flexrag.common import TIME_METER, configure
+from flexrag.common import configure, trace
 from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.models import GENERATORS, GeneratorConfig
 
@@ -49,7 +49,7 @@ class RankGPTRanker(RankerBase):
         self.max_chunk_size = cfg.max_chunk_size
         return
 
-    @TIME_METER("ranker.rankgpt")
+    @trace("ranker.rankgpt")
     def rank(
         self,
         query: str,

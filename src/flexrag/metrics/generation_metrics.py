@@ -5,7 +5,7 @@ from typing import Annotated
 import sacrebleu
 from rouge_score import rouge_scorer
 
-from flexrag.common import TIME_METER, Choices, configure
+from flexrag.common import Choices, configure, trace
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
 
 from .metrics_base import METRICS
@@ -34,7 +34,7 @@ class BLEU:
         self.tokenizer = cfg.tokenizer
         return
 
-    @TIME_METER("metrics.generation_bleu")
+    @trace("metrics.generation_bleu")
     def __call__(
         self, responses: list[str], golden_responses: list[list[str]]
     ) -> tuple[dict[str, float], dict[str, float]]:
@@ -78,7 +78,7 @@ class chrF:
         self.word_order = cfg.chrf_word_order
         return
 
-    @TIME_METER("metrics.generation_chrf")
+    @trace("metrics.generation_chrf")
     def __call__(
         self, responses: list[str], golden_responses: list[list[str]]
     ) -> tuple[dict[str, float], dict[str, float]]:
@@ -129,7 +129,7 @@ class Rouge:
         )
         return
 
-    @TIME_METER("metrics.generation_rouge")
+    @trace("metrics.generation_rouge")
     def __call__(
         self, responses: list[str], golden_responses: list[list[str]]
     ) -> tuple[dict[str, float], dict[str, float]]:

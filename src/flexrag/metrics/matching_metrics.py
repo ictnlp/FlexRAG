@@ -2,7 +2,7 @@ from abc import abstractmethod
 from collections import Counter
 from dataclasses import field
 
-from flexrag.common import TIME_METER, configure
+from flexrag.common import configure, trace
 from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
 from flexrag.processors.text_processors import AnswerSimplifier
 
@@ -35,7 +35,7 @@ class MatchingMetrics:
     def compute_item(self, golds: list[str], response: str) -> float:
         return
 
-    @TIME_METER("metrics.matching_score")
+    @trace("metrics.matching_score")
     def __call__(
         self, responses: list[str], golden_responses: list[list[str]]
     ) -> tuple[dict[str, float], dict[str, list[float]]]:

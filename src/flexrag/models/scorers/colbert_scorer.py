@@ -3,7 +3,7 @@ import math
 import numpy as np
 import torch
 
-from flexrag.common import TIME_METER, configure
+from flexrag.common import configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
 from .scorer_base import SCORERS, PairScorerBase
@@ -60,7 +60,7 @@ class HFColBertScorer(PairScorerBase):
         self.normalize = cfg.normalize_embeddings
         return
 
-    @TIME_METER("scorer.hf_colbert")
+    @trace("scorer.hf_colbert")
     def score(self, query: str, candidates: list[str]) -> np.ndarray:
         # tokenize the query & candidates
         query_inputs = self._query_encode([query])

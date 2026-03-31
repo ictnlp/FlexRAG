@@ -3,7 +3,7 @@ from typing import Iterable, Optional
 
 from elasticsearch import Elasticsearch, NotFoundError
 
-from flexrag.common import LOGGER_MANAGER, TIME_METER, SimpleProgressLogger, configure
+from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure, trace
 from flexrag.common.configure import extract_config
 from flexrag.common.dataclasses import Context, RetrievedContext
 
@@ -82,7 +82,7 @@ class ElasticRetriever(EditableRetriever):
             es_logger.setLevel(logging.WARNING)
         return
 
-    @TIME_METER("retriever.elastic_search.add_passages")
+    @trace("retriever.elastic_search.add_passages")
     def add_passages(self, passages: Iterable[Context]):
         def generate_actions():
             index_exists = self.client.indices.exists(index=self.index_name)
@@ -142,7 +142,7 @@ class ElasticRetriever(EditableRetriever):
         logger.info(f"Finished adding passages.")
         return
 
-    @TIME_METER("retriever.elastic_search.search")
+    @trace("retriever.elastic_search.search")
     @batched_cache
     def search(
         self,

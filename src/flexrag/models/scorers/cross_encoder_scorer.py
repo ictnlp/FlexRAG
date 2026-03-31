@@ -1,7 +1,7 @@
 import numpy as np
 import torch
 
-from flexrag.common import TIME_METER, configure
+from flexrag.common import configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
 from .scorer_base import SCORERS, PairScorerBase
@@ -35,7 +35,7 @@ class HFCrossEncoderScorer(PairScorerBase):
         self.max_encode_length = cfg.max_encode_length
         return
 
-    @TIME_METER("scorer.cross_encoder")
+    @trace("scorer.cross_encoder")
     @torch.no_grad()
     def score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
         # score the candidates

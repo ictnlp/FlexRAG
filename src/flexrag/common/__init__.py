@@ -9,7 +9,7 @@ from .persistent_cache import (
     LRUPersistentCache,
     RandomPersistentCache,
 )
-from .timer import TIME_METER
+from .profiling import record_span, start_session, trace
 
 __all__ = [
     "Choices",
@@ -33,5 +33,7 @@ __all__ = [
     "LFUPersistentCache",
     "LRUPersistentCache",
     "RandomPersistentCache",
-    "TIME_METER",
+    "record_span",
+    "start_session",
+    "trace",
 ]

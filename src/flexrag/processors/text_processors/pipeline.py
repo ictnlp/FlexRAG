@@ -1,4 +1,4 @@
-from flexrag.common import TIME_METER
+from flexrag.common import trace
 
 from .processor import PROCESSORS, Processor, TextUnit
 
@@ -13,7 +13,7 @@ class TextProcessPipeline:
         self.processors: list[Processor] = PROCESSORS.load(cfg)
         return
 
-    @TIME_METER("text_process_pipeline")
+    @trace("text_process_pipeline")
     def __call__(self, text: str, return_detail: bool = False) -> str | TextUnit | None:
         unit = TextUnit(content=text)
         for processor in self.processors:

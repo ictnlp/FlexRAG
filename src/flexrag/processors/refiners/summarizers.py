@@ -5,7 +5,7 @@ from typing import Optional
 
 import numpy as np
 
-from flexrag.common import TIME_METER, configure
+from flexrag.common import configure, trace
 from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.models import ENCODERS, GENERATORS, EncoderConfig, GeneratorConfig
 
@@ -106,7 +106,7 @@ class AbstractiveSummarizer(RefinerBase):
         self.refined_field = cfg.refined_field
         return
 
-    @TIME_METER("refiner.abstractive_summarize")
+    @trace("refiner.abstractive_summarize")
     def refine(self, contexts: list[RetrievedContext]) -> list[RetrievedContext]:
         # prepare input texts
         if self.concatenate:
@@ -208,7 +208,7 @@ class RecompExtractiveSummarizer(RefinerBase):
         self.refined_field = cfg.refined_field
         return
 
-    @TIME_METER("refiner.extractive_summarize")
+    @trace("refiner.extractive_summarize")
     def refine(self, contexts: list[RetrievedContext]) -> list[RetrievedContext]:
         if self.concatenate:
             assert all(

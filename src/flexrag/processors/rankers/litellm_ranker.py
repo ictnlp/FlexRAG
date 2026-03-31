@@ -4,7 +4,7 @@ from typing import Any, Optional
 import litellm
 import numpy as np
 
-from flexrag.common import TIME_METER, configure
+from flexrag.common import configure, trace
 
 from .ranker_base import RANKERS
 from .remote_ranker_base import RemoteRankerBase, RemoteRankerBaseConfig
@@ -69,7 +69,7 @@ class LiteLLMRanker(RemoteRankerBase):
             "request_kwargs": request_kwargs,
         }
 
-    @TIME_METER("ranker.litellm_rerank")
+    @trace("ranker.litellm_rerank")
     async def _async_rank_impl(
         self, client, query: str, candidates: list[str]
     ) -> tuple[np.ndarray, np.ndarray | None]:

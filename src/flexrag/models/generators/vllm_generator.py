@@ -2,7 +2,7 @@ from typing import Annotated, Optional
 
 import PIL
 
-from flexrag.common import TIME_METER, ChatMessages, ChatTurn, Choices, configure
+from flexrag.common import ChatMessages, ChatTurn, Choices, configure, trace
 from flexrag.common.logging import LOGGER_MANAGER
 
 from .generator_base import GENERATORS, GenerationConfig, GeneratorBase
@@ -64,7 +64,7 @@ class VLLMGenerator(GeneratorBase):
         self.model = LLM(**llm_args)
         return
 
-    @TIME_METER("generator.vllm_generate")
+    @trace("generator.vllm_generate")
     def generate(
         self,
         prefixes: list[str] | str,

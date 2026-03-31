@@ -4,7 +4,7 @@ import torch
 from transformers import GenerationConfig as HFGenerationConfig
 from transformers import PreTrainedModel
 
-from flexrag.common import TIME_METER, ChatMessages, ChatTurn, Choices, configure
+from flexrag.common import ChatMessages, ChatTurn, Choices, configure, trace
 from flexrag.common.base64_utils import image_to_base64
 from flexrag.common.logging import LOGGER_MANAGER
 
@@ -51,7 +51,7 @@ class HFGenerator(GeneratorBase):
         self._patch_model()
         return
 
-    @TIME_METER("generator.hf_generate")
+    @trace("generator.hf_generate")
     @torch.no_grad()
     def generate(
         self,

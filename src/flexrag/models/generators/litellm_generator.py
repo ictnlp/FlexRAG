@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 
 import litellm
 
-from flexrag.common import TIME_METER, ChatMessages, ChatTurn, configure
+from flexrag.common import ChatMessages, ChatTurn, configure, trace
 from flexrag.common.base64_utils import (
     binary_to_base64,
     file_to_base64,
@@ -357,7 +357,7 @@ class LiteLLMGenerator(RemoteGeneratorBase):
             "request_kwargs": request_kwargs,
         }
 
-    @TIME_METER("generator.litellm_chat")
+    @trace("generator.litellm_chat")
     async def _async_chat_impl(
         self,
         client,
@@ -375,7 +375,7 @@ class LiteLLMGenerator(RemoteGeneratorBase):
         response = await litellm.acompletion(**request_kwargs)
         return _completion_response_to_chat_turn(response)
 
-    @TIME_METER("generator.litellm_generate")
+    @trace("generator.litellm_generate")
     async def _async_generate_impl(
         self,
         client,

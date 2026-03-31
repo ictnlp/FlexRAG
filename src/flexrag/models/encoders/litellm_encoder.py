@@ -4,7 +4,7 @@ from typing import Any, Optional
 import litellm
 import numpy as np
 
-from flexrag.common import TIME_METER, configure
+from flexrag.common import configure, trace
 
 from .encoder_base import ENCODERS
 from .remote_encoder_base import RemoteEncoderBase, RemoteEncoderBaseConfig
@@ -87,7 +87,7 @@ class LiteLLMEncoder(RemoteEncoderBase):
             "request_kwargs": request_kwargs,
         }
 
-    @TIME_METER("encoder.litellm_encode")
+    @trace("encoder.litellm_encode")
     async def _async_encode_impl(self, client, texts: list[str]) -> np.ndarray:
         request_kwargs = dict(client["request_kwargs"])
         request_kwargs["model"] = client["model"]

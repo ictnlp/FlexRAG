@@ -9,7 +9,7 @@ from PIL.ImageFile import ImageFile
 from torch.nn.parallel import DataParallel as DP
 from transformers import CLIPModel, PreTrainedTokenizer
 
-from flexrag.common import LOGGER_MANAGER, TIME_METER, Choices, configure
+from flexrag.common import LOGGER_MANAGER, Choices, configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
 from .encoder_base import ENCODERS, EncoderBase
@@ -138,7 +138,7 @@ class HFEncoder(EncoderBase):
             embeddings = torch.nn.functional.normalize(embeddings, dim=1)
         return embeddings.float().cpu().numpy()
 
-    @TIME_METER("encoder.hf_encode")
+    @trace("encoder.hf_encode")
     @torch.no_grad()
     def encode(self, texts: str | list[str]) -> np.ndarray:
         texts = texts if isinstance(texts, list) else [texts]
@@ -389,7 +389,7 @@ class HFClipEncoder(EncoderBase):
         assert all(isinstance(d, ImageFile) for d in data)
         return self.encode_image(data)
 
-    @TIME_METER("encoder.hf_clip_encode")
+    @trace("encoder.hf_clip_encode")
     @torch.no_grad()
     def encode_image(self, images: list[ImageFile]) -> np.ndarray:
         if self.convert_to_rgb:
@@ -401,7 +401,7 @@ class HFClipEncoder(EncoderBase):
             embeddings = F.normalize(embeddings, dim=1)
         return embeddings.float().cpu().numpy()
 
-    @TIME_METER("encoder.hf_clip_encode")
+    @trace("encoder.hf_clip_encode")
     @torch.no_grad()
     def encode_text(self, texts: list[str]) -> np.ndarray:
         input_dict = self.tokenizer.batch_encode_plus(

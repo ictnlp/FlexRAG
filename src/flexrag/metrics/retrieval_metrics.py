@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 
 import pytrec_eval
 
-from flexrag.common import TIME_METER, Choices, configure
+from flexrag.common import Choices, configure, trace
 from flexrag.common.dataclasses import Context, RetrievedContext
 from flexrag.processors.text_processors import AnswerSimplifier
 
@@ -48,7 +48,7 @@ class SuccessRate:
             self.simplifier = None
         return
 
-    @TIME_METER("metrics.retrieval_success_rate")
+    @trace("metrics.retrieval_success_rate")
     def __call__(
         self,
         golden_responses: list[list[str]] = None,
@@ -199,7 +199,7 @@ class RetrievalRecall:
         self.k_values = cfg.k_values
         return
 
-    @TIME_METER("metrics.retrieval_recall")
+    @trace("metrics.retrieval_recall")
     def __call__(
         self,
         retrieved_contexts: list[list[RetrievedContext]] = None,
@@ -235,7 +235,7 @@ class RetrievalPrecision:
         self.k_values = cfg.k_values
         return
 
-    @TIME_METER("metrics.retrieval_precision")
+    @trace("metrics.retrieval_precision")
     def __call__(
         self,
         retrieved_contexts: list[list[RetrievedContext]] = None,
@@ -271,7 +271,7 @@ class RetrievalMAP:
         self.k_values = cfg.k_values
         return
 
-    @TIME_METER("metrics.retrieval_map")
+    @trace("metrics.retrieval_map")
     def __call__(
         self,
         retrieved_contexts: list[list[RetrievedContext]] = None,
@@ -307,7 +307,7 @@ class RetrievalNDCG:
         self.k_values = cfg.k_values
         return
 
-    @TIME_METER("metrics.retrieval_ndcg")
+    @trace("metrics.retrieval_ndcg")
     def __call__(
         self,
         retrieved_contexts: list[list[RetrievedContext]] = None,
@@ -326,7 +326,7 @@ class RetrievalNDCG:
 class RetrievalMRR:
     """The RetrievalMRR metric computes the Mean Reciprocal Rank (MRR) of the retrieved contexts."""
 
-    @TIME_METER("metrics.retrieval_mrr")
+    @trace("metrics.retrieval_mrr")
     def __call__(
         self,
         retrieved_contexts: list[list[RetrievedContext]] = None,
