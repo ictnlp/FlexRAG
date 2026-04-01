@@ -1,6 +1,6 @@
 """Corpus protocols and concrete corpus providers."""
 
-from .corpus_dataset import CORPORA, IterableCorpus, MappingCorpus
+from .corpus_dataset import CORPORA, CorpusView, IterableCorpus, MappingCorpus
 from .wikipedia_atlas import WikipediaAtlasCorpus, WikipediaAtlasCorpusConfig
 from .wikipedia_attributeqa import (
     WikipediaAttributedQACorpus,
@@ -15,6 +15,7 @@ from .wikipedia_wikimedia import (
 
 __all__ = [
     "CORPORA",
+    "CorpusView",
     "IterableCorpus",
     "MappingCorpus",
     "WikipediaAtlasCorpus",

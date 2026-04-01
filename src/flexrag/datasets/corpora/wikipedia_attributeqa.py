@@ -5,13 +5,13 @@ Corpus provider for the Wikipedia snapshot used by Attributed-QA.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterator, Mapping, Optional
+from typing import Iterator, Optional
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Context, configure
 from flexrag.common.misc import download_and_extract
 
 from ..reader import LineDelimitedReader
-from .corpus_dataset import CORPORA
+from .corpus_dataset import CORPORA, _InMemoryMappingCorpus
 
 _RESOURCES = "https://storage.googleapis.com/gresearch/attributed_language_models/wikipedia.zip"  # fmt: skip
 
@@ -34,7 +34,7 @@ class WikipediaAttributedQACorpusConfig:
 
 
 @CORPORA("wikipedia_attributedqa", config_class=WikipediaAttributedQACorpusConfig)
-class WikipediaAttributedQACorpus:
+class WikipediaAttributedQACorpus(_InMemoryMappingCorpus):
     """Wikipedia corpus backed by the Attributed-QA Wikipedia snapshot.
 
     The corpus can always be iterated. Mapping-style access through ``contexts``
@@ -50,12 +50,12 @@ class WikipediaAttributedQACorpus:
             self._data_path = Path(config.data_path) / "wikipedia"
         if not self._data_path.exists():
             download_and_extract(_RESOURCES, self._data_path.parent.as_posix())
-        self._data_files = list(self._data_path.glob("*.jsonl"))
-        self._contexts: dict[str, Context] | None = None
+        self._data_files = sorted(self._data_path.glob("*.jsonl"))
         if config.load_in_memory:
-            self._contexts = {}
+            contexts = {}
             for context in self._iter_contexts():
-                self._contexts[context.context_id] = context
+                contexts[context.context_id] = context
+            self._set_materialized_contexts(contexts)
         return
 
     def _iter_contexts(self) -> Iterator[Context]:
@@ -69,31 +69,17 @@ class WikipediaAttributedQACorpus:
 
     def __iter__(self) -> Iterator[Context]:
         if self._contexts is not None:
-            yield from self._contexts.values()
-            return
-        yield from self._iter_contexts()
+            assert self._ordered_contexts is not None
+            yield from self._ordered_contexts
+        else:
+            yield from self._iter_contexts()
         return
-
-    def __len__(self) -> int:
-        if self._contexts is None:
-            raise RuntimeError(
-                "WikipediaAttributedQACorpus.__len__ requires load_in_memory=True."
-            )
-        return len(self._contexts)
-
-    @property
-    def contexts(self) -> Mapping[str, Context]:
-        if self._contexts is None:
-            raise RuntimeError(
-                "WikipediaAttributedQACorpus.contexts requires load_in_memory=True."
-            )
-        return self._contexts
 
     @property
     def context_ids(self) -> Iterator[str]:
         if self._contexts is not None:
-            yield from self._contexts.keys()
-            return
-        for context in self._iter_contexts():
-            yield context.context_id
+            yield from self.contexts.keys()
+        else:
+            for context in self._iter_contexts():
+                yield context.context_id
         return

@@ -5,13 +5,13 @@ Corpus provider for the KILT knowledge source.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Iterator, Mapping, Optional
+from typing import Iterator, Optional
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Context, configure
 from flexrag.common.misc import download
 
 from ..reader import LineDelimitedReader
-from .corpus_dataset import CORPORA
+from .corpus_dataset import CORPORA, _InMemoryMappingCorpus
 
 _RESOURCES = "http://dl.fbaipublicfiles.com/KILT/kilt_knowledgesource.json"
 
@@ -33,7 +33,7 @@ class WikipediaKILTCorpusConfig:
 
 
 @CORPORA("wikipedia_kilt", config_class=WikipediaKILTCorpusConfig)
-class WikipediaKILTCorpus:
+class WikipediaKILTCorpus(_InMemoryMappingCorpus):
     """Wikipedia corpus backed by the KILT knowledge source.
 
     The corpus can always be iterated. Mapping-style access through ``contexts``
@@ -48,11 +48,11 @@ class WikipediaKILTCorpus:
         self._text_file = data_path / "kilt_knowledgesource.json"
         if not self._text_file.exists():
             download(_RESOURCES, self._text_file.parent.as_posix())
-        self._contexts: dict[str, Context] | None = None
         if config.load_in_memory:
-            self._contexts = {}
+            contexts = {}
             for context in self._iter_contexts():
-                self._contexts[context.context_id] = context
+                contexts[context.context_id] = context
+            self._set_materialized_contexts(contexts)
         return
 
     def _iter_contexts(self) -> Iterator[Context]:
@@ -69,31 +69,17 @@ class WikipediaKILTCorpus:
 
     def __iter__(self) -> Iterator[Context]:
         if self._contexts is not None:
-            yield from self._contexts.values()
-            return
-        yield from self._iter_contexts()
+            assert self._ordered_contexts is not None
+            yield from self._ordered_contexts
+        else:
+            yield from self._iter_contexts()
         return
-
-    def __len__(self) -> int:
-        if self._contexts is None:
-            raise RuntimeError(
-                "WikipediaKILTCorpus.__len__ requires load_in_memory=True."
-            )
-        return len(self._contexts)
-
-    @property
-    def contexts(self) -> Mapping[str, Context]:
-        if self._contexts is None:
-            raise RuntimeError(
-                "WikipediaKILTCorpus.contexts requires load_in_memory=True."
-            )
-        return self._contexts
 
     @property
     def context_ids(self) -> Iterator[str]:
         if self._contexts is not None:
-            yield from self._contexts.keys()
-            return
-        for context in self._iter_contexts():
-            yield context.context_id
+            yield from self.contexts.keys()
+        else:
+            for context in self._iter_contexts():
+                yield context.context_id
         return

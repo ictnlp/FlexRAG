@@ -4,7 +4,7 @@ Corpus provider for the Wikimedia Wikipedia dataset on Hugging Face.
 
 from __future__ import annotations
 
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator
 from pathlib import Path
 from typing import Optional
 
@@ -13,7 +13,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Context, configure
 
-from .corpus_dataset import CORPORA
+from .corpus_dataset import CORPORA, _InMemoryMappingCorpus
 
 
 @configure
@@ -32,7 +32,7 @@ class WikipediaWikimediaCorpusConfig:
 
 
 @CORPORA("wikipedia_wikimedia", config_class=WikipediaWikimediaCorpusConfig)
-class WikipediaWikimediaCorpus:
+class WikipediaWikimediaCorpus(_InMemoryMappingCorpus):
     """Wikipedia corpus backed by the Wikimedia dataset on Hugging Face.
 
     This corpus always materializes its contexts in memory, so mapping access
@@ -56,9 +56,10 @@ class WikipediaWikimediaCorpus:
             name=self._config.subset,
             split="train",
         )
-        self._contexts: dict[str, Context] = {}
+        contexts = {}
         for context in self._iter_from_dataset(raw_dataset):
-            self._contexts[context.context_id] = context
+            contexts[context.context_id] = context
+        self._set_materialized_contexts(contexts)
         return
 
     def _iter_from_dataset(self, dataset: Dataset) -> Iterator[Context]:
@@ -75,17 +76,11 @@ class WikipediaWikimediaCorpus:
         return
 
     def __iter__(self) -> Iterator[Context]:
-        yield from self._contexts.values()
+        assert self._ordered_contexts is not None
+        yield from self._ordered_contexts
         return
-
-    def __len__(self) -> int:
-        return len(self._contexts)
-
-    @property
-    def contexts(self) -> Mapping[str, Context]:
-        return self._contexts
 
     @property
     def context_ids(self) -> Iterator[str]:
-        yield from self._contexts.keys()
+        yield from self.contexts.keys()
         return

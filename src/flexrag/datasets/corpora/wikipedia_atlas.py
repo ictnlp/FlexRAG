@@ -6,13 +6,13 @@ Corpus provider for Wikipedia snapshots distributed by
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Annotated, Iterator, Mapping, Optional
+from typing import Annotated, Iterator, Optional
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, Context, configure
 from flexrag.common.misc import download
 
 from ..reader import LineDelimitedReader
-from .corpus_dataset import CORPORA
+from .corpus_dataset import CORPORA, _InMemoryMappingCorpus
 
 _RESOURCES = {
     "enwiki_2017_atlas": {
@@ -71,7 +71,7 @@ class WikipediaAtlasCorpusConfig:
 
 
 @CORPORA("wikipedia_atlas", config_class=WikipediaAtlasCorpusConfig)
-class WikipediaAtlasCorpus:
+class WikipediaAtlasCorpus(_InMemoryMappingCorpus):
     """Wikipedia corpus backed by the Atlas corpus releases.
 
     The corpus can always be iterated. Mapping-style access through ``contexts``
@@ -81,11 +81,11 @@ class WikipediaAtlasCorpus:
     def __init__(self, config: WikipediaAtlasCorpusConfig):
         self._config = config
         self._file_paths = self._ensure_files(config)
-        self._contexts: dict[str, Context] | None = None
         if config.load_in_memory:
-            self._contexts = {}
+            contexts = {}
             for context in self._iter_contexts():
-                self._contexts[context.context_id] = context
+                contexts[context.context_id] = context
+            self._set_materialized_contexts(contexts)
         return
 
     @staticmethod
@@ -128,31 +128,17 @@ class WikipediaAtlasCorpus:
 
     def __iter__(self) -> Iterator[Context]:
         if self._contexts is not None:
-            yield from self._contexts.values()
-            return
-        yield from self._iter_contexts()
+            assert self._ordered_contexts is not None
+            yield from self._ordered_contexts
+        else:
+            yield from self._iter_contexts()
         return
-
-    def __len__(self) -> int:
-        if self._contexts is None:
-            raise RuntimeError(
-                "WikipediaAtlasCorpus.__len__ requires load_in_memory=True."
-            )
-        return len(self._contexts)
-
-    @property
-    def contexts(self) -> Mapping[str, Context]:
-        if self._contexts is None:
-            raise RuntimeError(
-                "WikipediaAtlasCorpus.contexts requires load_in_memory=True."
-            )
-        return self._contexts
 
     @property
     def context_ids(self) -> Iterator[str]:
         if self._contexts is not None:
-            yield from self._contexts.keys()
-            return
-        for context in self._iter_contexts():
-            yield context.context_id
+            yield from self.contexts.keys()
+        else:
+            for context in self._iter_contexts():
+                yield context.context_id
         return
