@@ -60,7 +60,7 @@
 ## Active Refactor Context
 - FlexRAG is moving toward a `1.0.0` architecture.
 - Planned direction includes:
-  - Ray-backed handling for resource-intensive components.
+  - Process-backed handling for resource-intensive local components, with clear worker/runtime boundaries for resource management and future backend flexibility.
   - A `Dataset` + `Task` centered evaluation design.
   - Assistant code adapting to task-oriented evaluation workflows.
   - Replacement of multiple current entrypoints with a unified entrypoint later.
@@ -73,7 +73,7 @@
 - Treat the current path-import + decorator-registration mechanism as legacy-but-active. Do not remove it without a compatibility plan.
 - Assistant-related code is in transition. Prefer task-oriented abstractions for new work, but preserve current user-facing behavior.
 - Legacy code may be intentionally retained during the refactor. Confirm it is actually obsolete before deleting or bypassing it.
-- When adding new code, prefer abstractions that can survive the future Ray migration, task-centric evaluation design, config redesign, and plugin-system migration.
+- When adding new code, prefer abstractions that can survive the ongoing process-backed runtime migration, task-centric evaluation design, config redesign, and plugin-system migration.
 - Avoid deepening coupling to current entrypoints, current config internals, or ad-hoc plugin loading unless backward compatibility requires it.
 
 ## External Integrations And Secrets

@@ -1,4 +1,3 @@
-import asyncio
 from functools import cached_property
 from typing import Annotated, Optional
 
@@ -6,13 +5,13 @@ import numpy as np
 import torch
 import torch.nn.functional as F
 from PIL.ImageFile import ImageFile
-from torch.nn.parallel import DataParallel as DP
 from transformers import CLIPModel, PreTrainedTokenizer
 
 from flexrag.common import LOGGER_MANAGER, Choices, configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
 from .encoder_base import ENCODERS, EncoderBase
+from .local_process_encoder_base import LocalProcessEncoderBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.hf_model")
 
@@ -81,8 +80,7 @@ class HFEncoderConfig(HFModelConfig):
     task: Optional[str] = None  # used in jina-embedding
 
 
-@ENCODERS("hf", config_class=HFEncoderConfig)
-class HFEncoder(EncoderBase):
+class HFEncoderImpl(EncoderBase):
     def __init__(self, cfg: HFEncoderConfig):
         # load model
         self.model, self.tokenizer = load_hf_model(
@@ -339,6 +337,35 @@ class HFEncoder(EncoderBase):
         else:
             prefix_lengths = 0
         return prefix_lengths
+
+
+@ENCODERS("hf", config_class=HFEncoderConfig)
+class HFEncoder(LocalProcessEncoderBase):
+    impl_cls = HFEncoderImpl
+
+    async def async_contextual_encode(
+        self, documents: list[list[str]] | list[str], overlap_size: int = 512
+    ) -> list[np.ndarray]:
+        return await self._run_coroutine_async(
+            self._async_call_primary(
+                "contextual_encode",
+                documents,
+                overlap_size=overlap_size,
+            )
+        )
+
+    def contextual_encode(
+        self, documents: list[list[str]] | list[str], overlap_size: int = 512
+    ) -> list[np.ndarray]:
+        return self._call_primary(
+            "contextual_encode",
+            documents,
+            overlap_size=overlap_size,
+        )
+
+    @cached_property
+    def prefix_length(self) -> int:
+        return self._call_primary("prefix_length")
 
 
 @configure

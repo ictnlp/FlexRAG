@@ -203,16 +203,21 @@ class TestEncode:
     ]
 
     async def run_encoder(self, encoder: EncoderBase) -> None:
-        r1 = encoder.encode(self.text)
-        assert isinstance(r1, np.ndarray)
-        assert r1.ndim == 2
-        assert r1.shape[0] == len(self.text)
-        assert r1.shape[1] == encoder.embedding_size
-        r2 = await encoder.async_encode(self.text)
-        assert r1.ndim == 2
-        assert r1.shape[0] == len(self.text)
-        assert r1.shape[1] == encoder.embedding_size
-        assert (r1 - r2).max() < 1e-4
+        try:
+            r1 = encoder.encode(self.text)
+            assert isinstance(r1, np.ndarray)
+            assert r1.ndim == 2
+            assert r1.shape[0] == len(self.text)
+            assert r1.shape[1] == encoder.embedding_size
+            r2 = await encoder.async_encode(self.text)
+            assert r1.ndim == 2
+            assert r1.shape[0] == len(self.text)
+            assert r1.shape[1] == encoder.embedding_size
+            assert (r1 - r2).max() < 1e-4
+        finally:
+            close = getattr(encoder, "close", None)
+            if callable(close):
+                close()
 
     @pytest.mark.asyncio
     async def test_litellm_openai(self, mock_litellm_client):

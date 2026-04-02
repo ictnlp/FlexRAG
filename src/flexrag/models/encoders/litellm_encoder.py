@@ -6,14 +6,14 @@ import numpy as np
 
 from flexrag.common import configure, trace
 
+from .async_encoder_base import AsyncEncoderBase
 from .encoder_base import ENCODERS
-from .remote_encoder_base import RemoteEncoderBase, RemoteEncoderBaseConfig
 
 litellm.suppress_debug_info = True
 
 
 @configure
-class LiteLLMEncoderConfig(RemoteEncoderBaseConfig):
+class LiteLLMEncoderConfig:
     """Configuration for LiteLLMEncoder.
 
     :param provider: LiteLLM provider prefix, e.g. ``openai`` or ``cohere``.
@@ -34,6 +34,9 @@ class LiteLLMEncoderConfig(RemoteEncoderBaseConfig):
     :type embedding_size: Optional[int]
     :param input_type: Provider-specific embedding input type. Defaults to None.
     :type input_type: Optional[str]
+    :param max_concurrency: Maximum number of in-flight API requests created by
+        the encoder proxy. Defaults to 1.
+    :type max_concurrency: int
     :param extra_kwargs: Additional provider-specific LiteLLM embedding kwargs.
         Explicit top-level config fields take precedence over conflicting keys here.
     :type extra_kwargs: dict[str, Any]
@@ -58,11 +61,15 @@ class LiteLLMEncoderConfig(RemoteEncoderBaseConfig):
     proxy: Optional[str] = None
     embedding_size: Optional[int] = None
     input_type: Optional[str] = None
+    max_concurrency: int = 1
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
 @ENCODERS("litellm", config_class=LiteLLMEncoderConfig)
-class LiteLLMEncoder(RemoteEncoderBase):
+class LiteLLMEncoder(AsyncEncoderBase[LiteLLMEncoderConfig]):
+    def _get_max_concurrency(self) -> int:
+        return max(1, self._config.max_concurrency)
+
     async def _create_client(self, config: LiteLLMEncoderConfig):
         self._embedding_size = config.embedding_size
         self._input_type = config.input_type

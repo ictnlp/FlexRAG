@@ -7,6 +7,7 @@ import numpy as np
 from flexrag.common import configure, trace
 
 from .encoder_base import ENCODERS, EncoderBase
+from .local_process_encoder_base import LocalProcessEncoderBase
 
 
 @configure
@@ -44,8 +45,7 @@ class SentenceTransformerEncoderConfig:
     model_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
-@ENCODERS("sentence_transformer", config_class=SentenceTransformerEncoderConfig)
-class SentenceTransformerEncoder(EncoderBase):
+class SentenceTransformerEncoderImpl(EncoderBase):
     def __init__(self, config: SentenceTransformerEncoderConfig) -> None:
         from sentence_transformers import SentenceTransformer
 
@@ -83,13 +83,14 @@ class SentenceTransformerEncoder(EncoderBase):
         if kwargs.get("prompt", self.prompt) is not None:
             args["prompt"] = self.prompt
         args["batch_size"] = math.ceil(args["batch_size"] / max(1, len(self.devices)))
-        # Data Parallel Encoding is currently disabled for SentenceTransformer as
-        # we are working to employ `ray` for more efficient multi-GPU encoding.
-        # if len(self.devices) > 0:
-        #     args["device"] = [f"cuda:{i}" for i in self.devices]
         embeddings = self.model.encode(**args)
         return embeddings
 
     @property
     def embedding_size(self) -> int:
         return self.model.get_sentence_embedding_dimension()
+
+
+@ENCODERS("sentence_transformer", config_class=SentenceTransformerEncoderConfig)
+class SentenceTransformerEncoder(LocalProcessEncoderBase):
+    impl_cls = SentenceTransformerEncoderImpl
