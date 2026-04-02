@@ -364,7 +364,6 @@ class HFClipEncoder(EncoderBase):
     tokenizer: PreTrainedTokenizer
 
     def __init__(self, cfg: HFClipEncoderConfig):
-        super().__init__(cfg)
         self.devices = cfg.device_id
         # load model
         self.model, (self.tokenizer, self.processor) = load_hf_model(
@@ -382,7 +381,8 @@ class HFClipEncoder(EncoderBase):
         self.convert_to_rgb = cfg.convert_to_rgb
         return
 
-    def _encode(self, data: list[str | ImageFile]) -> np.ndarray:
+    def encode(self, data: list[str | ImageFile] | str | ImageFile) -> np.ndarray:
+        data = data if isinstance(data, list) else [data]
         if isinstance(data[0], str):
             assert all(isinstance(d, str) for d in data)
             return self.encode_text(data)
