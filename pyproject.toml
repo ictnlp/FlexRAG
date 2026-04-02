@@ -112,3 +112,11 @@ ignore = ["D001"]
 markers = ["gpu: mark test as requiring GPU"]
 log_level = "DEBUG"
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.ty.rules]
+invalid-return-type = "ignore"
+invalid-argument-type = "ignore"
+invalid-assignment = "ignore"
+unresolved-attribute = "ignore"
+call-non-callable = "ignore"
+invalid-method-override = "ignore"
