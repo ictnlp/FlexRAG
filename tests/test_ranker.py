@@ -34,6 +34,16 @@ class TestRanker:
                 assert s1 - s2 < 1e-4
         return
 
+    async def run_ranker(self, ranker) -> None:
+        try:
+            r1 = ranker.rank(self.query, self.candidates)
+            r2 = await ranker.async_rank(self.query, self.candidates)
+            self.valid_result(r1, r2)
+        finally:
+            close = getattr(ranker, "close", None)
+            if callable(close):
+                close()
+
     @pytest.mark.asyncio
     async def test_rank_litellm(self, mock_litellm_client):
         ranker = LiteLLMRanker(
@@ -43,9 +53,7 @@ class TestRanker:
                 api_key="test",
             )
         )
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        await self.run_ranker(ranker)
         return
 
     @pytest.mark.gpu
@@ -60,9 +68,7 @@ class TestRanker:
                 ),
             )
         )
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        await self.run_ranker(ranker)
         return
 
     @pytest.mark.asyncio
@@ -70,9 +76,7 @@ class TestRanker:
         ranker = HFCrossEncoderRanker(
             HFCrossEncoderRankerConfig(model_path="cross-encoder/ms-marco-MiniLM-L6-v2")
         )
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        await self.run_ranker(ranker)
         return
 
     @pytest.mark.asyncio
@@ -80,9 +84,7 @@ class TestRanker:
         ranker = HFLogitsRanker(
             HFLogitsRankerConfig(model_path="unicamp-dl/InRanker-small")
         )
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        await self.run_ranker(ranker)
         return
 
     @pytest.mark.asyncio
@@ -90,7 +92,5 @@ class TestRanker:
         ranker = HFColBertRanker(
             HFColBertRankerConfig(model_path="colbert-ir/colbertv2.0")
         )
-        r1 = ranker.rank(self.query, self.candidates)
-        r2 = await ranker.async_rank(self.query, self.candidates)
-        self.valid_result(r1, r2)
+        await self.run_ranker(ranker)
         return

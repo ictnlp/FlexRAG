@@ -2,11 +2,11 @@ from typing import Annotated
 
 import numpy as np
 import torch
-from transformers import GenerationConfig as HFGenerationConfig
 
 from flexrag.common import Choices, configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
+from .local_process_scorer_base import LocalProcessScorerBase
 from .scorer_base import SCORERS, PairScorerBase
 
 
@@ -35,8 +35,7 @@ class HFLogitsScorerConfig(HFModelConfig):
     negative_token: str = "▁false"
 
 
-@SCORERS("hf_logits", config_class=HFLogitsScorerConfig)
-class HFLogitsScorer(PairScorerBase):
+class HFLogitsScorerImpl(PairScorerBase):
     def __init__(self, cfg: HFLogitsScorerConfig):
         # load model
         self.model, self.tokenizer = load_hf_model(
@@ -49,8 +48,12 @@ class HFLogitsScorer(PairScorerBase):
         )
         self.max_encode_length = cfg.max_encode_length
         self.input_template = cfg.input_template
-        self.positive_token = self.tokenizer.convert_tokens_to_ids(cfg.positive_token)
-        self.negative_token = self.tokenizer.convert_tokens_to_ids(cfg.negative_token)
+        self.positive_token: int = self.tokenizer.convert_tokens_to_ids(
+            cfg.positive_token
+        )
+        self.negative_token: int = self.tokenizer.convert_tokens_to_ids(
+            cfg.negative_token
+        )
         return
 
     @trace("scorer.hf_logits")
@@ -70,10 +73,30 @@ class HFLogitsScorer(PairScorerBase):
             padding_side="left",
         )
         inputs = inputs.to(self.model.device)
-        outputs = self.model(**inputs).logits[:, -1, :]
+        if getattr(self.model.config, "is_encoder_decoder", False):
+            decoder_start_token_id = self.model.config.decoder_start_token_id
+            if decoder_start_token_id is None:
+                decoder_start_token_id = self.tokenizer.pad_token_id
+            decoder_input_ids = torch.full(
+                (len(input_texts), 1),
+                decoder_start_token_id,
+                dtype=torch.long,
+                device=self.model.device,
+            )
+            outputs = self.model(
+                **inputs,
+                decoder_input_ids=decoder_input_ids,
+            ).logits[:, 0, :]
+        else:
+            outputs = self.model(**inputs).logits[:, -1, :]
         positive_scores = outputs[:, self.positive_token : self.positive_token + 1]
         negative_scores = outputs[:, self.negative_token : self.negative_token + 1]
         scores = torch.softmax(
             torch.cat([positive_scores, negative_scores], dim=1), dim=1
         )[:, 0]
-        return scores.cpu().float().numpy()
+        return np.atleast_1d(scores.cpu().float().numpy())
+
+
+@SCORERS("hf_logits", config_class=HFLogitsScorerConfig)
+class HFLogitsScorer(LocalProcessScorerBase):
+    impl_cls = HFLogitsScorerImpl

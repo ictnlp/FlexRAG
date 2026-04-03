@@ -4,6 +4,7 @@ import torch
 from flexrag.common import configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
+from .local_process_scorer_base import LocalProcessScorerBase
 from .scorer_base import SCORERS, PairScorerBase
 
 
@@ -18,8 +19,7 @@ class HFCrossEncoderScorerConfig(HFModelConfig):
     max_encode_length: int = 512
 
 
-@SCORERS("hf_cross_encoder", config_class=HFCrossEncoderScorerConfig)
-class HFCrossEncoderScorer(PairScorerBase):
+class HFCrossEncoderScorerImpl(PairScorerBase):
     """HFCrossEncoderScorer: The scorer based on the HuggingFace Cross Encoder model."""
 
     def __init__(self, cfg: HFCrossEncoderScorerConfig):
@@ -47,5 +47,10 @@ class HFCrossEncoderScorer(PairScorerBase):
             truncation=True,
         )
         inputs = inputs.to(self.model.device)
-        scores = self.model(**inputs).logits.squeeze().cpu().numpy()
-        return scores
+        scores = self.model(**inputs).logits.view(-1).cpu().numpy()
+        return np.atleast_1d(scores)
+
+
+@SCORERS("hf_cross_encoder", config_class=HFCrossEncoderScorerConfig)
+class HFCrossEncoderScorer(LocalProcessScorerBase):
+    impl_cls = HFCrossEncoderScorerImpl

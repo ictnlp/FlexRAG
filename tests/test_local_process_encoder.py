@@ -46,7 +46,10 @@ async def test_local_process_encoder_batch_scheduling():
             delay_s=0.2,
         )
     ) as encoder:
-        await encoder.async_encode(["warmup"])
+        await encoder.async_encode(
+            ["warmup-1", "warmup-2", "warmup-3", "warmup-4", "warmup-5", "warmup-6"],
+            batch_size=2,
+        )
         start = time.perf_counter()
         embeddings = await encoder.async_encode(texts, batch_size=2)
         elapsed = time.perf_counter() - start

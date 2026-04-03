@@ -1,4 +1,5 @@
 import math
+from collections import defaultdict
 
 import numpy as np
 import torch
@@ -6,6 +7,7 @@ import torch
 from flexrag.common import configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
+from .local_process_scorer_base import LocalProcessScorerBase
 from .scorer_base import SCORERS, PairScorerBase
 
 
@@ -35,8 +37,7 @@ class HFColBertScorerConfig(HFModelConfig):
     normalize_embeddings: bool = True
 
 
-@SCORERS("hf_colbert", config_class=HFColBertScorerConfig)
-class HFColBertScorer(PairScorerBase):
+class HFColBertScorerImpl(PairScorerBase):
     """HFColBertScorer: The scorer based on the HuggingFace ColBERT model.
     Code adapted from https://github.com/hotchpotch/JQaRA/blob/main/evaluator/reranker/colbert_reranker.py
     """
@@ -61,21 +62,57 @@ class HFColBertScorer(PairScorerBase):
         return
 
     @trace("scorer.hf_colbert")
-    def score(self, query: str, candidates: list[str]) -> np.ndarray:
-        # tokenize the query & candidates
-        query_inputs = self._query_encode([query])
-        cand_inputs = self._document_encode(candidates)
-        # encode the query & candidates
+    def score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
+        if not pairs:
+            return np.array([], dtype=np.float32)
+
+        # ColBERT scores pairs, but repeated queries are common in reranking.
+        # Deduplicating queries lets us encode each query only once per batch.
+        query_to_idx: dict[str, int] = {}
+        query_indices: list[int] = []
+        unique_queries: list[str] = []
+        for query, _ in pairs:
+            idx = query_to_idx.get(query)
+            if idx is None:
+                idx = len(unique_queries)
+                query_to_idx[query] = idx
+                unique_queries.append(query)
+            query_indices.append(idx)
+
+        candidate_texts = [candidate for _, candidate in pairs]
+        query_inputs = self._query_encode(unique_queries)
+        cand_inputs = self._document_encode(candidate_texts)
         query_embeds = self._encode(query_inputs)
         cand_embeds = self._encode(cand_inputs)
-        # compute the scores using maxsim(max-cosine)
-        token_scores = torch.einsum("qin,pjn->qipj", query_embeds, cand_embeds)
-        token_scores = token_scores.masked_fill(
-            cand_inputs["attention_mask"].unsqueeze(0).unsqueeze(0) == 0, -1e4
-        )
-        scores, _ = token_scores.max(-1)
-        scores = scores.sum(1) / query_inputs["attention_mask"].sum(-1, keepdim=True)
-        scores = scores.cpu().squeeze().float().numpy()
+
+        grouped_pair_indices: dict[int, list[int]] = defaultdict(list)
+        for pair_idx, query_idx in enumerate(query_indices):
+            grouped_pair_indices[query_idx].append(pair_idx)
+
+        scores = np.empty(len(pairs), dtype=np.float32)
+        for query_idx, pair_indices in grouped_pair_indices.items():
+            # MaxSim still works most naturally per query, so we reuse the
+            # shared query embedding against all candidates that belong to it.
+            group_query_embeds = query_embeds[query_idx : query_idx + 1]
+            group_query_mask = query_inputs["attention_mask"][query_idx : query_idx + 1]
+            group_cand_embeds = cand_embeds[pair_indices]
+            group_cand_mask = cand_inputs["attention_mask"][pair_indices]
+
+            token_scores = torch.einsum(
+                "qin,pjn->qipj",
+                group_query_embeds,
+                group_cand_embeds,
+            )
+            token_scores = token_scores.masked_fill(
+                group_cand_mask.unsqueeze(0).unsqueeze(0) == 0,
+                -1e4,
+            )
+            group_scores, _ = token_scores.max(-1)
+            group_scores = group_scores.sum(1) / group_query_mask.sum(-1, keepdim=True)
+            group_scores = np.atleast_1d(group_scores.squeeze(0).cpu().float().numpy())
+            # Scatter grouped scores back to the original pair order expected
+            # by the caller.
+            scores[np.array(pair_indices)] = group_scores.astype(np.float32, copy=False)
         return scores
 
     @torch.no_grad()
@@ -95,6 +132,8 @@ class HFColBertScorer(PairScorerBase):
             mask_token_id = self.tokenizer.mask_token_id
 
             new_encodings = {"input_ids": [], "attention_mask": []}
+            buffered_encodings: list[tuple[list[int], list[int]]] = []
+            max_qlen = 0
 
             for i, input_ids in enumerate(inputs["input_ids"]):
                 original_length = (
@@ -117,6 +156,14 @@ class HFColBertScorer(PairScorerBase):
                     padded_input_ids = input_ids[:QLEN].tolist()
                     padded_attention_mask = inputs["attention_mask"][i][:QLEN].tolist()
 
+                buffered_encodings.append((padded_input_ids, padded_attention_mask))
+                max_qlen = max(max_qlen, len(padded_input_ids))
+
+            for padded_input_ids, padded_attention_mask in buffered_encodings:
+                pad_length = max_qlen - len(padded_input_ids)
+                if pad_length > 0:
+                    padded_input_ids = padded_input_ids + [mask_token_id] * pad_length
+                    padded_attention_mask = padded_attention_mask + [0] * pad_length
                 new_encodings["input_ids"].append(padded_input_ids)
                 new_encodings["attention_mask"].append(padded_attention_mask)
 
@@ -173,3 +220,8 @@ class HFColBertScorer(PairScorerBase):
 
     def _document_encode(self, documents: list[str]):
         return self._tokenize(documents, self.document_token_id)
+
+
+@SCORERS("hf_colbert", config_class=HFColBertScorerConfig)
+class HFColBertScorer(LocalProcessScorerBase):
+    impl_cls = HFColBertScorerImpl
