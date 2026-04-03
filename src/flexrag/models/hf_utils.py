@@ -400,7 +400,7 @@ def load_hf_model(
 @configure
 class HFModelConfig:
     """The Base Configuration for Huggingface Models,
-    including `HFGenerator`, `HFVLMGenerator`, `HFEncoder` and `HFClipEncoder`.
+    including `HFGenerator`, `HFEncoder` and `HFClipEncoder`.
 
     :param model_path: The path to the model. Required.
     :type model_path: str

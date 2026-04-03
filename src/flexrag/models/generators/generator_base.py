@@ -63,8 +63,11 @@ class GenerationConfig:
 
 class GeneratorBase(ABC):
     """Base class for generators.
-    The generator can generate text or chat responses based on the given prefixes or messages.
-    The subclasses must implement the `chat` and `generate` methods.
+
+    ``generate`` is the text-only prompt interface. ``chat`` is the message-based
+    interface and therefore the canonical entrypoint for multimodal requests.
+    Both interfaces support request batching via ``batch_size`` and progress
+    reporting via ``log_interval``.
     """
 
     @abstractmethod
@@ -72,6 +75,8 @@ class GeneratorBase(ABC):
         self,
         messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
         generation_config: GenerationConfig | None = None,
+        batch_size: int = 1,
+        log_interval: int = 1000,
     ) -> list[list[ChatTurn]]:
         """chat with the model using model templates.
 
@@ -79,6 +84,10 @@ class GeneratorBase(ABC):
         :type messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict]
         :param generation_config: GenerationConfig. Defaults to None.
         :type generation_config: GenerationConfig | None
+        :param batch_size: Request batch size. Defaults to 1.
+        :type batch_size: int
+        :param log_interval: Logging interval for progress updates. Defaults to 1000.
+        :type log_interval: int
         :return: A batch of chat responses.
         :rtype: list[list[ChatTurn]]
         """
@@ -88,6 +97,8 @@ class GeneratorBase(ABC):
         self,
         messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
         generation_config: GenerationConfig | None = None,
+        batch_size: int = 1,
+        log_interval: int = 1000,
     ) -> list[list[ChatTurn]]:
         """The async version of chat.
 
@@ -95,6 +106,10 @@ class GeneratorBase(ABC):
         :type messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict]
         :param generation_config: GenerationConfig. Defaults to None.
         :type generation_config: GenerationConfig | None
+        :param batch_size: Request batch size. Defaults to 1.
+        :type batch_size: int
+        :param log_interval: Logging interval for progress updates. Defaults to 1000.
+        :type log_interval: int
         :return: A batch of chat responses.
         :rtype: list[list[ChatTurn]]
         """
@@ -102,13 +117,20 @@ class GeneratorBase(ABC):
             "Current model does not support asynchronous chat,"
             " thus the code will be run in synchronous mode"
         )
-        return self.chat(messages=messages, generation_config=generation_config)
+        return self.chat(
+            messages=messages,
+            generation_config=generation_config,
+            batch_size=batch_size,
+            log_interval=log_interval,
+        )
 
     @abstractmethod
     def generate(
         self,
         prefixes: list[str] | str,
         generation_config: GenerationConfig | None = None,
+        batch_size: int = 1,
+        log_interval: int = 1000,
     ) -> list[list[str]]:
         """generate text with the model using the given prefixes.
 
@@ -116,6 +138,10 @@ class GeneratorBase(ABC):
         :type prefixes: list[str] | str
         :param generation_config: GenerationConfig. Defaults to None.
         :type generation_config: GenerationConfig | None
+        :param batch_size: Request batch size. Defaults to 1.
+        :type batch_size: int
+        :param log_interval: Logging interval for progress updates. Defaults to 1000.
+        :type log_interval: int
         :return: A batch of generated text.
         :rtype: list[list[str]]
         """
@@ -123,8 +149,10 @@ class GeneratorBase(ABC):
 
     async def async_generate(
         self,
-        prefixes: list[str],
+        prefixes: list[str] | str,
         generation_config: GenerationConfig | None = None,
+        batch_size: int = 1,
+        log_interval: int = 1000,
     ) -> list[list[str]]:
         """The async version of generate.
 
@@ -132,6 +160,10 @@ class GeneratorBase(ABC):
         :type prefixes: list[str] | str
         :param generation_config: GenerationConfig. Defaults to None.
         :type generation_config: GenerationConfig | None
+        :param batch_size: Request batch size. Defaults to 1.
+        :type batch_size: int
+        :param log_interval: Logging interval for progress updates. Defaults to 1000.
+        :type log_interval: int
         :return: A batch of generated text.
         :rtype: list[list[str]]
         """
@@ -139,7 +171,15 @@ class GeneratorBase(ABC):
             "Current generator does not support asynchronous generate,"
             " thus the code will be run in synchronous mode"
         )
-        return self.generate(prefixes=prefixes, generation_config=generation_config)
+        return self.generate(
+            prefixes=prefixes,
+            generation_config=generation_config,
+            batch_size=batch_size,
+            log_interval=log_interval,
+        )
+
+    def close(self) -> None:
+        return
 
 
 GENERATORS = Register[GeneratorBase]("generator")

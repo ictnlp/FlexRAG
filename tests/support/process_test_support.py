@@ -4,8 +4,13 @@ from dataclasses import field
 import numpy as np
 
 from flexrag.common import configure
+from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.models.encoders.encoder_base import EncoderBase
 from flexrag.models.encoders.local_process_encoder_base import LocalProcessEncoderBase
+from flexrag.models.generators.generator_base import GenerationConfig, GeneratorBase
+from flexrag.models.generators.local_process_generator_base import (
+    LocalProcessGeneratorBase,
+)
 from flexrag.models.scorers.local_process_scorer_base import LocalProcessScorerBase
 from flexrag.models.scorers.scorer_base import PairScorerBase
 
@@ -84,3 +89,90 @@ class FakeLocalPairScorerImpl(PairScorerBase):
 
 class FakeLocalPairScorer(LocalProcessScorerBase):
     impl_cls = FakeLocalPairScorerImpl
+
+
+@configure
+class FakeLocalGeneratorConfig:
+    device_id: list[int] = field(default_factory=list)
+    delay_s: float = 0.0
+    error_on: str | None = None
+
+
+class FakeLocalGeneratorImpl(GeneratorBase):
+    def __init__(self, config: FakeLocalGeneratorConfig) -> None:
+        self.delay_s = config.delay_s
+        self.error_on = config.error_on
+        return
+
+    def generate(
+        self,
+        prefixes: list[str] | str,
+        generation_config: GenerationConfig | None = None,
+        batch_size: int = 1,
+        log_interval: int = 1000,
+    ) -> list[list[str]]:
+        del batch_size, log_interval
+        prefixes = prefixes if isinstance(prefixes, list) else [prefixes]
+        if self.delay_s > 0:
+            time.sleep(self.delay_s)
+        if self.error_on is not None and any(
+            self.error_on in prefix for prefix in prefixes
+        ):
+            raise ValueError(f"boom: {self.error_on}")
+
+        sample_num = (
+            generation_config.sample_num if generation_config is not None else 1
+        )
+        return [
+            [f"{prefix} -> sample {i}" for i in range(sample_num)]
+            for prefix in prefixes
+        ]
+
+    def chat(
+        self,
+        messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
+        generation_config: GenerationConfig | None = None,
+        batch_size: int = 1,
+        log_interval: int = 1000,
+    ) -> list[list[ChatTurn]]:
+        del batch_size, log_interval
+        if isinstance(messages, ChatMessages):
+            messages = [messages]
+        elif messages and isinstance(messages[0], dict):
+            messages = [ChatMessages.from_list(messages)]
+        else:
+            messages = [
+                (
+                    message
+                    if isinstance(message, ChatMessages)
+                    else ChatMessages.from_list(message)
+                )
+                for message in messages
+            ]
+
+        if self.delay_s > 0:
+            time.sleep(self.delay_s)
+
+        prompts = []
+        for message in messages:
+            prompt_text = " ".join(turn.text_content for turn in message)
+            prompts.append(prompt_text)
+        if self.error_on is not None and any(
+            self.error_on in prompt for prompt in prompts
+        ):
+            raise ValueError(f"boom: {self.error_on}")
+
+        sample_num = (
+            generation_config.sample_num if generation_config is not None else 1
+        )
+        return [
+            [
+                ChatTurn(role="assistant", content=f"{prompt} -> reply {i}")
+                for i in range(sample_num)
+            ]
+            for prompt in prompts
+        ]
+
+
+class FakeLocalGenerator(LocalProcessGeneratorBase):
+    impl_cls = FakeLocalGeneratorImpl

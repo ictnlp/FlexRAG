@@ -13,6 +13,7 @@ from .encoders import (
 )
 from .generators import (
     GENERATORS,
+    AsyncGeneratorBase,
     GenerationConfig,
     GeneratorBase,
     GeneratorConfig,
@@ -20,11 +21,11 @@ from .generators import (
     HFGeneratorConfig,
     LiteLLMGenerator,
     LiteLLMGeneratorConfig,
-    VLLMGenerator,
-    VLLMGeneratorConfig,
+    LocalProcessGeneratorBase,
 )
 
 __all__ = [
+    "AsyncGeneratorBase",
     "GeneratorBase",
     "GenerationConfig",
     "EncoderBase",
@@ -38,8 +39,7 @@ __all__ = [
     "LiteLLMGeneratorConfig",
     "LiteLLMEncoder",
     "LiteLLMEncoderConfig",
-    "VLLMGenerator",
-    "VLLMGeneratorConfig",
+    "LocalProcessGeneratorBase",
     "SentenceTransformerEncoder",
     "SentenceTransformerEncoderConfig",
     "GENERATORS",

@@ -21,8 +21,6 @@ from flexrag.models import (
     LiteLLMGeneratorConfig,
     SentenceTransformerEncoder,
     SentenceTransformerEncoderConfig,
-    VLLMGenerator,
-    VLLMGeneratorConfig,
 )
 
 logger = LOGGER_MANAGER.get_logger("tests.test_model")
@@ -98,38 +96,52 @@ class TestGenerator:
 
     async def valid_chat_function(self, generator: GeneratorBase):
         # test chat & async_chat with sampling
-        r1 = generator.chat(self.prompts, self.sampled_cfg)
+        r1 = generator.chat(self.prompts, self.sampled_cfg, batch_size=2)
         self.valid_chat_sampled(r1)
-        r2 = await generator.async_chat(self.prompts, self.sampled_cfg)
+        r2 = await generator.async_chat(self.prompts, self.sampled_cfg, batch_size=2)
         self.valid_chat_sampled(r2)
         # test chat & async_chat with default generation config
-        r1 = generator.chat(self.prompts)
+        r1 = generator.chat(self.prompts, batch_size=2)
         self.valid_chat_default(r1)
-        r2 = await generator.async_chat(self.prompts)
+        r2 = await generator.async_chat(self.prompts, batch_size=2)
         self.valid_chat_default(r2)
         # test chat & async_chat with stop strings
-        r1 = generator.chat(self.prompts, self.stopped_cfg)
+        r1 = generator.chat(self.prompts, self.stopped_cfg, batch_size=2)
         self.valid_chat_stopped(r1)
-        r2 = await generator.async_chat(self.prompts, self.stopped_cfg)
+        r2 = await generator.async_chat(self.prompts, self.stopped_cfg, batch_size=2)
         self.valid_chat_stopped(r2)
         return
 
     async def valid_generate_function(self, generator: GeneratorBase):
         # test generate & async_generate with sampling
-        r1 = generator.generate(self.prefixes, self.sampled_cfg)
+        r1 = generator.generate(self.prefixes, self.sampled_cfg, batch_size=2)
         self.valid_sampled(r1)
-        r2 = await generator.async_generate(self.prefixes, self.sampled_cfg)
+        r2 = await generator.async_generate(
+            self.prefixes, self.sampled_cfg, batch_size=2
+        )
         self.valid_sampled(r2)
         # test generate & async_generate with default generation config
-        r1 = generator.generate(self.prefixes)
+        r1 = generator.generate(self.prefixes, batch_size=2)
         self.valid_default(r1)
-        r2 = await generator.async_generate(self.prefixes)
+        r2 = await generator.async_generate(self.prefixes, batch_size=2)
         self.valid_default(r2)
         # test generate & async_generate with stop strings
-        r1 = generator.generate(self.prefixes, self.stopped_cfg)
+        r1 = generator.generate(self.prefixes, self.stopped_cfg, batch_size=2)
         self.valid_stopped(r1)
-        r2 = await generator.async_generate(self.prefixes, self.stopped_cfg)
+        r2 = await generator.async_generate(
+            self.prefixes, self.stopped_cfg, batch_size=2
+        )
         self.valid_stopped(r2)
+        return
+
+    async def run_generator(self, generator: GeneratorBase):
+        try:
+            await self.valid_chat_function(generator)
+            await self.valid_generate_function(generator)
+        finally:
+            close = getattr(generator, "close", None)
+            if callable(close):
+                close()
         return
 
     @pytest.mark.asyncio
@@ -137,8 +149,7 @@ class TestGenerator:
         generator = LiteLLMGenerator(
             LiteLLMGeneratorConfig(provider="openai", model_name="gpt-4o-mini")
         )
-        await self.valid_chat_function(generator)
-        await self.valid_generate_function(generator)
+        await self.run_generator(generator)
         return
 
     @pytest.mark.asyncio
@@ -146,19 +157,7 @@ class TestGenerator:
         generator = LiteLLMGenerator(
             LiteLLMGeneratorConfig(provider="ollama_chat", model_name="llama3.1")
         )
-        await self.valid_chat_function(generator)
-        await self.valid_generate_function(generator)
-        return
-
-    @pytest.mark.gpu
-    @pytest.mark.asyncio
-    async def test_vllm(self):
-        # FIXME: VLLMGenerator can not be initiate if CUDA is initialized.
-        # if not torch.cuda.is_available():
-        #     pytest.skip("VLLMGenerator requires GPU for inference")
-        generator = VLLMGenerator(VLLMGeneratorConfig(model_path="Qwen/Qwen3-0.6B"))
-        await self.valid_chat_function(generator)
-        await self.valid_generate_function(generator)
+        await self.run_generator(generator)
         return
 
     @pytest.mark.gpu
@@ -172,8 +171,7 @@ class TestGenerator:
                 device_id=[0],
             )
         )
-        await self.valid_chat_function(generator)
-        await self.valid_generate_function(generator)
+        await self.run_generator(generator)
         return
 
     @pytest.mark.asyncio
@@ -181,8 +179,7 @@ class TestGenerator:
         generator = LiteLLMGenerator(
             LiteLLMGeneratorConfig(provider="anthropic", model_name="claude-3-7-sonnet")
         )
-        await self.valid_chat_function(generator)
-        await self.valid_generate_function(generator)
+        await self.run_generator(generator)
         return
 
     @pytest.mark.asyncio
@@ -190,8 +187,7 @@ class TestGenerator:
         generator = LiteLLMGenerator(
             LiteLLMGeneratorConfig(provider="gemini", model_name="gemini-2.0-flash")
         )
-        await self.valid_chat_function(generator)
-        await self.valid_generate_function(generator)
+        await self.run_generator(generator)
         return
 
 

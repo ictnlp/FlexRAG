@@ -17,18 +17,20 @@ def mock_litellm_client(mocker):
         calls["acompletion"].append(
             {"model": model, "messages": messages, "kwargs": kwargs}
         )
+        sample_num = kwargs.get("n", 1)
         return types.SimpleNamespace(
             choices=[
                 types.SimpleNamespace(
                     message=types.SimpleNamespace(
                         role="assistant",
-                        content="Mocked LiteLLM chat response",
+                        content=f"Mocked LiteLLM chat response {i}",
                         tool_calls=None,
                         reasoning_content=None,
                         thinking_blocks=None,
                     ),
                     finish_reason="stop",
                 )
+                for i in range(sample_num)
             ],
             usage=None,
         )
@@ -37,14 +39,16 @@ def mock_litellm_client(mocker):
         calls["atext_completion"].append(
             {"model": model, "prompt": prompt, "kwargs": kwargs}
         )
+        sample_num = kwargs.get("n", 1)
         return types.SimpleNamespace(
             choices=[
                 types.SimpleNamespace(
-                    text="Mocked LiteLLM text completion",
+                    text=f"Mocked LiteLLM text completion {i}",
                     message=types.SimpleNamespace(
-                        content="Mocked LiteLLM text completion"
+                        content=f"Mocked LiteLLM text completion {i}"
                     ),
                 )
+                for i in range(sample_num)
             ]
         )
 

@@ -39,7 +39,7 @@ class TestLiteLLMGenerator:
             ChatMessages(history=[ChatTurn(role="user", content="Who is Bruce Wayne?")])
         ]
         response = generator.chat(prompts, GenerationConfig(do_sample=False))
-        assert response[0][0].text_content == "Mocked LiteLLM chat response"
+        assert response[0][0].text_content == "Mocked LiteLLM chat response 0"
         call = mock_litellm_client["calls"]["acompletion"][0]
         assert call["model"] == "openai/gpt-4o-mini"
         assert call["messages"][0]["content"] == "Who is Bruce Wayne?"
@@ -92,7 +92,7 @@ class TestLiteLLMGenerator:
             "The capital of China is",
             GenerationConfig(do_sample=False, max_new_tokens=16, stop_str=["."]),
         )
-        assert response[0][0] == "Mocked LiteLLM text completion"
+        assert response[0][0] == "Mocked LiteLLM text completion 0"
         assert len(mock_litellm_client["calls"]["acompletion"]) == 0
         call = mock_litellm_client["calls"]["atext_completion"][0]
         assert call["model"] == "openai/gpt-4o-mini"
@@ -100,7 +100,20 @@ class TestLiteLLMGenerator:
         assert call["kwargs"]["max_tokens"] == 16
         assert call["kwargs"]["stop"] == ["."]
         assert call["kwargs"]["temperature"] == 0.0
+        assert call["kwargs"]["n"] == 1
         mock_litellm_client["module"].text_completion.assert_not_called()
+
+    def test_generate_sampled_returns_multiple_choices(self, mock_litellm_client):
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(provider="openai", model_name="gpt-4o-mini")
+        )
+        response = generator.generate(
+            "The capital of China is",
+            GenerationConfig(do_sample=True, sample_num=3, max_new_tokens=16),
+        )
+        assert response == [[f"Mocked LiteLLM text completion {i}" for i in range(3)]]
+        call = mock_litellm_client["calls"]["atext_completion"][0]
+        assert call["kwargs"]["n"] == 3
 
     def test_extra_kwargs_passthrough_with_explicit_precedence(
         self, mock_litellm_client
@@ -394,7 +407,7 @@ class TestLiteLLMIntegration:
         response = assistant.answer(
             ChatMessages(history=[ChatTurn(role="user", content="Who is Bruce Wayne?")])
         )
-        assert response.response.text_content == "Mocked LiteLLM chat response"
+        assert response.response.text_content == "Mocked LiteLLM chat response 0"
         assert mock_litellm_client["calls"]["acompletion"]
 
     def test_semantic_chunker_with_litellm(self, mock_litellm_client):

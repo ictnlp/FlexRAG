@@ -15,8 +15,8 @@ from flexrag.common.base64_utils import (
 )
 from flexrag.common.logging import LOGGER_MANAGER
 
+from .async_generator_base import AsyncGeneratorBase
 from .generator_base import GENERATORS, GenerationConfig
-from .remote_generator_base import RemoteGeneratorBase, RemoteGeneratorBaseConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.litellm_generator")
 
@@ -33,6 +33,7 @@ def _generation_config_to_kwargs(
         kwargs["temperature"] = 1.0
         return kwargs
 
+    kwargs["n"] = generation_config.sample_num
     kwargs["temperature"] = (
         generation_config.temperature if generation_config.do_sample else 0.0
     )
@@ -193,8 +194,7 @@ def _turn_to_litellm_message(turn: ChatTurn) -> dict[str, Any]:
     return message
 
 
-def _completion_response_to_chat_turn(response: Any) -> ChatTurn:
-    choice = response.choices[0]
+def _completion_choice_to_chat_turn(choice: Any, usage: Any) -> ChatTurn:
     message = choice.message
     content = message.content
     normalized_parts: list[dict[str, Any]] = []
@@ -206,7 +206,6 @@ def _completion_response_to_chat_turn(response: Any) -> ChatTurn:
     if finish_reason is not None:
         metadata["finish_reason"] = finish_reason
 
-    usage = getattr(response, "usage", None)
     if usage is not None:
         usage_dict = {
             key: value
@@ -265,15 +264,25 @@ def _completion_response_to_chat_turn(response: Any) -> ChatTurn:
     )
 
 
-def _text_completion_response_to_text(response: Any) -> str:
-    choice = response.choices[0]
+def _completion_response_to_chat_turns(response: Any) -> list[ChatTurn]:
+    usage = getattr(response, "usage", None)
+    return [
+        _completion_choice_to_chat_turn(choice, usage) for choice in response.choices
+    ]
+
+
+def _text_completion_choice_to_text(choice: Any) -> str:
     if getattr(choice, "text", None) is not None:
         return choice.text
     return choice.message.content
 
 
+def _text_completion_response_to_texts(response: Any) -> list[str]:
+    return [_text_completion_choice_to_text(choice) for choice in response.choices]
+
+
 @configure
-class LiteLLMGeneratorConfig(RemoteGeneratorBaseConfig):
+class LiteLLMGeneratorConfig:
     """Configuration for LiteLLMGenerator.
 
     :param provider: LiteLLM provider prefix, e.g. ``openai`` or ``ollama``.
@@ -325,6 +334,7 @@ class LiteLLMGeneratorConfig(RemoteGeneratorBaseConfig):
 
     provider: Optional[str] = None
     model_name: Optional[str] = None
+    max_concurrency: int = 1
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     api_version: Optional[str] = None
@@ -334,7 +344,14 @@ class LiteLLMGeneratorConfig(RemoteGeneratorBaseConfig):
 
 
 @GENERATORS("litellm", config_class=LiteLLMGeneratorConfig)
-class LiteLLMGenerator(RemoteGeneratorBase):
+class LiteLLMGenerator(AsyncGeneratorBase[LiteLLMGeneratorConfig]):
+    def __init__(self, config: LiteLLMGeneratorConfig):
+        super().__init__(config)
+        return
+
+    def _get_max_concurrency(self) -> int:
+        return max(1, self._config.max_concurrency)
+
     async def _create_client(self, config: LiteLLMGeneratorConfig):
         provider = (config.provider or "").strip()
         model_name = (config.model_name or "").strip()
@@ -358,12 +375,12 @@ class LiteLLMGenerator(RemoteGeneratorBase):
         }
 
     @trace("generator.litellm_chat")
-    async def _async_chat_impl(
+    async def _async_chat_one(
         self,
         client,
         message: ChatMessages,
         generation_config: GenerationConfig | None,
-    ) -> ChatTurn:
+    ) -> list[ChatTurn]:
         request_kwargs = dict(client["request_kwargs"])
         request_kwargs.update(
             _generation_config_to_kwargs(generation_config, chat=True)
@@ -373,18 +390,40 @@ class LiteLLMGenerator(RemoteGeneratorBase):
             _turn_to_litellm_message(turn) for turn in message
         ]
         response = await litellm.acompletion(**request_kwargs)
-        return _completion_response_to_chat_turn(response)
+        return _completion_response_to_chat_turns(response)
 
     @trace("generator.litellm_generate")
-    async def _async_generate_impl(
+    async def _async_generate_one(
         self,
         client,
         prompt: str,
         generation_config: GenerationConfig | None,
-    ) -> str:
+    ) -> list[str]:
         request_kwargs = dict(client["request_kwargs"])
         request_kwargs.update(_generation_config_to_kwargs(generation_config))
         request_kwargs["model"] = client["model"]
         request_kwargs["prompt"] = prompt
         response = await litellm.atext_completion(**request_kwargs)
-        return _text_completion_response_to_text(response)
+        return _text_completion_response_to_texts(response)
+
+    async def _async_chat_impl(
+        self,
+        client,
+        messages: list[ChatMessages],
+        generation_config: GenerationConfig | None,
+    ) -> list[list[ChatTurn]]:
+        return [
+            await self._async_chat_one(client, message, generation_config)
+            for message in messages
+        ]
+
+    async def _async_generate_impl(
+        self,
+        client,
+        prefixes: list[str],
+        generation_config: GenerationConfig | None,
+    ) -> list[list[str]]:
+        return [
+            await self._async_generate_one(client, prompt, generation_config)
+            for prompt in prefixes
+        ]

@@ -23,4 +23,4 @@ class TestAssistant:
         response = assistant.answer(
             ChatMessages(history=[ChatTurn(role="user", content=self.query)])
         )
-        assert response.response.text_content == "Mocked LiteLLM chat response"
+        assert response.response.text_content == "Mocked LiteLLM chat response 0"
