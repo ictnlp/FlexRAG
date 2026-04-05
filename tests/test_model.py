@@ -6,9 +6,9 @@ import pytest
 from flexrag.common import LOGGER_MANAGER
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.models import (
-    EncoderBase,
+    EncoderProtocol,
     GenerationConfig,
-    GeneratorBase,
+    GeneratorProtocol,
     HFClipEncoder,
     HFClipEncoderConfig,
     HFEncoder,
@@ -94,7 +94,7 @@ class TestGenerator:
             assert isinstance(r[0].text_content, str)
         return
 
-    async def valid_chat_function(self, generator: GeneratorBase):
+    async def valid_chat_function(self, generator: GeneratorProtocol):
         # test chat & async_chat with sampling
         r1 = generator.chat(self.prompts, self.sampled_cfg, batch_size=2)
         self.valid_chat_sampled(r1)
@@ -112,7 +112,7 @@ class TestGenerator:
         self.valid_chat_stopped(r2)
         return
 
-    async def valid_generate_function(self, generator: GeneratorBase):
+    async def valid_generate_function(self, generator: GeneratorProtocol):
         # test generate & async_generate with sampling
         r1 = generator.generate(self.prefixes, self.sampled_cfg, batch_size=2)
         self.valid_sampled(r1)
@@ -134,7 +134,7 @@ class TestGenerator:
         self.valid_stopped(r2)
         return
 
-    async def run_generator(self, generator: GeneratorBase):
+    async def run_generator(self, generator: GeneratorProtocol):
         try:
             await self.valid_chat_function(generator)
             await self.valid_generate_function(generator)
@@ -198,7 +198,7 @@ class TestEncode:
         "What is the capital of China?",
     ]
 
-    async def run_encoder(self, encoder: EncoderBase) -> None:
+    async def run_encoder(self, encoder: EncoderProtocol) -> None:
         try:
             r1 = encoder.encode(self.text)
             assert isinstance(r1, np.ndarray)
@@ -255,13 +255,14 @@ class TestEncode:
         await self.run_encoder(encoder)
         return
 
-    @pytest.mark.asyncio
-    async def test_hf_clip(self):
-        # test openai clip model
+    def test_hf_clip(self):
         encoder = HFClipEncoder(
             HFClipEncoderConfig(model_path="openai/clip-vit-base-patch32")
         )
-        await self.run_encoder(encoder)
+        text_embeddings = encoder.encode(self.text)
+        assert isinstance(text_embeddings, np.ndarray)
+        assert text_embeddings.shape[0] == len(self.text)
+        assert text_embeddings.shape[1] == encoder.embedding_size
         return
 
     @pytest.mark.asyncio

@@ -6,8 +6,7 @@ import numpy as np
 
 from flexrag.common import configure, trace
 
-from .async_encoder_base import AsyncEncoderBase
-from .encoder_base import ENCODERS
+from .encoder_base import ENCODERS, EncoderBase
 
 litellm.suppress_debug_info = True
 
@@ -66,7 +65,7 @@ class LiteLLMEncoderConfig:
 
 
 @ENCODERS("litellm", config_class=LiteLLMEncoderConfig)
-class LiteLLMEncoder(AsyncEncoderBase[LiteLLMEncoderConfig]):
+class LiteLLMEncoder(EncoderBase[LiteLLMEncoderConfig]):
     def _get_max_concurrency(self) -> int:
         return max(1, self._config.max_concurrency)
 

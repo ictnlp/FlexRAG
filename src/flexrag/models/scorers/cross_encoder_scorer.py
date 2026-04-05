@@ -5,7 +5,7 @@ from flexrag.common import configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
 from .local_process_scorer_base import LocalProcessScorerBase
-from .scorer_base import SCORERS, PairScorerBase
+from .scorer_base import SCORERS
 
 
 @configure
@@ -19,7 +19,7 @@ class HFCrossEncoderScorerConfig(HFModelConfig):
     max_encode_length: int = 512
 
 
-class HFCrossEncoderScorerImpl(PairScorerBase):
+class HFCrossEncoderScorerImpl:
     """HFCrossEncoderScorer: The scorer based on the HuggingFace Cross Encoder model."""
 
     def __init__(self, cfg: HFCrossEncoderScorerConfig):

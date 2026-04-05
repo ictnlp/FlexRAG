@@ -9,7 +9,7 @@ from flexrag.common import ChatMessages, ChatTurn, Choices, configure, trace
 from flexrag.common.logging import LOGGER_MANAGER
 
 from ..hf_utils import HFModelConfig, load_hf_model
-from .generator_base import GENERATORS, GenerationConfig, GeneratorBase
+from .generator_base import GENERATORS, GenerationConfig
 from .local_process_generator_base import LocalProcessGeneratorBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.hf_model")
@@ -141,7 +141,7 @@ class HFGeneratorConfig(HFModelConfig):
     ] = "auto"
 
 
-class HFGeneratorImpl(GeneratorBase):
+class HFGeneratorImpl:
     model: PreTrainedModel
 
     def __init__(self, cfg: HFGeneratorConfig) -> None:
@@ -226,10 +226,7 @@ class HFGeneratorImpl(GeneratorBase):
         self,
         prefixes: list[str] | str,
         generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
     ) -> list[list[str]]:
-        del batch_size, log_interval
         prefixes = prefixes if isinstance(prefixes, list) else [prefixes]
         inputs = self._prepare_text_inputs(prefixes)
 
@@ -251,12 +248,9 @@ class HFGeneratorImpl(GeneratorBase):
     @torch.no_grad()
     def chat(
         self,
-        messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
+        messages: list[ChatMessages] | ChatMessages,
         generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
     ) -> list[list[ChatTurn]]:
-        del batch_size, log_interval
         if isinstance(messages, ChatMessages):
             normalized_messages = [messages]
         else:

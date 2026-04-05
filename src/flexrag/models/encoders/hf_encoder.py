@@ -10,7 +10,7 @@ from transformers import CLIPModel, PreTrainedTokenizer
 from flexrag.common import LOGGER_MANAGER, Choices, configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
-from .encoder_base import ENCODERS, EncoderBase
+from .encoder_base import ENCODERS
 from .local_process_encoder_base import LocalProcessEncoderBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.hf_model")
@@ -80,7 +80,7 @@ class HFEncoderConfig(HFModelConfig):
     task: Optional[str] = None  # used in jina-embedding
 
 
-class HFEncoderImpl(EncoderBase):
+class HFEncoderImpl:
     def __init__(self, cfg: HFEncoderConfig):
         # load model
         self.model, self.tokenizer = load_hf_model(
@@ -386,7 +386,7 @@ class HFClipEncoderConfig(HFModelConfig):
 
 
 @ENCODERS("hf_clip", config_class=HFClipEncoderConfig)
-class HFClipEncoder(EncoderBase):
+class HFClipEncoder:
     model: CLIPModel
     tokenizer: PreTrainedTokenizer
 

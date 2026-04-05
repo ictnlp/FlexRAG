@@ -7,7 +7,7 @@ from flexrag.common import Choices, configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
 from .local_process_scorer_base import LocalProcessScorerBase
-from .scorer_base import SCORERS, PairScorerBase
+from .scorer_base import SCORERS
 
 
 @configure
@@ -35,7 +35,7 @@ class HFLogitsScorerConfig(HFModelConfig):
     negative_token: str = "▁false"
 
 
-class HFLogitsScorerImpl(PairScorerBase):
+class HFLogitsScorerImpl:
     def __init__(self, cfg: HFLogitsScorerConfig):
         # load model
         self.model, self.tokenizer = load_hf_model(

@@ -5,14 +5,12 @@ import numpy as np
 
 from flexrag.common import configure
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
-from flexrag.models.encoders.encoder_base import EncoderBase
 from flexrag.models.encoders.local_process_encoder_base import LocalProcessEncoderBase
-from flexrag.models.generators.generator_base import GenerationConfig, GeneratorBase
+from flexrag.models.generators.generator_base import GenerationConfig
 from flexrag.models.generators.local_process_generator_base import (
     LocalProcessGeneratorBase,
 )
 from flexrag.models.scorers.local_process_scorer_base import LocalProcessScorerBase
-from flexrag.models.scorers.scorer_base import PairScorerBase
 
 
 @configure
@@ -23,7 +21,7 @@ class FakeLocalTextEncoderConfig:
     embedding_dim: int = 3
 
 
-class FakeLocalTextEncoderImpl(EncoderBase):
+class FakeLocalTextEncoderImpl:
     def __init__(self, config: FakeLocalTextEncoderConfig) -> None:
         self.delay_s = config.delay_s
         self.error_on = config.error_on
@@ -63,7 +61,7 @@ class FakeLocalPairScorerConfig:
     error_on: str | None = None
 
 
-class FakeLocalPairScorerImpl(PairScorerBase):
+class FakeLocalPairScorerImpl:
     def __init__(self, config: FakeLocalPairScorerConfig) -> None:
         self.delay_s = config.delay_s
         self.error_on = config.error_on
@@ -98,7 +96,7 @@ class FakeLocalGeneratorConfig:
     error_on: str | None = None
 
 
-class FakeLocalGeneratorImpl(GeneratorBase):
+class FakeLocalGeneratorImpl:
     def __init__(self, config: FakeLocalGeneratorConfig) -> None:
         self.delay_s = config.delay_s
         self.error_on = config.error_on
@@ -108,10 +106,7 @@ class FakeLocalGeneratorImpl(GeneratorBase):
         self,
         prefixes: list[str] | str,
         generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
     ) -> list[list[str]]:
-        del batch_size, log_interval
         prefixes = prefixes if isinstance(prefixes, list) else [prefixes]
         if self.delay_s > 0:
             time.sleep(self.delay_s)
@@ -130,25 +125,15 @@ class FakeLocalGeneratorImpl(GeneratorBase):
 
     def chat(
         self,
-        messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
+        messages: list[ChatMessages] | ChatMessages,
         generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
     ) -> list[list[ChatTurn]]:
-        del batch_size, log_interval
         if isinstance(messages, ChatMessages):
             messages = [messages]
-        elif messages and isinstance(messages[0], dict):
-            messages = [ChatMessages.from_list(messages)]
-        else:
-            messages = [
-                (
-                    message
-                    if isinstance(message, ChatMessages)
-                    else ChatMessages.from_list(message)
-                )
-                for message in messages
-            ]
+        elif not all(isinstance(message, ChatMessages) for message in messages):
+            raise TypeError(
+                "FakeLocalGeneratorImpl.chat expects normalized ChatMessages batches."
+            )
 
         if self.delay_s > 0:
             time.sleep(self.delay_s)

@@ -15,8 +15,7 @@ from flexrag.common.base64_utils import (
 )
 from flexrag.common.logging import LOGGER_MANAGER
 
-from .async_generator_base import AsyncGeneratorBase
-from .generator_base import GENERATORS, GenerationConfig
+from .generator_base import GENERATORS, GenerationConfig, GeneratorBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.litellm_generator")
 
@@ -344,7 +343,7 @@ class LiteLLMGeneratorConfig:
 
 
 @GENERATORS("litellm", config_class=LiteLLMGeneratorConfig)
-class LiteLLMGenerator(AsyncGeneratorBase[LiteLLMGeneratorConfig]):
+class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
     def __init__(self, config: LiteLLMGeneratorConfig):
         super().__init__(config)
         return

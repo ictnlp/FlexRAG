@@ -6,7 +6,7 @@ import numpy as np
 
 from flexrag.common import configure, trace
 
-from .encoder_base import ENCODERS, EncoderBase
+from .encoder_base import ENCODERS
 from .local_process_encoder_base import LocalProcessEncoderBase
 
 
@@ -45,7 +45,7 @@ class SentenceTransformerEncoderConfig:
     model_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
-class SentenceTransformerEncoderImpl(EncoderBase):
+class SentenceTransformerEncoderImpl:
     def __init__(self, config: SentenceTransformerEncoderConfig) -> None:
         from sentence_transformers import SentenceTransformer
 

@@ -1,7 +1,7 @@
 from .colbert_scorer import HFColBertScorer, HFColBertScorerConfig
 from .cross_encoder_scorer import HFCrossEncoderScorer, HFCrossEncoderScorerConfig
 from .logits_scorer import HFLogitsScorer, HFLogitsScorerConfig
-from .scorer_base import SCORERS, PairScorerBase
+from .scorer_base import SCORERS, PairScorerBase, PairScorerProtocol
 
 __all__ = [
     "HFColBertScorer",
@@ -12,4 +12,5 @@ __all__ = [
     "HFLogitsScorerConfig",
     "SCORERS",
     "PairScorerBase",
+    "PairScorerProtocol",
 ]

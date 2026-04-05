@@ -1,8 +1,9 @@
-from .async_encoder_base import AsyncEncoderBase
-from .process_runtime import EncoderWorkerPoolClient
+from flexrag.models.process_worker_pool import ProcessWorkerPoolClient
+
+from .encoder_base import EncoderBase
 
 
-class LocalProcessEncoderBase(AsyncEncoderBase):
+class LocalProcessEncoderBase(EncoderBase):
     """Base class for local encoders executed in worker subprocesses.
 
     ``LocalProcessEncoderBase`` turns a concrete single-process encoder
@@ -10,13 +11,13 @@ class LocalProcessEncoderBase(AsyncEncoderBase):
     the parent process while delegating real work to a local worker pool.
 
     Subclasses are expected to set ``impl_cls`` to the concrete encoder
-    implementation class. During client creation, the base class builds an
-    :class:`EncoderWorkerPoolClient` from that implementation and the current
+    implementation class. During client creation, the base class builds a
+    :class:`ProcessWorkerPoolClient` from that implementation and the current
     config. The worker pool is responsible for starting subprocesses, binding
     devices, and executing ``encode`` requests out of process.
 
     The public ``encode`` / ``async_encode`` methods are inherited from
-    ``AsyncEncoderBase`` and ultimately call ``client.encode(...)`` for one
+    ``EncoderBase`` and ultimately call ``client.call_available(...)`` for one
     batch of texts. For operations that should always run on a single worker,
     such as reading metadata or invoking model-specific helper methods,
     ``_async_call_primary`` and ``_call_primary`` bypass the pool dispatcher and
@@ -33,8 +34,8 @@ class LocalProcessEncoderBase(AsyncEncoderBase):
     async def _create_client(self, config):
         if self.impl_cls is None:
             raise ValueError(f"{self.__class__.__name__}.impl_cls must be configured.")
-        client = EncoderWorkerPoolClient.from_config(self.impl_cls, config)
-        self._embedding_size = await client.embedding_size()
+        client = ProcessWorkerPoolClient.from_config(self.impl_cls, config)
+        self._embedding_size = await client.call_primary("embedding_size")
         return client
 
     async def _close_client(self, client) -> None:
@@ -45,7 +46,7 @@ class LocalProcessEncoderBase(AsyncEncoderBase):
         return max(1, len(getattr(self._config, "device_id", [])) or 1)
 
     async def _async_encode_impl(self, client, texts: list[str]):
-        return await client.encode(texts)
+        return await client.call_available("encode", texts)
 
     async def _async_call_primary(self, attribute: str, *args, **kwargs):
         client = await self._get_async_client()

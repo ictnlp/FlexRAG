@@ -2,6 +2,7 @@ from .encoders import (
     ENCODERS,
     EncoderBase,
     EncoderConfig,
+    EncoderProtocol,
     HFClipEncoder,
     HFClipEncoderConfig,
     HFEncoder,
@@ -13,22 +14,24 @@ from .encoders import (
 )
 from .generators import (
     GENERATORS,
-    AsyncGeneratorBase,
     GenerationConfig,
     GeneratorBase,
     GeneratorConfig,
+    GeneratorProtocol,
     HFGenerator,
     HFGeneratorConfig,
     LiteLLMGenerator,
     LiteLLMGeneratorConfig,
     LocalProcessGeneratorBase,
 )
+from .scorers import SCORERS, PairScorerBase, PairScorerProtocol
 
 __all__ = [
-    "AsyncGeneratorBase",
     "GeneratorBase",
+    "GeneratorProtocol",
     "GenerationConfig",
     "EncoderBase",
+    "EncoderProtocol",
     "HFGenerator",
     "HFGeneratorConfig",
     "HFEncoder",
@@ -44,6 +47,9 @@ __all__ = [
     "SentenceTransformerEncoderConfig",
     "GENERATORS",
     "ENCODERS",
+    "SCORERS",
     "GeneratorConfig",
     "EncoderConfig",
+    "PairScorerBase",
+    "PairScorerProtocol",
 ]

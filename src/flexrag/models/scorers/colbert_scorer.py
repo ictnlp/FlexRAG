@@ -8,7 +8,7 @@ from flexrag.common import configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
 from .local_process_scorer_base import LocalProcessScorerBase
-from .scorer_base import SCORERS, PairScorerBase
+from .scorer_base import SCORERS
 
 
 @configure
@@ -37,7 +37,7 @@ class HFColBertScorerConfig(HFModelConfig):
     normalize_embeddings: bool = True
 
 
-class HFColBertScorerImpl(PairScorerBase):
+class HFColBertScorerImpl:
     """HFColBertScorer: The scorer based on the HuggingFace ColBERT model.
     Code adapted from https://github.com/hotchpotch/JQaRA/blob/main/evaluator/reranker/colbert_reranker.py
     """
