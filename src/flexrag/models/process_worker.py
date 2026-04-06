@@ -13,6 +13,7 @@ import multiprocessing as mp
 import os
 import threading
 import traceback
+from contextlib import contextmanager
 
 
 def get_symbol_path(obj: object) -> str:
@@ -31,6 +32,27 @@ def resolve_symbol(path: str):
     return obj
 
 
+@contextmanager
+def _temporary_env(updates: dict[str, str | None]):
+    """Temporarily apply environment variable overrides."""
+
+    previous = {key: os.environ.get(key) for key in updates}
+    try:
+        for key, value in updates.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+        yield
+    finally:
+        for key, value in previous.items():
+            if value is None:
+                os.environ.pop(key, None)
+            else:
+                os.environ[key] = value
+    return
+
+
 def build_worker_config(
     config_cls_path: str,
     config_data: dict,
@@ -39,8 +61,9 @@ def build_worker_config(
     """Rebuild a config object inside a worker process.
 
     If the config exposes ``device_id``, the worker view is normalized to a
-    local device list. After ``CUDA_VISIBLE_DEVICES`` is set in the worker,
-    the selected physical GPUs are always exposed as ``[0, 1, ...]``.
+    local device list. After the worker inherits its own
+    ``CUDA_VISIBLE_DEVICES`` setting, the selected physical GPUs are exposed as
+    ``[0, 1, ...]`` inside the subprocess.
     """
 
     config_cls = resolve_symbol(config_cls_path)
@@ -68,11 +91,6 @@ def _worker_main(
       directly;
     - ``close``: stop the request loop and exit the subprocess.
     """
-
-    if not visible_device_ids:
-        os.environ.pop("CUDA_VISIBLE_DEVICES", None)
-    else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, visible_device_ids))
 
     worker_obj = resolve_symbol(impl_path)(
         build_worker_config(config_cls_path, config_data, visible_device_ids)
@@ -148,7 +166,11 @@ class ProcessWorkerClient:
             ),
             daemon=True,
         )
-        self._process.start()
+        visible_devices = (
+            ",".join(map(str, visible_device_ids)) if visible_device_ids else None
+        )
+        with _temporary_env({"CUDA_VISIBLE_DEVICES": visible_devices}):
+            self._process.start()
         child_conn.close()
         return
 
