@@ -1,24 +1,66 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Protocol
+from typing import Protocol, TypeAlias, cast
 
 import numpy as np
+from PIL.ImageFile import ImageFile
 
-from flexrag.common import Register, SimpleProgressLogger
+from flexrag.common import ContentPart, Register, SimpleProgressLogger
 from flexrag.models.async_client_base import AsyncClientMixin, ConfigT
+
+EncoderInput: TypeAlias = str | ImageFile | ContentPart
+
+
+def normalize_encoder_inputs(
+    inputs: EncoderInput | list[EncoderInput],
+) -> list[ContentPart]:
+    items = inputs if isinstance(inputs, list) else [inputs]
+    normalized: list[ContentPart] = []
+    for item in items:
+        if isinstance(item, str):
+            normalized.append({"type": "text", "text": item})
+            continue
+        if isinstance(item, ImageFile):
+            normalized.append({"type": "image", "image": item})
+            continue
+        if isinstance(item, dict):
+            content_type = item.get("type")
+            if not isinstance(content_type, str):
+                raise ValueError("Encoder content blocks must include a string 'type'.")
+            normalized.append(cast(ContentPart, item))
+            continue
+        raise TypeError(f"Unsupported encoder input type: {type(item).__name__}")
+    return normalized
+
+
+def extract_text_encoder_inputs(
+    inputs: EncoderInput | list[EncoderInput],
+    *,
+    encoder_name: str,
+) -> list[str]:
+    normalized_inputs = normalize_encoder_inputs(inputs)
+    texts: list[str] = []
+    for part in normalized_inputs:
+        if part.get("type") != "text":
+            raise ValueError(
+                f"{encoder_name} only supports text content blocks, "
+                f"but got '{part.get('type')}'."
+            )
+        texts.append(part.get("text", ""))
+    return texts
 
 
 class EncoderProtocol(Protocol):
     def encode(
         self,
-        texts: list[str] | str,
+        inputs: EncoderInput | list[EncoderInput],
         batch_size: int = 32,
         log_interval: int = 1000,
     ) -> np.ndarray: ...
 
     async def async_encode(
         self,
-        texts: list[str] | str,
+        inputs: EncoderInput | list[EncoderInput],
         batch_size: int = 32,
         log_interval: int = 1000,
     ) -> np.ndarray: ...
@@ -41,31 +83,33 @@ class EncoderBase(AsyncClientMixin[ConfigT], ABC):
         return exc
 
     @abstractmethod
-    async def _async_encode_impl(self, client, texts: list[str]) -> np.ndarray:
+    async def _async_encode_impl(self, client, inputs: list[ContentPart]) -> np.ndarray:
         return
 
     async def _async_encode_core(
         self,
-        texts: list[str] | str,
+        inputs: EncoderInput | list[EncoderInput],
         batch_size: int | None = None,
         log_interval: int = 1000,
     ) -> np.ndarray:
-        if isinstance(texts, str):
-            texts = [texts]
+        normalized_inputs = normalize_encoder_inputs(inputs)
 
         if batch_size is None:
-            batches = [texts]
+            batches = [normalized_inputs]
         else:
             batches = [
-                texts[i : i + batch_size] for i in range(0, len(texts), batch_size)
+                normalized_inputs[i : i + batch_size]
+                for i in range(0, len(normalized_inputs), batch_size)
             ]
         client = await self._get_async_client()
         semaphore = await self._get_async_semaphore()
-        p_logger = SimpleProgressLogger(total=len(texts), interval=log_interval)
+        p_logger = SimpleProgressLogger(
+            total=len(normalized_inputs), interval=log_interval
+        )
 
         results: list[None | np.ndarray] = [None] * len(batches)
 
-        async def _encode_task(idx: int, batch: list[str]) -> None:
+        async def _encode_task(idx: int, batch: list[ContentPart]) -> None:
             async with semaphore:
                 res = await self._async_encode_impl(client, batch)
             results[idx] = res
@@ -90,13 +134,13 @@ class EncoderBase(AsyncClientMixin[ConfigT], ABC):
 
     async def async_encode(
         self,
-        texts: list[str] | str,
+        inputs: EncoderInput | list[EncoderInput],
         batch_size: int = 32,
         log_interval: int = 1000,
     ) -> np.ndarray:
         return await self._run_coroutine_async(
             self._async_encode_core(
-                texts,
+                inputs,
                 batch_size=batch_size,
                 log_interval=log_interval,
             )
@@ -104,13 +148,13 @@ class EncoderBase(AsyncClientMixin[ConfigT], ABC):
 
     def encode(
         self,
-        texts: list[str] | str,
+        inputs: EncoderInput | list[EncoderInput],
         batch_size: int = 32,
         log_interval: int = 1000,
     ) -> np.ndarray:
         return self._run_coroutine_sync(
             self._async_encode_core(
-                texts,
+                inputs,
                 batch_size=batch_size,
                 log_interval=log_interval,
             )

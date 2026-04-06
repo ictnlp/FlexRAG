@@ -1,3 +1,4 @@
+import json
 import types
 
 import numpy as np
@@ -67,9 +68,10 @@ def mock_litellm_client(mocker):
         response = mocker.MagicMock()
         response.data = []
         embedding_dim = dimensions or 12
-        for text in input:
+        for item in input:
             data_item = mocker.MagicMock()
-            np.random.seed(hash(text) % 2**32)
+            key = item if isinstance(item, str) else json.dumps(item, sort_keys=True)
+            np.random.seed(hash(key) % 2**32)
             data_item.embedding = np.random.randn(embedding_dim).tolist()
             response.data.append(data_item)
         return response

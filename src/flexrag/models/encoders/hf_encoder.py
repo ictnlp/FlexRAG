@@ -4,13 +4,18 @@ from typing import Annotated, Optional
 import numpy as np
 import torch
 import torch.nn.functional as F
+from PIL import Image
 from PIL.ImageFile import ImageFile
 from transformers import CLIPModel, PreTrainedTokenizer
 
-from flexrag.common import LOGGER_MANAGER, Choices, configure, trace
+from flexrag.common import LOGGER_MANAGER, Choices, ContentPart, configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
-from .encoder_base import ENCODERS
+from .encoder_base import (
+    ENCODERS,
+    EncoderInput,
+    extract_text_encoder_inputs,
+)
 from .local_process_encoder_base import LocalProcessEncoderBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.hf_model")
@@ -138,8 +143,8 @@ class HFEncoderImpl:
 
     @trace("encoder.hf_encode")
     @torch.no_grad()
-    def encode(self, texts: str | list[str]) -> np.ndarray:
-        texts = texts if isinstance(texts, list) else [texts]
+    def encode(self, inputs: EncoderInput | list[EncoderInput]) -> np.ndarray:
+        texts = extract_text_encoder_inputs(inputs, encoder_name="HFEncoder")
 
         # for late chunking
         if self.encode_method == "late":
@@ -385,14 +390,11 @@ class HFClipEncoderConfig(HFModelConfig):
     convert_to_rgb: bool = False
 
 
-@ENCODERS("hf_clip", config_class=HFClipEncoderConfig)
-class HFClipEncoder:
+class HFClipEncoderImpl:
     model: CLIPModel
     tokenizer: PreTrainedTokenizer
 
     def __init__(self, cfg: HFClipEncoderConfig):
-        self.devices = cfg.device_id
-        # load model
         self.model, (self.tokenizer, self.processor) = load_hf_model(
             model_type="clip",
             model_path=cfg.model_path,
@@ -408,17 +410,64 @@ class HFClipEncoder:
         self.convert_to_rgb = cfg.convert_to_rgb
         return
 
-    def encode(self, data: list[str | ImageFile] | str | ImageFile) -> np.ndarray:
-        data = data if isinstance(data, list) else [data]
-        if isinstance(data[0], str):
-            assert all(isinstance(d, str) for d in data)
-            return self.encode_text(data)
-        assert all(isinstance(d, ImageFile) for d in data)
-        return self.encode_image(data)
+    def _resolve_image_part(self, content_part: ContentPart) -> Image.Image:
+        if content_part.get("type") != "image":
+            raise ValueError(
+                "HFClipEncoder only supports text and image content blocks."
+            )
+        if content_part.get("image") is not None:
+            return content_part["image"]
+        if content_part.get("image_path") is not None:
+            image = Image.open(content_part["image_path"])
+            image.load()
+            return image
+        if content_part.get("url") is not None:
+            raise ValueError("HFClipEncoder does not support remote image URLs.")
+        raise ValueError(
+            "Image content must have either 'image' or 'image_path' for HFClipEncoder."
+        )
+
+    def encode(self, inputs: list[ContentPart]) -> np.ndarray:
+        if not inputs:
+            return np.empty((0, self.embedding_size), dtype=np.float32)
+
+        text_indices: list[int] = []
+        texts: list[str] = []
+        image_indices: list[int] = []
+        images: list[ImageFile] = []
+
+        for idx, part in enumerate(inputs):
+            part_type = part.get("type")
+            if part_type == "text":
+                text_indices.append(idx)
+                texts.append(part.get("text", ""))
+            elif part_type == "image":
+                image_indices.append(idx)
+                images.append(self._resolve_image_part(part))
+            else:
+                raise ValueError(
+                    f"HFClipEncoder only supports text and image content blocks, "
+                    f"but got '{part_type}'."
+                )
+
+        results: list[np.ndarray | None] = [None] * len(inputs)
+        if texts:
+            text_embeddings = self._encode_text(texts)
+            for idx, embedding in zip(text_indices, text_embeddings, strict=True):
+                results[idx] = embedding
+        if images:
+            image_embeddings = self._encode_image(images)
+            for idx, embedding in zip(image_indices, image_embeddings, strict=True):
+                results[idx] = embedding
+
+        ready_results = [result for result in results if result is not None]
+        if len(ready_results) != len(results):
+            raise RuntimeError("Some HFClipEncoder inputs did not produce embeddings.")
+        return np.stack(ready_results, axis=0)
 
     @trace("encoder.hf_clip_encode")
     @torch.no_grad()
-    def encode_image(self, images: list[ImageFile]) -> np.ndarray:
+    def _encode_image(self, images: list[Image.Image]) -> np.ndarray:
         if self.convert_to_rgb:
             images = [img.convert("RGB") for img in images]
         input_dict = self.processor(images=images, return_tensors="pt")
@@ -430,7 +479,7 @@ class HFClipEncoder:
 
     @trace("encoder.hf_clip_encode")
     @torch.no_grad()
-    def encode_text(self, texts: list[str]) -> np.ndarray:
+    def _encode_text(self, texts: list[str]) -> np.ndarray:
         input_dict = self.tokenizer.batch_encode_plus(
             texts,
             return_tensors="pt",
@@ -451,3 +500,8 @@ class HFClipEncoder:
         if hasattr(self.model.config, "hidden_size"):
             return self.model.config.hidden_size
         raise ValueError("Cannot determine embedding size from model config.")
+
+
+@ENCODERS("hf_clip", config_class=HFClipEncoderConfig)
+class HFClipEncoder(LocalProcessEncoderBase):
+    impl_cls = HFClipEncoderImpl

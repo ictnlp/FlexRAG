@@ -3,8 +3,19 @@ from __future__ import annotations
 import json
 from dataclasses import field
 from os import PathLike
-from typing import Annotated, Any, MutableSequence, Optional, Sequence
+from typing import (
+    Annotated,
+    Any,
+    Literal,
+    MutableSequence,
+    Optional,
+    Sequence,
+    TypeAlias,
+    TypedDict,
+    cast,
+)
 
+from PIL.ImageFile import ImageFile
 from pydantic import AfterValidator, Field, ValidationInfo
 from rich.console import Console
 from rich.markdown import Markdown
@@ -18,6 +29,56 @@ from .base64_utils import (
 from .configure import Choices, data
 
 console = Console()
+
+
+class TextContentPart(TypedDict):
+    type: Literal["text"]
+    text: str
+
+
+class ToolCallContentPart(TypedDict):
+    type: Literal["tool_call"]
+    id: str
+    name: str
+    arguments: dict[str, Any] | str
+
+
+class ImageContentPart(TypedDict, total=False):
+    type: Literal["image"]
+    url: str
+    image: ImageFile
+    image_path: str
+
+
+class PDFContentPart(TypedDict, total=False):
+    type: Literal["pdf"]
+    url: str
+    file_path: str
+    binary: bytes | bytearray
+
+
+class AudioContentPart(TypedDict, total=False):
+    type: Literal["audio"]
+    url: str
+    file_path: str
+    binary: bytes | bytearray
+
+
+class VideoContentPart(TypedDict, total=False):
+    type: Literal["video"]
+    url: str
+    file_path: str
+    binary: bytes | bytearray
+
+
+ContentPart: TypeAlias = (
+    TextContentPart
+    | ToolCallContentPart
+    | ImageContentPart
+    | PDFContentPart
+    | AudioContentPart
+    | VideoContentPart
+)
 
 
 @data
@@ -80,8 +141,8 @@ class ChatTurn:
         or "tool".
     :type role: str
     :param content: The content of the chat turn, can be a string or a list of
-        dictionaries.
-    :type content: str | list[dict[str, Any]]
+        typed content blocks.
+    :type content: str | list[ContentPart]
     :param turn_id: The unique identifier for the chat turn. Default: None.
     :type turn_id: Optional[str]
     :param reasoning_content: Provider-normalized reasoning text for this turn.
@@ -143,7 +204,7 @@ class ChatTurn:
 
     strict_mode: bool = field(default=True, repr=False)
     role: Annotated[str, AfterValidator(_valid_chat_role)]
-    content: str | list[dict[str, Any]]
+    content: str | list[ContentPart]
     turn_id: Optional[str] = None
     reasoning_content: Optional[str] = None
     thinking_blocks: Optional[list[dict[str, Any]]] = None
@@ -161,7 +222,7 @@ class ChatTurn:
             restored.
         :type pure_text: bool
         :return: A dictionary representation of the ChatTurn.
-        :rtype: dict[str, str | list[dict[str, Any]]]
+        :rtype: dict[str, Any]
         """
         data = {
             "role": self.role,
@@ -227,9 +288,9 @@ class ChatTurn:
         if isinstance(content, str):
             return cls(content=content, **common_kwargs)
         if not isinstance(content, list):
-            raise ValueError("content must be either str or list[dict]")
+            raise ValueError("content must be either str or list[ContentPart]")
 
-        restored_content: list[dict[str, Any]] = []
+        restored_content: list[ContentPart] = []
         for part in content:
             ctype = part.get("type")
             encoding = part.get("encoding")
@@ -240,7 +301,7 @@ class ChatTurn:
                 elif ctype in {"pdf", "audio", "video"} and ("binary" in part):
                     new_part["binary"] = base64_to_binary(part["binary"])
                 new_part.pop("encoding")
-            restored_content.append(new_part)
+            restored_content.append(cast(ContentPart, new_part))
 
         return cls(content=restored_content, **common_kwargs)
 
@@ -292,11 +353,15 @@ class ChatTurn:
         return "".join(texts) if texts else None
 
     @property
-    def tool_calls(self) -> list[dict[str, Any]]:
+    def tool_calls(self) -> list[ToolCallContentPart]:
         """Returns tool calls exposed inside the content blocks."""
         if isinstance(self.content, str):
             return []
-        return [part for part in self.content if part.get("type") == "tool_call"]
+        return [
+            cast(ToolCallContentPart, part)
+            for part in self.content
+            if part.get("type") == "tool_call"
+        ]
 
 
 def _validate_chat_messages(

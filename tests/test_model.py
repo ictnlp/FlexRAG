@@ -2,6 +2,7 @@ import re
 
 import numpy as np
 import pytest
+from PIL import Image
 
 from flexrag.common import LOGGER_MANAGER
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
@@ -246,6 +247,26 @@ class TestEncode:
         return
 
     @pytest.mark.asyncio
+    async def test_hf_text_content_parts(self):
+        encoder = HFEncoder(HFEncoderConfig(model_path="facebook/contriever"))
+        try:
+            inputs = [{"type": "text", "text": text} for text in self.text]
+            embeddings = encoder.encode(inputs)
+            assert isinstance(embeddings, np.ndarray)
+            assert embeddings.shape[0] == len(self.text)
+        finally:
+            encoder.close()
+
+    @pytest.mark.asyncio
+    async def test_hf_rejects_non_text_content_parts(self):
+        encoder = HFEncoder(HFEncoderConfig(model_path="facebook/contriever"))
+        try:
+            with pytest.raises(RuntimeError, match="only supports text content blocks"):
+                encoder.encode([{"type": "image", "image_path": "/tmp/clip.png"}])
+        finally:
+            encoder.close()
+
+    @pytest.mark.asyncio
     async def test_sentence_transformer(self):
         encoder = SentenceTransformerEncoder(
             SentenceTransformerEncoderConfig(
@@ -255,14 +276,56 @@ class TestEncode:
         await self.run_encoder(encoder)
         return
 
-    def test_hf_clip(self):
+    @pytest.mark.asyncio
+    async def test_sentence_transformer_text_content_parts(self):
+        encoder = SentenceTransformerEncoder(
+            SentenceTransformerEncoderConfig(
+                model_path="sentence-transformers/all-MiniLM-L6-v2",
+            )
+        )
+        try:
+            inputs = [{"type": "text", "text": text} for text in self.text]
+            embeddings = encoder.encode(inputs)
+            assert isinstance(embeddings, np.ndarray)
+            assert embeddings.shape[0] == len(self.text)
+        finally:
+            encoder.close()
+
+    @pytest.mark.asyncio
+    async def test_hf_clip(self, tmp_path):
+        image_path = tmp_path / "clip-image.png"
+        Image.new("RGB", (4, 4), color="red").save(image_path)
         encoder = HFClipEncoder(
             HFClipEncoderConfig(model_path="openai/clip-vit-base-patch32")
         )
-        text_embeddings = encoder.encode(self.text)
-        assert isinstance(text_embeddings, np.ndarray)
-        assert text_embeddings.shape[0] == len(self.text)
-        assert text_embeddings.shape[1] == encoder.embedding_size
+        try:
+            text_embeddings = encoder.encode(self.text)
+            assert isinstance(text_embeddings, np.ndarray)
+            assert text_embeddings.shape[0] == len(self.text)
+            assert text_embeddings.shape[1] == encoder.embedding_size
+
+            async_text_embeddings = await encoder.async_encode(self.text)
+            assert np.allclose(text_embeddings, async_text_embeddings)
+
+            mixed_inputs = [
+                {"type": "text", "text": self.text[0]},
+                {"type": "image", "image_path": str(image_path)},
+                {"type": "text", "text": self.text[1]},
+            ]
+            mixed_embeddings = encoder.encode(mixed_inputs)
+            async_mixed_embeddings = await encoder.async_encode(mixed_inputs)
+            assert mixed_embeddings.shape == (3, encoder.embedding_size)
+            assert np.allclose(mixed_embeddings, async_mixed_embeddings)
+
+            reference_text = encoder.encode([self.text[0], self.text[1]])
+            reference_image = encoder.encode(
+                [{"type": "image", "image_path": str(image_path)}]
+            )
+            assert np.allclose(mixed_embeddings[0], reference_text[0])
+            assert np.allclose(mixed_embeddings[1], reference_image[0])
+            assert np.allclose(mixed_embeddings[2], reference_text[1])
+        finally:
+            encoder.close()
         return
 
     @pytest.mark.asyncio

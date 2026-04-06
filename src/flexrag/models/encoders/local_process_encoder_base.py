@@ -1,3 +1,4 @@
+from flexrag.common import ContentPart
 from flexrag.models.process_worker_pool import ProcessWorkerPoolClient
 
 from .encoder_base import EncoderBase
@@ -45,8 +46,8 @@ class LocalProcessEncoderBase(EncoderBase):
     def _get_max_concurrency(self) -> int:
         return max(1, len(getattr(self._config, "device_id", [])) or 1)
 
-    async def _async_encode_impl(self, client, texts: list[str]):
-        return await client.call_available("encode", texts)
+    async def _async_encode_impl(self, client, inputs: list[ContentPart]):
+        return await client.call_available("encode", inputs)
 
     async def _async_call_primary(self, attribute: str, *args, **kwargs):
         client = await self._get_async_client()

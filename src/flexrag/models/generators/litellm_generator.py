@@ -7,7 +7,7 @@ from urllib.parse import urlparse
 
 import litellm
 
-from flexrag.common import ChatMessages, ChatTurn, configure, trace
+from flexrag.common import ChatMessages, ChatTurn, ContentPart, configure, trace
 from flexrag.common.base64_utils import (
     binary_to_base64,
     file_to_base64,
@@ -51,7 +51,7 @@ def _generation_config_to_kwargs(
     return kwargs
 
 
-def _image_part(content_part: dict[str, Any]) -> dict[str, Any]:
+def _image_part(content_part: ContentPart) -> dict[str, Any]:
     if content_part.get("url") is not None:
         return {
             "type": "image_url",
@@ -76,7 +76,7 @@ def _image_part(content_part: dict[str, Any]) -> dict[str, Any]:
 
 
 def _file_part(
-    content_part: dict[str, Any],
+    content_part: ContentPart,
     *,
     fallback_mime_type: str,
     fallback_file_name: str,
@@ -123,7 +123,7 @@ def _tool_call_block(tool_call: Any) -> dict[str, Any]:
     }
 
 
-def _tool_call_payload(tool_call: dict[str, Any]) -> dict[str, Any]:
+def _tool_call_payload(tool_call: ContentPart) -> dict[str, Any]:
     arguments = tool_call.get("arguments")
     if isinstance(arguments, dict):
         arguments = json.dumps(arguments, ensure_ascii=False)
@@ -196,7 +196,7 @@ def _turn_to_litellm_message(turn: ChatTurn) -> dict[str, Any]:
 def _completion_choice_to_chat_turn(choice: Any, usage: Any) -> ChatTurn:
     message = choice.message
     content = message.content
-    normalized_parts: list[dict[str, Any]] = []
+    normalized_parts: list[ContentPart] = []
     metadata: dict[str, Any] = {}
     reasoning_content = getattr(message, "reasoning_content", None)
     thinking_blocks = getattr(message, "thinking_blocks", None)

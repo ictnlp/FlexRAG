@@ -5,7 +5,14 @@ from transformers import AutoConfig
 from transformers import GenerationConfig as HFGenerationConfig
 from transformers import PreTrainedModel
 
-from flexrag.common import ChatMessages, ChatTurn, Choices, configure, trace
+from flexrag.common import (
+    ChatMessages,
+    ChatTurn,
+    Choices,
+    ContentPart,
+    configure,
+    trace,
+)
 from flexrag.common.logging import LOGGER_MANAGER
 
 from ..hf_utils import HFModelConfig, load_hf_model
@@ -64,7 +71,7 @@ def _resolve_model_type(cfg: "HFGeneratorConfig") -> str:
     return "causal_lm"
 
 
-def _content_part_to_hf(content_part: dict) -> dict:
+def _content_part_to_hf(content_part: ContentPart) -> dict:
     content_type = content_part.get("type")
     if content_type == "text":
         return {"type": "text", "text": content_part.get("text", "")}

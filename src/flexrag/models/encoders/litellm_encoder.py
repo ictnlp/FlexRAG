@@ -4,9 +4,13 @@ from typing import Any, Optional
 import litellm
 import numpy as np
 
-from flexrag.common import configure, trace
+from flexrag.common import ContentPart, configure, trace
 
-from .encoder_base import ENCODERS, EncoderBase
+from ..generators.litellm_generator import _image_part
+from .encoder_base import (
+    ENCODERS,
+    EncoderBase,
+)
 
 litellm.suppress_debug_info = True
 
@@ -94,10 +98,46 @@ class LiteLLMEncoder(EncoderBase[LiteLLMEncoderConfig]):
         }
 
     @trace("encoder.litellm_encode")
-    async def _async_encode_impl(self, client, texts: list[str]) -> np.ndarray:
+    async def _async_encode_impl(self, client, inputs: list[ContentPart]) -> np.ndarray:
+        text_indices: list[int] = []
+        text_inputs: list[str] = []
+        image_indices: list[int] = []
+        image_inputs: list[list[dict[str, Any]]] = []
+
+        for idx, part in enumerate(inputs):
+            part_type = part.get("type")
+            if part_type == "text":
+                text_indices.append(idx)
+                text_inputs.append(part.get("text", ""))
+                continue
+            if part_type == "image":
+                image_indices.append(idx)
+                image_inputs.append([_image_part(part)])
+                continue
+            raise ValueError(
+                "LiteLLMEncoder only supports text and image content blocks, "
+                f"but got '{part_type}'."
+            )
+
+        results: list[np.ndarray | None] = [None] * len(inputs)
+        if text_inputs:
+            text_embeddings = await self._embed_inputs(client, text_inputs)
+            for idx, embedding in zip(text_indices, text_embeddings, strict=True):
+                results[idx] = embedding
+        if image_inputs:
+            image_embeddings = await self._embed_inputs(client, image_inputs)
+            for idx, embedding in zip(image_indices, image_embeddings, strict=True):
+                results[idx] = embedding
+
+        ready_results = [result for result in results if result is not None]
+        if len(ready_results) != len(results):
+            raise RuntimeError("Some LiteLLMEncoder inputs did not produce embeddings.")
+        return np.stack(ready_results, axis=0)
+
+    async def _embed_inputs(self, client, inputs: list[Any]) -> np.ndarray:
         request_kwargs = dict(client["request_kwargs"])
         request_kwargs["model"] = client["model"]
-        request_kwargs["input"] = texts
+        request_kwargs["input"] = inputs
         request_kwargs["input_type"] = self._input_type
         request_kwargs["dimensions"] = self._embedding_size
         response = await litellm.aembedding(**request_kwargs)

@@ -2,6 +2,7 @@ import types
 
 import numpy as np
 import pytest
+from PIL import Image
 
 from flexrag.assistants import ModularAssistant, ModularAssistantConfig
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
@@ -391,6 +392,89 @@ class TestLiteLLMEncoder:
         assert call["kwargs"]["metadata"] == {"source": "test"}
         assert call["dimensions"] is None
         assert call["input_type"] == "search_document"
+
+    def test_encode_image_url(self, mock_litellm_client):
+        encoder = LiteLLMEncoder(
+            LiteLLMEncoderConfig(
+                provider="openai",
+                model_name="text-embedding-3-small",
+                embedding_size=8,
+            )
+        )
+        embeddings = encoder.encode(
+            [{"type": "image", "url": "https://example.com/a.png"}]
+        )
+        assert embeddings.shape == (1, 8)
+        call = mock_litellm_client["calls"]["aembedding"][0]
+        assert call["input"] == [
+            [{"type": "image_url", "image_url": {"url": "https://example.com/a.png"}}]
+        ]
+
+    def test_encode_image_from_path_and_memory(self, mock_litellm_client, tmp_path):
+        image_path = tmp_path / "sample.png"
+        Image.new("RGB", (4, 4), color="red").save(image_path)
+        memory_image = Image.open(image_path)
+
+        encoder = LiteLLMEncoder(
+            LiteLLMEncoderConfig(
+                provider="openai",
+                model_name="text-embedding-3-small",
+                embedding_size=8,
+            )
+        )
+        embeddings = encoder.encode(
+            [
+                {"type": "image", "image_path": str(image_path)},
+                {"type": "image", "image": memory_image},
+            ]
+        )
+        assert embeddings.shape == (2, 8)
+
+        call = mock_litellm_client["calls"]["aembedding"][0]
+        first_url = call["input"][0][0]["image_url"]["url"]
+        second_url = call["input"][1][0]["image_url"]["url"]
+        assert first_url.startswith("data:image/png;base64,")
+        assert second_url.startswith("data:image/jpeg;base64,")
+
+    def test_encode_mixed_text_image_batch(self, mock_litellm_client):
+        encoder = LiteLLMEncoder(
+            LiteLLMEncoderConfig(
+                provider="openai",
+                model_name="text-embedding-3-small",
+                embedding_size=8,
+            )
+        )
+        mixed_embeddings = encoder.encode(
+            [
+                "Who is Bruce Wayne?",
+                {"type": "image", "url": "https://example.com/a.png"},
+                {"type": "text", "text": "Who is Thomas Wayne?"},
+            ]
+        )
+        assert mixed_embeddings.shape == (3, 8)
+        assert len(mock_litellm_client["calls"]["aembedding"]) == 2
+
+        reference_text = encoder.encode(["Who is Bruce Wayne?", "Who is Thomas Wayne?"])
+        reference_image = encoder.encode(
+            [{"type": "image", "url": "https://example.com/a.png"}]
+        )
+        assert np.allclose(mixed_embeddings[0], reference_text[0])
+        assert np.allclose(mixed_embeddings[1], reference_image[0])
+        assert np.allclose(mixed_embeddings[2], reference_text[1])
+
+    def test_encode_rejects_non_image_multimodal_parts(self, mock_litellm_client):
+        encoder = LiteLLMEncoder(
+            LiteLLMEncoderConfig(
+                provider="openai",
+                model_name="text-embedding-3-small",
+                embedding_size=8,
+            )
+        )
+        with pytest.raises(
+            ValueError,
+            match="LiteLLMEncoder only supports text and image content blocks",
+        ):
+            encoder.encode([{"type": "audio", "url": "https://example.com/a.mp3"}])
 
 
 class TestLiteLLMIntegration:

@@ -1,5 +1,5 @@
 from .configure import Choices, Register, configure, data, extract_config
-from .dataclasses import ChatMessages, ChatTurn, Context, RetrievedContext
+from .dataclasses import ChatMessages, ChatTurn, ContentPart, Context, RetrievedContext
 from .default_vars import __VERSION__, FLEXRAG_CACHE_DIR, USER_MODULE_PATH
 from .logging import LOGGER_MANAGER, SimpleProgressLogger
 from .misc import download, download_and_extract, load_user_module
@@ -19,6 +19,7 @@ __all__ = [
     "extract_config",
     "ChatMessages",
     "ChatTurn",
+    "ContentPart",
     "Context",
     "RetrievedContext",
     "__VERSION__",

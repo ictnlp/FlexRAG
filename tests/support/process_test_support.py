@@ -5,6 +5,10 @@ import numpy as np
 
 from flexrag.common import configure
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
+from flexrag.models.encoders.encoder_base import (
+    EncoderInput,
+    extract_text_encoder_inputs,
+)
 from flexrag.models.encoders.local_process_encoder_base import LocalProcessEncoderBase
 from flexrag.models.generators.generator_base import GenerationConfig
 from flexrag.models.generators.local_process_generator_base import (
@@ -28,8 +32,8 @@ class FakeLocalTextEncoderImpl:
         self._embedding_dim = config.embedding_dim
         return
 
-    def encode(self, texts: list[str] | str) -> np.ndarray:
-        texts = texts if isinstance(texts, list) else [texts]
+    def encode(self, inputs: EncoderInput | list[EncoderInput]) -> np.ndarray:
+        texts = extract_text_encoder_inputs(inputs, encoder_name="FakeLocalTextEncoder")
         if self.delay_s > 0:
             time.sleep(self.delay_s)
         if self.error_on is not None and any(self.error_on in text for text in texts):

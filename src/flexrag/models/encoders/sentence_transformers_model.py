@@ -1,10 +1,13 @@
 import math
 from dataclasses import field
+from io import BytesIO
 from typing import Any, Optional
 
 import numpy as np
+import requests
+from PIL import Image
 
-from flexrag.common import configure, trace
+from flexrag.common import ContentPart, configure, trace
 
 from .encoder_base import ENCODERS
 from .local_process_encoder_base import LocalProcessEncoderBase
@@ -67,11 +70,32 @@ class SentenceTransformerEncoderImpl:
         self.normalize = config.normalize
         return
 
-    @trace("encoder.st_encode")
-    def encode(self, texts: list[str], **kwargs) -> np.ndarray:
+    def _resolve_image_part(self, content_part: ContentPart) -> Image.Image:
+        if content_part.get("type") != "image":
+            raise ValueError(
+                "SentenceTransformerEncoder only supports text and image content blocks."
+            )
+        if content_part.get("image") is not None:
+            return content_part["image"]
+        if content_part.get("image_path") is not None:
+            image = Image.open(content_part["image_path"])
+            image.load()
+            return image
+        if content_part.get("url") is not None:
+            response = requests.get(content_part["url"], timeout=30)
+            response.raise_for_status()
+            image = Image.open(BytesIO(response.content))
+            image.load()
+            return image
+        raise ValueError(
+            "Image content must have either 'image', 'image_path', or 'url' "
+            "for SentenceTransformerEncoder."
+        )
+
+    def _encode_texts(self, texts: list[str], **kwargs) -> np.ndarray:
         args = {
             "sentences": texts,
-            "batch_size": len(texts),
+            "batch_size": math.ceil(len(texts) / max(1, len(self.devices))),
             "show_progress_bar": False,
             "convert_to_numpy": True,
             "normalize_embeddings": self.normalize,
@@ -82,9 +106,56 @@ class SentenceTransformerEncoderImpl:
             args["prompt_name"] = self.prompt_name
         if kwargs.get("prompt", self.prompt) is not None:
             args["prompt"] = self.prompt
-        args["batch_size"] = math.ceil(args["batch_size"] / max(1, len(self.devices)))
-        embeddings = self.model.encode(**args)
-        return embeddings
+        return self.model.encode(**args)
+
+    def _encode_images(self, images: list[Image.Image]) -> np.ndarray:
+        args = {
+            "sentences": images,
+            "batch_size": math.ceil(len(images) / max(1, len(self.devices))),
+            "show_progress_bar": False,
+            "convert_to_numpy": True,
+            "normalize_embeddings": self.normalize,
+        }
+        return self.model.encode(**args)
+
+    @trace("encoder.st_encode")
+    def encode(self, inputs: list[ContentPart], **kwargs) -> np.ndarray:
+        text_indices: list[int] = []
+        texts: list[str] = []
+        image_indices: list[int] = []
+        images: list[Image.Image] = []
+
+        for idx, part in enumerate(inputs):
+            part_type = part.get("type")
+            if part_type == "text":
+                text_indices.append(idx)
+                texts.append(part.get("text", ""))
+                continue
+            if part_type == "image":
+                image_indices.append(idx)
+                images.append(self._resolve_image_part(part))
+                continue
+            raise ValueError(
+                "SentenceTransformerEncoder only supports text and image content blocks, "
+                f"but got '{part_type}'."
+            )
+
+        results: list[np.ndarray | None] = [None] * len(inputs)
+        if texts:
+            text_embeddings = self._encode_texts(texts, **kwargs)
+            for idx, embedding in zip(text_indices, text_embeddings, strict=True):
+                results[idx] = embedding
+        if images:
+            image_embeddings = self._encode_images(images)
+            for idx, embedding in zip(image_indices, image_embeddings, strict=True):
+                results[idx] = embedding
+
+        ready_results = [result for result in results if result is not None]
+        if len(ready_results) != len(results):
+            raise RuntimeError(
+                "Some SentenceTransformerEncoder inputs did not produce embeddings."
+            )
+        return np.stack(ready_results, axis=0)
 
     @property
     def embedding_size(self) -> int:
