@@ -14,7 +14,7 @@
 - `src/flexrag/common`: shared config, registry, logging, dataclasses, defaults.
 - `src/flexrag/assistants`: user-facing assistant implementations.
 - `src/flexrag/retrievers`: retrievers, indices, and web retrieval components.
-- `src/flexrag/models`: generators, encoders, scorers, tokenizer, HF integrations.
+- `src/flexrag/models`: generators, encoders, scorers, tokenizer, HF/LiteLLM integrations, and shared async client plus process-backed local runtime helpers.
 - `src/flexrag/processors`: chunkers, parsers, refiners, rankers, text processors.
 - `src/flexrag/datasets`: corpora, readers, benchmark datasets.
 - `src/flexrag/tasks`: task abstractions and task-specific evaluation logic.
@@ -52,15 +52,16 @@
 - Add or update pytest coverage when behavior changes.
 - Prefer focused tests near the changed subsystem:
   - assistant changes: `tests/test_assistant.py`
-  - retriever changes: `tests/test_retriver.py`, `tests/test_ranker.py`, retriever benchmark tests
-  - chunking/database/model changes: matching unit tests under `tests/`
+  - retriever changes: `tests/test_retriever.py`, `tests/test_ranker.py`, retriever benchmark tests
+  - model changes: `tests/test_model.py`, `tests/test_hf_generator.py`, `tests/test_litellm_model.py`, `tests/test_sentence_transformer_encoder.py`, `tests/test_scorer.py`, and relevant local-process coverage such as `tests/test_local_process_encoder.py`, `tests/test_local_process_generator.py`, `tests/test_local_process_scorer.py`, or `tests/test_process_worker.py`
+  - chunking/database changes: matching unit tests under `tests/`
 - If a change touches docs, configs, or entrypoints, consider whether a smoke test or doc build is needed.
 - GPU-only behavior should remain guarded by the existing `gpu` marker.
 
 ## Active Refactor Context
 - FlexRAG is moving toward a `1.0.0` architecture.
 - Planned direction includes:
-  - Process-backed handling for resource-intensive local components, with clear worker/runtime boundaries for resource management and future backend flexibility.
+  - Process-backed handling for resource-intensive local components, especially in `src/flexrag/models`, with clear worker/runtime boundaries for resource management and future backend flexibility.
   - A `Dataset` + `Task` centered evaluation design.
   - Assistant code adapting to task-oriented evaluation workflows.
   - Replacement of multiple current entrypoints with a unified entrypoint later.
@@ -74,6 +75,7 @@
 - Assistant-related code is in transition. Prefer task-oriented abstractions for new work, but preserve current user-facing behavior.
 - Legacy code may be intentionally retained during the refactor. Confirm it is actually obsolete before deleting or bypassing it.
 - When adding new code, prefer abstractions that can survive the ongoing process-backed runtime migration, task-centric evaluation design, config redesign, and plugin-system migration.
+- For model work, prefer the established `AsyncClientMixin` + `LocalProcess*Base` + `ProcessWorkerPoolClient` patterns over ad-hoc threading or multiprocessing glue.
 - Avoid deepening coupling to current entrypoints, current config internals, or ad-hoc plugin loading unless backward compatibility requires it.
 
 ## External Integrations And Secrets
@@ -86,4 +88,5 @@
 - Prefer incremental changes over broad rewrites.
 - Do not remove transitional systems solely because a newer direction exists in project plans.
 - When introducing new config or registry entries, wire them in the same style as adjacent implementations.
+- When adding a local model backend, keep the registered public wrapper separate from the concrete `*Impl` worker implementation, and preserve current device remapping / worker-pool behavior unless the task explicitly changes scheduling semantics.
 - If a request conflicts with the active refactor constraints, implement the smallest compatible change and note the tradeoff.
