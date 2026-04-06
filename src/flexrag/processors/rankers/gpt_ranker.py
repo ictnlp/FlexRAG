@@ -91,7 +91,7 @@ class RankGPTRanker(RankerBase):
 
     def _rank_piece(self, query: str, candidates: list[str]) -> list[int]:
         prompt = self._get_prompt(query=query, candidates=candidates)
-        response = self.generator.chat(prompts=[prompt])[0][0]
+        response = self.generator.chat(messages=[prompt])[0][0].text_content
 
         # convert string to indices
         response = re.sub(r"\D", " ", response)

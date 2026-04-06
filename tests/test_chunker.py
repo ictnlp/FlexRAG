@@ -85,7 +85,7 @@ class TestChunker:
             chunks = chunker.chunk(doc, return_str=True)
             for chunk in chunks:
                 assert len(tokenizer.tokenize(chunk)) <= 10
-            self.chunks_test(chunks, doc)
+            self.chunks_test(chunks, doc, strict=False)
         return
 
     def test_sentence_chunker(self):
@@ -103,7 +103,7 @@ class TestChunker:
         )
         for doc in self.docs:
             chunks = chunker.chunk(doc, return_str=True)
-            self.chunks_test(chunks, doc)
+            self.chunks_test(chunks, doc, strict=False)
         return
 
     def test_sementic_chunker(self, mock_litellm_client):

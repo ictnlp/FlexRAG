@@ -255,7 +255,7 @@ def mock_es_client(mocker):
 
     # substitute the original Elasticsearch client with the mock
     mocker.patch(
-        "flexrag.retriever.elastic_retriever.Elasticsearch", return_value=mock_client
+        "flexrag.retrievers.elastic_retriever.Elasticsearch", return_value=mock_client
     )
     return mock_client
 
