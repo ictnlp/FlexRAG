@@ -10,8 +10,7 @@ from typing import Annotated, Callable, Generic, Optional, TypeVar, dataclass_tr
 import yaml
 from huggingface_hub import HfApi
 from omegaconf import DictConfig, ListConfig, OmegaConf
-from pydantic import ConfigDict, Field
-from pydantic.dataclasses import ConfigDict, dataclass
+from pydantic.dataclasses import ConfigDict, Field, FieldInfo, dataclass
 
 from .default_vars import FLEXRAG_CACHE_DIR
 
@@ -118,14 +117,14 @@ def make_dataclass(
     )
 
 
-def Choices(*args: str) -> Field:
+def Choices(*args: str) -> FieldInfo:
     """Create a pydantic Field constrained to the given choices.
 
     This is useful as hydra-core does not support ``Literal`` types.
 
     :param args: The allowed choice strings.
-    :return: A pydantic ``Field`` with a regex constraint.
-    :rtype: Field
+    :return: A pydantic ``FieldInfo`` with a regex constraint.
+    :rtype: FieldInfo
     """
     choices = list(args)
     pattern = f"^({'|'.join(choices)})$"
@@ -188,11 +187,11 @@ RegistedType = TypeVar("RegistedType")
 
 
 class Register(Generic[RegistedType]):
-    def __init__(self, register_name: str = None, allow_load_from_repo: bool = False):
+    def __init__(self, register_name: str, allow_load_from_repo: bool = False):
         """Initialize the register.
 
-        :param register_name: The name of the register, defaults to None.
-        :type register_name: str, optional
+        :param register_name: The name of the register.
+        :type register_name: str
         :param allow_load_from_repo: Whether to allow loading items from the HuggingFace Hub, defaults to False.
         :type allow_load_from_repo: bool, optional
         """
@@ -290,7 +289,7 @@ class Register(Generic[RegistedType]):
         self,
         allow_multiple: bool = False,
         default: Optional[str] = None,
-        config_name: str = None,
+        config_name: Optional[str] = None,
     ):
         """Make a config class for the registered items.
 
@@ -485,7 +484,7 @@ class Register(Generic[RegistedType]):
         return str(self)
 
     def __add__(self, register: "Register"):
-        new_register = Register()
+        new_register = Register(self.name)
         new_register._items = {**self._items, **register._items}
         new_register._shortcuts = {**self._shortcuts, **register._shortcuts}
         return new_register
