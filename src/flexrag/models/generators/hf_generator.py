@@ -134,7 +134,10 @@ def _turn_to_hf(turn: ChatTurn, *, force_rich_content: bool = False) -> dict:
 class HFGeneratorConfig(HFModelConfig):
     """Configuration for HFGenerator."""
 
-    pipeline_parallel: bool = False
+    parallel_mode: Annotated[
+        str,
+        Choices("data", "pipeline"),
+    ] = "data"
     model_type: Annotated[
         str,
         Choices("causal_lm", "seq2seq", "auto"),
@@ -153,7 +156,7 @@ class HFGeneratorImpl:
             device_id=cfg.device_id,
             load_dtype=cfg.load_dtype,
             trust_remote_code=cfg.trust_remote_code,
-            pipeline_parallel=cfg.pipeline_parallel,
+            pipeline_parallel=cfg.parallel_mode == "pipeline",
         )
         self._supports_multimodal = self._resolved_model_type == "vlm"
         self._patch_model()
@@ -299,3 +302,11 @@ class HFGeneratorImpl:
 @GENERATORS("hf", config_class=HFGeneratorConfig)
 class HFGenerator(LocalProcessGeneratorBase):
     impl_cls = HFGeneratorImpl
+
+    def _build_worker_device_groups(self, config) -> list[list[int] | None]:
+        device_ids = list(getattr(config, "device_id", []))
+        if not device_ids:
+            return [None]
+        if config.parallel_mode == "pipeline":
+            return [device_ids]
+        return super()._build_worker_device_groups(config)

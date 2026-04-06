@@ -31,18 +31,24 @@ def resolve_symbol(path: str):
     return obj
 
 
-def build_worker_config(config_cls_path: str, config_data: dict, gpu_id: int | None):
+def build_worker_config(
+    config_cls_path: str,
+    config_data: dict,
+    visible_device_ids: list[int] | None,
+):
     """Rebuild a config object inside a worker process.
 
     If the config exposes ``device_id``, the worker view is normalized to a
-    single visible device. After ``CUDA_VISIBLE_DEVICES`` is set in the worker,
-    the selected GPU is always exposed as device ``0``.
+    local device list. After ``CUDA_VISIBLE_DEVICES`` is set in the worker,
+    the selected physical GPUs are always exposed as ``[0, 1, ...]``.
     """
 
     config_cls = resolve_symbol(config_cls_path)
     config = config_cls(**config_data)
     if hasattr(config, "device_id"):
-        config.device_id = [0] if gpu_id is not None else []
+        config.device_id = (
+            list(range(len(visible_device_ids))) if visible_device_ids else []
+        )
     return config
 
 
@@ -51,7 +57,7 @@ def _worker_main(
     impl_path: str,
     config_cls_path: str,
     config_data: dict,
-    gpu_id: int | None,
+    visible_device_ids: list[int] | None,
 ) -> None:
     """Run a worker object in a subprocess and serve simple RPC requests.
 
@@ -63,13 +69,13 @@ def _worker_main(
     - ``close``: stop the request loop and exit the subprocess.
     """
 
-    if gpu_id is None:
+    if not visible_device_ids:
         os.environ.pop("CUDA_VISIBLE_DEVICES", None)
     else:
-        os.environ["CUDA_VISIBLE_DEVICES"] = str(gpu_id)
+        os.environ["CUDA_VISIBLE_DEVICES"] = ",".join(map(str, visible_device_ids))
 
     worker_obj = resolve_symbol(impl_path)(
-        build_worker_config(config_cls_path, config_data, gpu_id)
+        build_worker_config(config_cls_path, config_data, visible_device_ids)
     )
     while True:
         request = conn.recv()
@@ -124,7 +130,7 @@ class ProcessWorkerClient:
         impl_path: str,
         config_cls_path: str,
         config_data: dict,
-        gpu_id: int | None,
+        visible_device_ids: list[int] | None,
     ) -> None:
         context = mp.get_context("spawn")
         parent_conn, child_conn = context.Pipe()
@@ -133,7 +139,13 @@ class ProcessWorkerClient:
         self._closed = False
         self._process = context.Process(
             target=_worker_main,
-            args=(child_conn, impl_path, config_cls_path, config_data, gpu_id),
+            args=(
+                child_conn,
+                impl_path,
+                config_cls_path,
+                config_data,
+                visible_device_ids,
+            ),
             daemon=True,
         )
         self._process.start()

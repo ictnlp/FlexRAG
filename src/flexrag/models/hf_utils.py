@@ -79,7 +79,7 @@ def guess_model_name(model_cfg: PretrainedConfig) -> str | None:
 
     # Phi-3/Phi-3.5 series
     if arch_name == "Phi3ForCausalLM":
-        if "Phi-3.5" in name_or_path:
+        if name_or_path is not None and "Phi-3.5" in name_or_path:
             return "microsoft/Phi-3.5-mini-instruct"
         if hidden_size == 3072:
             if max_length == 4096:

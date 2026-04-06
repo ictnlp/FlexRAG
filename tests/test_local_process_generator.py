@@ -100,3 +100,21 @@ async def test_local_process_generator_propagates_worker_errors():
             await generator.async_generate(["boom"])
     finally:
         generator.close()
+
+
+@pytest.mark.asyncio
+async def test_local_process_generator_pipeline_mode_uses_single_worker_concurrency():
+    class PipelineFakeLocalGenerator(FakeLocalGenerator):
+        def _build_worker_device_groups(self, config):
+            return [[0, 1, 2]]
+
+    prefixes = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
+    with PipelineFakeLocalGenerator(
+        FakeLocalGeneratorConfig(device_id=[0, 1, 2], delay_s=0.2)
+    ) as generator:
+        start = time.perf_counter()
+        outputs = await generator.async_generate(prefixes, batch_size=2)
+        elapsed = time.perf_counter() - start
+
+        assert outputs == expected_generated(prefixes)
+        assert elapsed >= 0.55

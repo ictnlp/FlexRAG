@@ -14,11 +14,16 @@ class ProcessWorkerPoolClient:
         impl_path: str,
         config_cls_path: str,
         config_data: dict,
-        worker_device_ids: list[int | None],
+        worker_visible_device_groups: list[list[int] | None],
     ) -> None:
         self._workers = [
-            ProcessWorkerClient(impl_path, config_cls_path, config_data, gpu_id)
-            for gpu_id in worker_device_ids
+            ProcessWorkerClient(
+                impl_path,
+                config_cls_path,
+                config_data,
+                visible_device_ids,
+            )
+            for visible_device_ids in worker_visible_device_groups
         ]
         self._available_workers: asyncio.Queue[ProcessWorkerClient] = asyncio.Queue()
         for worker in self._workers:
@@ -27,12 +32,27 @@ class ProcessWorkerPoolClient:
 
     @classmethod
     def from_config(cls, impl_cls: type, config):
-        worker_device_ids = list(getattr(config, "device_id", [])) or [None]
+        worker_visible_device_groups = [
+            [gpu_id] for gpu_id in (list(getattr(config, "device_id", [])) or [])
+        ] or [None]
+        return cls.from_worker_groups(
+            impl_cls,
+            config,
+            worker_visible_device_groups,
+        )
+
+    @classmethod
+    def from_worker_groups(
+        cls,
+        impl_cls: type,
+        config,
+        worker_visible_device_groups: list[list[int] | None],
+    ):
         return cls(
             impl_path=get_symbol_path(impl_cls),
             config_cls_path=get_symbol_path(type(config)),
             config_data=asdict(config),
-            worker_device_ids=worker_device_ids,
+            worker_visible_device_groups=worker_visible_device_groups,
         )
 
     async def call_primary(self, attribute: str, *args, **kwargs):
