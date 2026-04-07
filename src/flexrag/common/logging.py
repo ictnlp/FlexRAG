@@ -11,6 +11,19 @@ if platform.system() == "Windows":
 
 
 class SimpleProgressLogger:
+    """Log coarse-grained progress updates through a standard logger.
+
+    :param logger: The logger used to emit progress messages. If omitted,
+        FlexRAG's default logger is used.
+    :type logger: logging.Logger, optional
+    :param total: The expected total number of updates. When provided, log
+        messages include progress percentage and estimated remaining time.
+    :type total: int, optional
+    :param interval: The number of updates between automatic log messages.
+        Set to ``0`` to disable automatic progress logging.
+    :type interval: int
+    """
+
     def __init__(
         self, logger: logging.Logger = None, total: int = None, interval: int = 100
     ):
@@ -33,6 +46,8 @@ class SimpleProgressLogger:
         if desc is not None:
             self.desc = desc
         self.current += step
+        if self.interval <= 0:
+            return
         stage = self.current // self.interval
         if stage > self.current_stage:
             self.current_stage = stage
