@@ -89,7 +89,7 @@ class WikipediaWikimediaCorpus(_InMemoryMappingCorpus):
 
 
 @configure
-class WikipediaStructuredCorpusConfig:
+class WikipediaStructuredWikimediaCorpusConfig:
     """Configuration for :class:`WikipediaStructuredWikimediaCorpus`.
 
     :param data_path: Local directory containing the structured Wikimedia
@@ -109,11 +109,11 @@ class WikipediaStructuredCorpusConfig:
     context_mode: Annotated[str, Choices("section", "document")] = "section"
 
 
-@CORPORA("wikipedia_structured", config_class=WikipediaStructuredCorpusConfig)
+@CORPORA("wikipedia_structured", config_class=WikipediaStructuredWikimediaCorpusConfig)
 class WikipediaStructuredWikimediaCorpus:
     """Wikipedia corpus backed by Wikimedia Structured Wikipedia on Hugging Face."""
 
-    def __init__(self, config: WikipediaStructuredCorpusConfig):
+    def __init__(self, config: WikipediaStructuredWikimediaCorpusConfig):
         self._config = config
         if config.data_path is None:
             self._repo_dir = FLEXRAG_CACHE_DIR / "corpora" / "structured-wikipedia"

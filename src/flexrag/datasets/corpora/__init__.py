@@ -9,8 +9,8 @@ from .wikipedia_attributeqa import (
 from .wikipedia_dpr import WikipediaDPRCorpus, WikipediaDPRCorpusConfig
 from .wikipedia_kilt import WikipediaKILTCorpus, WikipediaKILTCorpusConfig
 from .wikipedia_wikimedia import (
-    WikipediaStructuredCorpusConfig,
     WikipediaStructuredWikimediaCorpus,
+    WikipediaStructuredWikimediaCorpusConfig,
     WikipediaWikimediaCorpus,
     WikipediaWikimediaCorpusConfig,
 )
