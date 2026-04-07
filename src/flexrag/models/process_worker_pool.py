@@ -69,8 +69,9 @@ class ProcessWorkerPoolClient:
             self._available_workers.put_nowait(worker)
 
     async def close(self) -> None:
-        await asyncio.gather(
-            *[asyncio.to_thread(worker.close) for worker in self._workers],
-            return_exceptions=True,
-        )
+        for worker in self._workers:
+            try:
+                worker.close()
+            except Exception:
+                pass
         return

@@ -96,7 +96,10 @@ def _worker_main(
         build_worker_config(config_cls_path, config_data, visible_device_ids)
     )
     while True:
-        request = conn.recv()
+        try:
+            request = conn.recv()
+        except EOFError:
+            break
         if request["kind"] == "close":
             break
         if request["kind"] != "call":
