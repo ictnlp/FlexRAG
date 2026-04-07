@@ -1,3 +1,4 @@
+import re
 from pathlib import Path
 from typing import Annotated, Optional
 
@@ -7,7 +8,7 @@ from huggingface_hub import snapshot_download
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS, MappingDataset, ContextualQASample
+from ...core import DATASETS, ContextualQASample, MappingDataset
 
 
 @configure
@@ -24,10 +25,24 @@ class NarrativeQADatasetConfig:
     :param split: The dataset split to use. Default is `test`.
         Available choices are: `train`, `validation`, `test`.
     :type split: str
+    :param fix_line_endings: Whether to normalize document line endings and fold
+        single line breaks in the NarrativeQA full text. Default is True.
+    :type fix_line_endings: bool
     """
 
     data_path: Optional[str] = None
     split: Annotated[str, Choices("train", "validation", "test")] = "test"
+    fix_line_endings: bool = True
+
+
+def _fix_narrative_qa_doc(doc: str) -> str:
+    # unify line endings
+    doc = doc.replace("\r\n", "\n")
+    # reserve paragraph breaks
+    doc = re.sub(r"\n{2,}", "\n\n", doc)
+    # remove single line breaks
+    doc = re.sub(r"(?<!\n)\n(?!\n)", " ", doc)
+    return doc
 
 
 @DATASETS("narrative_qa", config_class=NarrativeQADatasetConfig)
@@ -53,10 +68,14 @@ class NarrativeQADataset(MappingDataset[ContextualQASample]):
         for idx, item in enumerate(data):
             self._queries_data[str(idx)] = item["question"]["text"]
             self._answers_data[str(idx)] = [ans["text"] for ans in item["answers"]]
+            if config.fix_line_endings:
+                doc_text = _fix_narrative_qa_doc(item["document"]["text"])
+            else:
+                doc_text = item["document"]["text"]
             context = Context(
                 context_id=item["document"]["id"],
                 data={
-                    "text": item["document"]["text"],
+                    "text": doc_text,
                     "summary": item["document"]["summary"]["text"],
                     "title": item["document"]["summary"]["title"],
                 },
