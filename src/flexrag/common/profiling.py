@@ -11,6 +11,7 @@ from contextvars import ContextVar
 from functools import wraps
 from typing import Generator, Optional
 
+import numpy as np
 from rich.console import Console
 from rich.table import Table
 
@@ -55,24 +56,25 @@ class ProfilerSession:
     """Session Container for collecting spans and computing aggregated stats."""
 
     def __init__(self):
-        self.stats = defaultdict(lambda: {"calls": 0, "total_wall_clock": 0.0})
+        self.stats = defaultdict(list)
         self._spans: list[Span] = []
         return
 
     def record_span(self, section_name: str, span: Span) -> None:
-        st = self.stats[section_name]
-        st["calls"] += 1
-        st["total_wall_clock"] += span.duration
+        self.stats[section_name].append(span.duration)
         self._spans.append(span)
         return
 
     def summary(self, show: bool = True) -> dict[str, dict[str, int | float]]:
         summary = {}
-        for name, st in self.stats.items():
+        for name, durations in self.stats.items():
+            wall_clock = np.asarray(durations, dtype=float)
             summary[name] = {
-                "Calls": st["calls"],
-                "Wall Avg": st["total_wall_clock"] / st["calls"],
-                "Wall Sum": st["total_wall_clock"],
+                "Calls": len(durations),
+                "Wall Avg": float(wall_clock.mean()),
+                "Wall Median": float(np.median(wall_clock)),
+                "Wall P95": float(np.percentile(wall_clock, 95)),
+                "Wall Sum": float(wall_clock.sum()),
             }
         if show:
             console = Console()
@@ -80,12 +82,16 @@ class ProfilerSession:
             table.add_column("Name", style="cyan", no_wrap=True)
             table.add_column("Calls", justify="right")
             table.add_column("Wall Avg", justify="right")
+            table.add_column("Wall Median", justify="right")
+            table.add_column("Wall P95", justify="right")
             table.add_column("Wall Sum", justify="right")
             for name, st in summary.items():
                 table.add_row(
                     name,
                     str(st["Calls"]),
                     f"{st['Wall Avg']:.4f}",
+                    f"{st['Wall Median']:.4f}",
+                    f"{st['Wall P95']:.4f}",
                     f"{st['Wall Sum']:.4f}",
                 )
             console.print(table)

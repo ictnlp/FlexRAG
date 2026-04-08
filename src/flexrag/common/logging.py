@@ -187,11 +187,11 @@ class _LoggerManager:
             logger.removeHandler(handler)
         return
 
-    def set_level(self, level: int, name: str = None):
+    def set_level(self, level: int | str, name: str = None):
         """Set the level of the logger.
 
         :param level: The level to set.
-        :type level: int
+        :type level: int | str
         :param name: The name of the logger, None for all FlexRAG loggers, defaults to None.
         :type name: str, optional
         """
