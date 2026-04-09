@@ -1,13 +1,12 @@
 import os
 import shutil
 from copy import deepcopy
-from dataclasses import field
-from typing import Annotated, Any, Iterable, Optional
+from typing import Any, Iterable, Optional
 
 import faiss
 import numpy as np
 
-from flexrag.common import LOGGER_MANAGER, Choices, configure
+from flexrag.common import LOGGER_MANAGER, configure
 from flexrag.common.configure import extract_config
 from flexrag.models import ENCODERS
 
@@ -20,32 +19,16 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retriever.index.faiss")
 class FaissIndexConfig(DenseIndexBaseConfig):
     """The configuration for the `FaissIndex`.
 
-    :param index_type: Building param: the type of the index. Defaults to "auto".
-        available choices are "FLAT", "IVF", "PQ", "IVFPQ", and "auto".
-        If set to "auto", the index will be set to "IVF{n_list},PQ{embedding_size//2}x4fs".
-    :type index_type: str
-    :param n_subquantizers: Building param: the number of subquantizers. Defaults to 8.
-        This parameter is only used when the index type is "PQ" or "IVFPQ".
-    :type n_subquantizers: int
-    :param n_bits: Building param: the number of bits per subquantizer. Defaults to 8.
-        This parameter is only used when the index type is "PQ" or "IVFPQ".
-    :type n_bits: int
-    :param n_list: Building param: the number of cells. Defaults to 1000.
-        This parameter is only used when the index type is "IVF" or "IVFPQ".
-    :type n_list: int
     :param factory_str: Building param: the factory string to build the index. Defaults to None.
-        If set, the `index_type` will be ignored.
+        If set to None, the index will be chosen automatically based on the corpus size.
     :type factory_str: Optional[str]
     :param index_train_num: Building param: the number of data used to train the index. Defaults to -1.
         If set to -1, all data will be used to train the index.
     :type index_train_num: int
     :param n_probe: Inference param: the number of probes. Defaults to None.
-        If not set, the number of probes will be set to `n_list // 8`.
-        This parameter is only used when the index type is "IVF" or "IVFPQ".
+        If not set, the number of probes will be set to `index.nlist // 8` when the
+        resolved index contains an IVF component.
     :type n_probe: Optional[int]
-    :param device_id: Inference param: the device(s) to use. Defaults to [].
-        [] means CPU. If set, the index will be accelerated with GPU.
-    :type device_id: list[int]
     :param k_factor: Inference param: the k factor for search. Defaults to 10.
     :type k_factor: int
     :param polysemous_ht: Inference param: the polysemous hash table. Defaults to 0.
@@ -54,15 +37,10 @@ class FaissIndexConfig(DenseIndexBaseConfig):
     :type efSearch: int
     """
 
-    index_type: Annotated[str, Choices("FLAT", "IVF", "PQ", "IVFPQ", "auto")] = "auto"
-    n_subquantizers: int = 8
-    n_bits: int = 8
-    n_list: int = 1000
     factory_str: Optional[str] = None
     index_train_num: int = -1
     # Inference Arguments
     n_probe: Optional[int] = None
-    device_id: list[int] = field(default_factory=list)
     k_factor: int = 10
     polysemous_ht: int = 0
     efSearch: int = 100
@@ -71,8 +49,8 @@ class FaissIndexConfig(DenseIndexBaseConfig):
 @RETRIEVER_INDEX("faiss", config_class=FaissIndexConfig)
 class FaissIndex(DenseIndexBase):
     """FaissIndex employs `faiss <https://github.com/facebookresearch/faiss>`_ library to build and search indexes with embeddings.
-    FaissIndex supports both CPU and GPU acceleration.
-    FaissIndex supports various index types, including FLAT, IVF, PQ, IVFPQ, and auto.
+    FaissIndex runs on CPU-backed Faiss indexes.
+    FaissIndex supports both automatic index selection and explicit Faiss factory strings.
     FaissIndex provides a flexible and efficient way to build and search indexes with embeddings.
     """
 
@@ -90,8 +68,7 @@ class FaissIndex(DenseIndexBase):
                 logger.info(f"Loading index from {self.cfg.index_path}")
                 try:
                     index_path = os.path.join(self.cfg.index_path, "index.faiss")
-                    cpu_index = faiss.read_index(index_path, faiss.IO_FLAG_MMAP)
-                    self.index = self._set_index(cpu_index)
+                    self.index = faiss.read_index(index_path, faiss.IO_FLAG_MMAP)
                 except:
                     raise FileNotFoundError(
                         f"Unable to load index from {self.cfg.index_path}"
@@ -101,15 +78,15 @@ class FaissIndex(DenseIndexBase):
     def build_index(self, data: Iterable[Any]) -> None:
         self.clear()
         embeddings = self.encode_data_batch(data, is_query=False)
-        self.index = self._prepare_index(
-            index_type=self.cfg.index_type,
-            distance_function=self.cfg.distance_function,
+        factory_str = self._resolve_factory_str(
             embedding_size=embeddings.shape[1],
             embedding_length=embeddings.shape[0],
-            n_list=self.cfg.n_list,
-            n_subquantizers=self.cfg.n_subquantizers,
-            n_bits=self.cfg.n_bits,
             factory_str=self.cfg.factory_str,
+        )
+        self.index = self._prepare_index(
+            distance_function=self.cfg.distance_function,
+            embedding_size=embeddings.shape[1],
+            factory_str=factory_str,
         )
         self._train_index(embeddings)
         self.add_embeddings_batch(embeddings)
@@ -118,100 +95,91 @@ class FaissIndex(DenseIndexBase):
             os.remove(emb_path)
         return
 
-    def _prepare_index(
+    def _resolve_factory_str(
         self,
-        index_type: str,
-        distance_function: str,
         embedding_size: int,  # the dimension of the embeddings
         embedding_length: int,  # the number of the embeddings
-        n_list: int,  # the number of cells
-        n_subquantizers: int,  # the number of subquantizers
-        n_bits: int,  # the number of bits per subquantizer
         factory_str: Optional[str] = None,
+    ) -> str:
+        if factory_str is not None:
+            logger.info(f"Using Faiss factory string: {factory_str}")
+            return factory_str
+
+        n = embedding_length
+        d = embedding_size
+        raw_bytes = n * d * np.dtype(np.float32).itemsize
+        n_list = max(64, 2 ** int(np.log2(np.sqrt(n))))
+
+        if n < 10_000 or (n * d <= 20_000_000 and raw_bytes <= 128 * 1024 * 1024):
+            resolved_factory_str = "Flat"
+            logger.info("Auto set index to Flat")
+            return resolved_factory_str
+
+        if d <= 1024 and n <= 300_000:
+            if d <= 256:
+                hnsw_m = 32
+            elif d <= 768:
+                hnsw_m = 24
+            else:
+                hnsw_m = 16
+            resolved_factory_str = f"HNSW{hnsw_m}"
+            logger.info(f"Auto set index to {resolved_factory_str}")
+            return resolved_factory_str
+
+        if n <= 1_000_000 and raw_bytes <= 8 * 1024 * 1024 * 1024:
+            resolved_factory_str = f"IVF{n_list},Flat"
+            logger.info(f"Auto set index to {resolved_factory_str}")
+            logger.info(
+                f"We recommend to set n_probe to {n_list//8} "
+                f"for better inference performance."
+            )
+            return resolved_factory_str
+
+        pq_m = None
+        for m in range(min(64, d // 2), 7, -1):
+            if d % m == 0:
+                pq_m = m
+                break
+        if pq_m is None:
+            resolved_factory_str = f"IVF{n_list},Flat"
+            logger.warning(
+                "Unable to derive a suitable PQ configuration for embedding size "
+                f"{d}. Falling back to {resolved_factory_str}."
+            )
+            logger.info(
+                f"We recommend to set n_probe to {n_list//8} "
+                f"for better inference performance."
+            )
+            return resolved_factory_str
+
+        resolved_factory_str = f"IVF{n_list},PQ{pq_m}x4fs"
+        logger.info(f"Auto set index to {resolved_factory_str}")
+        logger.info(
+            f"We recommend to set n_probe to {n_list//8} "
+            f"for better inference performance."
+        )
+        return resolved_factory_str
+
+    def _prepare_index(
+        self,
+        distance_function: str,
+        embedding_size: int,  # the dimension of the embeddings
+        factory_str: str,
     ):
         # prepare distance function
         match distance_function:
-            case "IP":
-                basic_index = faiss.IndexFlatIP(embedding_size)
-                basic_metric = faiss.METRIC_INNER_PRODUCT
-            case "COS":
-                basic_index = faiss.IndexFlatIP(embedding_size)
+            case "IP" | "COS":
                 basic_metric = faiss.METRIC_INNER_PRODUCT
             case "L2":
-                basic_index = faiss.IndexFlatL2(embedding_size)
                 basic_metric = faiss.METRIC_L2
             case _:
                 raise ValueError(f"Unknown distance function: {distance_function}")
 
-        if index_type == "auto":
-            match embedding_length:
-                case l if l < 1_0_000:
-                    index = basic_index
-                    logger.info(f"Auto set index to FLAT")
-                case l if l < 1_000_000:
-                    n_list = 2 ** int(np.log2(np.sqrt(embedding_length)))
-                    index = faiss.IndexIVFFlat(
-                        basic_index,
-                        embedding_size,
-                        n_list,
-                        basic_metric,
-                    )
-                    logger.info(f"Auto set index to IVF{n_list}")
-                    logger.info(
-                        f"We recommend to set n_probe to {n_list//8} "
-                        f"for better inference performance."
-                    )
-                case _:
-                    n_list = 2 ** int(np.log2(np.sqrt(embedding_length)))
-                    factory_str = f"IVF{n_list},PQ{embedding_size//2}x4fs"
-                    index = faiss.index_factory(
-                        embedding_size,
-                        factory_str,
-                        basic_metric,
-                    )
-                    logger.info(f"Auto set index to {factory_str}")
-                    logger.info(
-                        f"We recommend to set n_probe to {n_list//8} "
-                        f"for better inference performance."
-                    )
-        elif factory_str is not None:
-            # using string factory to build the index
-            index = faiss.index_factory(
-                embedding_size,
-                factory_str,
-                basic_metric,
-            )
-        else:
-            # prepare optimized index
-            match index_type:
-                case "FLAT":
-                    index = basic_index
-                case "IVF":
-                    index = faiss.IndexIVFFlat(
-                        basic_index,
-                        embedding_size,
-                        n_list,
-                        basic_metric,
-                    )
-                case "PQ":
-                    index = faiss.IndexPQ(
-                        embedding_size,
-                        n_subquantizers,
-                        n_bits,
-                    )
-                case "IVFPQ":
-                    index = faiss.IndexIVFPQ(
-                        basic_index,
-                        embedding_size,
-                        n_list,
-                        n_subquantizers,
-                        n_bits,
-                    )
-                case _:
-                    raise ValueError(f"Unknown index type: {index_type}")
-
-        # post process
-        index = self._set_index(index)
+        index = faiss.index_factory(
+            embedding_size,
+            factory_str,
+            basic_metric,
+        )
         return index
 
     def _train_index(self, embeddings: np.ndarray) -> None:
@@ -310,6 +278,7 @@ class FaissIndex(DenseIndexBase):
         query_vectors = self.encode_data(query, is_query=True)
         search_params = self._prepare_search_params(**search_kwargs)
         scores, indices = self.index.search(query_vectors, top_k, params=search_params)
+        scores = self._postprocess_scores(scores)
         return indices, scores
 
     def save_to_local(self, index_path: str = None) -> None:
@@ -318,7 +287,7 @@ class FaissIndex(DenseIndexBase):
             self.cfg.index_path = index_path
         assert self.cfg.index_path is not None, "`index_path` is not set."
         assert self.index.is_trained, "Index should be trained first."
-        if not os.path.exists(index_path):
+        if not os.path.exists(self.cfg.index_path):
             os.makedirs(self.cfg.index_path)
         logger.info(f"Serializing index to {self.cfg.index_path}")
 
@@ -334,12 +303,8 @@ class FaissIndex(DenseIndexBase):
             f.write(self.__class__.__name__)
 
         # serialize the index
-        index_path = os.path.join(index_path, "index.faiss")
-        if self.support_gpu:
-            cpu_index = faiss.index_gpu_to_cpu(self.index)
-        else:
-            cpu_index = self.index
-        faiss.write_index(cpu_index, index_path)
+        index_path = os.path.join(self.cfg.index_path, "index.faiss")
+        faiss.write_index(self.index, index_path)
         return
 
     def clear(self):
@@ -371,33 +336,6 @@ class FaissIndex(DenseIndexBase):
     @property
     def is_addable(self) -> bool:
         return self.is_trained
-
-    @property
-    def support_gpu(self) -> bool:
-        return hasattr(faiss, "GpuMultipleClonerOptions") and (
-            len(self.cfg.device_id) > 0
-        )
-
-    def _set_index(self, index):
-        if self.support_gpu:
-            logger.info("Accelerating index with GPU.")
-            option = faiss.GpuMultipleClonerOptions()
-            option.useFloat16 = True
-            option.shard = True
-            if isinstance(index, faiss.IndexIVFFlat):
-                option.common_ivf_quantizer = True
-            index = faiss.index_cpu_to_gpus_list(
-                index,
-                co=option,
-                gpus=self.cfg.device_id,
-                ngpu=len(self.cfg.device_id),
-            )
-        elif len(self.cfg.device_id) > 0:
-            logger.warning(
-                "The installed faiss does not support GPU acceleration. "
-                "Please replace faiss-cpu with a GPU-enabled Faiss build."
-            )
-        return index
 
     def __len__(self) -> int:
         if self.index is None:

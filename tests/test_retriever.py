@@ -103,7 +103,6 @@ class TestRetrievers:
                 index_config=RetrieverIndexConfig(
                     index_type="faiss",
                     faiss_config=FaissIndexConfig(
-                        index_type="auto",
                         batch_size=512,
                         query_encoder_config=EncoderConfig(
                             encoder_type="litellm",

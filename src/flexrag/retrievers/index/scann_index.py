@@ -149,6 +149,7 @@ class ScaNNIndex(DenseIndexBase):
             query_vectors, top_k, **search_kwargs
         )
         indices = np.array(indices)
+        scores = self._postprocess_scores(scores)
         return indices, scores
 
     def save_to_local(self, index_path: str = None) -> None:
@@ -157,7 +158,7 @@ class ScaNNIndex(DenseIndexBase):
             self.cfg.index_path = index_path
         assert self.cfg.index_path is not None, "`index_path` is not set."
         assert self.is_trained, "Index should be trained before saving."
-        if not os.path.exists(index_path):
+        if not os.path.exists(self.cfg.index_path):
             os.makedirs(self.cfg.index_path)
         logger.info(f"Serializing index to {self.cfg.index_path}")
 

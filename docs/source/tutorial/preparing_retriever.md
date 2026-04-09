@@ -176,9 +176,9 @@ def add_faiss_index():
         index_config=RetrieverIndexConfig(
             index_type="faiss",  # specify the index type
             faiss_config=FaissIndexConfig(
-                # let FaissIndex determine the index configuration automatically
-                # you can also specify a specific index type like "Flat", "IVF", etc.
-                index_type="auto",
+                # leave factory_str unset to use the built-in auto mode
+                # you can also provide a specific Faiss factory string such as
+                # "Flat" or "IVF1024,Flat"
                 index_train_num=-1,  # use all available data for training
                 query_encoder_config=EncoderConfig(
                     encoder_type="hf",  # specify using Hugging Face model

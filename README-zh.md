@@ -54,9 +54,7 @@ FlexRAG 是一个创新的开源框架，旨在简化 RAG（检索增强生成�
 pip install flexrag
 ```
 
-默认安装会包含 `faiss-cpu`。如果您需要使用 GPU 加速的 Faiss，请参考
-[安装文档](https://flexrag.readthedocs.io/zh-cn/latest/getting_started/installation.html)
-中的替换安装方式。
+默认安装会包含 FlexRAG 使用的 CPU 版本 `faiss-cpu` 依赖。
 
 访问我们的[文档](https://flexrag.readthedocs.io/zh-cn/latest/)以了解更多信息。
 - [安装](https://flexrag.readthedocs.io/zh-cn/latest/getting_started/installation.html)

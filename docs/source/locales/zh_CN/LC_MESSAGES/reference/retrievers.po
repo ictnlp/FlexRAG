@@ -1153,10 +1153,10 @@ msgstr ""
 #: flexrag.retriever.index.faiss_index.FaissIndex:1 of
 msgid ""
 "FaissIndex employs `faiss <https://github.com/facebookresearch/faiss>`_ "
-"library to build and search indexes with embeddings. FaissIndex supports "
-"both CPU and GPU acceleration. FaissIndex supports various index types, "
-"including FLAT, IVF, PQ, IVFPQ, and auto. FaissIndex provides a flexible "
-"and efficient way to build and search indexes with embeddings."
+"library to build and search indexes with embeddings. FaissIndex runs on "
+"CPU-backed Faiss indexes. FaissIndex supports both automatic index "
+"selection and explicit Faiss factory strings. FaissIndex provides a "
+"flexible and efficient way to build and search indexes with embeddings."
 msgstr ""
 
 #: 1bb23895a2434658a5ca0c1a3eff8239 7f768b3944634a94b2e9b2344fa56820
@@ -2409,4 +2409,3 @@ msgstr ""
 #~ " API. Default is os.environ.get(\"JINA_API_KEY\","
 #~ " MISSING)."
 #~ msgstr ""
-

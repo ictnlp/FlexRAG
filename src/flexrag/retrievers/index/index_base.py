@@ -59,7 +59,10 @@ class RetrieverIndexBase(ABC):
     @abstractmethod
     def build_index(self, data: Iterable[Any]) -> None:
         """Build the index.
-        The index will be serialized automatically if the `index_path` is set.
+
+        This method only builds the in-memory index state. Callers that own
+        additional metadata should persist the complete index explicitly after
+        building.
 
         :param data: The data to build the index.
         :type data: Iterable[Any]
@@ -392,8 +395,20 @@ class DenseIndexBase(RetrieverIndexBase):
             encoder = self.passage_encoder
 
         # encode the data
-        embeds = encoder.encode(data)
-        return embeds.astype("float32")
+        embeds = encoder.encode(data).astype("float32")
+        return self._normalize_embeddings_for_metric(embeds)
+
+    def _normalize_embeddings_for_metric(self, embeds: np.ndarray) -> np.ndarray:
+        if self.distance_function != "COS" or embeds.size == 0:
+            return embeds
+        norms = np.linalg.norm(embeds, axis=1, keepdims=True)
+        norms = np.clip(norms, a_min=1e-12, a_max=None)
+        return embeds / norms
+
+    def _postprocess_scores(self, scores: np.ndarray) -> np.ndarray:
+        if self.distance_function == "L2":
+            return -scores
+        return scores
 
     def add_embeddings_batch(self, embeds: np.ndarray) -> None:
         """A helper function that adds embeddings to the index in batches.
@@ -483,16 +498,18 @@ class DenseIndexBase(RetrieverIndexBase):
 
     @property
     def infimum(self) -> float:
-        # For L2 distance, the infimum is 0.0
-        # For IP distance, the infimum is -infinity
-        # For COS distance, the infimum is -1.0
-        return 0.0
+        # Dense index scores follow the convention "larger is more relevant".
+        if self.distance_function == "L2":
+            return float("-inf")
+        if self.distance_function == "COS":
+            return -1.0
+        return float("-inf")
 
     @property
     def supremum(self) -> float:
-        # For L2 distance, the supremum is infinity
-        # For IP distance, the supremum is infinity
-        # For COS distance, the supremum is 1.0
+        # Dense index scores follow the convention "larger is more relevant".
+        if self.distance_function == "L2":
+            return 0.0
         if self.distance_function == "COS":
             return 1.0
         return float("inf")

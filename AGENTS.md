@@ -45,7 +45,7 @@
 
 ## Entrypoint Conventions
 - Existing entrypoints in `src/flexrag/entrypoints` remain the active interface until the unified entrypoint work lands.
-- Keep Hydra-driven CLI behavior backward compatible unless the task explicitly changes the interface.
+- Before `1.0.0`, backward compatibility is not a hard requirement for Hydra-driven CLI behavior. Preserve it when it is cheap, but prefer cleaner and more consistent interfaces when they materially improve the project.
 - `run_interactive.py` can load user modules via `user_module=...`; treat that path-loading flow as trusted-input-only.
 
 ## Testing Expectations
@@ -69,9 +69,14 @@
   - Migration from path-import + decorator registration to a Pluggy-based plugin system.
   - Documentation, packaging, and CI/CD updates as part of the transition.
 
+## Pre-1.0 Compatibility Policy
+- Before the `1.0.0` release, backward compatibility is not a project constraint by itself.
+- If a breaking change materially improves logic consistency, performance, maintainability, or API ergonomics, prefer the cleaner design.
+- Do not preserve awkward legacy behavior solely to avoid breaking pre-`1.0.0` users of the library, CLI, or configs.
+
 ## Transitional Constraints
 - Treat the current Hydra + dataclass configuration system as legacy-but-active. Keep it working unless migration work is explicitly requested.
-- Treat the current path-import + decorator-registration mechanism as legacy-but-active. Do not remove it without a compatibility plan.
+- Treat the current path-import + decorator-registration mechanism as legacy-but-active. Do not remove it casually, but pre-`1.0.0` breaking changes are acceptable when they clearly improve the design.
 - Assistant-related code is in transition. Prefer task-oriented abstractions for new work, but preserve current user-facing behavior.
 - Legacy code may be intentionally retained during the refactor. Confirm it is actually obsolete before deleting or bypassing it.
 - When adding new code, prefer abstractions that can survive the ongoing process-backed runtime migration, task-centric evaluation design, config redesign, and plugin-system migration.

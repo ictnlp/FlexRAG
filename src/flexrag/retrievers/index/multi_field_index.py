@@ -78,7 +78,8 @@ class MultiFieldIndex:
         index_path: str = None,
     ):
         """Build the index.
-        The index will be serialized automatically if the `index_path` is set.
+        If an index path is configured, the wrapper serializes the complete
+        index state after updating the context-id mappings.
 
         :param context_ids: The context ids of the data.
         :type context_ids: Iterable[str]
