@@ -6,21 +6,15 @@ FlexRAG requires Python 3.11 or later.
 ```
 
 ## Installation via `pip`
-Before installing FlexRAG, ensure that `faiss` is installed in your environment. You can install it using the following command:
-
-```bash
-pip install faiss-cpu
-```
-
-```{note}
-The pypi package is provided by the community.
-If you want to use the official `faiss` package or employ GPU for faster searching, you need to install it using `conda` and follow the instructions from its official [documentation](https://github.com/facebookresearch/faiss/blob/main/INSTALL.md).
-```
-
-After installing `faiss`, run the following command to install FlexRAG:
+The default installation includes `faiss-cpu`:
 
 ```bash
 pip install flexrag
+```
+
+```{note}
+`pip install flexrag` installs the community-maintained `faiss-cpu` wheel from PyPI by default.
+If you need GPU acceleration, first install FlexRAG, then uninstall `faiss-cpu` and replace it with a GPU-enabled Faiss build by following the official [Faiss installation guide](https://github.com/facebookresearch/faiss/blob/main/INSTALL.md).
 ```
 
 Optional capabilities are available as extras:
@@ -34,12 +28,12 @@ pip install "flexrag[doc-parsers]"
 ## Installation from source
 Alternatively, to install FlexRAG from the source, follow the steps below:
 ```bash
-pip install pybind11 faiss-cpu
-
 git clone https://github.com/ictnlp/FlexRAG.git
 cd flexrag
 pip install ./
 ```
+
+If you need GPU-accelerated Faiss when installing from source, replace the default `faiss-cpu` dependency after installation by following the official [Faiss installation guide](https://github.com/facebookresearch/faiss/blob/main/INSTALL.md).
 
 To install optional capabilities from source, you can include the extras when
 running `pip install`, for example `pip install ".[ui,web,doc-parsers]"`.

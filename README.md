@@ -57,6 +57,10 @@ To install FlexRAG via pip:
 pip install flexrag
 ```
 
+This default installation includes `faiss-cpu`. If you need GPU-accelerated Faiss,
+see the [installation guide](https://flexrag.readthedocs.io/en/latest/getting_started/installation.html)
+for the replacement workflow.
+
 Visit our [documentation](https://flexrag.readthedocs.io/en/latest/) to learn more.
 - [Installation](https://flexrag.readthedocs.io/en/latest/getting_started/installation.html)
 - [Quickstart](https://flexrag.readthedocs.io/en/latest/getting_started/quickstart1.html)

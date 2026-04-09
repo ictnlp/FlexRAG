@@ -395,7 +395,7 @@ class FaissIndex(DenseIndexBase):
         elif len(self.cfg.device_id) > 0:
             logger.warning(
                 "The installed faiss does not support GPU acceleration. "
-                "Please install faiss-gpu."
+                "Please replace faiss-cpu with a GPU-enabled Faiss build."
             )
         return index
 
