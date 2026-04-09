@@ -9,6 +9,7 @@
 - The package is built with Hatchling.
 - The current public surface is still centered on the existing entrypoints in `src/flexrag/entrypoints`.
 - The project is in an active transition toward FlexRAG `1.0.0`; treat several core systems as legacy-but-active rather than removable.
+- Project planning and milestone direction belong in `ROADMAP.md`; this file focuses on implementation guidance for contributors and coding agents.
 
 ## Repository Layout
 - `src/flexrag/common`: shared config, registry, logging, dataclasses, defaults.
@@ -58,17 +59,6 @@
 - If a change touches docs, configs, or entrypoints, consider whether a smoke test or doc build is needed.
 - GPU-only behavior should remain guarded by the existing `gpu` marker.
 
-## Active Refactor Context
-- FlexRAG is moving toward a `1.0.0` architecture.
-- Planned direction includes:
-  - Process-backed handling for resource-intensive local components, especially in `src/flexrag/models`, with clear worker/runtime boundaries for resource management and future backend flexibility.
-  - A `Dataset` + `Task` centered evaluation design.
-  - Assistant code adapting to task-oriented evaluation workflows.
-  - Replacement of multiple current entrypoints with a unified entrypoint later.
-  - Eventual replacement of the current Hydra + dataclass config model.
-  - Migration from path-import + decorator registration to a Pluggy-based plugin system.
-  - Documentation, packaging, and CI/CD updates as part of the transition.
-
 ## Pre-1.0 Compatibility Policy
 - Before the `1.0.0` release, backward compatibility is not a project constraint by itself.
 - If a breaking change materially improves logic consistency, performance, maintainability, or API ergonomics, prefer the cleaner design.
@@ -79,8 +69,8 @@
 - Treat the current path-import + decorator-registration mechanism as legacy-but-active. Do not remove it casually, but pre-`1.0.0` breaking changes are acceptable when they clearly improve the design.
 - Assistant-related code is in transition. Prefer task-oriented abstractions for new work, but preserve current user-facing behavior.
 - Legacy code may be intentionally retained during the refactor. Confirm it is actually obsolete before deleting or bypassing it.
-- When adding new code, prefer abstractions that can survive the ongoing process-backed runtime migration, task-centric evaluation design, config redesign, and plugin-system migration.
-- For model work, prefer the established `AsyncClientMixin` + `LocalProcess*Base` + `ProcessWorkerPoolClient` patterns over ad-hoc threading or multiprocessing glue.
+- When adding new code, prefer abstractions that can survive the ongoing `1.0.0` transition work around task-centric evaluation, config redesign, plugin-system migration, and isolated-process execution for resource-intensive components.
+- For isolated-process implementations, prefer the established `AsyncClientMixin` + `LocalProcess*Base` + `ProcessWorkerPoolClient` patterns over ad-hoc threading or multiprocessing glue. Use the model-side implementation as the current reference when extending similar behavior to retrievers or rankers.
 - Avoid deepening coupling to current entrypoints, current config internals, or ad-hoc plugin loading unless backward compatibility requires it.
 
 ## External Integrations And Secrets
@@ -94,4 +84,4 @@
 - Do not remove transitional systems solely because a newer direction exists in project plans.
 - When introducing new config or registry entries, wire them in the same style as adjacent implementations.
 - When adding a local model backend, keep the registered public wrapper separate from the concrete `*Impl` worker implementation, and preserve current device remapping / worker-pool behavior unless the task explicitly changes scheduling semantics.
-- If a request conflicts with the active refactor constraints, implement the smallest compatible change and note the tradeoff.
+- If a request conflicts with the transition constraints in this file, implement the smallest compatible change and note the tradeoff.
