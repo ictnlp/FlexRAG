@@ -31,10 +31,16 @@ dependencies = [
     "omegaconf>=2.3.0",
     "pillow",
     "colorama",
+    "PyYAML",
+    "pydantic",
+    "requests",
+    "rich",
+    "tqdm",
     "torch>=2.9.0",
     "pandas",
     "sentencepiece",
     "orjson",
+    "huggingface-hub",
     # metrics
     "rouge-score",
     "sacrebleu>=2.4.2",
@@ -53,22 +59,14 @@ dependencies = [
     "unidecode",
     "sacremoses",
     "opencc",
+    "jieba",
     # retrievers
     "PyStemmer",
     "bm25s",
     "elasticsearch>=8.14.0",
-    "beautifulsoup4",
     "typesense",
     "httpx",
-    "scipy",
     "scann>=1.4.0",
-    # web retrievers
-    "duckduckgo_search",
-    "serpapi",
-    "pytest-playwright",
-    "markitdown",
-    # gui
-    "gradio>=6.1.0",
     # chunking
     "regex",
     "nltk",
@@ -76,6 +74,14 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+ui = ["gradio>=6.1.0"]
+web = [
+    "beautifulsoup4",
+    "duckduckgo_search",
+    "serpapi",
+    "playwright",
+]
+doc-parsers = ["markitdown", "docling"]
 dev = [
     "black",
     "pytest",

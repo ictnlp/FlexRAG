@@ -160,8 +160,8 @@ class PlaywrightWebDownloader(WebDownloaderBase):
             self.sync_playwright = sync_playwright
         except ImportError:
             raise ImportError(
-                "Please install playwright using `pip install pytest-playwright`."
-                "Then, execute `playwright install`."
+                "Playwright is not installed. Install `flexrag[web]` or "
+                "`playwright`, then execute `playwright install`."
             )
 
         # set the arguments

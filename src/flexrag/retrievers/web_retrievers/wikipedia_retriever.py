@@ -2,7 +2,6 @@ import time
 from typing import Optional
 
 import httpx
-from bs4 import BeautifulSoup
 
 from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
 from flexrag.common.configure import extract_config
@@ -40,6 +39,14 @@ class WikipediaRetriever(RetrieverBase):
         # set basic configs
         self.cfg = extract_config(cfg, WikipediaRetrieverConfig)
         self.client = httpx.Client(proxy=cfg.proxy)
+        try:
+            from bs4 import BeautifulSoup
+        except ImportError as error:
+            raise ImportError(
+                "BeautifulSoup4 is not installed. Install `flexrag[web]` or "
+                "`beautifulsoup4` to use WikipediaRetriever."
+            ) from error
+        self._soup_parser = BeautifulSoup
         return
 
     def search(
@@ -64,7 +71,7 @@ class WikipediaRetriever(RetrieverBase):
         search_url = self.cfg.search_url + query.replace(" ", "+")
         response_text = self.client.get(search_url).text
 
-        soup = BeautifulSoup(response_text, features="html.parser")
+        soup = self._soup_parser(response_text, features="html.parser")
         result_divs = soup.find_all("div", {"class": "mw-search-result-heading"})
         if result_divs:  # mismatch
             similar_entities = [

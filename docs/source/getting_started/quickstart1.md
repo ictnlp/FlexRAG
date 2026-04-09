@@ -24,6 +24,11 @@ Each component can be configured independently, allowing you to easily customize
 ## Deploying a GUI application
 The easiest way to run a RAG assistant is to use FlexRAG's entrypoints to start a GUI application. You can run the following command to start a GUI application with the {class}`~flexrag.assistant.ModularAssistant`. In the following command, a retriever based on Wikipedia knowledge base provided by FlexRAG and a generator from OpenAI are used to build a typical RAG pipeline. Make sure to replace `$OPENAI_KEY` with your OpenAI access key.
 
+```{note}
+The interactive GUI is provided by the optional `ui` extra. Install it first
+with `pip install "flexrag[ui]"`.
+```
+
 ```bash
 python -m flexrag.entrypoints.run_interactive \
     assistant_type=modular \  # Specifies the assistant type

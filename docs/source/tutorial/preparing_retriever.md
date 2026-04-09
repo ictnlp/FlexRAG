@@ -243,32 +243,6 @@ passages = retriever.search('What is the capital of France?', top_k=5)[0]
 print(passages)
 ```
 
-### Deploying the Retriever as a Service
-FlexRAG provides an entrypoint to deploy the retriever as a service. This is helpful when you want to use the retriever to fine-tune your own RAG assistant or when you want to use the retriever in a production demonstration. You can deploy the retriever by running the following command:
-
-```bash
-python -m flexrag.entrypoints.serve_retriever \
-    host='0.0.0.0' \
-    port='3402' \
-    retriever_path=<path_to_retriever> \
-    used_indexes=['bm25']
-```
-
-After deploying the retriever, you can access the retriever service at `http://<host>:<port>/search` or visit `http://<host>:<port>/docs` for documentation. You can send a POST request to the `/search` endpoint with a JSON payload containing the query and the top-k parameter. The following is an example of how to use the retriever service:
-
-```python
-import requests
-
-def search_retriever(query, top_k=5):
-    url = "http://<host>:<port>/search"
-    payload = {
-        "queries": [query],
-        "top_k": top_k,
-    }
-    response = requests.post(url, json=payload)
-    return response.json()
-```
-
 
 ### Uploading the Retriever to the HuggingFace Hub
 To share your retriever with the community, you can upload it to the HuggingFace Hub. For example, to upload the `FlexRetriever` to the HuggingFace Hub, you can run the following code:

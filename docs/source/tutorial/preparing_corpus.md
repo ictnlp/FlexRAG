@@ -8,6 +8,12 @@ If you already have structured data, you can skip this tutorial.
 ## Parse Files using FlexRAG's Command-Line Tool
 FlexRAG provides a command-line tool `prepare_corpus` to help users parse various files into structured data. In this tutorial, we will use a paper from Arxiv as an example to demonstrate how to parse a PDF file using the built-in command-line tool of FlexRAG.
 
+```{note}
+The built-in document parsers are provided by the optional `doc-parsers` extra.
+Install it first with `pip install "flexrag[doc-parsers]"` if you plan to use
+`markitdown` or `docling`.
+```
+
 Run the following command to download a paper from Arxiv:
 
 ```bash

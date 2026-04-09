@@ -2,11 +2,18 @@ import sys
 from pathlib import Path
 from typing import Callable, Optional
 
-import gradio as gr
 import hydra
 import PIL
 import PIL.Image
 from hydra.core.config_store import ConfigStore
+
+try:
+    import gradio as gr
+except ImportError as error:
+    raise ImportError(
+        "Gradio is not installed. Install `flexrag[ui]` or `gradio` to use "
+        "the interactive UI entrypoint."
+    ) from error
 
 from flexrag.assistants import ASSISTANTS
 from flexrag.common import LOGGER_MANAGER, configure, extract_config, load_user_module

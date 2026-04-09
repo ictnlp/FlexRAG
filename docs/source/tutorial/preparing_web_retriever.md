@@ -4,6 +4,10 @@ With internet access, WebRetriever has significant advantages in both the timeli
 
 In this tutorial, we will show you how to load / build the `WebRetriever` for your project.
 
+```{note}
+The web retrievers are provided by the optional `web` extra. Install it first
+with `pip install "flexrag[web]"`.
+```
 
 ```{important}
 Since using computer programs to obtain internet information may be illegal in certain circumstances, or some websites may employ anti-crawling mechanisms to block your access, please ensure that such actions are legal in your region before using WebRetriever.
@@ -79,7 +83,9 @@ ctxs = retriever.search("Who is Bruce Wayne?")[0]
 After running the code above, you will get the screenshot of the top 5 webpages. The screenshot will be stored as a `PIL.Image.Image` object in the `RetrievedContext`.
 
 ```{note}
-The screenshot feature requires the `playwright` package. Please make sure you have installed the `playwright` package before using the screenshot feature.
+The screenshot feature requires Playwright. Installing `flexrag[web]` will pull
+in the Python package, and you still need to run `playwright install` before
+using the screenshot feature.
 ```
 
 ## Building Your Own WebRetriever

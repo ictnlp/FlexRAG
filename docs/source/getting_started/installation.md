@@ -23,6 +23,14 @@ After installing `faiss`, run the following command to install FlexRAG:
 pip install flexrag
 ```
 
+Optional capabilities are available as extras:
+
+```bash
+pip install "flexrag[ui]"
+pip install "flexrag[web]"
+pip install "flexrag[doc-parsers]"
+```
+
 ## Installation from source
 Alternatively, to install FlexRAG from the source, follow the steps below:
 ```bash
@@ -32,6 +40,9 @@ git clone https://github.com/ictnlp/FlexRAG.git
 cd flexrag
 pip install ./
 ```
+
+To install optional capabilities from source, you can include the extras when
+running `pip install`, for example `pip install ".[ui,web,doc-parsers]"`.
 
 ```{tip}
 You can also install the FlexRAG in *editable* mode with the `-e` flag.

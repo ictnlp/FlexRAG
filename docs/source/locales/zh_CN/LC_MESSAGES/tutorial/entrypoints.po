@@ -153,29 +153,6 @@ msgid ""
 "environment variable by `export DISABLE_CACHE=True`."
 msgstr "如果您希望在使用 FlexRAG 检索器时不使用缓存，您可以在环境变量中设置 `DISABLE_CACHE=True`。"
 
-#: ../../source/tutorial/entrypoints.md:71 e10ab0a8bde244779a600ecec80921e3
-msgid "Deploying the Retriever"
-msgstr "部署检索器"
-
-#: ../../source/tutorial/entrypoints.md:72 db893760c5bb4fa7b0f198d0904eee00
-msgid ""
-"FlexRAG also provides an entrypoint to deploy the retriever as a service."
-" This is helpful when you want to use the retriever to fine-tune your own"
-" RAG assistant or when you want to use the retriever in a production "
-"demonstration. You can use this entrypoint by running `python -m "
-"flexrag.entrypoints.serve_retriever`. The defination of the configuration"
-" structure for the `deploy` entrypoint is as follows:"
-msgstr ""
-"FlexRAG 还提供了一个入口点，用于将检索器部署为服务。"
-"当你想使用检索器来微调你自己的 RAG 助手，或者想在生产演示中使用检索器时，这非常有帮助。"
-"你可以通过运行以下命令来使用这个入口点： `python -m flexrag.entrypoints.serve_retriever` 。"
-"该入口点的配置结构如下所示："
-
-#: d214ec907d35463ca7b9158b79b27731
-#: flexrag.entrypoints.serve_retriever.Config:1 of
-msgid "Bases: :py:class:`~flexrag.retriever.flex_retriever.FlexRetrieverConfig`"
-msgstr ""
-
 #: ../../source/tutorial/entrypoints.md:85 4f3cde31b3c848b6bb5e000df19a3166
 msgid "Configuration Management"
 msgstr "配置管理"
@@ -343,4 +320,3 @@ msgstr "您可以访问 [Hydra 文档](https://hydra.cc/docs/intro/)以获取更
 #~ msgstr ""
 #~ "您在构建您自己的应用程序时，也可以通过定义新的 `dataclass` 来创建配置结构。举例来说，您可以定义如下"
 #~ " `dataclass` 来为您的 RAG 助手创建配置结构："
-

@@ -20,10 +20,11 @@ class DoclingParser(DocumentParserBase):
             from docling.datamodel.base_models import InputFormat
             from docling.datamodel.pipeline_options import PdfPipelineOptions
             from docling.document_converter import DocumentConverter, PdfFormatOption
-        except ImportError:
+        except ImportError as error:
             raise ImportError(
-                "Docling is not installed. Please install it via `pip install docling`."
-            )
+                "Docling is not installed. Install `flexrag[doc-parsers]` or "
+                "`docling` to use DoclingParser."
+            ) from error
 
         pdf_pipeline_options = PdfPipelineOptions(
             do_ocr=config.do_ocr,

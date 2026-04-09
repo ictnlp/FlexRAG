@@ -3,8 +3,6 @@ import shutil
 from collections import defaultdict
 from typing import Annotated, Any, Generator, Iterable, Optional
 
-from jinja2 import Template
-
 from flexrag.common import (
     __VERSION__,
     LOGGER_MANAGER,
@@ -32,8 +30,7 @@ from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
 logger = LOGGER_MANAGER.get_logger("flexrag.retreviers.flex")
 
 
-RETRIEVER_CARD_TEMPLATE = Template(
-    """---
+RETRIEVER_CARD_TEMPLATE = """---
 language: en
 library_name: FlexRAG
 tags:
@@ -46,7 +43,7 @@ tags:
 
 # FlexRAG Retriever
 
-This is a {{ retriever_type }} created with the [`FlexRAG`](https://github.com/ictnlp/flexrag) library (version `{version}`).
+This is a {retriever_type} created with the [`FlexRAG`](https://github.com/ictnlp/flexrag) library (version `{version}`).
 
 ## Installation
 
@@ -63,13 +60,7 @@ You can use this retriever for information retrieval tasks. Here is an example:
 ```python
 from flexrag.retriever import LocalRetriever
 
-{% if repo_id is not none %}
-# Load the retriever from the HuggingFace Hub
-retriever = LocalRetriever.load_from_hub("{{ repo_id }}")
-{% else %}
-# Load the retriever from a local path
-retriever = LocalRetriever.load_from_local("{{ repo_path }}")
-{% endif %}
+{load_example}
 
 # You can retrieve now
 results = retriever.search("Who is Bruce Wayne?")
@@ -79,7 +70,30 @@ FlexRAG Related Links:
 * 📚[Documentation](https://flexrag.readthedocs.io/en/latest/)
 * 💻[GitHub Repository](https://github.com/ictnlp/flexrag)
 """
-)
+
+
+def _build_retriever_card(
+    retriever_type: str,
+    version: str,
+    repo_path: Optional[str] = None,
+    repo_id: Optional[str] = None,
+) -> str:
+    if repo_id is not None:
+        load_example = (
+            "# Load the retriever from the HuggingFace Hub\n"
+            f'retriever = LocalRetriever.load_from_hub("{repo_id}")'
+        )
+    else:
+        assert repo_path is not None, "repo_path must be provided when repo_id is None."
+        load_example = (
+            "# Load the retriever from a local path\n"
+            f'retriever = LocalRetriever.load_from_local("{repo_path}")'
+        )
+    return RETRIEVER_CARD_TEMPLATE.format(
+        retriever_type=retriever_type,
+        version=version,
+        load_example=load_example,
+    )
 
 
 @configure
@@ -494,7 +508,7 @@ class FlexRetriever(LocalRetriever):
         # save the retriever card
         card_path = os.path.join(retriever_path, "README.md")
         if not os.path.exists(card_path):
-            retriever_card = RETRIEVER_CARD_TEMPLATE.render(
+            retriever_card = _build_retriever_card(
                 retriever_type=self.__class__.__name__,
                 version=__VERSION__,
                 repo_path=self.cfg.retriever_path,

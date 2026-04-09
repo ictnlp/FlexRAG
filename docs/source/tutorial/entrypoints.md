@@ -44,6 +44,11 @@ The defination of the configuration structure for the `eval_assistant` entrypoin
 This entrypoint is used to run the assistant using the built-in Gradio GUI interface. You can use this entrypoint by running `python -m flexrag.entrypoints.run_interactive`.
 The defination of the configuration structure for the `run_interactive` entrypoint is as follows:
 
+```{note}
+The GUI entrypoint is provided by the optional `ui` extra. Install it first
+with `pip install "flexrag[ui]"`.
+```
+
 ```{eval-rst}
 .. autoclass:: flexrag.entrypoints.run_interactive::Config
     :members:
@@ -66,19 +71,6 @@ The defination of the configuration structure for the `cache` entrypoint is as f
 
 ```{tip}
 If you wish to disable the Cache during retrieval, you can set the environment variable by `export DISABLE_CACHE=True`.
-```
-
-### Deploying the Retriever
-FlexRAG also provides an entrypoint to deploy the retriever as a service. This is helpful when you want to use the retriever to fine-tune your own RAG assistant or when you want to use the retriever in a production demonstration.
-You can use this entrypoint by running `python -m flexrag.entrypoints.serve_retriever`.
-The defination of the configuration structure for the `deploy` entrypoint is as follows:
-
-```{eval-rst}
-.. autoclass:: flexrag.entrypoints.serve_retriever::Config
-    :members:
-    :noindex:
-    :show-inheritance:
-    :exclude-members: dump,dumps,load,loads
 ```
 
 

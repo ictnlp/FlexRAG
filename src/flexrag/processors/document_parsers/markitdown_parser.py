@@ -6,12 +6,12 @@ class MarkItDownParser(DocumentParserBase):
     def __init__(self):
         try:
             from markitdown import MarkItDown
-        except ImportError:
+        except ImportError as error:
             raise ImportError(
-                "MarkItDown is not installed. Please install it via `pip install markitdown`."
-            )
-        finally:
-            self.parser = MarkItDown()
+                "MarkItDown is not installed. Install `flexrag[doc-parsers]` or "
+                "`markitdown` to use MarkItDownParser."
+            ) from error
+        self.parser = MarkItDown()
         return
 
     def parse(self, path: str) -> Document:
