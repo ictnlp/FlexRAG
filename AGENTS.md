@@ -6,7 +6,7 @@
 
 ## Project Overview
 - FlexRAG is a Python 3.11+ RAG framework with a modular architecture under `src/flexrag`.
-- The package is built with Hatchling, but day-to-day development and CI use `uv`.
+- The package is built with Hatchling.
 - The current public surface is still centered on the existing entrypoints in `src/flexrag/entrypoints`.
 - The project is in an active transition toward FlexRAG `1.0.0`; treat several core systems as legacy-but-active rather than removable.
 
@@ -24,11 +24,11 @@
 - `docs`: Sphinx documentation sources.
 
 ## Development Workflow
-- Create or sync the environment with `uv sync --all-extras --dev`.
-- Run tests with `uv run pytest -m "not gpu"`.
+- Keep the development environment in sync with the project's declared dependencies and optional extras needed for the task.
+- Run tests with `pytest -m "not gpu"`.
 - Run a narrower test target when touching a focused area, then fall back to the full non-GPU suite if practical.
-- Build docs with `uv run sphinx-build docs/source docs/build/en -D language=en -W` or `.../zh_CN ...`.
-- Build the package with `uv run python -m build` if packaging changes are involved.
+- Build docs with `sphinx-build docs/source docs/build/en -D language=en -W` or `.../zh_CN ...`.
+- Build the package with `python -m build` if packaging changes are involved.
 
 ## Code Style
 - Use Black-compatible formatting and keep imports isort-friendly.
