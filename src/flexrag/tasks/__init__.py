@@ -31,6 +31,8 @@ from .multisession_qa import (
 from .open_qa import (
     BrowseCompTask,
     BrowseCompTaskConfig,
+    BrowseCompZHTask,
+    BrowseCompZHTaskConfig,
     OpenQATask,
     OpenQATaskConfig,
     SimpleQATask,
@@ -88,6 +90,8 @@ __all__ = [
     "LongBenchV2TaskConfig",
     "BrowseCompTask",
     "BrowseCompTaskConfig",
+    "BrowseCompZHTask",
+    "BrowseCompZHTaskConfig",
     "OpenQATask",
     "OpenQATaskConfig",
     "SimpleQATask",
