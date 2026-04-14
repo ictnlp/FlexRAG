@@ -82,23 +82,30 @@ def _file_part(
     fallback_file_name: str,
 ) -> dict[str, Any]:
     file_obj: dict[str, Any] = {}
+    explicit_mime_type = content_part.get("mime_type")
+    explicit_file_name = content_part.get("file_name")
     if content_part.get("url") is not None:
         file_obj["file_url"] = content_part["url"]
         file_name = os.path.basename(urlparse(content_part["url"]).path)
-        file_obj["filename"] = file_name or fallback_file_name
+        file_obj["filename"] = explicit_file_name or file_name or fallback_file_name
         return {"type": "file", "file": file_obj}
     if content_part.get("file_path") is not None:
         file_path = content_part["file_path"]
         mime_type, _ = mimetypes.guess_type(str(file_path))
-        file_obj["filename"] = os.path.basename(str(file_path)) or fallback_file_name
+        file_obj["filename"] = (
+            explicit_file_name or os.path.basename(str(file_path)) or fallback_file_name
+        )
         file_obj["file_data"] = (
-            f"data:{mime_type or fallback_mime_type};base64,{file_to_base64(file_path)}"
+            f"data:{explicit_mime_type or mime_type or fallback_mime_type};base64,"
+            f"{file_to_base64(file_path)}"
         )
         return {"type": "file", "file": file_obj}
     if content_part.get("binary") is not None:
-        file_obj["filename"] = fallback_file_name
+        file_obj["filename"] = explicit_file_name or fallback_file_name
         file_obj["file_data"] = (
-            f"data:{fallback_mime_type};base64,{binary_to_base64(content_part['binary'])}"
+            "data:"
+            f"{explicit_mime_type or fallback_mime_type};base64,"
+            f"{binary_to_base64(content_part['binary'])}"
         )
         return {"type": "file", "file": file_obj}
     raise ValueError("File content must have either 'url', 'file_path', or 'binary'.")
@@ -166,6 +173,14 @@ def _turn_to_litellm_message(turn: ChatTurn) -> dict[str, Any]:
                     fallback_file_name="document.pdf",
                 )
             )
+        elif content_type == "file":
+            parts.append(
+                _file_part(
+                    content_part,
+                    fallback_mime_type="application/octet-stream",
+                    fallback_file_name="document.bin",
+                )
+            )
         elif content_type == "audio":
             parts.append(
                 _file_part(
@@ -229,7 +244,13 @@ def _completion_choice_to_chat_turn(choice: Any, usage: Any) -> ChatTurn:
             elif part_type == "file":
                 file_url = part["file"].get("file_url")
                 if file_url:
-                    normalized_parts.append({"type": "pdf", "url": file_url})
+                    normalized_parts.append(
+                        {
+                            "type": "file",
+                            "url": file_url,
+                            "file_name": part["file"].get("filename", ""),
+                        }
+                    )
             else:
                 raise ValueError(f"Unsupported LiteLLM content type: {part_type}")
 

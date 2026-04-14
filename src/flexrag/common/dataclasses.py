@@ -57,6 +57,15 @@ class PDFContentPart(TypedDict, total=False):
     binary: bytes | bytearray
 
 
+class FileContentPart(TypedDict, total=False):
+    type: Literal["file"]
+    url: str
+    file_path: str
+    binary: bytes | bytearray
+    mime_type: str
+    file_name: str
+
+
 class AudioContentPart(TypedDict, total=False):
     type: Literal["audio"]
     url: str
@@ -76,6 +85,7 @@ ContentPart: TypeAlias = (
     | ToolCallContentPart
     | ImageContentPart
     | PDFContentPart
+    | FileContentPart
     | AudioContentPart
     | VideoContentPart
 )
@@ -194,6 +204,7 @@ class ChatTurn:
         - PDF by URL: ``{"type": "pdf", "url": "<pdf url>"}``
         - PDF by file path: ``{"type": "pdf", "file_path": "<path to pdf file>"}``
         - PDF by binary data: ``{"type": "pdf", "binary": <bytes or bytearray>}``
+        - Generic file: ``{"type": "file", "file_path": "<path>", "mime_type": "<mime type>"}``
         - Audio by URL: ``{"type": "audio", "url": "<audio url>"}``
         - Audio by file path: ``{"type": "audio", "file_path": "<path to audio file>"}``
         - Audio by binary data: ``{"type": "audio", "binary": <bytes or bytearray>}``
@@ -249,7 +260,7 @@ class ChatTurn:
                 if "image" in new_part:
                     new_part["image"] = image_to_base64(new_part["image"])
                     new_part["encoding"] = "base64"
-            elif ctype in {"pdf", "audio", "video"}:
+            elif ctype in {"pdf", "file", "audio", "video"}:
                 if "binary" in new_part:
                     new_part["binary"] = binary_to_base64(new_part["binary"])
                     new_part["encoding"] = "base64"
@@ -298,7 +309,7 @@ class ChatTurn:
             if encoding == "base64":
                 if ctype == "image" and "image" in part:
                     new_part["image"] = base64_to_image(part["image"])
-                elif ctype in {"pdf", "audio", "video"} and ("binary" in part):
+                elif ctype in {"pdf", "file", "audio", "video"} and ("binary" in part):
                     new_part["binary"] = base64_to_binary(part["binary"])
                 new_part.pop("encoding")
             restored_content.append(cast(ContentPart, new_part))

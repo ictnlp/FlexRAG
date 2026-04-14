@@ -1,3 +1,5 @@
+from pathlib import Path
+
 import pytest
 
 from flexrag.datasets.benchmarks import (
@@ -137,6 +139,8 @@ class TestOpenDomainQA:
             assert len(item.answers) > 0
             assert item.meta_data["subset"] == subset
             assert "doc_name" in item.meta_data
+            assert Path(item.meta_data["source_file_path"]).exists()
+            assert item.meta_data["source_file_format"] == "pdf"
         print(f"UDA-QA-{subset} dataset length: {len(dataset)}")
         print(f"UDA-QA-{subset} dataset test passed.")
         return

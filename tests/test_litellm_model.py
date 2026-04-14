@@ -49,6 +49,8 @@ class TestLiteLLMGenerator:
     def test_chat_multimodal_payload(self, mock_litellm_client, tmp_path):
         pdf_path = tmp_path / "sample.pdf"
         pdf_path.write_bytes(b"%PDF-1.4 sample")
+        html_path = tmp_path / "sample.html"
+        html_path.write_text("<html><body>sample</body></html>", encoding="utf-8")
         audio_path = tmp_path / "sample.mp3"
         audio_path.write_bytes(b"mp3")
         video_path = tmp_path / "sample.mp4"
@@ -65,6 +67,12 @@ class TestLiteLLMGenerator:
                         content=[
                             {"type": "text", "text": "Describe these files"},
                             {"type": "pdf", "file_path": str(pdf_path)},
+                            {
+                                "type": "file",
+                                "file_path": str(html_path),
+                                "mime_type": "text/html",
+                                "file_name": "sample.html",
+                            },
                             {"type": "audio", "file_path": str(audio_path)},
                             {"type": "video", "file_path": str(video_path)},
                         ],
@@ -79,11 +87,13 @@ class TestLiteLLMGenerator:
         assert content[0] == {"type": "text", "text": "Describe these files"}
         assert content[1]["type"] == "file"
         assert content[1]["file"]["filename"] == "sample.pdf"
-        assert content[2]["file"]["filename"] == "sample.mp3"
-        assert content[3]["file"]["filename"] == "sample.mp4"
+        assert content[2]["file"]["filename"] == "sample.html"
+        assert content[3]["file"]["filename"] == "sample.mp3"
+        assert content[4]["file"]["filename"] == "sample.mp4"
         assert content[1]["file"]["file_data"].startswith(
             "data:application/pdf;base64,"
         )
+        assert content[2]["file"]["file_data"].startswith("data:text/html;base64,")
 
     def test_generate_uses_text_completion(self, mock_litellm_client):
         generator = LiteLLMGenerator(

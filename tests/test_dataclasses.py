@@ -4,6 +4,23 @@ from flexrag.common.dataclasses import ChatMessages, ChatTurn
 
 
 class TestChatTurn:
+    def test_file_content_roundtrip(self):
+        turn = ChatTurn(
+            role="user",
+            content=[
+                {"type": "text", "text": "Check this file."},
+                {
+                    "type": "file",
+                    "file_path": "/tmp/sample.html",
+                    "mime_type": "text/html",
+                    "file_name": "sample.html",
+                },
+            ],
+        )
+
+        restored = ChatTurn.from_dict(turn.to_dict())
+        assert restored.content == turn.content
+
     def test_tool_result_roundtrip(self):
         turn = ChatTurn(
             role="tool",

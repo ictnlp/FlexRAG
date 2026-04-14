@@ -35,6 +35,8 @@ from .open_qa import (
     OpenQATaskConfig,
     SimpleQATask,
     SimpleQATaskConfig,
+    UDAQATask,
+    UDAQATaskConfig,
 )
 from .retrieval_task import (
     MLDRRetrievalTask,
@@ -90,4 +92,6 @@ __all__ = [
     "OpenQATaskConfig",
     "SimpleQATask",
     "SimpleQATaskConfig",
+    "UDAQATask",
+    "UDAQATaskConfig",
 ]

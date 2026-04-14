@@ -107,6 +107,8 @@ def _content_part_to_hf(content_part: ContentPart) -> dict:
         )
     if content_type == "pdf":
         raise ValueError("HFGenerator does not support pdf content in chat messages.")
+    if content_type == "file":
+        raise ValueError("HFGenerator does not support file content in chat messages.")
     if content_type == "tool_call":
         raise ValueError("HFGenerator does not support native tool_call message parts.")
     raise ValueError(f"Unsupported content type: {content_type}")

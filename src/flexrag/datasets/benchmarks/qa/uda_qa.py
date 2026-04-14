@@ -2,6 +2,7 @@ import os
 import tempfile
 from pathlib import Path
 from typing import Annotated, Optional
+from zipfile import ZipFile
 
 from datasets import load_dataset
 from huggingface_hub import snapshot_download
@@ -27,6 +28,11 @@ _DOC_ARCHIVES = {
     "fin": "fin_docs.zip",
     "tat": "tat_docs.zip",
 }
+_DOC_MIME_TYPES = {
+    "pdf": "application/pdf",
+    "html": "text/html",
+}
+_WIKI_SUBSETS = {"feta", "nq"}
 _REPO_ID = "qinchuanhui/UDA-QA"
 
 
@@ -45,39 +51,15 @@ class UDAQADatasetConfig:
         Available choices are: `feta`, `nq`, `paper_text`, `paper_tab`,
         `fin`, and `tat`.
     :type subset: str
+    :param prefered_format: The preferred source document format for the
+        Wikipedia-based subsets `feta` and `nq`. Available choices are `pdf`
+        and `html`. This option is ignored by the other subsets.
+    :type prefered_format: str
     """
 
     data_path: Optional[str] = None
     subset: Annotated[str, Choices(*_SUBSETS)] = "feta"
-
-
-def _to_string_list(value) -> list[str]:
-    if value is None:
-        return []
-    if isinstance(value, str):
-        return [value]
-    if isinstance(value, (list, tuple)):
-        return [str(item) for item in value]
-    if hasattr(value, "tolist"):
-        converted = value.tolist()
-        if isinstance(converted, list):
-            return [str(item) for item in converted]
-        return [str(converted)]
-    return [str(value)]
-
-
-def _normalize_answers(item: dict, subset: str) -> list[str]:
-    answers = []
-    for field in _ANSWER_FIELDS[subset]:
-        for answer in _to_string_list(item.get(field)):
-            answer = answer.strip()
-            if answer and answer not in answers:
-                answers.append(answer)
-    return answers
-
-
-def _resolve_subset_files(data_dir: Path, subset: str) -> list[str]:
-    return sorted(path.as_posix() for path in (data_dir / subset).glob("test*.parquet"))
+    prefered_format: Annotated[str, Choices("pdf", "html")] = "pdf"
 
 
 @DATASETS("uda_qa", config_class=UDAQADatasetConfig)
@@ -86,12 +68,15 @@ class UDAQADataset(MappingDataset[QASample]):
 
     def __init__(self, config: UDAQADatasetConfig):
         self._subset = config.subset
+        self._prefered_format = config.prefered_format
         if config.data_path is None:
             data_dir = FLEXRAG_CACHE_DIR / "datasets" / "uda_qa"
         else:
             data_dir = Path(config.data_path)
 
-        data_files = _resolve_subset_files(data_dir, self._subset)
+        data_files = sorted(
+            path.as_posix() for path in (data_dir / self._subset).glob("test*.parquet")
+        )
         if not data_files and (config.data_path is None or not data_dir.exists()):
             data_dir.parent.mkdir(parents=True, exist_ok=True)
             snapshot_download(
@@ -100,7 +85,10 @@ class UDAQADataset(MappingDataset[QASample]):
                 local_dir=data_dir.as_posix(),
                 token=os.getenv("HF_TOKEN"),
             )
-            data_files = _resolve_subset_files(data_dir, self._subset)
+            data_files = sorted(
+                path.as_posix()
+                for path in (data_dir / self._subset).glob("test*.parquet")
+            )
         if not data_files:
             raise FileNotFoundError(
                 f"UDA-QA parquet files not found for subset '{self._subset}' under {data_dir}"
@@ -120,20 +108,102 @@ class UDAQADataset(MappingDataset[QASample]):
             cache_dir=cache_dir.as_posix(),
         )
 
-        archive_name = _DOC_ARCHIVES[self._subset]
-        archive_path = data_dir / "src_doc_files" / archive_name
-        self._doc_archive_path = archive_path if archive_path.exists() else None
+        self._data_dir = data_dir
+        self._documents_dir = self._prepare_documents_dir(config)
+        self._source_file_cache: dict[str, tuple[Path, str, str]] = {}
         return
 
     def __len__(self) -> int:
         return len(self._data)
 
+    def _prepare_documents_dir(self, config: UDAQADatasetConfig) -> Path:
+        archive_name = _DOC_ARCHIVES[self._subset]
+        archive_path = self._data_dir / "src_doc_files" / archive_name
+        extract_dir = archive_path.with_suffix("")
+
+        if not extract_dir.exists() and not archive_path.exists():
+            if config.data_path is None:
+                snapshot_download(
+                    repo_id=_REPO_ID,
+                    repo_type="dataset",
+                    local_dir=self._data_dir.as_posix(),
+                    token=os.getenv("HF_TOKEN"),
+                )
+            else:
+                raise FileNotFoundError(
+                    f"UDA-QA archive for subset '{self._subset}' not found: {archive_path}"
+                )
+
+        if archive_path.exists() and not extract_dir.exists():
+            archive_path.parent.mkdir(parents=True, exist_ok=True)
+            with ZipFile(archive_path) as zf:
+                zf.extractall(archive_path.parent)
+        if archive_path.exists():
+            archive_path.unlink()
+        if not extract_dir.exists():
+            raise FileNotFoundError(
+                f"UDA-QA extracted documents not found for subset '{self._subset}': {extract_dir}"
+            )
+        return extract_dir
+
+    def _resolve_source_file(self, doc_name: str) -> tuple[Path, str, str]:
+        if doc_name in self._source_file_cache:
+            return self._source_file_cache[doc_name]
+
+        if self._subset in _WIKI_SUBSETS:
+            file_format = self._prefered_format
+            source_path = (
+                self._documents_dir / f"{file_format}s" / f"{doc_name}.{file_format}"
+            )
+        else:
+            file_format = "pdf"
+            source_path = self._documents_dir / f"{doc_name}.pdf"
+
+        if not source_path.exists():
+            raise FileNotFoundError(
+                f"UDA-QA source file for document '{doc_name}' not found: {source_path}"
+            )
+
+        resolved = (source_path, file_format, _DOC_MIME_TYPES[file_format])
+        self._source_file_cache[doc_name] = resolved
+        return resolved
+
+    def _normalize_answers(self, item: dict) -> list[str]:
+        def to_string_list(value) -> list[str]:
+            if value is None:
+                return []
+            if isinstance(value, str):
+                return [value]
+            if isinstance(value, (list, tuple)):
+                return [str(entry) for entry in value]
+            if hasattr(value, "tolist"):
+                converted = value.tolist()
+                if isinstance(converted, list):
+                    return [str(entry) for entry in converted]
+                return [str(converted)]
+            return [str(value)]
+
+        answers = []
+        for field in _ANSWER_FIELDS[self._subset]:
+            for answer in to_string_list(item.get(field)):
+                answer = answer.strip()
+                if answer and answer not in answers:
+                    answers.append(answer)
+        return answers
+
     def get_item(self, index: int) -> QASample:
         item = self._data[index]
-        answers = _normalize_answers(item, self._subset)
+        answers = self._normalize_answers(item)
+        source_path, source_format, source_mime_type = self._resolve_source_file(
+            item["doc_name"]
+        )
         meta_data = {
             "subset": self._subset,
             "doc_name": item["doc_name"],
+            "source_file_path": source_path.as_posix(),
+            "source_file_name": source_path.name,
+            "source_file_format": source_format,
+            "source_mime_type": source_mime_type,
         }
         if "doc_url" in item:
             meta_data["doc_url"] = item["doc_url"]
@@ -141,12 +211,10 @@ class UDAQADataset(MappingDataset[QASample]):
             meta_data["answer_type"] = item["answer_type"]
         if "answer_scale" in item:
             meta_data["answer_scale"] = item["answer_scale"]
-        if self._doc_archive_path is not None:
-            meta_data["doc_archive_path"] = self._doc_archive_path.as_posix()
 
         return QASample(
             question_id=str(item["q_uid"]),
             question=item["question"],
-            answers=answers or None,
+            answers=answers,
             meta_data=meta_data,
         )
