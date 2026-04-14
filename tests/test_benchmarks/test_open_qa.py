@@ -5,6 +5,8 @@ import pytest
 from flexrag.datasets.benchmarks import (
     BrowseCompDataset,
     BrowseCompDatasetConfig,
+    BrowseCompZHDataset,
+    BrowseCompZHDatasetConfig,
     DeepResearch9KDataset,
     DeepResearch9KDatasetConfig,
     DeepSearchQADataset,
@@ -46,6 +48,14 @@ class TestOpenDomainQA:
             self.valid_qa_sample(item)
         print(f"BrowseComp dataset length: {len(dataset)}")
         print("BrowseComp dataset test passed.")
+        return
+
+    def test_browsecomp_zh(self):
+        dataset = BrowseCompZHDataset(BrowseCompZHDatasetConfig())
+        for item in dataset:
+            self.valid_qa_sample(item)
+        print(f"BrowseComp-ZH dataset length: {len(dataset)}")
+        print("BrowseComp-ZH dataset test passed.")
         return
 
     @pytest.mark.parametrize(

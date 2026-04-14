@@ -1,4 +1,5 @@
 from .browsecomp import BrowseCompDataset, BrowseCompDatasetConfig
+from .browsecomp_zh import BrowseCompZHDataset, BrowseCompZHDatasetConfig
 from .deepresearch_9k import DeepResearch9KDataset, DeepResearch9KDatasetConfig
 from .deepsearch_qa import DeepSearchQADataset, DeepSearchQADatasetConfig
 from .gaia import GAIADataset, GAIADatasetConfig
@@ -24,6 +25,8 @@ from .wide_search import WideSearchDataset, WideSearchDatasetConfig
 __all__ = [
     "BrowseCompDataset",
     "BrowseCompDatasetConfig",
+    "BrowseCompZHDataset",
+    "BrowseCompZHDatasetConfig",
     "DeepResearch9KDataset",
     "DeepResearch9KDatasetConfig",
     "DeepSearchQADataset",

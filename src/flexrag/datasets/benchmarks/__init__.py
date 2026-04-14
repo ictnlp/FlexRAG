@@ -24,6 +24,8 @@ from .multiple_choice import (
 from .qa import (
     BrowseCompDataset,
     BrowseCompDatasetConfig,
+    BrowseCompZHDataset,
+    BrowseCompZHDatasetConfig,
     DeepResearch9KDataset,
     DeepResearch9KDatasetConfig,
     DeepSearchQADataset,
@@ -104,6 +106,8 @@ __all__ = [
     "QuALITYDatasetConfig",
     "BrowseCompDataset",
     "BrowseCompDatasetConfig",
+    "BrowseCompZHDataset",
+    "BrowseCompZHDatasetConfig",
     "DeepResearch9KDataset",
     "DeepResearch9KDatasetConfig",
     "DeepSearchQADataset",
