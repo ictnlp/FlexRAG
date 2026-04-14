@@ -10,6 +10,8 @@ from flexrag.datasets.benchmarks import (
     GutenQADatasetConfig,
     LongBenchDataset,
     LongBenchDatasetConfig,
+    LoongDataset,
+    LoongDatasetConfig,
     MemoryAgentBenchDataset,
     MemoryAgentBenchDatasetConfig,
     MultihopRAGDataset,
@@ -46,6 +48,14 @@ class TestContextualQA:
             self.valid_contextual_qa_sample(item)
         print(f"GutenQA-{ctx_mode} dataset length: {len(dataset)}")
         print(f"GutenQA-{ctx_mode} dataset test passed.")
+        return
+
+    def test_loong(self):
+        dataset = LoongDataset(LoongDatasetConfig())
+        for item in dataset:
+            self.valid_contextual_qa_sample(item)
+        print(f"Loong dataset length: {len(dataset)}")
+        print("Loong dataset test passed.")
         return
 
     @pytest.mark.parametrize("split", ["train", "validation", "test"])

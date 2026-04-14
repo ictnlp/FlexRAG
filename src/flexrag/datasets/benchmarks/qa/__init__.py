@@ -7,6 +7,7 @@ from .gisa import GISADataset, GISADatasetConfig
 from .guten_qa import GutenQADataset, GutenQADatasetConfig
 from .literary_qa import LiteraryQADataset, LiteraryQADatasetConfig
 from .long_bench import LongBenchDataset, LongBenchDatasetConfig
+from .loong import LoongDataset, LoongDatasetConfig
 from .med_browsecomp import MedBrowseCompDataset, MedBrowseCompDatasetConfig
 from .multihop_rag import MultihopRAGDataset, MultihopRAGDatasetConfig
 from .musique import MuSiQueDataset, MuSiQueDatasetConfig
@@ -39,6 +40,8 @@ __all__ = [
     "GutenQADatasetConfig",
     "LiteraryQADataset",
     "LiteraryQADatasetConfig",
+    "LoongDataset",
+    "LoongDatasetConfig",
     "LongBenchDataset",
     "LongBenchDatasetConfig",
     "MedBrowseCompDataset",
