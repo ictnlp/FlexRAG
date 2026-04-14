@@ -17,6 +17,8 @@ from flexrag.datasets.benchmarks import (
     PopQADatasetConfig,
     SimpleQADataset,
     SimpleQADatasetConfig,
+    UDAQADataset,
+    UDAQADatasetConfig,
     WideSearchDataset,
     WideSearchDatasetConfig,
 )
@@ -121,4 +123,20 @@ class TestOpenDomainQA:
             self.valid_qa_sample(item)
         print(f"GISA dataset length: {len(dataset)}")
         print("GISA dataset test passed.")
+        return
+
+    @pytest.mark.parametrize(
+        "subset",
+        ["feta", "nq", "paper_text", "paper_tab", "fin", "tat"],
+    )
+    def test_uda_qa(self, subset):
+        dataset = UDAQADataset(UDAQADatasetConfig(subset=subset))
+        for item in dataset:
+            self.valid_qa_sample(item)
+            assert item.question_id is not None
+            assert len(item.answers) > 0
+            assert item.meta_data["subset"] == subset
+            assert "doc_name" in item.meta_data
+        print(f"UDA-QA-{subset} dataset length: {len(dataset)}")
+        print(f"UDA-QA-{subset} dataset test passed.")
         return

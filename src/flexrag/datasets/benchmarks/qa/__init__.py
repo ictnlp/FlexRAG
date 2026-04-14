@@ -18,6 +18,7 @@ from .twowiki_multihop_qa import (
     TwoWikiMultihopQADataset,
     TwoWikiMultihopQADatasetConfig,
 )
+from .uda_qa import UDAQADataset, UDAQADatasetConfig
 from .wide_search import WideSearchDataset, WideSearchDatasetConfig
 
 __all__ = [
@@ -55,6 +56,8 @@ __all__ = [
     "SQuADDatasetConfig",
     "TwoWikiMultihopQADataset",
     "TwoWikiMultihopQADatasetConfig",
+    "UDAQADataset",
+    "UDAQADatasetConfig",
     "WideSearchDataset",
     "WideSearchDatasetConfig",
 ]
