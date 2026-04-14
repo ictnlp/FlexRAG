@@ -40,7 +40,7 @@ _REPO_ID = "qinchuanhui/UDA-QA"
 class UDAQADatasetConfig:
     """Configuration for UDAQADataset.
 
-    `UDA-QA <https://huggingface.co/datasets/qinchuanhui/UDA-QA>`_
+    `UDA-QA <https://arxiv.org/abs/2406.15187>`_
     is a benchmark suite for question answering over real-world unstructured
     documents such as financial reports, papers, and Wikipedia-derived pages.
 
