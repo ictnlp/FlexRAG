@@ -1,4 +1,9 @@
-from .contextual_dialogue import MTRAGDataset, MTRAGDatasetConfig
+from .contextual_dialogue import (
+    ChatRAGBenchDataset,
+    ChatRAGBenchDatasetConfig,
+    MTRAGDataset,
+    MTRAGDatasetConfig,
+)
 from .memory import (
     ConvoMemDataset,
     ConvoMemDatasetConfig,
@@ -88,6 +93,8 @@ from .suites import (
 __all__ = [
     "MTRAGDataset",
     "MTRAGDatasetConfig",
+    "ChatRAGBenchDataset",
+    "ChatRAGBenchDatasetConfig",
     "ConvoMemDataset",
     "ConvoMemDatasetConfig",
     "LoCoMoDataset",
