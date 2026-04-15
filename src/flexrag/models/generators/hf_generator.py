@@ -1,3 +1,4 @@
+from dataclasses import field
 from typing import Annotated
 
 import torch
@@ -141,16 +142,44 @@ def _turn_to_hf(turn: ChatTurn, *, force_rich_content: bool = False) -> dict:
 
 @configure
 class HFGeneratorConfig(HFModelConfig):
-    """Configuration for HFGenerator."""
+    """Configuration for HFGenerator.
 
-    parallel_mode: Annotated[
-        str,
-        Choices("data", "pipeline"),
-    ] = "data"
-    model_type: Annotated[
-        str,
-        Choices("causal_lm", "seq2seq", "auto"),
-    ] = "auto"
+    :param parallel_mode: The parallel mode to use. Default is "data".
+        Available choices:
+
+        - `data`: Use data parallel mode for model inference.
+        - `pipeline`: Use pipeline parallel mode for model inference.
+    :type parallel_mode: str
+    :param model_type: The type of model to load. Default is "auto".
+        Available choices:
+
+        - `causal_lm`: Load the model as a causal language model.
+        - `seq2seq`: Load the model as a sequence-to-sequence model.
+        - `auto`: Automatically infer the model type from the model config.
+    :type model_type: str
+    :param other_tokenizer_kwargs: Other keyword arguments for tokenizer. Default is empty dict.
+    :type other_tokenizer_kwargs: dict
+
+    For example, if you want to use the Qwen2.5-7B-Instruct model as a generator,
+    you can use the following code:
+
+    .. code-block:: python
+        from flexrag.models import HFGenerator, HFGeneratorConfig
+
+        generator = HFGenerator(
+            HFGeneratorConfig(
+                model_path="Qwen/Qwen2.5-7B-Instruct",
+                device_id=[0],
+                load_dtype="bf16",
+                model_type="causal_lm",
+            )
+        )
+        responses = generator.chat(["Who is Bruce Wayne?"])
+    """
+
+    parallel_mode: Annotated[str, Choices("data", "pipeline")] = "data"
+    model_type: Annotated[str, Choices("causal_lm", "seq2seq", "auto")] = "auto"
+    other_tokenizer_kwargs: dict = field(default_factory=dict)
 
 
 class HFGeneratorImpl:
@@ -166,6 +195,7 @@ class HFGeneratorImpl:
             load_dtype=cfg.load_dtype,
             trust_remote_code=cfg.trust_remote_code,
             pipeline_parallel=cfg.parallel_mode == "pipeline",
+            other_tokenizer_kwargs=cfg.other_tokenizer_kwargs,
         )
         self._supports_multimodal = self._resolved_model_type == "vlm"
         self._patch_model()

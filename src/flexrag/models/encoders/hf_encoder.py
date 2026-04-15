@@ -1,3 +1,4 @@
+from dataclasses import field
 from functools import cached_property
 from typing import Annotated, Optional
 
@@ -45,6 +46,8 @@ class HFEncoderConfig(HFModelConfig):
     :type prefix: Optional[str]
     :param task: The task to use. Default is None.
     :type task: Optional[str]
+    :param other_tokenizer_kwargs: Other keyword arguments for tokenizer. Default is empty dict.
+    :type other_tokenizer_kwargs: dict
 
     For example, if you want to use the Qwen3-Embedding-0.6B model as an query encoder,
     you can use the following code:
@@ -83,6 +86,7 @@ class HFEncoderConfig(HFModelConfig):
     normalize: bool = False
     prefix: Optional[str] = None  # used in nomic-text-embedding
     task: Optional[str] = None  # used in jina-embedding
+    other_tokenizer_kwargs: dict = field(default_factory=dict)
 
 
 class HFEncoderImpl:
@@ -94,6 +98,7 @@ class HFEncoderImpl:
             load_dtype=cfg.load_dtype,
             device_id=cfg.device_id,
             trust_remote_code=cfg.trust_remote_code,
+            other_tokenizer_kwargs=cfg.other_tokenizer_kwargs,
         )
 
         # setup arguments
