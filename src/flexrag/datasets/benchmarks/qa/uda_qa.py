@@ -138,8 +138,6 @@ class UDAQADataset(MappingDataset[QASample]):
             archive_path.parent.mkdir(parents=True, exist_ok=True)
             with ZipFile(archive_path) as zf:
                 zf.extractall(archive_path.parent)
-        if archive_path.exists():
-            archive_path.unlink()
         if not extract_dir.exists():
             raise FileNotFoundError(
                 f"UDA-QA extracted documents not found for subset '{self._subset}': {extract_dir}"

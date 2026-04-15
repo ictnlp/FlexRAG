@@ -1,6 +1,9 @@
 import json
+import os
 from pathlib import Path
 from typing import Annotated, Optional
+
+from huggingface_hub import snapshot_download
 
 from flexrag.common import (
     FLEXRAG_CACHE_DIR,
@@ -12,6 +15,8 @@ from flexrag.common import (
 )
 
 from ...core import DATASETS, ContextualDialogueSample, MappingDataset
+
+_REPO_ID = "nvidia/ChatRAG-Bench"
 
 _SUBSET_TO_FILE = {
     "coqa": "data/coqa/dev.json",
@@ -62,13 +67,22 @@ class ChatRAGBenchDataset(MappingDataset[ContextualDialogueSample]):
         else:
             data_dir = Path(config.data_path)
 
-        if not data_dir.exists():
-            raise FileNotFoundError(f"ChatRAG-Bench directory not found: {data_dir}")
-
         if config.subset == "all":
             subsets = _SUBSET_ORDER
         else:
             subsets = [config.subset]
+
+        required_files = [data_dir / _SUBSET_TO_FILE[subset] for subset in subsets]
+        if (not data_dir.exists()) or any(
+            not file_path.exists() for file_path in required_files
+        ):
+            data_dir.mkdir(parents=True, exist_ok=True)
+            snapshot_download(
+                repo_id=_REPO_ID,
+                repo_type="dataset",
+                local_dir=data_dir.as_posix(),
+                token=os.getenv("HF_TOKEN"),
+            )
 
         self._data: list[ContextualDialogueSample] = []
         for subset in subsets:
