@@ -27,6 +27,8 @@ from .multiple_choice import (
     QuALITYDatasetConfig,
 )
 from .qa import (
+    ASQADataset,
+    ASQADatasetConfig,
     BrowseCompDataset,
     BrowseCompDatasetConfig,
     BrowseCompZHDataset,
@@ -113,6 +115,8 @@ __all__ = [
     "NovelQAConfig",
     "QuALITYDataset",
     "QuALITYDatasetConfig",
+    "ASQADataset",
+    "ASQADatasetConfig",
     "BrowseCompDataset",
     "BrowseCompDatasetConfig",
     "BrowseCompZHDataset",

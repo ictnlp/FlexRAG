@@ -1,3 +1,4 @@
+from .asqa import ASQADataset, ASQADatasetConfig
 from .browsecomp import BrowseCompDataset, BrowseCompDatasetConfig
 from .browsecomp_zh import BrowseCompZHDataset, BrowseCompZHDatasetConfig
 from .deepresearch_9k import DeepResearch9KDataset, DeepResearch9KDatasetConfig
@@ -24,6 +25,8 @@ from .uda_qa import UDAQADataset, UDAQADatasetConfig
 from .wide_search import WideSearchDataset, WideSearchDatasetConfig
 
 __all__ = [
+    "ASQADataset",
+    "ASQADatasetConfig",
     "BrowseCompDataset",
     "BrowseCompDatasetConfig",
     "BrowseCompZHDataset",

@@ -3,6 +3,8 @@ from pathlib import Path
 import pytest
 
 from flexrag.datasets.benchmarks import (
+    ASQADataset,
+    ASQADatasetConfig,
     BrowseCompDataset,
     BrowseCompDatasetConfig,
     BrowseCompZHDataset,
@@ -82,6 +84,24 @@ class TestOpenDomainQA:
             self.valid_qa_sample(item)
         print(f"SimpleQA dataset length: {len(dataset)}")
         print("SimpleQA dataset test passed.")
+        return
+
+    def test_asqa(self):
+        dataset = ASQADataset(ASQADatasetConfig())
+        for item in dataset:
+            self.valid_qa_sample(item)
+            assert item.question_id is not None
+            assert len(item.answers) > 0
+            assert "sample_id" in item.meta_data
+            assert "split" in item.meta_data
+            assert "qa_pairs" in item.meta_data
+            assert "wikipages" in item.meta_data
+            assert "annotations" in item.meta_data
+            assert isinstance(item.meta_data["qa_pairs"], list)
+            assert isinstance(item.meta_data["wikipages"], list)
+            assert isinstance(item.meta_data["annotations"], list)
+        print(f"ASQA dataset length: {len(dataset)}")
+        print("ASQA dataset test passed.")
         return
 
     def test_popqa(self):
