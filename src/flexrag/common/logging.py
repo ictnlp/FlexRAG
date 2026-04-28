@@ -1,6 +1,7 @@
 import logging
 import os
 import platform
+import sys
 import threading
 from time import perf_counter
 from typing import Literal
@@ -22,6 +23,95 @@ from rich.progress import (
 
 if platform.system() == "Windows":
     colorama.just_fix_windows_console()
+
+
+_LOG_ONCE_KEYS: set[tuple[str, int, object]] = set()
+_LOG_ONCE_LOCK = threading.RLock()
+
+
+def log_once(
+    logger: logging.Logger,
+    level: int,
+    msg,
+    *args,
+    key: object | None = None,
+    stacklevel: int = 1,
+    **kwargs,
+) -> None:
+    if key is None:
+        frame = sys._getframe(stacklevel)
+        key = (frame.f_code.co_filename, frame.f_lineno, str(msg))
+    marker = (logger.name, level, key)
+    try:
+        hash(marker)
+    except TypeError:
+        marker = (logger.name, level, repr(key))
+    with _LOG_ONCE_LOCK:
+        if marker in _LOG_ONCE_KEYS:
+            return
+        _LOG_ONCE_KEYS.add(marker)
+    logger.log(level, msg, *args, stacklevel=stacklevel + 1, **kwargs)
+    return
+
+
+def info_once(
+    logger: logging.Logger,
+    msg,
+    *args,
+    key: object | None = None,
+    stacklevel: int = 1,
+    **kwargs,
+) -> None:
+    log_once(
+        logger,
+        logging.INFO,
+        msg,
+        *args,
+        key=key,
+        stacklevel=stacklevel + 1,
+        **kwargs,
+    )
+    return
+
+
+def warning_once(
+    logger: logging.Logger,
+    msg,
+    *args,
+    key: object | None = None,
+    stacklevel: int = 1,
+    **kwargs,
+) -> None:
+    log_once(
+        logger,
+        logging.WARNING,
+        msg,
+        *args,
+        key=key,
+        stacklevel=stacklevel + 1,
+        **kwargs,
+    )
+    return
+
+
+def error_once(
+    logger: logging.Logger,
+    msg,
+    *args,
+    key: object | None = None,
+    stacklevel: int = 1,
+    **kwargs,
+) -> None:
+    log_once(
+        logger,
+        logging.ERROR,
+        msg,
+        *args,
+        key=key,
+        stacklevel=stacklevel + 1,
+        **kwargs,
+    )
+    return
 
 
 class SimpleProgressLogger:
