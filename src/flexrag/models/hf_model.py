@@ -16,13 +16,16 @@ from transformers import (
     AutoModelForMaskedLM,
     AutoModelForSeq2SeqLM,
     AutoModelForSequenceClassification,
-    AutoModelForVision2Seq,
     AutoProcessor,
     AutoTokenizer,
     BertModel,
     BertPreTrainedModel,
     CLIPModel,
 )
+try:
+    from transformers import AutoModelForVision2Seq
+except ImportError:
+    from transformers import AutoModelForImageTextToText as AutoModelForVision2Seq
 from transformers import GenerationConfig as HFGenerationConfig
 from transformers import (
     PreTrainedModel,

@@ -69,7 +69,7 @@ dependencies = [
     "duckduckgo_search",
     "serpapi",
     "pytest-playwright",
-    "markitdown",
+    "markitdown[pdf]",
     # gui
     "gradio>=5.8.0",
     # chunking
