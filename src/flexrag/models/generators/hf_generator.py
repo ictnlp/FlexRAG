@@ -243,6 +243,11 @@ class HFGeneratorImpl:
     ) -> HFGenerationConfig:
         if generation_config is None:
             generation_config = GenerationConfig()
+        if generation_config.response_format is not None:
+            logger.warning(
+                "HFGenerator does not support response_format."
+                "This field will be ignored for HFGenerator."
+            )
         cfg = HFGenerationConfig(
             do_sample=generation_config.do_sample,
             temperature=generation_config.temperature,

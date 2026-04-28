@@ -48,6 +48,14 @@ def _generation_config_to_kwargs(
         kwargs["tools"] = generation_config.tools
     if chat and generation_config.reasoning_effort is not None:
         kwargs["reasoning_effort"] = generation_config.reasoning_effort
+    if generation_config.response_format is not None:
+        if chat:
+            kwargs["response_format"] = generation_config.response_format
+        else:
+            logger.warning(
+                "LiteLLMGenerator.generate does not support response_format. "
+                "This field will be ignored for generate calls."
+            )
     return kwargs
 
 

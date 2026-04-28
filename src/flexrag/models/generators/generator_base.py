@@ -35,6 +35,9 @@ class GenerationConfig:
     :type tools: list[dict[str, Any]]
     :param reasoning_effort: Provider-specific reasoning effort hint. Defaults to None.
     :type reasoning_effort: Optional[str]
+    :param response_format: OpenAI compatible schema constraint.
+        Defaults to None.
+    :type response_format: Optional[dict[str, Any]]
     """
 
     do_sample: bool = True
@@ -47,6 +50,7 @@ class GenerationConfig:
     stop_str: list[str] = field(default_factory=list)
     tools: list[dict[str, Any]] = field(default_factory=list)
     reasoning_effort: Optional[str] = None
+    response_format: Optional[dict[str, Any]] = None
 
     def __post_init__(self):
         assert self.sample_num > 0, "sample_num must be greater than 0"
