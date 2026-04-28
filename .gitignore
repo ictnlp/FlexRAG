@@ -160,3 +160,6 @@ tests/configs/
 
 # cibuildwheel
 wheelhouse/
+
+# codex
+.codex
