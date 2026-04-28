@@ -18,6 +18,7 @@ from transformers import (
     AutoTokenizer,
     BertModel,
     BertPreTrainedModel,
+    BitsAndBytesConfig,
     PretrainedConfig,
     PreTrainedModel,
     PreTrainedTokenizer,
@@ -124,7 +125,15 @@ def configure_attn(
     device_id: list[int],
     load_dtype: str | None | torch.dtype,
     trust_remote_code: bool = False,
+    attn_implementation: str | None = "auto",
 ) -> dict:
+    if attn_implementation is None:
+        return {}
+    if attn_implementation == "none":
+        return {}
+    if attn_implementation != "auto":
+        return {"attn_implementation": attn_implementation}
+
     gpu_cap = get_gpu_capability(device_id)
     model_config = AutoConfig.from_pretrained(
         model_path, trust_remote_code=trust_remote_code
@@ -153,14 +162,8 @@ def configure_attn(
 
     # check dtype compatibility
     if load_dtype not in {torch.float16, torch.bfloat16}:
-        if support_flash:
-            logger.warning(
-                "FlashAttention/SDPA/FlexAttention only supports float16 and bfloat16. "
-                "Please explicitly set `load_dtype` to one of them to enable FlashAttention."
-            )
-        support_flash = False
-        support_sdpa = False
-        support_flex = False
+        logger.info("Skip attention auto-configuration for load_dtype=%s.", load_dtype)
+        return {}
 
     # set attention implementation
     attn_args = {}
@@ -170,18 +173,18 @@ def configure_attn(
         torch.backends.cuda.enable_mem_efficient_sdp(True)
         torch.backends.cuda.enable_math_sdp(True)
         logger.info("Enable flash_attention_2.")
-    elif support_flex and (gpu_cap >= 8.0):
-        attn_args["attn_implementation"] = "flex_attention"
-        torch.backends.cuda.enable_flash_sdp(True)
-        torch.backends.cuda.enable_mem_efficient_sdp(True)
-        torch.backends.cuda.enable_math_sdp(True)
-        logger.info("Enable flex attention.")
     elif support_sdpa and (gpu_cap >= 8.0):
         attn_args["attn_implementation"] = "sdpa"
         torch.backends.cuda.enable_flash_sdp(True)
         torch.backends.cuda.enable_mem_efficient_sdp(True)
         torch.backends.cuda.enable_math_sdp(True)
         logger.info("Enable pytorch flash_attn SDPA kernel.")
+    elif support_flex and (gpu_cap >= 8.0):
+        attn_args["attn_implementation"] = "flex_attention"
+        torch.backends.cuda.enable_flash_sdp(True)
+        torch.backends.cuda.enable_mem_efficient_sdp(True)
+        torch.backends.cuda.enable_math_sdp(True)
+        logger.info("Enable flex attention.")
     elif support_sdpa and (7.0 <= gpu_cap < 8.0):
         attn_args["attn_implementation"] = "sdpa"
         torch.backends.cuda.enable_flash_sdp(False)
@@ -196,8 +199,7 @@ def configure_attn(
         torch.backends.cuda.enable_math_sdp(True)
         logger.info("Enable pytorch math SDPA kernel.")
     else:
-        attn_args["attn_implementation"] = "eager"
-        logger.info(f"flash attention is not available.")
+        logger.info("No attention implementation is configured.")
     return attn_args
 
 
@@ -318,11 +320,14 @@ def load_hf_model(
         device_map = None
 
     # configure attention implementation
+    other_model_kwargs = dict(other_model_kwargs)
+    attn_implementation = other_model_kwargs.pop("attn_implementation", "auto")
     attn_args = configure_attn(
         model_path=model_path,
         device_id=device_id,
         load_dtype=load_dtype,
         trust_remote_code=trust_remote_code,
+        attn_implementation=attn_implementation,
     )
 
     # load model
@@ -345,14 +350,20 @@ def load_hf_model(
             model_class = AutoModelForImageTextToText
         case _:
             model_class = AutoModel
+    quantization_kwargs = {}
+    if load_in_4bit or load_in_8bit:
+        quantization_kwargs["quantization_config"] = BitsAndBytesConfig(
+            load_in_4bit=load_in_4bit,
+            load_in_8bit=load_in_8bit,
+        )
+
     model = model_class.from_pretrained(
         model_path,
         device_map=device_map,
         dtype=load_dtype,
-        load_in_4bit=load_in_4bit,
-        load_in_8bit=load_in_8bit,
         trust_remote_code=trust_remote_code,
         **other_model_kwargs,
+        **quantization_kwargs,
         **attn_args,
     )
 

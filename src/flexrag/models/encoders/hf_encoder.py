@@ -415,6 +415,14 @@ class HFClipEncoderImpl:
         self.convert_to_rgb = cfg.convert_to_rgb
         return
 
+    def _extract_feature_tensor(self, embeddings):
+        if isinstance(embeddings, torch.Tensor):
+            return embeddings
+        pooler_output = getattr(embeddings, "pooler_output", None)
+        if pooler_output is not None:
+            return pooler_output
+        raise TypeError(f"Unsupported CLIP feature output type: {type(embeddings)}")
+
     def _resolve_image_part(self, content_part: ContentPart) -> Image.Image:
         if content_part.get("type") != "image":
             raise ValueError(
@@ -478,6 +486,7 @@ class HFClipEncoderImpl:
         input_dict = self.processor(images=images, return_tensors="pt")
         input_dict = input_dict.to(self.model.device)
         embeddings = self.model.get_image_features(**input_dict)
+        embeddings = self._extract_feature_tensor(embeddings)
         if self.normalize:
             embeddings = F.normalize(embeddings, dim=1)
         return embeddings.float().cpu().numpy()
@@ -485,7 +494,7 @@ class HFClipEncoderImpl:
     @trace("encoder.hf_clip_encode")
     @torch.no_grad()
     def _encode_text(self, texts: list[str]) -> np.ndarray:
-        input_dict = self.tokenizer.batch_encode_plus(
+        input_dict = self.tokenizer(
             texts,
             return_tensors="pt",
             max_length=self.max_encode_length,
@@ -494,6 +503,7 @@ class HFClipEncoderImpl:
         )
         input_dict = input_dict.to(self.model.device)
         embeddings = self.model.get_text_features(**input_dict)
+        embeddings = self._extract_feature_tensor(embeddings)
         if self.normalize:
             embeddings = F.normalize(embeddings, dim=1)
         return embeddings.float().cpu().numpy()
