@@ -49,15 +49,12 @@ class WikipediaRetriever(RetrieverBase):
         self._soup_parser = BeautifulSoup
         return
 
-    def search(
+    def _search(
         self,
-        query: list[str] | str,
+        query: list[str],
         delay: float = 0.1,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
-        if isinstance(query, str):
-            query = [query]
-
         # search & parse
         results = []
         p_logger = SimpleProgressLogger(logger, len(query), self.cfg.log_interval)

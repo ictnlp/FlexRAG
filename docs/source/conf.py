@@ -13,11 +13,10 @@ import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).parents[2] / "src"))
 
-os.environ["DISABLE_CACHE"] = "True"  # Disable loading cache for documentation build
+os.environ["FLEXRAG_RUNTIME_CACHE_MODE"] = "off"
 
 
 from flexrag.common.default_vars import __VERSION__ as version
-
 
 project = "FlexRAG Documentation"
 html_short_title = "FlexRAG Documentation"

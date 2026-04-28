@@ -174,13 +174,11 @@ class FlexRetriever(LocalRetriever):
         return
 
     @trace("retriever.flex_retriever.search")
-    def search(
+    def _search(
         self,
-        query: list[str] | str,
+        query: list[str],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
-        if isinstance(query, str):
-            query = [query]
         top_k = search_kwargs.pop("top_k", self.cfg.top_k)
         used_indexes = search_kwargs.pop("used_indexes", self.cfg.used_indexes)
         if used_indexes is None:

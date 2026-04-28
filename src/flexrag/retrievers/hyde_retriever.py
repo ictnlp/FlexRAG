@@ -65,10 +65,10 @@ class HydeRetriever(FlexRetriever):
         )
         return
 
-    def search(
+    def _search(
         self,
         query: list[str],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         new_query = self.rewriter.rewrite(query)
-        return super().search(new_query, **search_kwargs)
+        return super()._search(new_query, **search_kwargs)

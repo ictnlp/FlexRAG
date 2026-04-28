@@ -11,7 +11,6 @@ from .retriever_base import (
     RETRIEVERS,
     EditableRetriever,
     EditableRetrieverConfig,
-    batched_cache,
 )
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.elastic")
@@ -143,8 +142,7 @@ class ElasticRetriever(EditableRetriever):
         return
 
     @trace("retriever.elastic_search.search")
-    @batched_cache
-    def search(
+    def _search(
         self,
         query: list[str],
         search_method: str = "full_text",
@@ -161,6 +159,7 @@ class ElasticRetriever(EditableRetriever):
 
         # prepare search body
         body = []
+        top_k = search_kwargs.pop("top_k", self.cfg.top_k)
         for q in query:
             body.append({"index": self.index_name})
             body.append(
@@ -171,7 +170,7 @@ class ElasticRetriever(EditableRetriever):
                             "fields": self.fields,
                         },
                     },
-                    "size": search_kwargs.pop("top_k", self.cfg.top_k),
+                    "size": top_k,
                 }
             )
 

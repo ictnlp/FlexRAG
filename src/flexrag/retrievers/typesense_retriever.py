@@ -105,18 +105,19 @@ class TypesenseRetriever(EditableRetriever):
         return
 
     @trace("retriever.typesense.search")
-    def search(
+    def _search(
         self,
         query: list[str],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         # prepare search parameters
+        top_k = search_kwargs.pop("top_k", self.cfg.top_k)
         search_params = [
             {
                 "collection": self.index_name,
                 "q": q,
                 "query_by": ",".join(self.fields),
-                "per_page": search_kwargs.pop("top_k", self.cfg.top_k),
+                "per_page": top_k,
                 **search_kwargs,
             }
             for q in query

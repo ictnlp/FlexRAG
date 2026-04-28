@@ -149,9 +149,9 @@ msgstr ""
 
 #: ../../source/tutorial/entrypoints.md:68 7bf5280ad0af4eada25e0fa10e0f41ff
 msgid ""
-"If you wish to disable the Cache during retrieval, you can set the "
-"environment variable by `export DISABLE_CACHE=True`."
-msgstr "如果您希望在使用 FlexRAG 检索器时不使用缓存，您可以在环境变量中设置 `DISABLE_CACHE=True`。"
+"If you wish to disable the runtime cache during retrieval, you can set the "
+"environment variable by `export FLEXRAG_RUNTIME_CACHE_MODE=off`."
+msgstr "如果您希望在检索时不使用运行时缓存，您可以在环境变量中设置 `FLEXRAG_RUNTIME_CACHE_MODE=off`。"
 
 #: ../../source/tutorial/entrypoints.md:85 4f3cde31b3c848b6bb5e000df19a3166
 msgid "Configuration Management"
@@ -244,9 +244,6 @@ msgstr "您可以访问 [Hydra 文档](https://hydra.cc/docs/intro/)以获取更
 #~ " that can be used to customize "
 #~ "the workflow. The following are the "
 #~ "supported environment variables:"
-#~ msgstr ""
-
-#~ msgid "`DISABLE_CACHE`: Set this variable to `False` to disable caching."
 #~ msgstr ""
 
 #~ msgid ""

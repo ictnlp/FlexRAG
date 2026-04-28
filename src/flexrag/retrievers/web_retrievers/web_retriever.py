@@ -12,7 +12,6 @@ from ..retriever_base import (
     RETRIEVERS,
     RetrieverBase,
     RetrieverBaseConfig,
-    batched_cache,
 )
 from .web_reader import WEB_READERS, WebReaderConfig
 from .web_seeker import SEARCH_ENGINES, SearchEngineConfig
@@ -54,18 +53,14 @@ class WebRetrieverBase(RetrieverBase):
     cfg: WebRetrieverBaseConfig
 
     @trace("retriever.web_retriever.search")
-    @batched_cache
-    def search(
+    def _search(
         self,
-        query: list[str] | str,
+        query: list[str],
         delay: float = 0.1,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         """As most web apis do not provide batch interface,
         we search the queries one by one using the ``search_item`` method."""
-        if isinstance(query, str):
-            query = [query]
-
         # prepare search method
         retry_times = search_kwargs.get("retry_times", self.cfg.retry_times)
         retry_delay = search_kwargs.get("retry_delay", self.cfg.retry_delay)
@@ -81,7 +76,7 @@ class WebRetrieverBase(RetrieverBase):
         # search & parse
         results = []
         p_logger = SimpleProgressLogger(logger, len(query), self.cfg.log_interval)
-        top_k = search_kwargs.get("top_k", self.cfg.top_k)
+        top_k = search_kwargs.pop("top_k", self.cfg.top_k)
         for q in query:
             time.sleep(delay)
             p_logger.update(1, "Searching")

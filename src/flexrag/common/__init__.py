@@ -31,7 +31,6 @@ __all__ = [
     "log_once",
     "info_once",
     "warning_once",
-    "warn_once",
     "error_once",
     "load_user_module",
     "download",

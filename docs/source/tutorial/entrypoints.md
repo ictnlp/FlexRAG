@@ -70,7 +70,7 @@ The defination of the configuration structure for the `cache` entrypoint is as f
 ```
 
 ```{tip}
-If you wish to disable the Cache during retrieval, you can set the environment variable by `export DISABLE_CACHE=True`.
+If you wish to disable the runtime cache during retrieval, you can set the environment variable by `export FLEXRAG_RUNTIME_CACHE_MODE=off`.
 ```
 
 

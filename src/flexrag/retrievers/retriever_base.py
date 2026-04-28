@@ -3,8 +3,9 @@ import os
 import tempfile
 import time
 from abc import ABC, abstractmethod
-from dataclasses import asdict, field
-from typing import Any, Generator, Iterable, Optional
+from collections.abc import Iterable
+from dataclasses import asdict, field, is_dataclass
+from typing import Any, Optional, cast
 
 import numpy as np
 from huggingface_hub import HfApi
@@ -13,90 +14,25 @@ from flexrag.common import (
     __VERSION__,
     FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
-    LRUPersistentCache,
     Register,
-    SimpleProgressLogger,
     configure,
+    warning_once,
 )
 from flexrag.common.dataclasses import Context, RetrievedContext
+from flexrag.common.runtime_cache import get_runtime_cache, make_runtime_cache_key
 from flexrag.processors.text_processors import (
     TextProcessPipeline,
     TextProcessPipelineConfig,
 )
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers")
-
-
-# load cache for retrieval
-RETRIEVAL_CACHE: LRUPersistentCache | None
-if os.environ.get("DISABLE_CACHE", "False") == "True":
-    RETRIEVAL_CACHE = None
-else:
-    cache_size = os.environ.get("CACHE_SIZE", None)
-    cache_path = os.environ.get(
-        "CACHE_PATH", os.path.join(FLEXRAG_CACHE_DIR, "retrieval_cache")
-    )
-    RETRIEVAL_CACHE = LRUPersistentCache(maxsize=cache_size, cache_path=cache_path)
-
-
-# FIXME: fix this
-def batched_cache(func):
-    """The helper function to cache the retrieval results in batch.
-    You can use this function to decorate the `search` method of the retriever class to cache the retrieval results in batch.
-    """
-
-    def dict_to_retrieved(data: list[dict] | None) -> list[RetrievedContext] | None:
-        if data is None:
-            return None
-        return [RetrievedContext(**r) for r in data]
-
-    def check(data: list):
-        for d in data:
-            assert isinstance(d, list)
-            for r in d:
-                assert isinstance(r, RetrievedContext)
-        return
-
-    def wrapper(
-        self,
-        query: list[str],
-        disable_cache: bool = False,
-        **search_kwargs,
-    ):
-        # check query
-        if isinstance(query, str):
-            query = [query]
-
-        # direct search
-        if (RETRIEVAL_CACHE is None) or disable_cache:
-            return func(self, query, **search_kwargs)
-
-        # search from cache
-        cfg = asdict(self.cfg)
-        keys = [
-            {
-                "retriever_config": cfg,
-                "query": q,
-                "search_kwargs": search_kwargs,
-            }
-            for q in query
-        ]
-        results = [dict_to_retrieved(RETRIEVAL_CACHE.get(k, None)) for k in keys]
-
-        # search from database
-        new_query = [q for q, r in zip(query, results) if r is None]
-        new_indices = [n for n, r in enumerate(results) if r is None]
-        if new_query:
-            new_results = func(self, new_query, **search_kwargs)
-            # update cache
-            for n, r in zip(new_indices, new_results):
-                results[n] = r
-                RETRIEVAL_CACHE[keys[n]] = asdict(r)
-        # check results
-        check(results)
-        return results
-
-    return wrapper
+_RETRIEVAL_CACHE_NAMESPACE = "retrieval.search"
+_RETRIEVAL_CACHE_SCHEMA_VERSION = 1
+_RUNTIME_ONLY_CONFIG_FIELDS = {
+    "batch_size",
+    "log_interval",
+    "query_preprocess_pipeline",
+}
 
 
 @configure
@@ -116,14 +52,14 @@ class RetrieverBaseConfig:
     log_interval: int = 10000
     top_k: int = 10
     batch_size: int = 32
-    query_preprocess_pipeline: TextProcessPipelineConfig = field(  # type: ignore
+    query_preprocess_pipeline: TextProcessPipelineConfig = field(
         default_factory=TextProcessPipelineConfig
     )
 
 
 class RetrieverBase(ABC):
     """The base class for all retrievers.
-    The subclasses should implement the ``search`` method and the ``fields`` property.
+    The subclasses should implement the ``_search`` method and the ``fields`` property.
     """
 
     cfg: RetrieverBaseConfig
@@ -147,17 +83,20 @@ class RetrieverBase(ABC):
             **search_kwargs,
         )
 
-    @batched_cache
-    def search_batch(
+    def search(
         self,
-        query: Iterable[Any],
+        query: Iterable[Any] | Any,
+        disable_cache: bool = False,
         no_preprocess: bool = False,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
-        """Search queries in batches.
+        """Search queries with batching and runtime result caching.
 
         :param query: Queries to search.
-        :type query: list[Any]
+        :type query: Iterable[Any] | Any
+        :param disable_cache: Whether to disable runtime result cache for this call.
+            Defaults to False.
+        :type disable_cache: bool
         :param no_preprocess: Whether to preprocess the query. Default: False.
         :type no_preprocess: bool
         :param search_kwargs: Other search arguments.
@@ -166,33 +105,103 @@ class RetrieverBase(ABC):
         :rtype: list[list[RetrievedContext]]
         """
 
-        def get_batch() -> Generator[list[Any], None, None]:
-            batch = []
-            for q in query:
-                if not no_preprocess:
-                    batch.append(self.query_preprocess_pipeline(q))
-                else:
-                    batch.append(q)
-                if len(batch) == self.cfg.batch_size:
-                    yield batch
-                    batch = []
-            if batch:
-                yield batch
-            return
+        # normalize query
+        if isinstance(query, str):
+            query = [query]
+        elif isinstance(query, Iterable):
+            query = list(query)
+        else:
+            query = [query]
+        if not no_preprocess:
+            query = [self.query_preprocess_pipeline(q) for q in query]
 
-        final_results = []
-        total = len(query) if hasattr(query, "__len__") else None
-        p_logger = SimpleProgressLogger(logger, total, self.cfg.log_interval)
-        for batch in get_batch():
-            results_ = self.search(batch, **search_kwargs)
-            final_results.extend(results_)
-            p_logger.update(1, "Retrieving")
-        return final_results
+        # search without cache
+        batch_size = max(1, self.cfg.batch_size)
+        if disable_cache:
+            results: list[list[RetrievedContext]] = []
+            for start in range(0, len(query), batch_size):
+                batch = query[start : start + batch_size]
+                results.extend(self._search(batch, **dict(search_kwargs)))
+            return results
+
+        # prepare cache keys
+        if is_dataclass(self.cfg):
+            retriever_config = asdict(self.cfg)
+        else:
+            retriever_config = dict(getattr(self.cfg, "__dict__", {}))
+        for key in _RUNTIME_ONLY_CONFIG_FIELDS:
+            retriever_config.pop(key, None)
+        retriever_name = f"{self.__class__.__module__}.{self.__class__.__qualname__}"
+        keys = [
+            make_runtime_cache_key(
+                {
+                    "namespace": _RETRIEVAL_CACHE_NAMESPACE,
+                    "schema_version": _RETRIEVAL_CACHE_SCHEMA_VERSION,
+                    "retriever": retriever_name,
+                    "retriever_config": retriever_config,
+                    "query": q,
+                    "search_kwargs": search_kwargs,
+                }
+            )
+            for q in query
+        ]
+
+        # try to get results from cache
+        try:
+            cache = get_runtime_cache(_RETRIEVAL_CACHE_NAMESPACE)
+            cached = cache.get_many(keys)
+            results: list[list[RetrievedContext] | None] = [
+                (
+                    [RetrievedContext(**item) for item in cache_item]
+                    if cache_item is not None
+                    else None
+                )
+                for cache_item in cached
+            ]
+        except Exception as e:
+            warning_once(logger, "Runtime cache read failed; bypassing cache: %s", e)
+            final_results: list[list[RetrievedContext]] = []
+            for start in range(0, len(query), batch_size):
+                batch = query[start : start + batch_size]
+                final_results.extend(self._search(batch, **dict(search_kwargs)))
+            return final_results
+
+        missing_indices = [i for i, item in enumerate(results) if item is None]
+        if not missing_indices:
+            return cast(list[list[RetrievedContext]], results)
+
+        # search missing items
+        cache_items: dict[str, list[dict[str, Any]]] = {}
+        for start in range(0, len(missing_indices), batch_size):
+            indices = missing_indices[start : start + batch_size]
+            batch = [query[i] for i in indices]
+            batch_results = self._search(batch, **dict(search_kwargs))
+            if len(batch_results) != len(batch):
+                raise ValueError(
+                    f"{self.__class__.__qualname__} returned {len(batch_results)} "
+                    f"results for {len(batch)} queries."
+                )
+            for idx, item in zip(indices, batch_results):
+                results[idx] = item
+                cache_items[keys[idx]] = [asdict(context) for context in item]
+
+        # write back to cache
+        try:
+            cache.set_many(
+                cache_items,
+                metadata={
+                    "schema_version": _RETRIEVAL_CACHE_SCHEMA_VERSION,
+                    "retriever": self.__class__.__qualname__,
+                },
+            )
+        except Exception as e:
+            warning_once(logger, "Runtime cache write failed; ignoring cache: %s", e)
+        return cast(list[list[RetrievedContext]], results)
 
     @abstractmethod
-    def search(
+    def _search(
         self,
-        query: list[Any] | Any,
+        query: list[Any],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         """Search a batch of queries.
@@ -234,7 +243,7 @@ class RetrieverBase(ABC):
         for _ in range(test_times):
             query = [sents[i % len(sents)] for i in range(sample_num)]
             start_time = time.perf_counter()
-            _ = self.search(query, self.cfg.top_k, **search_kwargs)
+            _ = self.search(query, top_k=self.cfg.top_k, **search_kwargs)
             end_time = time.perf_counter()
             total_times.append(end_time - start_time)
         avg_time = sum(total_times) / test_times
