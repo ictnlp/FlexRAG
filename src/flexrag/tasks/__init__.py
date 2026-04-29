@@ -25,6 +25,8 @@ from .deep_search import (
     BrowseCompZHTaskConfig,
     GISATask,
     GISATaskConfig,
+    WideSearchTask,
+    WideSearchTaskConfig,
 )
 from .file_qa import UDAQATask, UDAQATaskConfig
 from .memory import (
@@ -103,6 +105,8 @@ __all__ = [
     "BrowseCompZHTaskConfig",
     "GISATask",
     "GISATaskConfig",
+    "WideSearchTask",
+    "WideSearchTaskConfig",
     "OpenQATask",
     "OpenQATaskConfig",
     "SimpleQATask",
