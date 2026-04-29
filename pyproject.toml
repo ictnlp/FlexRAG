@@ -84,7 +84,7 @@ web = [
 ]
 doc-parsers = ["markitdown", "docling"]
 dev = [
-    "black",
+    "ruff",
     "pytest",
     "pytest-asyncio",
     "pytest-mock",
@@ -119,6 +119,13 @@ ignore = ["D001"]
 markers = ["gpu: mark test as requiring GPU"]
 log_level = "DEBUG"
 asyncio_default_fixture_loop_scope = "function"
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["I", "F401"]
 
 [tool.ty.rules]
 invalid-return-type = "ignore"

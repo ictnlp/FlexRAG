@@ -1,9 +1,8 @@
 import json
-import re
 from pathlib import Path
-from typing import Annotated, Literal, Optional
+from typing import Literal, Optional
 
-from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
+from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import Context
 from flexrag.common.misc import download
 

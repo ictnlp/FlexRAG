@@ -6,27 +6,12 @@ repos:
   #     - id: end-of-file-fixer
   #     - id: trailing-whitespace
 
-  - repo: https://github.com/PyCQA/autoflake
-    rev: v2.3.1
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.12
     hooks:
-      - id: autoflake
-        args:
-          [
-            "--remove-unused-variables",
-            "--remove-all-unused-imports",
-            "--ignore-init-module-imports",
-          ]
-
-  - repo: https://github.com/PyCQA/isort
-    rev: 6.0.1
-    hooks:
-      - id: isort
-        args: ["--profile", "black", "--filter-files"]
-
-  - repo: https://github.com/psf/black
-    rev: 25.1.0
-    hooks:
-      - id: black
+      - id: ruff-check
+        args: ["--fix"]
+      - id: ruff-format
 
   # - repo: https://github.com/codespell-project/codespell
   #   rev: v2.4.1

@@ -9,8 +9,6 @@ from flexrag.datasets.benchmarks import (
     LongMemEvalDatasetConfig,
     MSCSelfInstructDataset,
     MSCSelfInstructDatasetConfig,
-    PerLTQADataset,
-    PerLTQADatasetConfig,
 )
 from flexrag.datasets.core import MultiSessionQASample
 

@@ -1,6 +1,5 @@
 import pytest
 
-from flexrag.common import Context
 from flexrag.datasets.benchmarks import (
     BrowseCompPlusDataset,
     BrowseCompPlusDatasetConfig,

@@ -3,7 +3,6 @@ from collections.abc import MutableMapping
 from typing import Any
 
 from flexrag.common import LOGGER_MANAGER, configure
-from flexrag.common.dataclasses import RetrievedContext
 
 from .metrics_base import METRICS, MetricCallable
 
@@ -47,9 +46,9 @@ class Evaluator(MutableMapping[str, MetricCallable]):
             self.round = cfg.round
         else:
             for name, metric in cfg.items():
-                assert isinstance(
-                    metric, MetricCallable
-                ), f"Metric {name} must implement the MetricCallable protocol."
+                assert isinstance(metric, MetricCallable), (
+                    f"Metric {name} must implement the MetricCallable protocol."
+                )
             self.metrics = {name: metric for name, metric in cfg.items()}
             self.round = 2
         return
@@ -123,9 +122,9 @@ class Evaluator(MutableMapping[str, MetricCallable]):
         return self.metrics[key]
 
     def __setitem__(self, key: str, value: MetricCallable):
-        assert isinstance(
-            value, MetricCallable
-        ), f"Metric {key} must implement the MetricCallable protocol."
+        assert isinstance(value, MetricCallable), (
+            f"Metric {key} must implement the MetricCallable protocol."
+        )
         self.metrics[key] = value
         return
 

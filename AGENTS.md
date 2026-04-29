@@ -32,7 +32,7 @@
 - Build the package with `python -m build` if packaging changes are involved.
 
 ## Code Style
-- Use Black-compatible formatting and keep imports isort-friendly.
+- Use Ruff for formatting and import sorting; keep changes compatible with the repository's Ruff configuration in `pyproject.toml`.
 - Follow existing typing style and dataclass-based configuration patterns.
 - Keep changes minimal and local; preserve naming and structure already used by the surrounding module.
 - Avoid introducing new framework layers unless the task clearly requires them.

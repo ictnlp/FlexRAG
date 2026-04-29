@@ -2,8 +2,6 @@ import copy
 import re
 from pathlib import Path
 
-import numpy as np
-
 from flexrag.common import configure, trace
 from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.models import GENERATORS, GeneratorConfig
@@ -57,9 +55,9 @@ class RankGPTRanker(RankerBase):
     ) -> RankingResult:
         # perform slide window ranking
         if isinstance(candidates[0], RetrievedContext):
-            assert (
-                self.ranking_field is not None
-            ), "ranking_field must be specified when ranking RetrievedContext"
+            assert self.ranking_field is not None, (
+                "ranking_field must be specified when ranking RetrievedContext"
+            )
         cands = [
             (
                 cand.data[self.ranking_field]

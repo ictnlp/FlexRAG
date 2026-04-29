@@ -1,7 +1,7 @@
 from dataclasses import field
-from typing import Annotated, Any, Optional
+from typing import Any, Optional
 
-from flexrag.common import LOGGER_MANAGER, Choices, configure, data
+from flexrag.common import LOGGER_MANAGER, configure, data
 from flexrag.common.dataclasses import ChatMessages, RetrievedContext
 from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
 from flexrag.processors.rankers import RANKERS, RankerConfig

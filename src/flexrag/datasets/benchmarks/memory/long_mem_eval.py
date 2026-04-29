@@ -1,12 +1,11 @@
 import json
-import re
 from pathlib import Path
-from typing import Annotated, Literal, Optional
+from typing import Literal, Optional
 
 from huggingface_hub import snapshot_download
 
-from flexrag.common import FLEXRAG_CACHE_DIR, ChatTurn, Choices, configure
-from flexrag.common.dataclasses import ChatMessages, Context
+from flexrag.common import FLEXRAG_CACHE_DIR, configure
+from flexrag.common.dataclasses import ChatMessages
 
 from ...core import DATASETS, MappingDataset, MultiSessionQASample
 

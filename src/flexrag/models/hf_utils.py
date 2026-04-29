@@ -156,7 +156,7 @@ def configure_attn(
     # check FlashAttention availability
     has_flash_attn = True
     try:
-        import flash_attn
+        import flash_attn  # noqa: F401
     except:
         has_flash_attn = False
 

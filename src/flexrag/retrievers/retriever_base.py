@@ -11,7 +11,6 @@ import numpy as np
 from huggingface_hub import HfApi
 
 from flexrag.common import (
-    __VERSION__,
     FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
     Register,

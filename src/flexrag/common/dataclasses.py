@@ -16,7 +16,7 @@ from typing import (
 )
 
 from PIL.ImageFile import ImageFile
-from pydantic import AfterValidator, Field, ValidationInfo
+from pydantic import AfterValidator, ValidationInfo
 from rich.console import Console
 from rich.markdown import Markdown
 
@@ -26,7 +26,7 @@ from .base64_utils import (
     binary_to_base64,
     image_to_base64,
 )
-from .configure import Choices, data
+from .configure import data
 
 console = Console()
 
