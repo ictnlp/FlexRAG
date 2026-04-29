@@ -1,3 +1,25 @@
+import re
+from dataclasses import field
+
+from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.common import ChatMessages, configure
+from flexrag.datasets.benchmarks import SimpleQADataset, SimpleQADatasetConfig
+from flexrag.datasets.core import MappingDataset, QASample
+from flexrag.metrics import (
+    F1,
+    Evaluator,
+    ExactMatch,
+    ExactMatchConfig,
+    F1Config,
+    Rouge,
+    RougeConfig,
+)
+from flexrag.models.generators import GENERATORS, GenerationConfig, GeneratorConfig
+
+from ..open_qa_base import OpenQATask, OpenQATaskConfig
+from ..task_base import TASKS
+
+_METRIC_TEMPLATE = """
 Your job is to look at a question, a gold target, and a predicted answer, and then assign a grade of either ["CORRECT", "INCORRECT", "NOT_ATTEMPTED"].
 First, I will give examples of each grade, and then you will grade a new example.
 
@@ -76,3 +98,88 @@ B: INCORRECT
 C: NOT_ATTEMPTED
 
 Just return the letters "A", "B", or "C", with no text around it.
+""".strip()
+
+
+class _SimpleQAMetric:
+    """The evaluation metric for SimpleQA Task."""
+
+    def __init__(self, cfg: GeneratorConfig):
+        self.generator = GENERATORS.load(cfg)
+        self.gen_cfg = GenerationConfig(do_sample=False)
+        assert self.generator is not None, "Generator is not loaded."
+        return
+
+    def __call__(
+        self,
+        questions: list[str],
+        responses: list[str],
+        golden_responses: list[list[str]],
+    ):
+        prompts = []
+        for question, response, golden_response in zip(
+            questions, responses, golden_responses
+        ):
+            prompt = _METRIC_TEMPLATE.format(
+                question=question,
+                predicted_answer=response,
+                target=golden_response[0],
+            )
+            prompts.append(
+                ChatMessages.from_list([{"role": "user", "content": prompt}])
+            )
+
+        outputs = self.generator.chat(prompts, self.gen_cfg)
+
+        # compute accuracy
+        grades = []
+        for output in outputs:
+            text = output[0].text_content or ""
+            match = re.search(r"(A|B|C)", text)
+            grade = match.group(0) if match else "C"  # default to NOT_ATTEMPTED
+            grades.append(grade)
+
+        correct_count = sum(1 for grade in grades if grade == "A")
+        not_attempted_count = sum(1 for grade in grades if grade == "C")
+        accuracy = correct_count / len(questions)
+        not_attempted_ratio = not_attempted_count / len(questions)
+        return {
+            "shortform_correctness": accuracy,
+            "not_attempted_ratio": not_attempted_ratio,
+        }, {"detailed_grades": grades}
+
+
+@configure
+class SimpleQATaskConfig(OpenQATaskConfig, SimpleQADatasetConfig):
+    """Configuration for SimpleQA Task.
+
+    :param llm_judger: The configuration for the LLM judger used in evaluation.
+        If not specified, the LLM judger will not be used and the evaluation will only
+        include traditional metrics like F1 and Exact Match. Default is None.
+    :type llm_judger: GeneratorConfig
+    """
+
+    llm_judger: GeneratorConfig = field(default_factory=GeneratorConfig)
+
+
+@TASKS("simple_qa", config_class=SimpleQATaskConfig)
+class SimpleQATask(OpenQATask):
+    """The SimpleQA Task for open domain question answering."""
+
+    def load_dataset(self) -> MappingDataset[QASample]:
+        return SimpleQADataset(self.config)
+
+    def load_evaluator(self) -> Evaluator:
+        metrics = {
+            "f1": F1(F1Config()),
+            "exact_match": ExactMatch(ExactMatchConfig()),
+            "rouge": Rouge(RougeConfig()),
+        }
+        if self.config.llm_judger.generator_type is not None:
+            self.logger.info("LLM judger is enabled for evaluation.")
+            metrics["llm_judger"] = _SimpleQAMetric(self.config.llm_judger)
+        return Evaluator(metrics)
+
+    def evaluate(self, assistant: AssistantBase, sample: QASample) -> AssistantResponse:
+        response = assistant.answer([{"role": "user", "content": sample.question}])
+        return response

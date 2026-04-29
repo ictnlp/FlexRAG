@@ -1,35 +1,17 @@
 import logging
 import os
 from abc import abstractmethod
-from dataclasses import field
 from pathlib import Path
 from typing import Optional
 
 from flexrag.common import LOGGER_MANAGER, Context, SimpleProgressLogger, configure
 from flexrag.common.database import json_dump
-from flexrag.datasets.benchmarks import (
-    MSMARCODataset,
-    MSMARCODatasetConfig,
-    MTEBDataset,
-    MTEBDatasetConfig,
-    MultiLongDocRetrievalDataset,
-    MultiLongDocRetrievalDatasetConfig,
-    RetrievalDatasetBase,
-)
+from flexrag.datasets.benchmarks import RetrievalDatasetBase
 from flexrag.datasets.core import IRSample, RankingSample
-from flexrag.metrics import (
-    Evaluator,
-    RetrievalMAP,
-    RetrievalMAPConfig,
-    RetrievalMRR,
-    RetrievalNDCG,
-    RetrievalNDCGConfig,
-    RetrievalRecall,
-    RetrievalRecallConfig,
-)
+from flexrag.metrics import Evaluator
 from flexrag.retrievers import RetrieverBase
 
-from .task_base import TASKS, TaskBase
+from .task_base import TaskBase
 
 
 @configure
@@ -176,84 +158,3 @@ class RetrievalTask(TaskBase):
         :rtype: Evaluator
         """
         return
-
-
-@configure
-class MTEBRetrievalTaskConfig(RetrievalTaskConfig, MTEBDatasetConfig):
-    """Configuration for MTEB Retrieval Task."""
-
-
-@TASKS("mteb")
-class MTEBRetrievalTask(RetrievalTask):
-    """MTEB Retrieval Task."""
-
-    def load_dataset(self) -> MTEBDataset:
-        """Load the MTEB dataset for the Retrieval task.
-
-        :return: The MTEB dataset for the Retrieval task.
-        :rtype: MTEBDataset
-        """
-        return MTEBDataset(self.config)
-
-    def load_evaluator(self) -> Evaluator:
-        metrics = {
-            "ndcg": RetrievalNDCG(RetrievalNDCGConfig(k_values=[1, 3, 5, 10])),
-            "recall": RetrievalRecall(RetrievalRecallConfig(k_values=[1, 3, 5, 10])),
-            "map": RetrievalMAP(RetrievalMAPConfig(k_values=[1, 3, 5, 10])),
-            "mrr": RetrievalMRR(),
-        }
-        return Evaluator(metrics)
-
-
-@configure
-class MLDRRetrievalTaskConfig(RetrievalTaskConfig, MultiLongDocRetrievalDatasetConfig):
-    """Configuration for MLDR Retrieval Task."""
-
-
-@TASKS("mldr", config_class=MLDRRetrievalTaskConfig)
-class MLDRRetrievalTask(RetrievalTask):
-    """MLDR Retrieval Task."""
-
-    def load_dataset(self) -> MultiLongDocRetrievalDataset:
-        """Load the MLDR dataset for the Retrieval task.
-
-        :return: The MLDR dataset for the Retrieval task.
-        :rtype: MultiLongDocRetrievalDataset
-        """
-        return MultiLongDocRetrievalDataset(self.config)
-
-    def load_evaluator(self) -> Evaluator:
-        metrics = {
-            "ndcg": RetrievalNDCG(RetrievalNDCGConfig(k_values=[1, 3, 5, 10])),
-            "recall": RetrievalRecall(RetrievalRecallConfig(k_values=[1, 3, 5, 10])),
-            "map": RetrievalMAP(RetrievalMAPConfig(k_values=[1, 3, 5, 10])),
-            "mrr": RetrievalMRR(),
-        }
-        return Evaluator(metrics)
-
-
-@configure
-class MSMARCORetrievalTaskConfig(RetrievalTaskConfig, MSMARCODatasetConfig):
-    """Configuration for MSMARCO Retrieval Task."""
-
-
-@TASKS("ms_marco", config_class=MSMARCORetrievalTaskConfig)
-class MSMARCORetrievalTask(RetrievalTask):
-    """MSMARCO Retrieval Task."""
-
-    def load_dataset(self) -> MSMARCODataset:
-        """Load the MSMARCO dataset for the Retrieval task.
-
-        :return: The MSMARCO dataset for the Retrieval task.
-        :rtype: MSMARCODataset
-        """
-        return MSMARCODataset(self.config)
-
-    def load_evaluator(self) -> Evaluator:
-        metrics = {
-            "ndcg": RetrievalNDCG(RetrievalNDCGConfig(k_values=[1, 3, 5, 10])),
-            "recall": RetrievalRecall(RetrievalRecallConfig(k_values=[1, 3, 5, 10])),
-            "map": RetrievalMAP(RetrievalMAPConfig(k_values=[1, 3, 5, 10])),
-            "mrr": RetrievalMRR(),
-        }
-        return Evaluator(metrics)

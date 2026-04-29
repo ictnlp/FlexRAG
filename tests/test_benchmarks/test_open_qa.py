@@ -29,7 +29,7 @@ from flexrag.datasets.benchmarks import (
     WideSearchDatasetConfig,
 )
 from flexrag.datasets.core import QASample
-from flexrag.tasks.open_qa import _GISAOfficialMetric
+from flexrag.tasks.deep_search.gisa import _GISAOfficialMetric
 
 
 class TestOpenDomainQA:

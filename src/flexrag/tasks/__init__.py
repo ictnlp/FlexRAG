@@ -1,12 +1,9 @@
 from .contextual_mc import (
-    ContextualMCTask,
-    ContextualMCTaskConfig,
     LongBenchV2Task,
     LongBenchV2TaskConfig,
 )
+from .contextual_mc_base import ContextualMCTask, ContextualMCTaskConfig
 from .contextual_qa import (
-    ContextualQATask,
-    ContextualQATaskConfig,
     GutenQATask,
     GutenQATaskConfig,
     LiteraryQATask,
@@ -20,7 +17,17 @@ from .contextual_qa import (
     SQuADTask,
     SQuADTaskConfig,
 )
-from .multisession_qa import (
+from .contextual_qa_base import ContextualQATask, ContextualQATaskConfig
+from .deep_search import (
+    BrowseCompTask,
+    BrowseCompTaskConfig,
+    BrowseCompZHTask,
+    BrowseCompZHTaskConfig,
+    GISATask,
+    GISATaskConfig,
+)
+from .file_qa import UDAQATask, UDAQATaskConfig
+from .memory import (
     ConvoMemTask,
     ConvoMemTaskConfig,
     LoCoMoTask,
@@ -28,27 +35,21 @@ from .multisession_qa import (
     LongMemEvalTask,
     LongMemEvalTaskConfig,
 )
+from .multisession_qa_base import MultiSessionQATask, MultiSessionQATaskConfig
 from .open_qa import (
-    BrowseCompTask,
-    BrowseCompTaskConfig,
-    BrowseCompZHTask,
-    BrowseCompZHTaskConfig,
-    GISATask,
-    GISATaskConfig,
-    OpenQATask,
-    OpenQATaskConfig,
     SimpleQATask,
     SimpleQATaskConfig,
-    UDAQATask,
-    UDAQATaskConfig,
 )
-from .retrieval_task import (
+from .open_qa_base import OpenQATask, OpenQATaskConfig
+from .retrieval import (
     MLDRRetrievalTask,
     MLDRRetrievalTaskConfig,
     MSMARCORetrievalTask,
     MSMARCORetrievalTaskConfig,
     MTEBRetrievalTask,
     MTEBRetrievalTaskConfig,
+)
+from .retrieval_base import (
     RetrievalTask,
     RetrievalTaskConfig,
 )
@@ -62,6 +63,10 @@ __all__ = [
     "TaskBaseConfig",
     "TASKS",
     "TaskConfig",
+    "MLDRRetrievalTask",
+    "MLDRRetrievalTaskConfig",
+    "MSMARCORetrievalTask",
+    "MSMARCORetrievalTaskConfig",
     "MTEBRetrievalTask",
     "MTEBRetrievalTaskConfig",
     "RetrievalTask",
@@ -86,6 +91,8 @@ __all__ = [
     "LoCoMoTaskConfig",
     "LongMemEvalTask",
     "LongMemEvalTaskConfig",
+    "MultiSessionQATask",
+    "MultiSessionQATaskConfig",
     "ContextualMCTask",
     "ContextualMCTaskConfig",
     "LongBenchV2Task",
