@@ -32,18 +32,12 @@ def _decrypt(ciphertext_b64: str, password: str) -> str:
 
 
 def _get_answer_encoding(qid: str) -> str:
-    return _ANSWER_ENCODINGS.get(qid, "utf-8")
+    return _ANSWER_ENCODINGS.get(qid, "utf-8-sig")
 
 
 def _load_answer_csv(path: Path, qid: str) -> str:
-    rows = list(
-        LineDelimitedReader(
-            path,
-            file_format="csv",
-            encoding=_get_answer_encoding(qid),
-        )
-    )
-    return json.dumps(rows, ensure_ascii=False)
+    with open(path, "r", encoding=_get_answer_encoding(qid)) as f:
+        return f.read()
 
 
 @configure
@@ -58,10 +52,12 @@ class GISADatasetConfig:
 
     In this implementation, the encrypted question is decrypted according
     to the official loading method provided in the dataset card, and the
-    gold answer CSV is serialized into ``answers[0]`` as a JSON string
-    containing a list of row dictionaries. Most files are loaded as UTF-8;
-    only the known non-UTF-8 answer files in the current GISA snapshot are
-    handled with an explicit dataset-specific encoding override.
+    gold answer CSV is stored as raw text in ``answers[0]`` so task metrics
+    can apply the official header handling: table answers infer a header row,
+    while item, set, and list answers are read without headers. Most files are
+    loaded as UTF-8 with BOM stripping; only the known non-UTF-8 answer files
+    in the current GISA snapshot are handled with an explicit dataset-specific
+    encoding override.
 
     :param data_path: The path to the local GISA dataset repository.
         If not provided, the dataset will be downloaded automatically.
@@ -128,6 +124,8 @@ class GISADataset(MappingDataset[QASample]):
                         "answer_type": item["answer_type"],
                         "question_type": item["question_type"],
                         "topic": item["topic"],
+                        "id": qid,
+                        "answer_path": answer_path.as_posix(),
                         "trace": trace,
                     },
                 )

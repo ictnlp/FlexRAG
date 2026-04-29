@@ -29,6 +29,7 @@ from flexrag.datasets.benchmarks import (
     WideSearchDatasetConfig,
 )
 from flexrag.datasets.core import QASample
+from flexrag.tasks.open_qa import _GISAOfficialMetric
 
 
 class TestOpenDomainQA:
@@ -151,10 +152,51 @@ class TestOpenDomainQA:
 
     def test_gisa(self):
         dataset = GISADataset(GISADatasetConfig())
+        samples_by_type = {}
         for item in dataset:
             self.valid_qa_sample(item)
+            assert item.question_id is not None
+            assert len(item.answers) > 0
+            assert item.answers[0].strip()
+            assert Path(item.meta_data["answer_path"]).exists()
+            samples_by_type.setdefault(item.meta_data["answer_type"], item)
+        assert {"item", "set", "list", "table"}.issubset(samples_by_type)
+        for answer_type, item in samples_by_type.items():
+            assert not item.answers[0].lstrip().startswith("[")
+            if answer_type != "table":
+                assert item.answers[0].splitlines()[0].strip()
         print(f"GISA dataset length: {len(dataset)}")
         print("GISA dataset test passed.")
+        return
+
+    def test_gisa_official_metric(self):
+        metric = _GISAOfficialMetric()
+        scores, details = metric(
+            responses=[
+                "<answer>\n```tsv\nValue\nKansas City Chiefs\n```\n</answer>",
+                "```tsv\nItem\nA\nB\n```",
+                "```tsv\nItem\nA\nC\n```",
+                "```tsv\nName\tRole\nAlice\tEngineer\nBob\tDesigner\n```",
+            ],
+            golden_responses=[
+                ["Kansas City Chiefs\n"],
+                ["A\nB\n"],
+                ["A\nB\nC\n"],
+                ["Name,Role\nAlice,Engineer\nBob,Designer\n"],
+            ],
+            metadatas=[
+                {"id": "item", "answer_type": "item"},
+                {"id": "set", "answer_type": "set"},
+                {"id": "list", "answer_type": "list"},
+                {"id": "table", "answer_type": "table"},
+            ],
+        )
+        assert scores["overall_global_em"] == 0.75
+        assert details["summary"]["item"]["overall_item_em"] == 1.0
+        assert details["summary"]["set"]["overall_set_f1"] == 1.0
+        assert details["summary"]["list"]["overall_list_content_f1"] == 0.8
+        assert details["summary"]["table"]["overall_table_row_f1"] == 1.0
+        assert details["summary"]["table"]["overall_table_item_f1"] == 1.0
         return
 
     @pytest.mark.parametrize(
