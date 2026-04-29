@@ -5,7 +5,7 @@ from huggingface_hub import hf_hub_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Context, configure
 
-from ...core import ContextualMCSample, DATASETS, MappingDataset
+from ...core import DATASETS, ContextualMCSample, MappingDataset
 
 
 @configure

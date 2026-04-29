@@ -31,9 +31,9 @@ class _HFScorerRankerBase(RankerBase):
         candidates: list[RetrievedContext | str],
     ) -> list[tuple[str, str]]:
         if candidates and isinstance(candidates[0], RetrievedContext):
-            assert (
-                self.ranking_field is not None
-            ), "ranking_field must be specified when ranking RetrievedContext"
+            assert self.ranking_field is not None, (
+                "ranking_field must be specified when ranking RetrievedContext"
+            )
         return [
             (query, cand if isinstance(cand, str) else cand.data[self.ranking_field])
             for cand in candidates

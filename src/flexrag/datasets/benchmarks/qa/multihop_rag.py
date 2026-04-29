@@ -7,7 +7,7 @@ from huggingface_hub import snapshot_download
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS, MappingDataset, ContextualQASample
+from ...core import DATASETS, ContextualQASample, MappingDataset
 
 
 @configure

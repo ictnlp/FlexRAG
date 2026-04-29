@@ -55,9 +55,9 @@ class MultiFieldIndex:
                 self.index_to_context_id = mapping["index_to_context_id"]
                 self.max_field_num = mapping["max_field_num"]
             else:
-                assert (
-                    len(self.index) == 0
-                ), "The index should be empty before building MultiFieldIndex."
+                assert len(self.index) == 0, (
+                    "The index should be empty before building MultiFieldIndex."
+                )
         else:
             # check if the index is empty
             assert len(self.index) == 0, "The index should be empty before building."
@@ -66,9 +66,9 @@ class MultiFieldIndex:
             self.max_field_num = 1
 
         # check consistency of the index
-        assert len(self.index_to_context_id) == len(
-            self.index
-        ), "The length of the index and the context_id mapping should be the same."
+        assert len(self.index_to_context_id) == len(self.index), (
+            "The length of the index and the context_id mapping should be the same."
+        )
         return
 
     def build_index(
@@ -306,9 +306,9 @@ class MultiFieldIndex:
         :type serialize: bool
         :return: None
         """
-        assert len(context_ids) == len(
-            data
-        ), "The length of context_ids and data should be the same."
+        assert len(context_ids) == len(data), (
+            "The length of context_ids and data should be the same."
+        )
         assert self.index.is_addable, "Current index is not addable."
 
         # prepare the data
@@ -384,9 +384,9 @@ class MultiFieldIndex:
 
         # load the configuration
         config_path = os.path.join(index_path, "multi_field_index_config.yaml")
-        assert os.path.exists(
-            config_path
-        ), f"Configuration file not found in {index_path}."
+        assert os.path.exists(config_path), (
+            f"Configuration file not found in {index_path}."
+        )
         cfg = MultiFieldIndexConfig.load(config_path)
         return MultiFieldIndex(cfg, index)
 

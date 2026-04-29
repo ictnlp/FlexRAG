@@ -110,9 +110,9 @@ class AbstractiveSummarizer(RefinerBase):
     def refine(self, contexts: list[RetrievedContext]) -> list[RetrievedContext]:
         # prepare input texts
         if self.concatenate:
-            assert all(
-                contexts[0].query == context.query for context in contexts
-            ), "All queries should be the same."
+            assert all(contexts[0].query == context.query for context in contexts), (
+                "All queries should be the same."
+            )
             args = [
                 {
                     "content": " ".join(
@@ -211,9 +211,9 @@ class RecompExtractiveSummarizer(RefinerBase):
     @trace("refiner.extractive_summarize")
     def refine(self, contexts: list[RetrievedContext]) -> list[RetrievedContext]:
         if self.concatenate:
-            assert all(
-                contexts[0].query == context.query for context in contexts
-            ), "All queries should be the same."
+            assert all(contexts[0].query == context.query for context in contexts), (
+                "All queries should be the same."
+            )
             contents = [
                 " ".join([context.data[self.refined_field] for context in contexts])
             ]

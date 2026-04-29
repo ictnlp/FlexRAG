@@ -81,9 +81,9 @@ class JinaDeepSearch(AssistantBase):
         messages: ChatMessages,
         disable_retrieval: bool = False,
     ) -> AssistantResponse:
-        assert (
-            not disable_retrieval
-        ), "JinaDeepSearch does not support disabling retrieval."
+        assert not disable_retrieval, (
+            "JinaDeepSearch does not support disabling retrieval."
+        )
 
         # prepare data
         data = deepcopy(self.data_template)
@@ -177,9 +177,9 @@ class PerplexityAssistant(AssistantBase):
         messages: ChatMessages,
         disable_retrieval: bool = False,
     ) -> AssistantResponse:
-        assert (
-            not disable_retrieval
-        ), "JinaDeepSearch does not support disabling retrieval."
+        assert not disable_retrieval, (
+            "JinaDeepSearch does not support disabling retrieval."
+        )
 
         # prepare data
         data = deepcopy(self.data_template)

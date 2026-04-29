@@ -6,7 +6,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 
-from ...core import DATASETS, QASample, MappingDataset
+from ...core import DATASETS, MappingDataset, QASample
 from ...reader import LineDelimitedReader
 
 

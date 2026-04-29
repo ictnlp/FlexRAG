@@ -382,9 +382,9 @@ class SentenceChunker(ChunkerBase):
 
     def __init__(self, cfg: SentenceChunkerConfig) -> None:
         # set arguments
-        assert not all(
-            i is None for i in [cfg.max_sents, cfg.max_tokens]
-        ), "At least one of max_sentences, max_tokens should be set."
+        assert not all(i is None for i in [cfg.max_sents, cfg.max_tokens]), (
+            "At least one of max_sentences, max_tokens should be set."
+        )
         self.max_sents = cfg.max_sents if cfg.max_sents else float("inf")
         self.max_tokens = cfg.max_tokens if cfg.max_tokens else float("inf")
         self.overlap = cfg.overlap

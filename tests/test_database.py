@@ -20,7 +20,6 @@ from flexrag.datasets.reader import LineDelimitedReader
 
 
 class TestDatabase:
-
     def run_basic_operations(self, database: RetrieverDatabaseBase):
         # test `__set__` operation
         database["key1"] = {"data": "value1"}
@@ -348,9 +347,9 @@ class TestSerializer:
             for data_unit in data_units:
                 bin = serializer.serialize(data_unit)
                 data = serializer.deserialize(bin)
-                assert TestSerializer.is_equal(
-                    data_unit, data
-                ), f"Data: {data_unit}, Deserialized: {data}"
+                assert TestSerializer.is_equal(data_unit, data), (
+                    f"Data: {data_unit}, Deserialized: {data}"
+                )
             return
 
         if serializer.allowed_types is not None:

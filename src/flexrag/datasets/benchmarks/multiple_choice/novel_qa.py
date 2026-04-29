@@ -8,7 +8,7 @@ from huggingface_hub import hf_hub_download
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import Context
 
-from ...core import MappingDataset, ContextualMCSample, DATASETS
+from ...core import DATASETS, ContextualMCSample, MappingDataset
 
 
 @configure
@@ -42,9 +42,9 @@ class NovelQADataset(MappingDataset[ContextualMCSample]):
             data_path = config.data_path
         if not data_path.exists():
             data_path.mkdir(parents=True, exist_ok=True)
-            assert (
-                os.getenv("HF_TOKEN") is not None
-            ), "HF_TOKEN environment variable must be set to download the NovelQA dataset."
+            assert os.getenv("HF_TOKEN") is not None, (
+                "HF_TOKEN environment variable must be set to download the NovelQA dataset."
+            )
             hf_hub_download(
                 repo_id="NovelQA/NovelQA",
                 repo_type="dataset",

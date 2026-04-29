@@ -224,9 +224,9 @@ class ScaNNIndex(DenseIndexBase):
                 if match:
                     asset_name = os.path.basename(match.group(1))
                     new_path = os.path.join(index_path, asset_name)
-                    assert os.path.exists(
-                        new_path
-                    ), f"Asset {asset_name} not found at {new_path}"
+                    assert os.path.exists(new_path), (
+                        f"Asset {asset_name} not found at {new_path}"
+                    )
                     line = re.sub(
                         r"(asset_path:\s+\")[^\"]+(\")",
                         f"\\1{new_path}\\2",

@@ -120,7 +120,7 @@ class MuSiQueDataset(MappingDataset[ContextualQASample]):
                     supporting_paragraph_indices.append(paragraph["idx"])
                 contexts.append(
                     Context(
-                        context_id=f'{qid}:{paragraph["idx"]}',
+                        context_id=f"{qid}:{paragraph['idx']}",
                         data={
                             "text": paragraph["paragraph_text"],
                             "title": paragraph["title"],
@@ -141,7 +141,9 @@ class MuSiQueDataset(MappingDataset[ContextualQASample]):
                     contexts=contexts,
                     meta_data={
                         "answerable": item.get("answerable"),
-                        "question_decomposition": item.get("question_decomposition", []),
+                        "question_decomposition": item.get(
+                            "question_decomposition", []
+                        ),
                         "supporting_paragraph_indices": supporting_paragraph_indices,
                     },
                 )

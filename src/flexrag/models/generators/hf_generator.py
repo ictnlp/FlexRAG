@@ -2,9 +2,8 @@ from dataclasses import field
 from typing import Annotated
 
 import torch
-from transformers import AutoConfig
+from transformers import AutoConfig, PreTrainedModel
 from transformers import GenerationConfig as HFGenerationConfig
-from transformers import PreTrainedModel
 
 from flexrag.common import (
     ChatMessages,

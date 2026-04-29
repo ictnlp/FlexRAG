@@ -130,7 +130,7 @@ class FaissIndex(DenseIndexBase):
             resolved_factory_str = f"IVF{n_list},Flat"
             logger.info(f"Auto set index to {resolved_factory_str}")
             logger.info(
-                f"We recommend to set n_probe to {n_list//8} "
+                f"We recommend to set n_probe to {n_list // 8} "
                 f"for better inference performance."
             )
             return resolved_factory_str
@@ -147,7 +147,7 @@ class FaissIndex(DenseIndexBase):
                 f"{d}. Falling back to {resolved_factory_str}."
             )
             logger.info(
-                f"We recommend to set n_probe to {n_list//8} "
+                f"We recommend to set n_probe to {n_list // 8} "
                 f"for better inference performance."
             )
             return resolved_factory_str
@@ -155,7 +155,7 @@ class FaissIndex(DenseIndexBase):
         resolved_factory_str = f"IVF{n_list},PQ{pq_m}x4fs"
         logger.info(f"Auto set index to {resolved_factory_str}")
         logger.info(
-            f"We recommend to set n_probe to {n_list//8} "
+            f"We recommend to set n_probe to {n_list // 8} "
             f"for better inference performance."
         )
         return resolved_factory_str

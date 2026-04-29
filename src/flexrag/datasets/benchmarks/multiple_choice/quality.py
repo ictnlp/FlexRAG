@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 from flexrag.common import FLEXRAG_CACHE_DIR, configure, download_and_extract
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS, MappingDataset, ContextualMCSample
+from ...core import DATASETS, ContextualMCSample, MappingDataset
 from ...reader import LineDelimitedReader
 
 

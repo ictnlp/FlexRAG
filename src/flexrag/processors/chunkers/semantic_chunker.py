@@ -178,9 +178,9 @@ class SemanticChunker(ChunkerBase):
         elif self.threshold_percentile is not None:
             threshold = np.percentile(similarity, self.threshold_percentile)
         else:
-            assert (
-                self.max_tokens is not None
-            ), "At least one of max_tokens, threshold, or threshold_percentile should be provided."
+            assert self.max_tokens is not None, (
+                "At least one of max_tokens, threshold, or threshold_percentile should be provided."
+            )
             threshold = None
 
         # group the sentences into chunks based on the threshold

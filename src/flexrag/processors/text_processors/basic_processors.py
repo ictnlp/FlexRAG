@@ -90,10 +90,10 @@ class Truncator(Processor):
         self.max_bytes = cfg.max_bytes
         self.max_tokens = cfg.max_tokens
         if self.max_tokens is not None:
-            self.tokenizer = UnifiedTokenizer(tokenizer_type=cfg.tokenizer_config)
-        assert (
-            self.max_chars is not None or self.max_bytes is not None
-        ), "At least one of max_tokens and max_bytes should be set"
+            self.tokenizer = UnifiedTokenizer(cfg=cfg.tokenizer_config)
+        assert self.max_chars is not None or self.max_bytes is not None, (
+            "At least one of max_tokens and max_bytes should be set"
+        )
         return
 
     def process(self, input_text: TextUnit) -> TextUnit:

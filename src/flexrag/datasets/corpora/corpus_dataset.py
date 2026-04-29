@@ -100,7 +100,7 @@ class _InMemoryMappingCorpus:
         if isinstance(index, int):
             return ordered_contexts[index]
         raise TypeError(
-            "Corpus indices must be integers or slices, " f"not {type(index).__name__}."
+            f"Corpus indices must be integers or slices, not {type(index).__name__}."
         )
 
 
@@ -133,7 +133,7 @@ class CorpusView:
         if isinstance(index, int):
             return self._corpus[self._indices[index]]
         raise TypeError(
-            "Corpus indices must be integers or slices, " f"not {type(index).__name__}."
+            f"Corpus indices must be integers or slices, not {type(index).__name__}."
         )
 
     @property

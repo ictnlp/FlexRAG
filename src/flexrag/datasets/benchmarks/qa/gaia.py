@@ -1,11 +1,10 @@
 import os
 from typing import Annotated, Optional
 
-from huggingface_hub import snapshot_download
 from datasets import load_dataset
+from huggingface_hub import snapshot_download
 
-from flexrag.common import FLEXRAG_CACHE_DIR, configure, Choices
-
+from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 
 from ...core import DATASETS, MappingDataset, QASample
 

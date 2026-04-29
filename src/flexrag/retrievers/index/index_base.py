@@ -229,9 +229,9 @@ class RetrieverIndexBase(ABC):
         # load configuration
         config_cls = RETRIEVER_INDEX[index_name]["config_class"]
         config_path = os.path.join(index_path, "config.yaml")
-        assert os.path.exists(
-            config_path
-        ), f"Configuration file {config_path} does not exist."
+        assert os.path.exists(config_path), (
+            f"Configuration file {config_path} does not exist."
+        )
         cfg = config_cls.load(config_path)
         cfg.index_path = index_path
 

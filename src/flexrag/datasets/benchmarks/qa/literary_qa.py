@@ -4,7 +4,7 @@ from typing import Annotated
 from flexrag.common import Choices, configure
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS, MappingDataset, ContextualQASample
+from ...core import DATASETS, ContextualQASample, MappingDataset
 from ...reader import LineDelimitedReader
 
 
@@ -33,9 +33,9 @@ class LiteraryQADatasetConfig:
 class LiteraryQADataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: LiteraryQADatasetConfig):
         # load the dataset
-        assert (
-            config.data_path != ""
-        ), "data_path must be specified for LiteraryQADataset."
+        assert config.data_path != "", (
+            "data_path must be specified for LiteraryQADataset."
+        )
         data_path = Path(config.data_path) / f"{config.split}.jsonl"
         reader = LineDelimitedReader(data_path)
         self._context_data = {}

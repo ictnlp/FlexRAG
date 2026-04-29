@@ -31,8 +31,8 @@ class TestGenerator:
     prompts = [
         ChatMessages(history=[ChatTurn(role="user", content="Who is Bruce Wayne?")]),
         ChatMessages(history=[ChatTurn(role="user", content="Who is Thomas Wayne?")]),
-        ChatMessages(history=[ChatTurn(role="user", content="What is the capital of China?")]),  # fmt: skip
-    ]
+        ChatMessages(history=[ChatTurn(role="user", content="What is the capital of China?")]),
+    ]  # fmt: skip
     prefixes = [
         "Bruce Wayne is A comic book superhero",
         "Thomas Wayne is the father",

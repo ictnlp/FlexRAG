@@ -276,9 +276,9 @@ class HFEncoderImpl:
         if (self.max_encoding_length is not None) and (
             input_dict["input_ids"].size(1) > self.max_encoding_length
         ):
-            assert (
-                overlap_size < self.max_encoding_length
-            ), "`overlap_size` must be smaller than `max_encoding_length`"
+            assert overlap_size < self.max_encoding_length, (
+                "`overlap_size` must be smaller than `max_encoding_length`"
+            )
             for i in range(
                 0,
                 input_dict["input_ids"].size(1),

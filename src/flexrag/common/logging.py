@@ -283,7 +283,7 @@ class SimpleProgressLogger:
                 else 0.0
             )
             num_str = f"{self.current} / {self.total}"
-            percent_str = f"({self.current/self.total:.2%})"
+            percent_str = f"({self.current / self.total:.2%})"
             time_str = (
                 "["
                 f"{self._fmt_time(time_spend)} / {self._fmt_time(time_left)}, "
@@ -311,8 +311,8 @@ class SimpleProgressLogger:
         if time < 60:
             return f"{time:.2f}s"
         if time < 3600:
-            return f"{time//60:02.0f}:{time%60:02.0f}"
-        return f"{time//3600:.0f}:{(time%3600)//60:02.0f}:{time%60:02.0f}"
+            return f"{time // 60:02.0f}:{time % 60:02.0f}"
+        return f"{time // 3600:.0f}:{(time % 3600) // 60:02.0f}:{time % 60:02.0f}"
 
 
 class ColoredFormatter(logging.Formatter):

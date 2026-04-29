@@ -61,9 +61,9 @@ class LumberChunker(ChunkerBase):
         self.generator = GENERATORS.load(cfg)
         # load pre-chunker
         self.pre_chunker = RecursiveChunker(cfg.pre_chunk_config)
-        assert self.pre_chunker.chunk_size < (
-            cfg.window_size // 2
-        ), "Pre-chunker chunk size must be less than window_size // 2"
+        assert self.pre_chunker.chunk_size < (cfg.window_size // 2), (
+            "Pre-chunker chunk size must be less than window_size // 2"
+        )
         # other configs
         self.use_chat = cfg.use_chat
         self.system_prompt = cfg.system_prompt
