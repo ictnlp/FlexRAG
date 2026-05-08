@@ -3,6 +3,7 @@ from .literary_qa import LiteraryQATask, LiteraryQATaskConfig
 from .longbench import LongBenchTask, LongBenchTaskConfig
 from .multihop_rag import MultihopRAGTask, MultihopRAGTaskConfig
 from .narrative_qa import NarrativeQATask, NarrativeQATaskConfig
+from .qasper import QasperTask, QasperTaskConfig
 from .squad import SQuADTask, SQuADTaskConfig
 
 __all__ = [
@@ -16,6 +17,8 @@ __all__ = [
     "MultihopRAGTaskConfig",
     "NarrativeQATask",
     "NarrativeQATaskConfig",
+    "QasperTask",
+    "QasperTaskConfig",
     "SQuADTask",
     "SQuADTaskConfig",
 ]

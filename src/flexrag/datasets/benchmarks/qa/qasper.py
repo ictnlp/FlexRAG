@@ -48,14 +48,17 @@ def _normalize_answers(raw_answers: list[dict]) -> list[str]:
     for item in raw_answers:
         answer = item.get("answer", {})
         if answer.get("unanswerable"):
-            candidates = ["unanswerable"]
+            candidates = ["Unanswerable"]
+        elif answer.get("extractive_spans", []):
+            candidates = [", ".join(answer["extractive_spans"])]
+        elif answer.get("free_form_answer", ""):
+            candidates = [answer["free_form_answer"]]
         elif answer.get("yes_no") is True:
-            candidates = ["yes"]
+            candidates = ["Yes"]
         elif answer.get("yes_no") is False:
-            candidates = ["no"]
+            candidates = ["No"]
         else:
-            candidates = [answer.get("free_form_answer", "")]
-            candidates.extend(answer.get("extractive_spans", []))
+            candidates = []
         for candidate in candidates:
             candidate = candidate.strip()
             if candidate:

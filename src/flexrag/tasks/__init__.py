@@ -14,6 +14,8 @@ from .contextual_qa import (
     MultihopRAGTaskConfig,
     NarrativeQATask,
     NarrativeQATaskConfig,
+    QasperTask,
+    QasperTaskConfig,
     SQuADTask,
     SQuADTaskConfig,
 )
@@ -85,6 +87,8 @@ __all__ = [
     "MultihopRAGTaskConfig",
     "NarrativeQATask",
     "NarrativeQATaskConfig",
+    "QasperTask",
+    "QasperTaskConfig",
     "SQuADTask",
     "SQuADTaskConfig",
     "ConvoMemTask",

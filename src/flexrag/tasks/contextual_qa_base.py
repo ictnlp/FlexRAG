@@ -61,6 +61,7 @@ class ContextualQATask(TaskBase):
         # search and answer questions
         questions: list[str] = []
         golden_answers: list[list[str]] = []
+        metadatas: list[dict] = []
         responses: list[str] = []
         contexts: list[list[RetrievedContext]] = []
         p_logger = SimpleProgressLogger(
@@ -70,6 +71,7 @@ class ContextualQATask(TaskBase):
             for item in self.testset:
                 questions.append(item.question)
                 golden_answers.append(item.answers)
+                metadatas.append(item.meta_data or {})
                 response = self.evaluate(assistant=assistant, sample=item)
                 if response.response.text_content is not None:
                     responses.append(response.response.text_content)
@@ -96,6 +98,7 @@ class ContextualQATask(TaskBase):
             questions=questions,
             responses=responses,
             golden_responses=golden_answers,
+            metadatas=metadatas,
             golden_contexts=contexts,
             log=True,
         )
