@@ -21,8 +21,8 @@ from .memory import (
 from .multiple_choice import (
     LongBenchV2Dataset,
     LongBenchV2DatasetConfig,
-    NovelQAConfig,
     NovelQADataset,
+    NovelQADatasetConfig,
     QuALITYDataset,
     QuALITYDatasetConfig,
 )
@@ -112,7 +112,7 @@ __all__ = [
     "LongBenchV2Dataset",
     "LongBenchV2DatasetConfig",
     "NovelQADataset",
-    "NovelQAConfig",
+    "NovelQADatasetConfig",
     "QuALITYDataset",
     "QuALITYDatasetConfig",
     "ASQADataset",

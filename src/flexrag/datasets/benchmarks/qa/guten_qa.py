@@ -25,12 +25,16 @@ class GutenQADatasetConfig:
         Available choices are:
 
         - `lumber_chunk`: Use pre-segmented chunks from LumberChunker.
+        - `paragraph`: Use paragraphs as contexts.
+        - `recursive`: Use recursive chunks as contexts.
         - `book`: Use entire books as contexts.
     :type context_mode: str
     """
 
     data_path: Optional[str] = None
-    context_mode: Annotated[str, Choices("lumber_chunk", "book")] = "lumber_chunk"
+    context_mode: Annotated[
+        str, Choices("lumber_chunk", "paragraph", "recursive", "book")
+    ] = "lumber_chunk"
 
 
 @DATASETS("guten_qa", config_class=GutenQADatasetConfig)
@@ -64,7 +68,7 @@ class GutenQADataset(MappingDataset[ContextualQASample]):
                         filename="gutenqa_chunks.parquet",
                         local_dir=data_dir.as_posix(),
                     )
-            case "book":
+            case "paragraph" | "book":
                 corpus_path = data_dir / "GutenQA_paragraphs.parquet"
                 if not corpus_path.exists():
                     hf_hub_download(
@@ -73,10 +77,19 @@ class GutenQADataset(MappingDataset[ContextualQASample]):
                         filename="GutenQA_paragraphs.parquet",
                         local_dir=data_dir.as_posix(),
                     )
+            case "recursive":
+                corpus_path = data_dir / "GutenQA_recursive.parquet"
+                if not corpus_path.exists():
+                    hf_hub_download(
+                        repo_id="LumberChunker/GutenQA_Recursive",
+                        repo_type="dataset",
+                        filename="GutenQA_recursive.parquet",
+                        local_dir=data_dir.as_posix(),
+                    )
             case _:
                 raise ValueError(
                     f"Invalid context_mode: {self._context_mode}. "
-                    "Choose from 'lumber_chunk', 'book'."
+                    "Choose from 'lumber_chunk', 'paragraph', 'recursive', 'book'."
                 )
 
         # load the corpus
@@ -84,17 +97,17 @@ class GutenQADataset(MappingDataset[ContextualQASample]):
         corpus = pd.read_parquet(corpus_path)
         if self._context_mode == "book":
             for _, group in corpus.groupby("Book ID"):
-                book_id = str(group.iloc[0]["Book ID"])
+                book_id = group.iloc[0]["Book ID"]
                 context = Context(
-                    context_id=book_id,
+                    context_id=str(book_id),
                     data={
                         "Book Name": group.iloc[0]["Book Name"],
                         "text": "\n".join(group["Chunk"].tolist()),
                     },
                     source="Gutenberg",
                 )
-                self._context_data[book_id] = context
-        else:
+                self._context_data[book_id] = [context]
+        elif self._context_mode == "paragraph":
             for _, row in corpus.iterrows():
                 ctx_id = f"{row['Book ID']}_{row['Chunk ID']}"
                 context = Context(
@@ -106,26 +119,52 @@ class GutenQADataset(MappingDataset[ContextualQASample]):
                     },
                     source="Gutenberg",
                 )
-                self._context_data[ctx_id] = context
+                self._context_data.setdefault(row["Book ID"], []).append(context)
+        elif self._context_mode == "recursive":
+            for _, row in corpus.iterrows():
+                ctx_id = f"{row['Book ID']}_{row['Chunk ID']}"
+                context = Context(
+                    context_id=ctx_id,
+                    data={
+                        "Book Name": row["Book Name"],
+                        "Chapter": row.get("Chapter", ""),
+                        "text": row["Chunk"],
+                    },
+                    source="Gutenberg",
+                )
+                self._context_data.setdefault(row["Book ID"], []).append(context)
+        elif self._context_mode == "lumber_chunk":
+            for _, row in corpus.iterrows():
+                ctx_id = f"{row['Book ID']}_{row['Chunk ID']}"
+                context = Context(
+                    context_id=ctx_id,
+                    data={
+                        "Book Name": row["Book Name"],
+                        "Chapter": row.get("Chapter", ""),
+                        "text": row["Chunk"],
+                    },
+                    source="Gutenberg",
+                )
+                self._context_data.setdefault(row["Book ID"], []).append(context)
 
         # load the QA pairs
         self._queries_data = {}
         self._answers_data = {}
-        self._qrels_data = {}
+        self._book_ids_data = {}
         self._meta_data = {}
         qa_pairs = pd.read_parquet(qa_path)
         for idx, row in qa_pairs.iterrows():
-            if self._context_mode == "book":
-                ctx_id = str(row["Book ID"])
-            else:
-                ctx_id = f"{row['Book ID']}_{row['Chunk ID']}"
             query_id = str(idx)
             self._queries_data[query_id] = row["Question"]
             self._answers_data[query_id] = [row["Answer"]]
-            self._qrels_data[query_id] = {ctx_id: 1.0}
+            self._book_ids_data[query_id] = row["Book ID"]
             self._meta_data[query_id] = {
                 "Chunk Must Contain": row["Chunk Must Contain"]
             }
+            if self._context_mode == "lumber_chunk":
+                self._meta_data[query_id]["golden_context_id"] = (
+                    f"{row['Book ID']}_{row['Chunk ID']}"
+                )
         self._qids = list(self._queries_data.keys())
         return
 
@@ -134,12 +173,10 @@ class GutenQADataset(MappingDataset[ContextualQASample]):
 
     def get_item(self, index: int) -> ContextualQASample:
         qid = self._qids[index]
-        ctx_ids = list(self._qrels_data[qid].keys())
-        contexts = [self._context_data[ctx_id] for ctx_id in ctx_ids]
         return ContextualQASample(
             question=self._queries_data[qid],
             answers=self._answers_data[qid],
-            contexts=contexts,
+            contexts=self._context_data[self._book_ids_data[qid]],
             question_id=qid,
             meta_data=self._meta_data[qid],
         )

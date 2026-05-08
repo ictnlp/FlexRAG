@@ -12,7 +12,7 @@ from ...core import DATASETS, ContextualMCSample, MappingDataset
 
 
 @configure
-class NovelQAConfig:
+class NovelQADatasetConfig:
     """Configuration for NovelQA Dataset.
 
     `NovelQA <https://arxiv.org/abs/2403.12766>`_ is a benchmark tailored for
@@ -32,9 +32,9 @@ class NovelQAConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("novel_qa", config_class=NovelQAConfig)
+@DATASETS("novel_qa", config_class=NovelQADatasetConfig)
 class NovelQADataset(MappingDataset[ContextualMCSample]):
-    def __init__(self, config: NovelQAConfig):
+    def __init__(self, config: NovelQADatasetConfig):
         # download dataset if not exists
         if config.data_path is None:
             data_path = FLEXRAG_CACHE_DIR / "datasets" / "novel_qa"

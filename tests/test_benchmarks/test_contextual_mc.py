@@ -4,8 +4,8 @@ from flexrag.common import Context
 from flexrag.datasets.benchmarks import (
     LongBenchV2Dataset,
     LongBenchV2DatasetConfig,
-    NovelQAConfig,
     NovelQADataset,
+    NovelQADatasetConfig,
     QuALITYDataset,
     QuALITYDatasetConfig,
 )
@@ -29,7 +29,7 @@ class TestContextualMC:
         return
 
     def test_novel_qa(self):
-        dataset = NovelQADataset(NovelQAConfig())
+        dataset = NovelQADataset(NovelQADatasetConfig())
         for item in dataset:
             self.valid_contextual_mc_sample(item)
         print(f"NovelQA dataset length: {len(dataset)}")
