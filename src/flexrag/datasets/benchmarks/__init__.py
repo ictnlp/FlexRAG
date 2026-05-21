@@ -84,6 +84,8 @@ from .retrieval import (
 from .suites import (
     BrowseCompPlusDataset,
     BrowseCompPlusDatasetConfig,
+    ClapNQDataset,
+    ClapNQDatasetConfig,
     CRUDRAGDataset,
     CRUDRAGDatasetConfig,
     FramesDataset,
@@ -170,6 +172,8 @@ __all__ = [
     "CRUDRAGDatasetConfig",
     "BrowseCompPlusDataset",
     "BrowseCompPlusDatasetConfig",
+    "ClapNQDataset",
+    "ClapNQDatasetConfig",
     "FramesDataset",
     "FramesDatasetConfig",
     "KiltDataset",

@@ -3,6 +3,8 @@ import pytest
 from flexrag.datasets.benchmarks import (
     BrowseCompPlusDataset,
     BrowseCompPlusDatasetConfig,
+    ClapNQDataset,
+    ClapNQDatasetConfig,
     FramesDataset,
     FramesDatasetConfig,
     MTRAGDataset,
@@ -49,4 +51,22 @@ class TestEndToEndRAG:
             self.valid_ir_qa_sample(item)
         print(f"BrowseCompPlus dataset length: {len(dataset)}")
         print("BrowseCompPlus dataset test passed.")
+        return
+
+    def test_clapnq(self):
+        dataset = ClapNQDataset(ClapNQDatasetConfig(load_corpus=False))
+        answerability = set()
+        for item in dataset:
+            self.valid_ir_qa_sample(item)
+            answerability.add(item.meta_data["answerability"])
+            if item.meta_data["answerability"] == "answerable":
+                assert len(item.answers) > 0
+                assert len(item.contexts) > 0
+            else:
+                assert item.answers == []
+                assert item.contexts == []
+        assert len(dataset) == 600
+        assert answerability == {"answerable", "unanswerable"}
+        print(f"ClapNQ dataset length: {len(dataset)}")
+        print("ClapNQ dataset test passed.")
         return
