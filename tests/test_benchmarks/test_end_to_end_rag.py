@@ -54,7 +54,7 @@ class TestEndToEndRAG:
         return
 
     def test_clapnq(self):
-        dataset = ClapNQDataset(ClapNQDatasetConfig(load_corpus=False))
+        dataset = ClapNQDataset(ClapNQDatasetConfig())
         answerability = set()
         for item in dataset:
             self.valid_ir_qa_sample(item)
