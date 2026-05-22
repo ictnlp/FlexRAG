@@ -1,13 +1,21 @@
+import asyncio
 import json
 import mimetypes
 import os
 from dataclasses import field
-from typing import Any, Optional
+from typing import Annotated, Any, Optional
 from urllib.parse import urlparse
 
 import litellm
 
-from flexrag.common import ChatMessages, ChatTurn, ContentPart, configure, trace
+from flexrag.common import (
+    ChatMessages,
+    ChatTurn,
+    Choices,
+    ContentPart,
+    configure,
+    trace,
+)
 from flexrag.common.base64_utils import (
     binary_to_base64,
     file_to_base64,
@@ -20,6 +28,73 @@ from .generator_base import GENERATORS, GenerationConfig, GeneratorBase
 logger = LOGGER_MANAGER.get_logger("flexrag.models.litellm_generator")
 
 litellm.suppress_debug_info = True
+
+
+def _litellm_error_type(name: str) -> type[Exception] | None:
+    error_type = getattr(litellm, name, None)
+    if isinstance(error_type, type) and issubclass(error_type, Exception):
+        return error_type
+    return None
+
+
+_CONGESTION_ERROR_TYPES = tuple(
+    error_type
+    for error_type in (
+        _litellm_error_type("RateLimitError"),
+        _litellm_error_type("RouterRateLimitError"),
+        _litellm_error_type("Timeout"),
+        _litellm_error_type("APIConnectionError"),
+        _litellm_error_type("InternalServerError"),
+        _litellm_error_type("ServiceUnavailableError"),
+        _litellm_error_type("BadGatewayError"),
+        TimeoutError,
+        ConnectionError,
+    )
+    if error_type is not None
+)
+
+
+def _exception_status_code(exc: Exception) -> int | None:
+    for attr in ("status_code", "http_status_code", "http_status"):
+        value = getattr(exc, attr, None)
+        if isinstance(value, int):
+            return value
+    return None
+
+
+def _is_congestion_error(exc: Exception) -> bool:
+    if isinstance(exc, _CONGESTION_ERROR_TYPES):
+        return True
+    status_code = _exception_status_code(exc)
+    return status_code == 429 or (status_code is not None and status_code >= 500)
+
+
+def _set_attempts(exc: Exception, attempts: int) -> None:
+    try:
+        setattr(exc, "_flexrag_litellm_attempts", attempts)
+    except Exception:
+        pass
+    return
+
+
+def _get_attempts(exc: Exception) -> int:
+    attempts = getattr(exc, "_flexrag_litellm_attempts", 1)
+    return attempts if isinstance(attempts, int) and attempts > 0 else 1
+
+
+def _failed_chat_turn(exc: Exception) -> ChatTurn:
+    attempts = _get_attempts(exc)
+    return ChatTurn(
+        role="assistant",
+        content="",
+        metadata={
+            "failed": True,
+            "error_type": type(exc).__name__,
+            "error": str(exc),
+            "attempts": attempts,
+            "retries": attempts - 1,
+        },
+    )
 
 
 def _generation_config_to_kwargs(
@@ -327,6 +402,21 @@ class LiteLLMGeneratorConfig:
     :type timeout: Optional[float]
     :param proxy: Upstream proxy setting forwarded to LiteLLM. Defaults to None.
     :type proxy: Optional[str]
+    :param failure_policy: How chat calls handle per-sample failures. ``raise``
+        preserves strict error behavior; ``empty`` returns an empty assistant turn
+        with error metadata for the failed sample. Defaults to ``raise``.
+    :type failure_policy: str
+    :param retry_times: Total number of API attempts for retryable LiteLLM request
+        failures. ``1`` disables retries. Defaults to 1.
+    :type retry_times: int
+    :param retry_min_delay: Initial retry delay in seconds. Defaults to 1.0.
+    :type retry_min_delay: float
+    :param retry_max_delay: Maximum retry delay in seconds. Defaults to 60.0.
+    :type retry_max_delay: float
+    :param rpm: Request scheduling mode. ``0`` keeps fixed concurrency, positive
+        values enable request-per-minute pacing, and ``-1`` enables AIMD adaptive
+        concurrency. Defaults to 0.
+    :type rpm: float
     :param extra_kwargs: Additional provider-specific LiteLLM request kwargs.
         Explicit top-level config fields take precedence over conflicting keys here.
     :type extra_kwargs: dict[str, Any]
@@ -368,17 +458,121 @@ class LiteLLMGeneratorConfig:
     api_version: Optional[str] = None
     timeout: Optional[float] = None
     proxy: Optional[str] = None
+    failure_policy: Annotated[str, Choices("raise", "empty")] = "raise"
+    retry_times: int = 1
+    retry_min_delay: float = 1.0
+    retry_max_delay: float = 60.0
+    rpm: float = 0
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self):
+        assert self.max_concurrency > 0, "max_concurrency must be greater than 0"
+        assert self.retry_times > 0, "retry_times must be greater than 0"
+        assert self.retry_min_delay >= 0, "retry_min_delay must be non-negative"
+        assert self.retry_max_delay >= self.retry_min_delay, (
+            "retry_max_delay must be greater than or equal to retry_min_delay"
+        )
+        assert self.rpm == -1 or self.rpm >= 0, (
+            "rpm must be -1 for AIMD, 0 to disable RPM control, "
+            "or a positive request-per-minute value"
+        )
+        return
 
 
 @GENERATORS("litellm", config_class=LiteLLMGeneratorConfig)
 class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
     def __init__(self, config: LiteLLMGeneratorConfig):
         super().__init__(config)
+        self._rpm_lock: asyncio.Lock | None = None
+        self._next_request_time: float = 0.0
+        self._aimd_condition: asyncio.Condition | None = None
+        self._aimd_limit: int = 1
+        self._aimd_in_flight: int = 0
+        self._aimd_successes: int = 0
         return
 
     def _get_max_concurrency(self) -> int:
         return max(1, self._config.max_concurrency)
+
+    @property
+    def _aimd_enabled(self) -> bool:
+        return self._config.rpm == -1
+
+    async def _wait_for_rpm(self) -> None:
+        if self._config.rpm <= 0:
+            return
+        if self._rpm_lock is None:
+            self._rpm_lock = asyncio.Lock()
+        interval = 60.0 / self._config.rpm
+        async with self._rpm_lock:
+            loop = asyncio.get_running_loop()
+            now = loop.time()
+            if self._next_request_time > now:
+                await asyncio.sleep(self._next_request_time - now)
+                now = loop.time()
+            self._next_request_time = max(self._next_request_time, now) + interval
+        return
+
+    async def _acquire_aimd_slot(self) -> None:
+        if not self._aimd_enabled:
+            return
+        if self._aimd_condition is None:
+            self._aimd_condition = asyncio.Condition()
+        async with self._aimd_condition:
+            while self._aimd_in_flight >= self._aimd_limit:
+                await self._aimd_condition.wait()
+            self._aimd_in_flight += 1
+        return
+
+    async def _release_aimd_slot(self, *, success: bool, congested: bool) -> None:
+        if not self._aimd_enabled:
+            return
+        if self._aimd_condition is None:
+            return
+        async with self._aimd_condition:
+            self._aimd_in_flight = max(0, self._aimd_in_flight - 1)
+            max_limit = self._get_max_concurrency()
+            if congested:
+                self._aimd_limit = max(1, int(self._aimd_limit * 0.5))
+                self._aimd_successes = 0
+            elif success:
+                self._aimd_successes += 1
+                if (
+                    self._aimd_limit < max_limit
+                    and self._aimd_successes >= self._aimd_limit
+                ):
+                    self._aimd_limit += 1
+                    self._aimd_successes = 0
+                elif self._aimd_limit >= max_limit:
+                    self._aimd_successes = 0
+            self._aimd_condition.notify_all()
+        return
+
+    def _retry_delay(self, attempt: int) -> float:
+        delay = self._config.retry_min_delay * (2 ** max(0, attempt - 1))
+        return min(delay, self._config.retry_max_delay)
+
+    async def _request_with_retry(self, request_func, **request_kwargs):
+        for attempt in range(1, self._config.retry_times + 1):
+            await self._wait_for_rpm()
+            await self._acquire_aimd_slot()
+            success = False
+            congested = False
+            try:
+                response = await request_func(**request_kwargs)
+                success = True
+                return response
+            except Exception as exc:
+                congested = _is_congestion_error(exc)
+                _set_attempts(exc, attempt)
+                if not congested or attempt >= self._config.retry_times:
+                    raise
+                delay = self._retry_delay(attempt)
+            finally:
+                await self._release_aimd_slot(success=success, congested=congested)
+            if delay > 0:
+                await asyncio.sleep(delay)
+        raise RuntimeError("LiteLLM request retry loop exited unexpectedly.")
 
     async def _create_client(self, config: LiteLLMGeneratorConfig):
         provider = (config.provider or "").strip()
@@ -417,7 +611,7 @@ class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
         request_kwargs["messages"] = [
             _turn_to_litellm_message(turn) for turn in message
         ]
-        response = await litellm.acompletion(**request_kwargs)
+        response = await self._request_with_retry(litellm.acompletion, **request_kwargs)
         return _completion_response_to_chat_turns(response)
 
     @trace("generator.litellm_generate")
@@ -431,7 +625,9 @@ class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
         request_kwargs.update(_generation_config_to_kwargs(generation_config))
         request_kwargs["model"] = client["model"]
         request_kwargs["prompt"] = prompt
-        response = await litellm.atext_completion(**request_kwargs)
+        response = await self._request_with_retry(
+            litellm.atext_completion, **request_kwargs
+        )
         return _text_completion_response_to_texts(response)
 
     async def _async_chat_impl(
@@ -440,10 +636,17 @@ class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
         messages: list[ChatMessages],
         generation_config: GenerationConfig | None,
     ) -> list[list[ChatTurn]]:
-        return [
-            await self._async_chat_one(client, message, generation_config)
-            for message in messages
-        ]
+        results: list[list[ChatTurn]] = []
+        for message in messages:
+            try:
+                results.append(
+                    await self._async_chat_one(client, message, generation_config)
+                )
+            except Exception as exc:
+                if self._config.failure_policy == "raise":
+                    raise
+                results.append([_failed_chat_turn(exc)])
+        return results
 
     async def _async_generate_impl(
         self,
