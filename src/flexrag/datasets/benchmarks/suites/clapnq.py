@@ -64,10 +64,9 @@ class ClapNQDataset(MappingDataset[IRQASample]):
         if data_dir.is_file():
             raise ValueError(f"CLAPNQ data_path must be a directory, got: {data_dir}")
 
-        corpus_path = data_dir / "retrieval" / "passages.tsv.zip"
-        self._context_data: dict[str, Context] = {}
-
         # load corpus contexts from the passages.tsv.zip file
+        self._context_data: dict[str, Context] = {}
+        corpus_path = data_dir / "retrieval" / "passages.tsv.zip"
         with zipfile.ZipFile(corpus_path) as zip_file:
             with zip_file.open("passages.tsv") as f:
                 reader = csv.DictReader(
@@ -83,7 +82,6 @@ class ClapNQDataset(MappingDataset[IRQASample]):
                         },
                         source="clapnq",
                     )
-        self._corpus = _ContextMappingCorpus(self._context_data)
 
         # load queries / answers from the question files
         self._queries_data: dict[str, str] = {}
@@ -132,4 +130,4 @@ class ClapNQDataset(MappingDataset[IRQASample]):
 
     @property
     def corpus(self):
-        return self._corpus
+        return _ContextMappingCorpus(self._context_data)
