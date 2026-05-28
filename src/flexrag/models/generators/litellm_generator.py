@@ -413,9 +413,8 @@ class LiteLLMGeneratorConfig:
     :type retry_min_delay: float
     :param retry_max_delay: Maximum retry delay in seconds. Defaults to 60.0.
     :type retry_max_delay: float
-    :param rpm: Request scheduling mode. ``0`` keeps fixed concurrency, positive
-        values enable request-per-minute pacing, and ``-1`` enables AIMD adaptive
-        concurrency. Defaults to 0.
+    :param rpm: Maximum number of LiteLLM requests to start per minute.
+        ``0`` disables request pacing. Defaults to 0.
     :type rpm: float
     :param extra_kwargs: Additional provider-specific LiteLLM request kwargs.
         Explicit top-level config fields take precedence over conflicting keys here.
@@ -472,10 +471,7 @@ class LiteLLMGeneratorConfig:
         assert self.retry_max_delay >= self.retry_min_delay, (
             "retry_max_delay must be greater than or equal to retry_min_delay"
         )
-        assert self.rpm == -1 or self.rpm >= 0, (
-            "rpm must be -1 for AIMD, 0 to disable RPM control, "
-            "or a positive request-per-minute value"
-        )
+        assert self.rpm >= 0, "rpm must be non-negative"
         return
 
 
@@ -485,18 +481,10 @@ class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
         super().__init__(config)
         self._rpm_lock: asyncio.Lock | None = None
         self._next_request_time: float = 0.0
-        self._aimd_condition: asyncio.Condition | None = None
-        self._aimd_limit: int = 1
-        self._aimd_in_flight: int = 0
-        self._aimd_successes: int = 0
         return
 
     def _get_max_concurrency(self) -> int:
         return max(1, self._config.max_concurrency)
-
-    @property
-    def _aimd_enabled(self) -> bool:
-        return self._config.rpm == -1
 
     async def _wait_for_rpm(self) -> None:
         if self._config.rpm <= 0:
@@ -513,41 +501,6 @@ class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
             self._next_request_time = max(self._next_request_time, now) + interval
         return
 
-    async def _acquire_aimd_slot(self) -> None:
-        if not self._aimd_enabled:
-            return
-        if self._aimd_condition is None:
-            self._aimd_condition = asyncio.Condition()
-        async with self._aimd_condition:
-            while self._aimd_in_flight >= self._aimd_limit:
-                await self._aimd_condition.wait()
-            self._aimd_in_flight += 1
-        return
-
-    async def _release_aimd_slot(self, *, success: bool, congested: bool) -> None:
-        if not self._aimd_enabled:
-            return
-        if self._aimd_condition is None:
-            return
-        async with self._aimd_condition:
-            self._aimd_in_flight = max(0, self._aimd_in_flight - 1)
-            max_limit = self._get_max_concurrency()
-            if congested:
-                self._aimd_limit = max(1, int(self._aimd_limit * 0.5))
-                self._aimd_successes = 0
-            elif success:
-                self._aimd_successes += 1
-                if (
-                    self._aimd_limit < max_limit
-                    and self._aimd_successes >= self._aimd_limit
-                ):
-                    self._aimd_limit += 1
-                    self._aimd_successes = 0
-                elif self._aimd_limit >= max_limit:
-                    self._aimd_successes = 0
-            self._aimd_condition.notify_all()
-        return
-
     def _retry_delay(self, attempt: int) -> float:
         delay = self._config.retry_min_delay * (2 ** max(0, attempt - 1))
         return min(delay, self._config.retry_max_delay)
@@ -555,21 +508,13 @@ class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
     async def _request_with_retry(self, request_func, **request_kwargs):
         for attempt in range(1, self._config.retry_times + 1):
             await self._wait_for_rpm()
-            await self._acquire_aimd_slot()
-            success = False
-            congested = False
             try:
-                response = await request_func(**request_kwargs)
-                success = True
-                return response
+                return await request_func(**request_kwargs)
             except Exception as exc:
-                congested = _is_congestion_error(exc)
                 _set_attempts(exc, attempt)
-                if not congested or attempt >= self._config.retry_times:
+                if not _is_congestion_error(exc) or attempt >= self._config.retry_times:
                     raise
                 delay = self._retry_delay(attempt)
-            finally:
-                await self._release_aimd_slot(success=success, congested=congested)
             if delay > 0:
                 await asyncio.sleep(delay)
         raise RuntimeError("LiteLLM request retry loop exited unexpectedly.")
