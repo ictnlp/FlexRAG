@@ -24,7 +24,6 @@ elasticsearch>=8.14.0
 torch
 beautifulsoup4
 datasets
-pytrec_eval
 colorama
 faiss-cpu
 # gradio>=5.8.0

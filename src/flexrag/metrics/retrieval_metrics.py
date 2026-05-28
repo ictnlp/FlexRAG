@@ -1,14 +1,14 @@
-from collections import defaultdict
 from dataclasses import field
+from math import log2
 from typing import Annotated, Optional
-
-import pytrec_eval
 
 from flexrag.common import Choices, configure, trace
 from flexrag.common.dataclasses import Context, RetrievedContext
 from flexrag.processors.text_processors import AnswerSimplifier
 
 from .metrics_base import METRICS
+
+RetrievalMeasure = Annotated[str, Choices("recall", "precision", "ndcg", "map", "mrr")]
 
 
 def get_contain_map(evidences: list[str], retrieved: list[str]) -> list[list[bool]]:
@@ -75,114 +75,176 @@ class SuccessRate:
         return {"retrieval_success_rate": score}, {"success_map": success_map}
 
 
-def pytrec_evaluate(
-    retrieved_contexts: list[list[RetrievedContext | str]],
-    golden_contexts: list[list[Context | str]],
-    k_values: list[int] = [1, 5, 10],
-    measure: Annotated[
-        str, Choices("recall", "precision", "ndcg", "map", "mrr")
-    ] = "recall",
-) -> tuple[dict[str, float], dict]:
-    """Evaluate the retrieval results using pytrec_eval.
+class _RetrievalMetrics:
+    def __init__(
+        self,
+        retrieved_contexts: list[list[RetrievedContext | str]],
+        golden_contexts: list[list[Context | str]],
+        k_values: list[int],
+        measure: RetrievalMeasure,
+    ) -> None:
+        self.retrieved_contexts = retrieved_contexts
+        self.golden_contexts = golden_contexts
+        self.k_values = k_values
+        self.measure = measure
+        self.ctx_ids: dict[str, str] = {}
+        self.measure_specs = self._get_measure_specs()
+        return
 
-    :param retrieved_contexts: The retrieved contexts.
-    :type retrieved_contexts: list[list[RetrievedContext]]
-    :param golden_contexts: The golden contexts.
-    :type golden_contexts: list[list[Context]]
-    :param k_values: The k values for evaluation. Defaults to [1, 5, 10].
-    :type k_values: list[int], optional
-    :param measure: The evaluation measure. Defaults to "recall".
-        Available choices are "recall", "precision", "ndcg", and "map".
-    :type measure: str, optional
-    :return: The evaluation scores and details.
-    :rtype: tuple[dict[str, float], dict]
-    """
-    # convert flexrag format to pytrec_eval format
-    qrels: dict[str, dict[str, int]] = {}
-    retrieved: dict[str, dict[str, float]] = {}
-    ctx_ids: dict[str, str] = {}  # label the context if it is a string
-    for n, (gctxs, rctxs) in enumerate(zip(golden_contexts, retrieved_contexts)):
-        qrels[str(n)] = {}
-        retrieved[str(n)] = {}
-        for ctx in gctxs:
-            if isinstance(ctx, str):
-                ctx_id = ctx_ids.get(ctx, str(len(ctx_ids)))
-                ctx_ids[ctx] = ctx_id
-                ctx_score = 1
-            else:
-                ctx_id = ctx.context_id
-                ctx_score = ctx.meta_data.get("score", 1)
-            qrels[str(n)][ctx_id] = ctx_score
-        for ctx in rctxs:
-            if isinstance(ctx, str):
-                ctx_id = ctx_ids.get(ctx, str(len(ctx_ids)))
-                ctx_ids[ctx] = ctx_id
-                ctx_score = 1.0
-            else:
-                ctx_id = ctx.context_id
-                ctx_score = ctx.score or 1.0
-            retrieved[str(n)][ctx_id] = ctx_score
+    def evaluate(self) -> tuple[dict[str, float], dict]:
+        scores = {measure_str: [] for measure_str, _ in self.measure_specs}
+        details: dict[str, dict[str, float]] = {}
 
-    # prepare pytrec_eval measure_strings
-    k_values = [str(k) for k in k_values]
-    measures_: set[str]  # for pytrec_eval args
-    measure_strs_: list[str]  # for pytrec_eval results
-    measure_strs: list[str]  # for FlexRAG results
-    match measure:
-        case "recall":
-            measures_ = {f"recall." + ",".join(k_values)}
-            measure_strs_ = [f"recall_{k}" for k in k_values]
-            measure_strs = [f"Recall@{k}" for k in k_values]
-        case "precision":
-            measures_ = {f"P." + ",".join(k_values)}
-            measure_strs_ = [f"P_{k}" for k in k_values]
-            measure_strs = [f"Precision@{k}" for k in k_values]
-        case "ndcg":
-            if len(k_values) > 1:
-                measures_ = {f"ndcg_cut." + ",".join(k_values)}
-                measure_strs_ = [f"ndcg_cut_{k}" for k in k_values]
-                measure_strs = [f"nDCG@{k}" for k in k_values]
-            else:
-                measures_ = {"ndcg"}
-                measure_strs_ = ["ndcg"]
-                measure_strs = ["nDCG"]
-        case "map":
-            if len(k_values) > 1:
-                measures_ = {f"map_cut." + ",".join(k_values)}
-                measure_strs_ = [f"map_cut_{k}" for k in k_values]
-                measure_strs = [f"MAP@{k}" for k in k_values]
-            else:
-                measures_ = {"map"}
-                measure_strs_ = ["map"]
-                measure_strs = ["MAP"]
-        case "mrr":
-            measures_ = {"recip_rank"}
-            measure_strs_ = ["recip_rank"]
-            measure_strs = ["MRR"]
-        case _:
-            raise ValueError(f"Invalid measure: {measure}")
+        for n, (gctxs, rctxs) in enumerate(
+            zip(self.golden_contexts, self.retrieved_contexts)
+        ):
+            query_scores = self._evaluate_query(gctxs, rctxs)
+            for measure_str, score in query_scores.items():
+                scores[measure_str].append(score)
+            details[str(n)] = query_scores
 
-    # evaluate using pytrec_eval
-    evaluator = pytrec_eval.RelevanceEvaluator(
-        query_relevance=qrels,
-        measures=measures_,
-    )
-    details = evaluator.evaluate(retrieved)
+        return {
+            measure_str: sum(values) / len(values) if len(values) > 0 else 0.0
+            for measure_str, values in scores.items()
+        }, details
 
-    # extract the results
-    scores = defaultdict(list)
-    for key in retrieved.keys():
-        for measure_str_, measure_str in zip(measure_strs_, measure_strs):
-            scores[measure_str].append(details[key][measure_str_])
-    scores = {k: sum(v) / len(v) for k, v in scores.items()}
-    return scores, details
+    def _evaluate_query(
+        self,
+        golden_contexts: list[Context | str],
+        retrieved_contexts: list[RetrievedContext | str],
+    ) -> dict[str, float]:
+        qrels: dict[str, float] = {}
+        retrieved: dict[str, tuple[float, int]] = {}
+        for ctx in golden_contexts:
+            qrels[self._get_context_id(ctx)] = self._get_context_relevance(ctx)
+        for order, ctx in enumerate(retrieved_contexts):
+            ctx_id = self._get_context_id(ctx)
+            retrieved[ctx_id] = (self._get_retrieval_score(ctx), order)
+
+        ranking = [
+            ctx_id
+            for ctx_id, _ in sorted(
+                retrieved.items(), key=lambda item: (-item[1][0], item[1][1])
+            )
+        ]
+        relevant_docs = {ctx_id for ctx_id, rel in qrels.items() if rel > 0}
+        query_scores: dict[str, float] = {}
+        for measure_str, k in self.measure_specs:
+            match self.measure:
+                case "recall":
+                    score = 0.0
+                    if len(relevant_docs) > 0:
+                        hits = sum(ctx_id in relevant_docs for ctx_id in ranking[:k])
+                        score = hits / len(relevant_docs)
+                case "precision":
+                    hits = sum(ctx_id in relevant_docs for ctx_id in ranking[:k])
+                    score = hits / k
+                case "ndcg":
+                    score = self._ndcg(ranking, qrels, k)
+                case "map":
+                    score = self._average_precision(ranking, relevant_docs, k)
+                case "mrr":
+                    score = 0.0
+                    for rank, ctx_id in enumerate(ranking, start=1):
+                        if ctx_id in relevant_docs:
+                            score = 1 / rank
+                            break
+                case _:
+                    raise ValueError(f"Invalid measure: {self.measure}")
+            query_scores[measure_str] = score
+        return query_scores
+
+    def _get_context_id(self, ctx: Context | str) -> str:
+        if isinstance(ctx, str):
+            ctx_id = self.ctx_ids.get(ctx)
+            if ctx_id is None:
+                ctx_id = str(len(self.ctx_ids))
+                self.ctx_ids[ctx] = ctx_id
+            return ctx_id
+        return str(ctx.context_id)
+
+    def _get_measure_specs(self) -> list[tuple[str, int | None]]:
+        if any(k <= 0 for k in self.k_values):
+            raise ValueError("k_values must contain positive integers.")
+        match self.measure:
+            case "recall":
+                if len(self.k_values) == 0:
+                    raise ValueError("k_values must not be empty for recall.")
+                return [(f"Recall@{k}", k) for k in self.k_values]
+            case "precision":
+                if len(self.k_values) == 0:
+                    raise ValueError("k_values must not be empty for precision.")
+                return [(f"Precision@{k}", k) for k in self.k_values]
+            case "ndcg":
+                if len(self.k_values) == 0:
+                    return [("nDCG", None)]
+                return [(f"nDCG@{k}", k) for k in self.k_values]
+            case "map":
+                if len(self.k_values) == 0:
+                    return [("MAP", None)]
+                return [(f"MAP@{k}", k) for k in self.k_values]
+            case "mrr":
+                return [("MRR", None)]
+            case _:
+                raise ValueError(f"Invalid measure: {self.measure}")
+
+    @staticmethod
+    def _get_context_relevance(ctx: Context | str) -> float:
+        if isinstance(ctx, str):
+            return 1.0
+        relevance = ctx.meta_data.get("score", 1.0)
+        if relevance is None:
+            return 1.0
+        return float(relevance)
+
+    @staticmethod
+    def _get_retrieval_score(ctx: RetrievedContext | str) -> float:
+        if isinstance(ctx, str):
+            return 1.0
+        if ctx.score is None:
+            return 1.0
+        return float(ctx.score)
+
+    @staticmethod
+    def _average_precision(
+        ranking: list[str], relevant_docs: set[str], k: int | None = None
+    ) -> float:
+        if len(relevant_docs) == 0:
+            return 0.0
+        hits = 0
+        score = 0.0
+        for rank, ctx_id in enumerate(ranking[:k], start=1):
+            if ctx_id in relevant_docs:
+                hits += 1
+                score += hits / rank
+        return score / len(relevant_docs)
+
+    @staticmethod
+    def _dcg(relevances: list[float]) -> float:
+        return sum(
+            (2**rel - 1) / log2(rank + 1) for rank, rel in enumerate(relevances, 1)
+        )
+
+    @staticmethod
+    def _ndcg(
+        ranking: list[str], qrels: dict[str, float], k: int | None = None
+    ) -> float:
+        ideal_rels = sorted((rel for rel in qrels.values() if rel > 0), reverse=True)
+        if k is not None:
+            ideal_rels = ideal_rels[:k]
+        if len(ideal_rels) == 0:
+            return 0.0
+        idcg = _RetrievalMetrics._dcg(ideal_rels)
+        if idcg == 0:
+            return 0.0
+        ranking_rels = [qrels.get(ctx_id, 0.0) for ctx_id in ranking[:k]]
+        return _RetrievalMetrics._dcg(ranking_rels) / idcg
 
 
 @configure
 class RetrievalRecallConfig:
     """Configuration for ``RetrievalRecall`` metric.
     This metric computes the recall of the retrieved contexts.
-    The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
 
     :param k_values: The k values for evaluation. Defaults to [1, 5, 10].
     :type k_values: list[int]
@@ -205,20 +267,18 @@ class RetrievalRecall:
         retrieved_contexts: list[list[RetrievedContext]] = None,
         golden_contexts: list[list[Context]] = None,
     ) -> tuple[dict[str, float], dict]:
-        scores, details = pytrec_evaluate(
+        return _RetrievalMetrics(
             retrieved_contexts=retrieved_contexts,
             golden_contexts=golden_contexts,
             k_values=self.k_values,
             measure="recall",
-        )
-        return scores, details
+        ).evaluate()
 
 
 @configure
 class RetrievalPrecisionConfig:
     """Configuration for ``RetrievalPrecision`` metric.
     This metric computes the precision of the retrieved contexts.
-    The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
 
     :param k_values: The k values for evaluation. Defaults to [1, 5, 10].
     :type k_values: list[int]
@@ -240,23 +300,21 @@ class RetrievalPrecision:
         self,
         retrieved_contexts: list[list[RetrievedContext]] = None,
         golden_contexts: list[list[Context]] = None,
-    ) -> tuple[float, object]:
-        scores, details = pytrec_evaluate(
+    ) -> tuple[dict[str, float], dict]:
+        return _RetrievalMetrics(
             retrieved_contexts=retrieved_contexts,
             golden_contexts=golden_contexts,
             k_values=self.k_values,
             measure="precision",
-        )
-        return scores, details
+        ).evaluate()
 
 
 @configure
 class RetrievalMAPConfig:
     """Configuration for ``RetrievalMAP`` metric.
     This metric computes the MAP of the retrieved contexts.
-    The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
 
-    :param k_values: The k values for evaluation. Defaults to [1, 5, 10].
+    :param k_values: The k values for evaluation. Defaults to [].
     :type k_values: list[int]
     """
 
@@ -277,22 +335,20 @@ class RetrievalMAP:
         retrieved_contexts: list[list[RetrievedContext]] = None,
         golden_contexts: list[list[Context]] = None,
     ) -> tuple[dict[str, float], dict]:
-        scores, details = pytrec_evaluate(
+        return _RetrievalMetrics(
             retrieved_contexts=retrieved_contexts,
             golden_contexts=golden_contexts,
             k_values=self.k_values,
             measure="map",
-        )
-        return scores, details
+        ).evaluate()
 
 
 @configure
 class RetrievalNDCGConfig:
     """Configuration for ``RetrievalNDCG`` metric.
     This metric computes the nDCG of the retrieved contexts.
-    The computation is based on `pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_.
 
-    :param k_values: The k values for evaluation. Defaults to [1, 5, 10].
+    :param k_values: The k values for evaluation. Defaults to [].
     :type k_values: list[int]
     """
 
@@ -313,13 +369,12 @@ class RetrievalNDCG:
         retrieved_contexts: list[list[RetrievedContext]] = None,
         golden_contexts: list[list[Context]] = None,
     ) -> tuple[dict[str, float], dict]:
-        scores, details = pytrec_evaluate(
+        return _RetrievalMetrics(
             retrieved_contexts=retrieved_contexts,
             golden_contexts=golden_contexts,
             k_values=self.k_values,
             measure="ndcg",
-        )
-        return scores, details
+        ).evaluate()
 
 
 @METRICS("retrieval_mrr")
@@ -332,9 +387,9 @@ class RetrievalMRR:
         retrieved_contexts: list[list[RetrievedContext]] = None,
         golden_contexts: list[list[Context]] = None,
     ) -> tuple[dict[str, float], dict]:
-        scores, details = pytrec_evaluate(
+        return _RetrievalMetrics(
             retrieved_contexts=retrieved_contexts,
             golden_contexts=golden_contexts,
+            k_values=[],
             measure="mrr",
-        )
-        return scores, details
+        ).evaluate()

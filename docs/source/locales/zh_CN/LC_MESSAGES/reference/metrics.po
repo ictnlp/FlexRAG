@@ -330,8 +330,7 @@ msgstr ""
 #: flexrag.metrics.retrieval_metrics.RetrievalRecallConfig:1 of
 msgid ""
 "Configuration for ``RetrievalRecall`` metric. This metric computes the "
-"recall of the retrieved contexts. The computation is based on "
-"`pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_."
+"recall of the retrieved contexts."
 msgstr ""
 
 #: 090eacab86c8457bb2d66544a8eb84fa 20318f89f7cc41458f1f1d28cdb15bee
@@ -352,8 +351,7 @@ msgstr ""
 #: flexrag.metrics.retrieval_metrics.RetrievalPrecisionConfig:1 of
 msgid ""
 "Configuration for ``RetrievalPrecision`` metric. This metric computes the"
-" precision of the retrieved contexts. The computation is based on "
-"`pytrec_eval <https://github.com/cvangysel/pytrec_eval>`_."
+" precision of the retrieved contexts."
 msgstr ""
 
 #: 4ed5906d89af40af97c0bd6794d67b7a
@@ -367,8 +365,7 @@ msgstr ""
 #: flexrag.metrics.retrieval_metrics.RetrievalMAPConfig:1 of
 msgid ""
 "Configuration for ``RetrievalMAP`` metric. This metric computes the MAP "
-"of the retrieved contexts. The computation is based on `pytrec_eval "
-"<https://github.com/cvangysel/pytrec_eval>`_."
+"of the retrieved contexts."
 msgstr ""
 
 #: 4b49f536811e4414a33aa4803f31c40d
@@ -382,8 +379,7 @@ msgstr ""
 #: flexrag.metrics.retrieval_metrics.RetrievalNDCGConfig:1 of
 msgid ""
 "Configuration for ``RetrievalNDCG`` metric. This metric computes the nDCG"
-" of the retrieved contexts. The computation is based on `pytrec_eval "
-"<https://github.com/cvangysel/pytrec_eval>`_."
+" of the retrieved contexts."
 msgstr ""
 
 #: db45dcfa3c50412fac0eef15d5f979d5
