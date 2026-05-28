@@ -135,7 +135,7 @@ class DuckDuckGoEngine(WebSeekerBase):
     def __init__(self, cfg: DuckDuckGoEngineConfig):
         super().__init__()
 
-        from duckduckgo_search import DDGS
+        from ddgs import DDGS
 
         self.ddgs = DDGS(proxy=cfg.proxy)
         return
