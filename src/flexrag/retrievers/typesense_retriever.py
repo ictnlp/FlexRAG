@@ -3,6 +3,7 @@ from typing import Annotated, Generator, Iterable, Optional
 from flexrag.common import (
     LOGGER_MANAGER,
     Choices,
+    ProgressDisplay,
     SimpleProgressLogger,
     configure,
     trace,
@@ -71,7 +72,12 @@ class TypesenseRetriever(EditableRetriever):
         return
 
     @trace("retriever.typesense.add_passages")
-    def add_passages(self, passages: Iterable[Context]) -> None:
+    def add_passages(
+        self,
+        passages: Iterable[Context],
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
+    ) -> None:
         def get_batch() -> Generator[list[dict[str, str]], None, None]:
             batch = []
             for passage in passages:
@@ -96,11 +102,13 @@ class TypesenseRetriever(EditableRetriever):
             self.client.collections.create(schema)
 
         # import documents
-        p_logger = SimpleProgressLogger(logger, interval=self.cfg.log_interval)
-        for batch in get_batch():
-            r = self.client.collections[self.index_name].documents.import_(batch)
-            assert all([i["success"] for i in r])
-            p_logger.update(len(batch), desc="Adding passages")
+        with SimpleProgressLogger(
+            logger, interval=log_interval, display=display
+        ) as p_logger:
+            for batch in get_batch():
+                r = self.client.collections[self.index_name].documents.import_(batch)
+                assert all([i["success"] for i in r])
+                p_logger.update(len(batch), desc="Adding passages")
         logger.info("Finished adding passages.")
         return
 

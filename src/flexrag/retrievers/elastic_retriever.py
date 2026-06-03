@@ -3,7 +3,13 @@ from typing import Iterable, Optional
 
 from elasticsearch import Elasticsearch, NotFoundError
 
-from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure, trace
+from flexrag.common import (
+    LOGGER_MANAGER,
+    ProgressDisplay,
+    SimpleProgressLogger,
+    configure,
+    trace,
+)
 from flexrag.common.configure import extract_config
 from flexrag.common.dataclasses import Context, RetrievedContext
 
@@ -82,7 +88,12 @@ class ElasticRetriever(EditableRetriever):
         return
 
     @trace("retriever.elastic_search.add_passages")
-    def add_passages(self, passages: Iterable[Context]):
+    def add_passages(
+        self,
+        passages: Iterable[Context],
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
+    ):
         def generate_actions():
             index_exists = self.client.indices.exists(index=self.index_name)
             actions = []
@@ -124,20 +135,22 @@ class ElasticRetriever(EditableRetriever):
                 yield actions
             return
 
-        p_logger = SimpleProgressLogger(logger, interval=self.cfg.log_interval)
-        for actions in generate_actions():
-            r = self.client.bulk(
-                operations=actions,
-                index=self.index_name,
-            )
-            if r.body["errors"]:
-                err_passage_ids = [
-                    item["index"]["_id"]
-                    for item in r.body["items"]
-                    if item["index"]["status"] != 201
-                ]
-                raise RuntimeError(f"Failed to index passages: {err_passage_ids}")
-            p_logger.update(len(actions) // 2, "Indexing")
+        with SimpleProgressLogger(
+            logger, interval=log_interval, display=display
+        ) as p_logger:
+            for actions in generate_actions():
+                r = self.client.bulk(
+                    operations=actions,
+                    index=self.index_name,
+                )
+                if r.body["errors"]:
+                    err_passage_ids = [
+                        item["index"]["_id"]
+                        for item in r.body["items"]
+                        if item["index"]["status"] != 201
+                    ]
+                    raise RuntimeError(f"Failed to index passages: {err_passage_ids}")
+                p_logger.update(len(actions) // 2, "Indexing")
         logger.info(f"Finished adding passages.")
         return
 

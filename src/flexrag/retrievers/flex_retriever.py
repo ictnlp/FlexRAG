@@ -7,6 +7,7 @@ from flexrag.common import (
     __VERSION__,
     LOGGER_MANAGER,
     Choices,
+    ProgressDisplay,
     SimpleProgressLogger,
     configure,
     trace,
@@ -143,7 +144,12 @@ class FlexRetriever(LocalRetriever):
         return
 
     @trace("retriever.flex_retriever.add_passages")
-    def add_passages(self, passages: Iterable[Context]):
+    def add_passages(
+        self,
+        passages: Iterable[Context],
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
+    ):
 
         def get_batch() -> Generator[tuple[list[dict], list[str]], None, None]:
             batch = []
@@ -162,14 +168,20 @@ class FlexRetriever(LocalRetriever):
 
         # add data to database
         context_ids = []
-        p_logger = SimpleProgressLogger(logger, interval=self.cfg.log_interval)
-        for batch, ids in get_batch():
-            self.database[ids] = batch
-            context_ids.extend(ids)
-            p_logger.update(step=len(batch), desc="Adding passages")
+        with SimpleProgressLogger(
+            logger, interval=log_interval, display=display
+        ) as p_logger:
+            for batch, ids in get_batch():
+                self.database[ids] = batch
+                context_ids.extend(ids)
+                p_logger.update(step=len(batch), desc="Adding passages")
 
         # update the indexes
-        self._update_index(context_ids)
+        self._update_index(
+            context_ids,
+            log_interval=log_interval,
+            display=display,
+        )
         logger.info("Finished adding passages.")
         return
 
@@ -446,7 +458,12 @@ class FlexRetriever(LocalRetriever):
         self.cfg.retriever_path = None
         return
 
-    def _update_index(self, context_ids: list[str]) -> None:
+    def _update_index(
+        self,
+        context_ids: list[str],
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
+    ) -> None:
         def get_data() -> Generator[tuple[Any, int], None, None]:
             for ctx_id in context_ids:
                 yield self.database[ctx_id]
@@ -461,7 +478,13 @@ class FlexRetriever(LocalRetriever):
             else:
                 index_path = None
             if index.is_addable:
-                index.insert_batch(context_ids, get_data(), serialize=True)
+                index.insert_batch(
+                    context_ids,
+                    get_data(),
+                    serialize=True,
+                    log_interval=log_interval,
+                    display=display,
+                )
             else:
                 logger.warning(
                     f"Index {index_name} is not addable. Rebuilding the index."
