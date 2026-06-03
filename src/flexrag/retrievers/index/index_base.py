@@ -11,6 +11,7 @@ from flexrag.common import (
     FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
     Choices,
+    ProgressDisplay,
     Register,
     SimpleProgressLogger,
     configure,
@@ -25,8 +26,6 @@ logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index")
 class RetrieverIndexBaseConfig:
     """The configuration for the `RetrieverIndexBase`.
 
-    :log_interval: The interval to log the progress. Defaults to 10000.
-    :type log_interval: int
     :batch_size: The batch size to add data to the index. Defaults to 512.
     :type batch_size: int
     :param index_path: The path to save the index.
@@ -35,7 +34,6 @@ class RetrieverIndexBaseConfig:
     :type index_path: Optional[str]
     """
 
-    log_interval: int = 10000
     batch_size: int = 512
     index_path: Optional[str] = None
 
@@ -75,6 +73,8 @@ class RetrieverIndexBase(ABC):
         data: Iterable[Any],
         batch_size: Optional[int] = None,
         serialize: bool = True,
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
     ) -> None:
         """Add data to the index in batches.
         This method will automatically perform the `serialize` method if the `index_path` is set.
@@ -85,6 +85,10 @@ class RetrieverIndexBase(ABC):
         :type batch_size: Optional[int]
         :param serialize: Whether to serialize the index after adding data. Defaults to True.
         :type serialize: bool
+        :param log_interval: The interval to log the progress. Defaults to 10000.
+        :type log_interval: int
+        :param display: The display mode for progress updates. Defaults to "auto".
+        :type display: ProgressDisplay
         :return: None
         """
         assert self.is_addable, "Current index is not addable."
@@ -102,10 +106,12 @@ class RetrieverIndexBase(ABC):
                 yield batch
 
         # iterate over the data in batches
-        p_logger = SimpleProgressLogger(logger, interval=self.cfg.log_interval)
-        for batch in get_data_batch(data):
-            self.insert(batch, serialize=False)
-            p_logger.update(step=len(batch), desc="Adding data")
+        with SimpleProgressLogger(
+            logger, interval=log_interval, display=display
+        ) as p_logger:
+            for batch in get_data_batch(data):
+                self.insert(batch, serialize=False)
+                p_logger.update(step=len(batch), desc="Adding data")
 
         # serialize if the `index_path` is set
         if (self.cfg.index_path is not None) and serialize:
@@ -134,6 +140,8 @@ class RetrieverIndexBase(ABC):
         query: Iterable[Any],
         top_k: int = 10,
         batch_size: Optional[int] = None,
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
         **search_kwargs,
     ) -> tuple[np.ndarray, np.ndarray]:
         """Search for the top_k most similar data indices to the query.
@@ -145,6 +153,10 @@ class RetrieverIndexBase(ABC):
         :type top_k: int, optional
         :param batch_size: The batch size to search. Defaults to self.batch_size.
         :type batch_size: Optional[int]
+        :param log_interval: The interval to log the progress. Defaults to 10000.
+        :type log_interval: int
+        :param display: The display mode for progress updates. Defaults to "auto".
+        :type display: ProgressDisplay
         :param search_kwargs: Additional search arguments.
         :type search_kwargs: Any
         :return: The indices and scores of the top_k most similar data indices.
@@ -166,12 +178,14 @@ class RetrieverIndexBase(ABC):
         indices = []
         batch_size = batch_size or self.cfg.batch_size
         total = len(query) if hasattr(query, "__len__") else None
-        p_logger = SimpleProgressLogger(logger, total, interval=self.cfg.log_interval)
-        for q in get_batch():
-            r = self.search(q, top_k, **search_kwargs)
-            scores.append(r[1])
-            indices.append(r[0])
-            p_logger.update(step=batch_size, desc="Searching")
+        with SimpleProgressLogger(
+            logger, total, interval=log_interval, display=display
+        ) as p_logger:
+            for q in get_batch():
+                r = self.search(q, top_k, **search_kwargs)
+                scores.append(r[1])
+                indices.append(r[0])
+                p_logger.update(step=len(q), desc="Searching")
         scores = np.concatenate(scores, axis=0)
         indices = np.concatenate(indices, axis=0)
         return indices, scores
@@ -293,7 +307,12 @@ class DenseIndexBase(RetrieverIndexBase):
         return
 
     def encode_data_batch(
-        self, data: Iterable[Any], is_query: bool = False, use_memmap: bool = True
+        self,
+        data: Iterable[Any],
+        is_query: bool = False,
+        use_memmap: bool = True,
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
     ) -> np.ndarray:
         """A helper function that encodes all data into embeddings.
 
@@ -310,6 +329,10 @@ class DenseIndexBase(RetrieverIndexBase):
             Note that you should remove the memory map file after use.
             Defaults to True.
         :type use_memmap: bool
+        :param log_interval: The interval to log the progress. Defaults to 10000.
+        :type log_interval: int
+        :param display: The display mode for progress updates. Defaults to "auto".
+        :type display: ProgressDisplay
         :return: The embeddings of the data.
         :rtype: np.ndarray
         """
@@ -335,20 +358,22 @@ class DenseIndexBase(RetrieverIndexBase):
             if batch:
                 yield batch
 
-        # encode the data
-        p_logger = SimpleProgressLogger(logger, interval=self.cfg.log_interval)
         embeddings = []
         n_embeddings = 0
-        for batch in get_batch():
-            emb = self.encode_data(batch, is_query=is_query)
-            if mmap_path is not None:
-                file_name = os.path.join(mmap_path, f"{uuid4()}.npy")
-                np.save(file_name, emb)
-                embeddings.append(file_name)
-            else:
-                embeddings.append(emb)
-            n_embeddings += emb.shape[0]
-            p_logger.update(step=len(batch), desc="Encoding data")
+        # encode the data
+        with SimpleProgressLogger(
+            logger, interval=log_interval, display=display
+        ) as p_logger:
+            for batch in get_batch():
+                emb = self.encode_data(batch, is_query=is_query)
+                if mmap_path is not None:
+                    file_name = os.path.join(mmap_path, f"{uuid4()}.npy")
+                    np.save(file_name, emb)
+                    embeddings.append(file_name)
+                else:
+                    embeddings.append(emb)
+                n_embeddings += emb.shape[0]
+                p_logger.update(step=len(batch), desc="Encoding data")
 
         # concatenate the embeddings
         if isinstance(embeddings[0], str):
@@ -410,20 +435,31 @@ class DenseIndexBase(RetrieverIndexBase):
             return -scores
         return scores
 
-    def add_embeddings_batch(self, embeds: np.ndarray) -> None:
+    def add_embeddings_batch(
+        self,
+        embeds: np.ndarray,
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
+    ) -> None:
         """A helper function that adds embeddings to the index in batches.
         This method will not serialize the index automatically.
         Thus, you should call the `serialize` method after adding all data.
 
         :param embeds: The embeddings to add.
         :type embeds: np.ndarray
+        :param log_interval: The interval to log the progress. Defaults to 10000.
+        :type log_interval: int
+        :param display: The display mode for progress updates. Defaults to "auto".
+        :type display: ProgressDisplay
         :return: None
         """
-        p_logger = SimpleProgressLogger(logger, embeds.shape[0], self.cfg.log_interval)
-        for i in range(0, embeds.shape[0], self.cfg.batch_size):
-            batch_embeds = embeds[i : i + self.cfg.batch_size]
-            self.add_embeddings(batch_embeds)
-            p_logger.update(step=batch_embeds.shape[0], desc="Adding embeddings")
+        with SimpleProgressLogger(
+            logger, embeds.shape[0], log_interval, display=display
+        ) as p_logger:
+            for i in range(0, embeds.shape[0], self.cfg.batch_size):
+                batch_embeds = embeds[i : i + self.cfg.batch_size]
+                self.add_embeddings(batch_embeds)
+                p_logger.update(step=batch_embeds.shape[0], desc="Adding embeddings")
         return
 
     @abstractmethod

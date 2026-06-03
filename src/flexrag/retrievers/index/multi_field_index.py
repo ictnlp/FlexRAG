@@ -5,7 +5,13 @@ from typing import Annotated, Any, Generator, Iterable
 
 import numpy as np
 
-from flexrag.common import LOGGER_MANAGER, Choices, SimpleProgressLogger, configure
+from flexrag.common import (
+    LOGGER_MANAGER,
+    Choices,
+    ProgressDisplay,
+    SimpleProgressLogger,
+    configure,
+)
 from flexrag.common.configure import extract_config
 
 from .index_base import RetrieverIndexBase
@@ -132,6 +138,9 @@ class MultiFieldIndex:
         self,
         query: list[Any],
         top_k: int,
+        batch_size: int | None = None,
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
         **search_kwargs,
     ) -> tuple[list[list[str]], np.ndarray]:
         """Search for the top_k most similar data indices to the query.
@@ -143,11 +152,16 @@ class MultiFieldIndex:
         :type top_k: int, optional
         :param batch_size: The batch size to search. Defaults to self.batch_size.
         :type batch_size: Optional[int]
+        :param log_interval: The interval to log the progress. Defaults to 10000.
+        :type log_interval: int
+        :param display: The display mode for progress updates. Defaults to "auto".
+        :type display: ProgressDisplay
         :param search_kwargs: Additional search arguments.
         :type search_kwargs: Any
         :return: The indices and scores of the top_k most similar data indices.
         :rtype: tuple[list[list[str]], np.ndarray]
         """
+        batch_size = batch_size or self.index.cfg.batch_size
 
         def get_batch():
             """Yield data in batches."""
@@ -162,16 +176,15 @@ class MultiFieldIndex:
 
         scores = []
         indices = []
-        batch_size = self.index.cfg.batch_size or self.index.cfg.batch_size
         total = len(query) if hasattr(query, "__len__") else None
-        p_logger = SimpleProgressLogger(
-            logger, total, interval=self.index.cfg.log_interval
-        )
-        for q in get_batch():
-            r = self.search(q, top_k, **search_kwargs)
-            indices.extend(r[0])
-            scores.append(r[1])
-            p_logger.update(step=batch_size, desc="Searching")
+        with SimpleProgressLogger(
+            logger, total, interval=log_interval, display=display
+        ) as p_logger:
+            for q in get_batch():
+                r = self.search(q, top_k, **search_kwargs)
+                indices.extend(r[0])
+                scores.append(r[1])
+                p_logger.update(step=len(q), desc="Searching")
         return indices, np.concatenate(scores, axis=0)
 
     def search(
@@ -236,6 +249,8 @@ class MultiFieldIndex:
         data: Iterable[dict[str, Any]],
         batch_size: int = None,
         serialize: bool = True,
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
     ) -> None:
         """Add data to the index in batches.
         This method will automatically perform the `serialize` method if the `index_path` is set.
@@ -248,6 +263,10 @@ class MultiFieldIndex:
         :type batch_size: int
         :param serialize: Whether to serialize the index after adding data. Defaults to True.
         :type serialize: bool
+        :param log_interval: The interval to log the progress. Defaults to 10000.
+        :type log_interval: int
+        :param display: The display mode for progress updates. Defaults to "auto".
+        :type display: ProgressDisplay
         :return: None
         """
         assert self.index.is_addable, "Current index is not addable."
@@ -275,10 +294,12 @@ class MultiFieldIndex:
                 yield batch
 
         # iterate over the data in batches
-        p_logger = SimpleProgressLogger(logger, interval=self.index.cfg.log_interval)
-        for batch in get_data_batch():
-            self.index.insert(batch)
-            p_logger.update(step=len(batch), desc="Adding data")
+        with SimpleProgressLogger(
+            logger, interval=log_interval, display=display
+        ) as p_logger:
+            for batch in get_data_batch():
+                self.index.insert(batch)
+                p_logger.update(step=len(batch), desc="Adding data")
 
         # update the context_id mapping
         for n, context_id in enumerate(ctx_ids):
