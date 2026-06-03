@@ -4,7 +4,7 @@ import platform
 import sys
 import threading
 from time import perf_counter
-from typing import Literal
+from typing import Literal, TypeAlias
 
 import colorama
 from rich.console import Console
@@ -27,6 +27,7 @@ if platform.system() == "Windows":
 
 _LOG_ONCE_KEYS: set[tuple[str, int, object]] = set()
 _LOG_ONCE_LOCK = threading.RLock()
+ProgressDisplay: TypeAlias = Literal["none", "log", "bar", "auto"]
 
 
 def log_once(
@@ -133,14 +134,14 @@ class SimpleProgressLogger:
     :type display: Literal["none", "log", "bar", "auto"]
     """
 
-    _DisplayMode = Literal["none", "log", "bar", "auto"]
+    _DisplayMode = ProgressDisplay
 
     def __init__(
         self,
         logger: logging.Logger | None = None,
         total: int | None = None,
         interval: int = 100,
-        display: _DisplayMode = "log",
+        display: ProgressDisplay = "log",
     ):
         # set logger
         if logger is None:
@@ -215,7 +216,7 @@ class SimpleProgressLogger:
         return f"ProgressLogger({self.current}/{self.total})"
 
     def _resolve_display_mode(
-        self, display: _DisplayMode
+        self, display: ProgressDisplay
     ) -> Literal["none", "log", "bar"]:
         if display != "auto":
             return display

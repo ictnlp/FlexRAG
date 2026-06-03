@@ -3,6 +3,7 @@ from .dataclasses import ChatMessages, ChatTurn, ContentPart, Context, Retrieved
 from .default_vars import __VERSION__, FLEXRAG_CACHE_DIR, USER_MODULE_PATH
 from .logging import (
     LOGGER_MANAGER,
+    ProgressDisplay,
     SimpleProgressLogger,
     error_once,
     info_once,
@@ -27,6 +28,7 @@ __all__ = [
     "FLEXRAG_CACHE_DIR",
     "USER_MODULE_PATH",
     "LOGGER_MANAGER",
+    "ProgressDisplay",
     "SimpleProgressLogger",
     "log_once",
     "info_once",

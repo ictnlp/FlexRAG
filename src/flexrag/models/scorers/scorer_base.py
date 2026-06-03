@@ -4,7 +4,7 @@ from typing import Protocol
 
 import numpy as np
 
-from flexrag.common import Register, SimpleProgressLogger
+from flexrag.common import ProgressDisplay, Register, SimpleProgressLogger
 from flexrag.models.async_client_base import AsyncClientMixin, ConfigT
 
 
@@ -14,6 +14,7 @@ class PairScorerProtocol(Protocol):
         pairs: list[tuple[str, str]],
         batch_size: int = 32,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> np.ndarray: ...
 
     async def async_score(
@@ -21,6 +22,7 @@ class PairScorerProtocol(Protocol):
         pairs: list[tuple[str, str]],
         batch_size: int = 32,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> np.ndarray: ...
 
 
@@ -50,6 +52,7 @@ class PairScorerBase(AsyncClientMixin[ConfigT], ABC):
         pairs: list[tuple[str, str]],
         batch_size: int | None = None,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> np.ndarray:
         if batch_size is None:
             batches = [pairs]
@@ -60,22 +63,27 @@ class PairScorerBase(AsyncClientMixin[ConfigT], ABC):
 
         client = await self._get_async_client()
         semaphore = await self._get_async_semaphore()
-        p_logger = SimpleProgressLogger(total=len(pairs), interval=log_interval)
         results: list[None | np.ndarray] = [None] * len(batches)
 
-        async def _score_task(idx: int, batch: list[tuple[str, str]]) -> None:
-            async with semaphore:
-                res = await self._async_score_impl(client, batch)
-            results[idx] = res
-            p_logger.update(len(batch), desc="Scoring")
-            return
+        with SimpleProgressLogger(
+            total=len(pairs), interval=log_interval, display=display
+        ) as p_logger:
 
-        try:
-            async with asyncio.TaskGroup() as tg:
-                for idx, batch in enumerate(batches):
-                    tg.create_task(_score_task(idx, batch), name=f"score_batch_{idx}")
-        except ExceptionGroup as exc:
-            raise self._unwrap_exception_group(exc) from exc
+            async def _score_task(idx: int, batch: list[tuple[str, str]]) -> None:
+                async with semaphore:
+                    res = await self._async_score_impl(client, batch)
+                results[idx] = res
+                p_logger.update(len(batch), desc="Scoring")
+                return
+
+            try:
+                async with asyncio.TaskGroup() as tg:
+                    for idx, batch in enumerate(batches):
+                        tg.create_task(
+                            _score_task(idx, batch), name=f"score_batch_{idx}"
+                        )
+            except ExceptionGroup as exc:
+                raise self._unwrap_exception_group(exc) from exc
 
         if not results:
             return np.array([])
@@ -91,12 +99,14 @@ class PairScorerBase(AsyncClientMixin[ConfigT], ABC):
         pairs: list[tuple[str, str]],
         batch_size: int = 32,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> np.ndarray:
         return await self._run_coroutine_async(
             self._async_score_core(
                 pairs,
                 batch_size=batch_size,
                 log_interval=log_interval,
+                display=display,
             )
         )
 
@@ -105,12 +115,14 @@ class PairScorerBase(AsyncClientMixin[ConfigT], ABC):
         pairs: list[tuple[str, str]],
         batch_size: int = 32,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> np.ndarray:
         return self._run_coroutine_sync(
             self._async_score_core(
                 pairs,
                 batch_size=batch_size,
                 log_interval=log_interval,
+                display=display,
             )
         )
 

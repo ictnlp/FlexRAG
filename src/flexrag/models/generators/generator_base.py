@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import field
 from typing import Any, Optional, Protocol
 
-from flexrag.common import ChatMessages, ChatTurn, Register, configure
+from flexrag.common import ChatMessages, ChatTurn, ProgressDisplay, Register, configure
 from flexrag.common.logging import SimpleProgressLogger
 from flexrag.models.async_client_base import AsyncClientMixin, ConfigT
 
@@ -72,6 +72,7 @@ class GeneratorProtocol(Protocol):
         generation_config: GenerationConfig | None = None,
         batch_size: int = 1,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> list[list[ChatTurn]]: ...
 
     async def async_chat(
@@ -80,6 +81,7 @@ class GeneratorProtocol(Protocol):
         generation_config: GenerationConfig | None = None,
         batch_size: int = 1,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> list[list[ChatTurn]]: ...
 
     def generate(
@@ -88,6 +90,7 @@ class GeneratorProtocol(Protocol):
         generation_config: GenerationConfig | None = None,
         batch_size: int = 1,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> list[list[str]]: ...
 
     async def async_generate(
@@ -96,6 +99,7 @@ class GeneratorProtocol(Protocol):
         generation_config: GenerationConfig | None = None,
         batch_size: int = 1,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> list[list[str]]: ...
 
 
@@ -155,6 +159,7 @@ class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
         generation_config: GenerationConfig | None = None,
         batch_size: int = 1,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> list[list[str]]:
         prefixes = prefixes if isinstance(prefixes, list) else [prefixes]
         if batch_size is None:
@@ -167,24 +172,29 @@ class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
 
         client = await self._get_async_client()
         semaphore = await self._get_async_semaphore()
-        p_logger = SimpleProgressLogger(total=len(prefixes), interval=log_interval)
         results: list[None | list[list[str]]] = [None] * len(batches)
 
-        async def _generate_task(idx: int, batch: list[str]) -> None:
-            async with semaphore:
-                res = await self._async_generate_impl(client, batch, generation_config)
-            results[idx] = res
-            p_logger.update(len(batch), desc="Generating")
-            return
+        with SimpleProgressLogger(
+            total=len(prefixes), interval=log_interval, display=display
+        ) as p_logger:
 
-        try:
-            async with asyncio.TaskGroup() as tg:
-                for idx, batch in enumerate(batches):
-                    tg.create_task(
-                        _generate_task(idx, batch), name=f"generate_batch_{idx}"
+            async def _generate_task(idx: int, batch: list[str]) -> None:
+                async with semaphore:
+                    res = await self._async_generate_impl(
+                        client, batch, generation_config
                     )
-        except ExceptionGroup as exc:
-            raise self._unwrap_exception_group(exc) from exc
+                results[idx] = res
+                p_logger.update(len(batch), desc="Generating")
+                return
+
+            try:
+                async with asyncio.TaskGroup() as tg:
+                    for idx, batch in enumerate(batches):
+                        tg.create_task(
+                            _generate_task(idx, batch), name=f"generate_batch_{idx}"
+                        )
+            except ExceptionGroup as exc:
+                raise self._unwrap_exception_group(exc) from exc
 
         ready_results = [result for result in results if result is not None]
         if len(ready_results) != len(results):
@@ -200,6 +210,7 @@ class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
         generation_config: GenerationConfig | None = None,
         batch_size: int = 1,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> list[list[ChatTurn]]:
         normalized_messages = self._normalize_messages(messages)
         if batch_size is None:
@@ -212,24 +223,25 @@ class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
 
         client = await self._get_async_client()
         semaphore = await self._get_async_semaphore()
-        p_logger = SimpleProgressLogger(
-            total=len(normalized_messages), interval=log_interval
-        )
         results: list[None | list[list[ChatTurn]]] = [None] * len(batches)
 
-        async def _chat_task(idx: int, batch: list[ChatMessages]) -> None:
-            async with semaphore:
-                res = await self._async_chat_impl(client, batch, generation_config)
-            results[idx] = res
-            p_logger.update(len(batch), desc="Chatting")
-            return
+        with SimpleProgressLogger(
+            total=len(normalized_messages), interval=log_interval, display=display
+        ) as p_logger:
 
-        try:
-            async with asyncio.TaskGroup() as tg:
-                for idx, batch in enumerate(batches):
-                    tg.create_task(_chat_task(idx, batch), name=f"chat_batch_{idx}")
-        except ExceptionGroup as exc:
-            raise self._unwrap_exception_group(exc) from exc
+            async def _chat_task(idx: int, batch: list[ChatMessages]) -> None:
+                async with semaphore:
+                    res = await self._async_chat_impl(client, batch, generation_config)
+                results[idx] = res
+                p_logger.update(len(batch), desc="Chatting")
+                return
+
+            try:
+                async with asyncio.TaskGroup() as tg:
+                    for idx, batch in enumerate(batches):
+                        tg.create_task(_chat_task(idx, batch), name=f"chat_batch_{idx}")
+            except ExceptionGroup as exc:
+                raise self._unwrap_exception_group(exc) from exc
 
         ready_results = [result for result in results if result is not None]
         if len(ready_results) != len(results):
@@ -245,6 +257,7 @@ class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
         generation_config: GenerationConfig | None = None,
         batch_size: int = 1,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> list[list[str]]:
         return await self._run_coroutine_async(
             self._async_generate_core(
@@ -252,6 +265,7 @@ class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
                 generation_config=generation_config,
                 batch_size=batch_size,
                 log_interval=log_interval,
+                display=display,
             )
         )
 
@@ -261,6 +275,7 @@ class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
         generation_config: GenerationConfig | None = None,
         batch_size: int = 1,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> list[list[str]]:
         return self._run_coroutine_sync(
             self._async_generate_core(
@@ -268,6 +283,7 @@ class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
                 generation_config=generation_config,
                 batch_size=batch_size,
                 log_interval=log_interval,
+                display=display,
             )
         )
 
@@ -277,6 +293,7 @@ class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
         generation_config: GenerationConfig | None = None,
         batch_size: int = 1,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> list[list[ChatTurn]]:
         return await self._run_coroutine_async(
             self._async_chat_core(
@@ -284,6 +301,7 @@ class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
                 generation_config=generation_config,
                 batch_size=batch_size,
                 log_interval=log_interval,
+                display=display,
             )
         )
 
@@ -293,6 +311,7 @@ class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
         generation_config: GenerationConfig | None = None,
         batch_size: int = 1,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> list[list[ChatTurn]]:
         return self._run_coroutine_sync(
             self._async_chat_core(
@@ -300,6 +319,7 @@ class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
                 generation_config=generation_config,
                 batch_size=batch_size,
                 log_interval=log_interval,
+                display=display,
             )
         )
 

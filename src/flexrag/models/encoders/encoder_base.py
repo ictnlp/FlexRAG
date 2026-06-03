@@ -5,7 +5,7 @@ from typing import Protocol, TypeAlias, cast
 import numpy as np
 from PIL.ImageFile import ImageFile
 
-from flexrag.common import ContentPart, Register, SimpleProgressLogger
+from flexrag.common import ContentPart, ProgressDisplay, Register, SimpleProgressLogger
 from flexrag.models.async_client_base import AsyncClientMixin, ConfigT
 
 EncoderInput: TypeAlias = str | ImageFile | ContentPart
@@ -56,6 +56,7 @@ class EncoderProtocol(Protocol):
         inputs: EncoderInput | list[EncoderInput],
         batch_size: int = 32,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> np.ndarray: ...
 
     async def async_encode(
@@ -63,6 +64,7 @@ class EncoderProtocol(Protocol):
         inputs: EncoderInput | list[EncoderInput],
         batch_size: int = 32,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> np.ndarray: ...
 
     @property
@@ -91,6 +93,7 @@ class EncoderBase(AsyncClientMixin[ConfigT], ABC):
         inputs: EncoderInput | list[EncoderInput],
         batch_size: int | None = None,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> np.ndarray:
         normalized_inputs = normalize_encoder_inputs(inputs)
 
@@ -103,25 +106,27 @@ class EncoderBase(AsyncClientMixin[ConfigT], ABC):
             ]
         client = await self._get_async_client()
         semaphore = await self._get_async_semaphore()
-        p_logger = SimpleProgressLogger(
-            total=len(normalized_inputs), interval=log_interval
-        )
-
         results: list[None | np.ndarray] = [None] * len(batches)
 
-        async def _encode_task(idx: int, batch: list[ContentPart]) -> None:
-            async with semaphore:
-                res = await self._async_encode_impl(client, batch)
-            results[idx] = res
-            p_logger.update(len(batch), desc="Encoding")
-            return
+        with SimpleProgressLogger(
+            total=len(normalized_inputs), interval=log_interval, display=display
+        ) as p_logger:
 
-        try:
-            async with asyncio.TaskGroup() as tg:
-                for idx, batch in enumerate(batches):
-                    tg.create_task(_encode_task(idx, batch), name=f"encode_batch_{idx}")
-        except ExceptionGroup as exc:
-            raise self._unwrap_exception_group(exc) from exc
+            async def _encode_task(idx: int, batch: list[ContentPart]) -> None:
+                async with semaphore:
+                    res = await self._async_encode_impl(client, batch)
+                results[idx] = res
+                p_logger.update(len(batch), desc="Encoding")
+                return
+
+            try:
+                async with asyncio.TaskGroup() as tg:
+                    for idx, batch in enumerate(batches):
+                        tg.create_task(
+                            _encode_task(idx, batch), name=f"encode_batch_{idx}"
+                        )
+            except ExceptionGroup as exc:
+                raise self._unwrap_exception_group(exc) from exc
 
         if not results:
             return np.array([])
@@ -137,12 +142,14 @@ class EncoderBase(AsyncClientMixin[ConfigT], ABC):
         inputs: EncoderInput | list[EncoderInput],
         batch_size: int = 32,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> np.ndarray:
         return await self._run_coroutine_async(
             self._async_encode_core(
                 inputs,
                 batch_size=batch_size,
                 log_interval=log_interval,
+                display=display,
             )
         )
 
@@ -151,12 +158,14 @@ class EncoderBase(AsyncClientMixin[ConfigT], ABC):
         inputs: EncoderInput | list[EncoderInput],
         batch_size: int = 32,
         log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> np.ndarray:
         return self._run_coroutine_sync(
             self._async_encode_core(
                 inputs,
                 batch_size=batch_size,
                 log_interval=log_interval,
+                display=display,
             )
         )
 
