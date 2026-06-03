@@ -94,10 +94,9 @@ class TestRetrievers:
                 batch_size=512,
                 used_indexes=["contriever"],
                 top_k=5,
-                log_interval=1000,
             )
             retriever = FlexRetriever(cfg)
-            retriever.add_passages(dataset1)
+            retriever.add_passages(dataset1, log_interval=1000)
             retriever.add_index(
                 "contriever",
                 index_config=RetrieverIndexConfig(
@@ -136,7 +135,7 @@ class TestRetrievers:
             assert len(ctxs[1]) == 5
 
             # add new passages
-            retriever.add_passages(dataset2)
+            retriever.add_passages(dataset2, log_interval=1000)
             assert len(retriever) == 2000
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"]

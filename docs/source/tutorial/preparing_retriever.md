@@ -96,12 +96,11 @@ def add_passages():
     )
     retriever = FlexRetriever(
         FlexRetrieverConfig(
-            log_interval=100000,
             batch_size=4096,
             retriever_path=RETRIEVER_PATH,
         )
     )
-    retriever.add_passages(passages=corpus)
+    retriever.add_passages(passages=corpus, log_interval=100000)
     return
 
 add_passages()

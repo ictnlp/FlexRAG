@@ -29,8 +29,11 @@ _RETRIEVAL_CACHE_NAMESPACE = "retrieval.search"
 _RETRIEVAL_CACHE_SCHEMA_VERSION = 1
 _RUNTIME_ONLY_CONFIG_FIELDS = {
     "batch_size",
-    "log_interval",
     "query_preprocess_pipeline",
+}
+_RUNTIME_ONLY_SEARCH_KWARGS = {
+    "display",
+    "log_interval",
 }
 
 
@@ -38,8 +41,6 @@ _RUNTIME_ONLY_CONFIG_FIELDS = {
 class RetrieverBaseConfig:
     """Base configuration class for all retrievers.
 
-    :param log_interval: The interval of logging. Default: 10000.
-    :type log_interval: int
     :param top_k: The number of retrieved documents. Default: 10.
     :type top_k: int
     :param batch_size: The batch size for retrieval. Default: 32.
@@ -48,7 +49,6 @@ class RetrieverBaseConfig:
     :type query_preprocess_pipeline: TextProcessPipelineConfig
     """
 
-    log_interval: int = 10000
     top_k: int = 10
     batch_size: int = 32
     query_preprocess_pipeline: TextProcessPipelineConfig = field(
@@ -130,6 +130,9 @@ class RetrieverBase(ABC):
             retriever_config = dict(getattr(self.cfg, "__dict__", {}))
         for key in _RUNTIME_ONLY_CONFIG_FIELDS:
             retriever_config.pop(key, None)
+        cache_search_kwargs = dict(search_kwargs)
+        for key in _RUNTIME_ONLY_SEARCH_KWARGS:
+            cache_search_kwargs.pop(key, None)
         retriever_name = f"{self.__class__.__module__}.{self.__class__.__qualname__}"
         keys = [
             make_runtime_cache_key(
@@ -139,7 +142,7 @@ class RetrieverBase(ABC):
                     "retriever": retriever_name,
                     "retriever_config": retriever_config,
                     "query": q,
-                    "search_kwargs": search_kwargs,
+                    "search_kwargs": cache_search_kwargs,
                 }
             )
             for q in query

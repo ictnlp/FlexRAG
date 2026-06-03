@@ -4,7 +4,13 @@ from abc import abstractmethod
 
 from tenacity import RetryCallState, retry, stop_after_attempt, wait_fixed
 
-from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure, trace
+from flexrag.common import (
+    LOGGER_MANAGER,
+    ProgressDisplay,
+    SimpleProgressLogger,
+    configure,
+    trace,
+)
 from flexrag.common.configure import extract_config
 from flexrag.common.dataclasses import RetrievedContext
 
@@ -57,6 +63,8 @@ class WebRetrieverBase(RetrieverBase):
         self,
         query: list[str],
         delay: float = 0.1,
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         """As most web apis do not provide batch interface,
@@ -75,12 +83,14 @@ class WebRetrieverBase(RetrieverBase):
 
         # search & parse
         results = []
-        p_logger = SimpleProgressLogger(logger, len(query), self.cfg.log_interval)
         top_k = search_kwargs.pop("top_k", self.cfg.top_k)
-        for q in query:
-            time.sleep(delay)
-            p_logger.update(1, "Searching")
-            results.append(search_func(q, top_k, **search_kwargs))
+        with SimpleProgressLogger(
+            logger, len(query), interval=log_interval, display=display
+        ) as p_logger:
+            for q in query:
+                time.sleep(delay)
+                p_logger.update(1, "Searching")
+                results.append(search_func(q, top_k, **search_kwargs))
         return results
 
     @abstractmethod

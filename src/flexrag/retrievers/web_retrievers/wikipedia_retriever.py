@@ -3,7 +3,12 @@ from typing import Optional
 
 import httpx
 
-from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
+from flexrag.common import (
+    LOGGER_MANAGER,
+    ProgressDisplay,
+    SimpleProgressLogger,
+    configure,
+)
 from flexrag.common.configure import extract_config
 from flexrag.common.dataclasses import RetrievedContext
 
@@ -53,15 +58,19 @@ class WikipediaRetriever(RetrieverBase):
         self,
         query: list[str],
         delay: float = 0.1,
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         # search & parse
         results = []
-        p_logger = SimpleProgressLogger(logger, len(query), self.cfg.log_interval)
-        for q in query:
-            time.sleep(delay)
-            p_logger.update(1, "Searching")
-            results.append([self.search_item(q, **search_kwargs)])
+        with SimpleProgressLogger(
+            logger, len(query), interval=log_interval, display=display
+        ) as p_logger:
+            for q in query:
+                time.sleep(delay)
+                p_logger.update(1, "Searching")
+                results.append([self.search_item(q, **search_kwargs)])
         return results
 
     def search_item(self, query: str, **kwargs) -> RetrievedContext:
