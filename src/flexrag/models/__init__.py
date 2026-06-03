@@ -24,7 +24,7 @@ from .generators import (
     LiteLLMGeneratorConfig,
     LocalProcessGeneratorBase,
 )
-from .scorers import SCORERS, PairScorerBase, PairScorerProtocol
+from .scorers import SCORERS, PairScorerBase, PairScorerProtocol, ScorerConfig
 
 __all__ = [
     "GeneratorBase",
@@ -50,6 +50,7 @@ __all__ = [
     "SCORERS",
     "GeneratorConfig",
     "EncoderConfig",
+    "ScorerConfig",
     "PairScorerBase",
     "PairScorerProtocol",
 ]

@@ -3,6 +3,9 @@ from .cross_encoder_scorer import HFCrossEncoderScorer, HFCrossEncoderScorerConf
 from .logits_scorer import HFLogitsScorer, HFLogitsScorerConfig
 from .scorer_base import SCORERS, PairScorerBase, PairScorerProtocol
 
+ScorerConfig = SCORERS.make_config(config_name="ScorerConfig")
+
+
 __all__ = [
     "HFColBertScorer",
     "HFColBertScorerConfig",
@@ -13,4 +16,5 @@ __all__ = [
     "SCORERS",
     "PairScorerBase",
     "PairScorerProtocol",
+    "ScorerConfig",
 ]
