@@ -73,7 +73,7 @@ class RetrieverIndexBase(ABC):
     def insert_batch(
         self,
         data: Iterable[Any],
-        batch_size: int = None,
+        batch_size: Optional[int] = None,
         serialize: bool = True,
     ) -> None:
         """Add data to the index in batches.
@@ -82,7 +82,7 @@ class RetrieverIndexBase(ABC):
         :param data: The data to add.
         :type data: Iterable[Any]
         :param batch_size: The batch size to add data to the index. Defaults to self.batch_size.
-        :type batch_size: int
+        :type batch_size: Optional[int]
         :param serialize: Whether to serialize the index after adding data. Defaults to True.
         :type serialize: bool
         :return: None
@@ -202,7 +202,7 @@ class RetrieverIndexBase(ABC):
         return
 
     @abstractmethod
-    def save_to_local(self, index_path: str = None) -> None:
+    def save_to_local(self, index_path: Optional[str] = None) -> None:
         """Serialize the index to self.index_path.
         If the `index_path` is given, the index will be serialized to the `index_path`.
 
@@ -275,8 +275,8 @@ class DenseIndexBaseConfig(RetrieverIndexBaseConfig):
     :type distance_function: str
     """
 
-    query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
-    passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)  # type: ignore
+    query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)
+    passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)
     distance_function: Annotated[str, Choices("IP", "L2", "COS")] = "IP"
 
 
@@ -448,7 +448,7 @@ class DenseIndexBase(RetrieverIndexBase):
         return
 
     @staticmethod
-    def check_configuration(cfg: DenseIndexBaseConfig, token: str = None) -> None:
+    def check_configuration(cfg: DenseIndexBaseConfig, token: Optional[str] = None) -> None:
         """A helper function that checks the configuration of the index.
         This function is useful before saving the index to the HuggingFace hub.
         It checks if the encoder is available in the HuggingFace hub.
@@ -457,7 +457,7 @@ class DenseIndexBase(RetrieverIndexBase):
         :param cfg: The configuration of the index.
         :type cfg: DenseIndexBaseConfig
         :param token: The token to access the HuggingFace hub. Defaults to None.
-        :type token: str
+        :type token: Optional[str]
         """
         client = HfApi(token=token)
         # check the query encoder
