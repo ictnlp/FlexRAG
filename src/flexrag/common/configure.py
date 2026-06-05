@@ -5,7 +5,17 @@ import types
 from copy import deepcopy
 from dataclasses import asdict, field, fields, is_dataclass
 from pathlib import Path
-from typing import Annotated, Callable, Generic, Optional, TypeVar, dataclass_transform
+from typing import (
+    Annotated,
+    Callable,
+    Generic,
+    Optional,
+    Protocol,
+    TypeVar,
+    cast,
+    dataclass_transform,
+    overload,
+)
 
 import yaml
 from huggingface_hub import HfApi
@@ -134,13 +144,42 @@ def Choices(*args: str) -> FieldInfo:
 _T = TypeVar("_T")
 
 
-@dataclass_transform()
-def _create_pydantic_dataclass(config: ConfigDict) -> Callable[[type[_T]], type[_T]]:
-    def decorator(cls: type[_T] = None, *, frozen=False, kw_only=False) -> type[_T]:
+@dataclass_transform(field_specifiers=(field, Field))
+class _PydanticDataclassDecorator(Protocol):
+    @overload
+    def __call__(self, cls: type[_T]) -> type[_T]: ...
+
+    @overload
+    def __call__(
+        self,
+        cls: None = None,
+        *,
+        frozen: bool = False,
+        kw_only: bool = False,
+    ) -> Callable[[type[_T]], type[_T]]: ...
+
+
+def _create_pydantic_dataclass(config: ConfigDict) -> _PydanticDataclassDecorator:
+    @overload
+    def decorator(cls: type[_T]) -> type[_T]: ...
+
+    @overload
+    def decorator(
+        cls: None = None,
+        *,
+        frozen: bool = False,
+        kw_only: bool = False,
+    ) -> Callable[[type[_T]], type[_T]]: ...
+
+    def decorator(
+        cls: Optional[type[_T]] = None, *, frozen=False, kw_only=False
+    ) -> type[_T] | Callable[[type[_T]], type[_T]]:
         if cls is None:
             return lambda cls: decorator(cls, frozen=frozen, kw_only=kw_only)
 
-        cls = dataclass(config=config, frozen=frozen, kw_only=kw_only)(cls)
+        cls = cast(
+            type[_T], dataclass(config=config, frozen=frozen, kw_only=kw_only)(cls)
+        )
 
         def dumps(self) -> str:
             """Dump the dataclass to a YAML string."""

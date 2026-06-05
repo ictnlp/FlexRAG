@@ -9,7 +9,7 @@ from collections import defaultdict
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import wraps
-from typing import Generator, Optional
+from typing import Callable, Generator, Optional
 
 import numpy as np
 from rich.console import Console
@@ -183,10 +183,10 @@ def trace(
     *,
     sync_cuda: bool = False,
     device_id: int | None = None,
-) -> callable:
+) -> Callable:
     """Decorator to trace a function."""
 
-    def decorator(func: callable) -> callable:
+    def decorator(func: Callable) -> Callable:
         if inspect.iscoroutinefunction(func):
 
             @wraps(func)
