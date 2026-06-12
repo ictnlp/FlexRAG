@@ -107,7 +107,7 @@ class RetrieverIndexBase(ABC):
         with SimpleProgressLogger(
             logger, interval=log_interval, display=display
         ) as p_logger:
-            for batch in get_data_batch(data):
+            for batch in get_data_batch():
                 self.insert(batch, serialize=False)
                 p_logger.update(step=len(batch), desc="Adding data")
 
