@@ -8,7 +8,7 @@ import numpy as np
 
 from flexrag.common import LOGGER_MANAGER, configure
 from flexrag.common.configure import extract_config
-from flexrag.models import ENCODERS
+from flexrag.models import EncoderProtocol
 
 from .index_base import RETRIEVER_INDEX, DenseIndexBase, DenseIndexBaseConfig
 
@@ -52,8 +52,13 @@ class ScaNNIndex(DenseIndexBase):
     However, it requires more memory than ``FaissIndex``.
     """
 
-    def __init__(self, cfg: ScaNNIndexConfig) -> None:
-        super().__init__(cfg)
+    def __init__(
+        self,
+        cfg: ScaNNIndexConfig,
+        query_encoder: EncoderProtocol,
+        passage_encoder: EncoderProtocol | None = None,
+    ) -> None:
+        super().__init__(cfg, query_encoder, passage_encoder)
         self.cfg = extract_config(cfg, ScaNNIndexConfig)
         # check scann
         try:
@@ -164,8 +169,6 @@ class ScaNNIndex(DenseIndexBase):
 
         # save the configuration
         cfg = deepcopy(self.cfg)
-        cfg.query_encoder_config = ENCODERS.squeeze(cfg.query_encoder_config)
-        cfg.passage_encoder_config = ENCODERS.squeeze(cfg.passage_encoder_config)
         cfg.index_path = ""
         config_path = os.path.join(self.cfg.index_path, "config.yaml")
         cfg.dump(config_path)

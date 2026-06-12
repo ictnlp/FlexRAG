@@ -1,17 +1,27 @@
+from dataclasses import field
 from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
 
 from flexrag.common import configure, extract_config
+from flexrag.models import ENCODERS, EncoderConfig
 from flexrag.retrievers import FlexRetriever
-from flexrag.retrievers.index import MultiFieldIndexConfig, RetrieverIndexConfig
+from flexrag.retrievers.index import (
+    RETRIEVER_INDEX,
+    MultiFieldIndex,
+    MultiFieldIndexConfig,
+    RetrieverIndexConfig,
+)
+from flexrag.retrievers.index.index_base import DenseIndexBase
 
 
 @configure
 class Config(RetrieverIndexConfig, MultiFieldIndexConfig):
     index_name: Optional[str] = None
     retriever_path: Optional[str] = None
+    query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)
+    passage_encoder_config: Optional[EncoderConfig] = None
     rebuild: bool = False
 
 
@@ -31,11 +41,19 @@ def main(cfg: Config):
         retriever.remove_index(cfg.index_name)
 
     # add index
-    retriever.add_index(
-        index_name=cfg.index_name,
-        index_config=cfg,
-        indexed_fields_config=cfg,
-    )
+    index_kwargs = {}
+    index_cls = RETRIEVER_INDEX[str(cfg.index_type)]["item"]
+    if issubclass(index_cls, DenseIndexBase):
+        query_encoder = ENCODERS.load(cfg.query_encoder_config)
+        if query_encoder is None:
+            raise ValueError("query_encoder_config must be configured for dense index.")
+        index_kwargs["query_encoder"] = query_encoder
+        if cfg.passage_encoder_config is not None:
+            passage_encoder = ENCODERS.load(cfg.passage_encoder_config)
+            if passage_encoder is not None:
+                index_kwargs["passage_encoder"] = passage_encoder
+    base_index = RETRIEVER_INDEX.load(cfg, **index_kwargs)
+    retriever.add_index(cfg.index_name, MultiFieldIndex(cfg, base_index))
     return
 
 

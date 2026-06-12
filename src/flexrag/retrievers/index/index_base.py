@@ -1,11 +1,9 @@
 import os
 from abc import ABC, abstractmethod
-from dataclasses import field
 from typing import Annotated, Any, Generator, Iterable, Optional
 from uuid import uuid4
 
 import numpy as np
-from huggingface_hub import HfApi
 
 from flexrag.common import (
     FLEXRAG_CACHE_DIR,
@@ -17,7 +15,7 @@ from flexrag.common import (
     configure,
     trace,
 )
-from flexrag.models import ENCODERS, EncoderConfig
+from flexrag.models import EncoderProtocol
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index")
 
@@ -226,11 +224,14 @@ class RetrieverIndexBase(ABC):
         return
 
     @staticmethod
-    def load_from_local(index_path: str) -> None:
+    def load_from_local(index_path: str, **kwargs) -> "RetrieverIndexBase":
         """Load the index from the local path.
 
         :param index_path: The path to load the index.
         :type index_path: str
+        :param kwargs: Additional arguments to pass to the index constructor.
+            Dense indexes require explicit encoder dependencies here.
+        :type kwargs: Any
         """
         assert os.path.exists(index_path), f"Index path {index_path} does not exist."
 
@@ -250,7 +251,7 @@ class RetrieverIndexBase(ABC):
         cfg.index_path = index_path
 
         # load the index
-        index = index_cls(cfg)
+        index = index_cls(cfg, **kwargs)
         return index
 
     @abstractmethod
@@ -280,29 +281,25 @@ class RetrieverIndexBase(ABC):
 class DenseIndexBaseConfig(RetrieverIndexBaseConfig):
     """The configuration for the `DenseIndexBase`.
 
-    :param query_encoder_config: Configuration for the query encoder. Default: None.
-    :type query_encoder_config: EncoderConfig
-    :param passage_encoder_config: Configuration for the passage encoder. Default: None.
-    :type passage_encoder_config: EncoderConfig
     :param distance_function: The distance function to use. Defaults to "IP".
         available choices are "IP", "L2", and "COS.
     :type distance_function: str
     """
 
-    query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)
-    passage_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)
     distance_function: Annotated[str, Choices("IP", "L2", "COS")] = "IP"
 
 
 class DenseIndexBase(RetrieverIndexBase):
     """The base class for all dense indexes."""
 
-    def __init__(self, cfg: DenseIndexBaseConfig):
-        # load the encoder
-        self.query_encoder = ENCODERS.load(cfg.query_encoder_config)
-        self.passage_encoder = ENCODERS.load(cfg.passage_encoder_config)
-
-        # set basic args
+    def __init__(
+        self,
+        cfg: DenseIndexBaseConfig,
+        query_encoder: EncoderProtocol,
+        passage_encoder: EncoderProtocol | None = None,
+    ):
+        self.query_encoder = query_encoder
+        self.passage_encoder = passage_encoder or query_encoder
         self.distance_function = cfg.distance_function
         return
 
@@ -481,55 +478,6 @@ class DenseIndexBase(RetrieverIndexBase):
     @abstractmethod
     def embedding_size(self) -> int:
         """Return the embedding size of the index."""
-        return
-
-    @staticmethod
-    def check_configuration(cfg: DenseIndexBaseConfig, token: Optional[str] = None) -> None:
-        """A helper function that checks the configuration of the index.
-        This function is useful before saving the index to the HuggingFace hub.
-        It checks if the encoder is available in the HuggingFace hub.
-        If the encoder is not available, it will raise a warning.
-
-        :param cfg: The configuration of the index.
-        :type cfg: DenseIndexBaseConfig
-        :param token: The token to access the HuggingFace hub. Defaults to None.
-        :type token: Optional[str]
-        """
-        client = HfApi(token=token)
-        # check the query encoder
-        if cfg.query_encoder_config.encoder_type is None:
-            logger.warning(
-                "Query encoder is not provided. "
-                "Please make sure loading the appropriate encoder when loading the retriever."
-            )
-        elif cfg.query_encoder_config.encoder_type == "hf":
-            if not client.repo_exists(cfg.query_encoder_config.hf_config.model_path):
-                logger.warning(
-                    "Query encoder model is not available in the HuggingFace model hub."
-                    "Please make sure loading the appropriate encoder when loading the retriever."
-                )
-        else:
-            logger.warning(
-                "Query encoder is not a model hosted on the HuggingFace model hub."
-                "Please make sure loading the appropriate encoder when loading the retriever."
-            )
-        # check the passage encoder
-        if cfg.passage_encoder_config.encoder_type is None:
-            logger.warning(
-                "Passage encoder is not provided. "
-                "Please make sure loading the appropriate encoder when loading the retriever."
-            )
-        elif cfg.passage_encoder_config.encoder_type == "hf":
-            if not client.repo_exists(cfg.passage_encoder_config.hf_config.model_path):
-                logger.warning(
-                    "Passage encoder model is not available in the HuggingFace model hub."
-                    "Please make sure loading the appropriate encoder when loading the retriever."
-                )
-        else:
-            logger.warning(
-                "Passage encoder is not a model hosted on the HuggingFace model hub."
-                "Please make sure loading the appropriate encoder when loading the retriever."
-            )
         return
 
     @property

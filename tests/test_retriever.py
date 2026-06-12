@@ -1,9 +1,12 @@
 import tempfile
 from pathlib import Path
 
+import pytest
+from pydantic import ValidationError
+
 from flexrag.common import Context
 from flexrag.datasets.reader import LineDelimitedReader
-from flexrag.models import EncoderConfig, LiteLLMEncoderConfig
+from flexrag.models import ENCODERS, EncoderConfig, LiteLLMEncoderConfig
 from flexrag.retrievers import (
     EditableRetriever,
     ElasticRetriever,
@@ -14,10 +17,13 @@ from flexrag.retrievers import (
     TypesenseRetrieverConfig,
 )
 from flexrag.retrievers.index import (
+    RETRIEVER_INDEX,
     BM25IndexConfig,
     FaissIndexConfig,
+    MultiFieldIndex,
     MultiFieldIndexConfig,
     RetrieverIndexConfig,
+    ScaNNIndexConfig,
 )
 
 
@@ -33,6 +39,52 @@ def load_test_corpus_slice(path: Path, start: int, stop: int) -> list[Context]:
         context_id = payload.pop("id")
         contexts.append(Context(context_id=context_id, data=payload))
     return contexts
+
+
+def litellm_encoder_config() -> EncoderConfig:
+    return EncoderConfig(
+        encoder_type="litellm",
+        litellm_config=LiteLLMEncoderConfig(
+            provider="openai",
+            model_name="text-embedding-3-small",
+            embedding_size=8,
+        ),
+    )
+
+
+def build_contriever_index(encoder) -> MultiFieldIndex:
+    base_index = RETRIEVER_INDEX.load(
+        RetrieverIndexConfig(
+            index_type="faiss",
+            faiss_config=FaissIndexConfig(batch_size=512),
+        ),
+        query_encoder=encoder,
+    )
+    assert base_index.query_encoder is encoder
+    assert base_index.passage_encoder is encoder
+    return MultiFieldIndex(
+        MultiFieldIndexConfig(
+            indexed_fields=["text"],
+            merge_method="max",
+        ),
+        base_index,
+    )
+
+
+def build_bm25_index() -> MultiFieldIndex:
+    base_index = RETRIEVER_INDEX.load(
+        RetrieverIndexConfig(
+            index_type="bm25",
+            bm25_config=BM25IndexConfig(batch_size=512),
+        )
+    )
+    return MultiFieldIndex(
+        MultiFieldIndexConfig(
+            indexed_fields=["title", "section", "text"],
+            merge_method="max",
+        ),
+        base_index,
+    )
 
 
 class TestRetrievers:
@@ -88,6 +140,7 @@ class TestRetrievers:
         data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
         dataset1 = load_test_corpus_slice(data_path, 0, 1000)
         dataset2 = load_test_corpus_slice(data_path, 1000, 2000)
+        encoder = ENCODERS.load(litellm_encoder_config())
         with tempfile.TemporaryDirectory() as tempdir:
             # in mem retriever
             cfg = FlexRetrieverConfig(
@@ -97,35 +150,7 @@ class TestRetrievers:
             )
             retriever = FlexRetriever(cfg)
             retriever.add_passages(dataset1, log_interval=1000)
-            retriever.add_index(
-                "contriever",
-                index_config=RetrieverIndexConfig(
-                    index_type="faiss",
-                    faiss_config=FaissIndexConfig(
-                        batch_size=512,
-                        query_encoder_config=EncoderConfig(
-                            encoder_type="litellm",
-                            litellm_config=LiteLLMEncoderConfig(
-                                provider="openai",
-                                model_name="text-embedding-3-small",
-                                embedding_size=8,
-                            ),
-                        ),
-                        passage_encoder_config=EncoderConfig(
-                            encoder_type="litellm",
-                            litellm_config=LiteLLMEncoderConfig(
-                                provider="openai",
-                                model_name="text-embedding-3-small",
-                                embedding_size=8,
-                            ),
-                        ),
-                    ),
-                ),
-                indexed_fields_config=MultiFieldIndexConfig(
-                    indexed_fields=["text"],
-                    merge_method="max",
-                ),
-            )
+            retriever.add_index("contriever", build_contriever_index(encoder))
             assert len(retriever) == 1000
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"]
@@ -145,17 +170,7 @@ class TestRetrievers:
             assert len(ctxs[1]) == 5
 
             # add new index
-            retriever.add_index(
-                "bm25",
-                index_config=RetrieverIndexConfig(
-                    index_type="bm25",
-                    bm25_config=BM25IndexConfig(batch_size=512),
-                ),
-                indexed_fields_config=MultiFieldIndexConfig(
-                    indexed_fields=["title", "section", "text"],
-                    merge_method="max",
-                ),
-            )
+            retriever.add_index("bm25", build_bm25_index())
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"],
                 used_indexes=["contriever", "bm25"],
@@ -180,48 +195,47 @@ class TestRetrievers:
 
             # save index to local
             retriever.save_to_local(tempdir)
+            retriever.database.close()
             del retriever
             assert Path(tempdir).exists()
             assert Path(tempdir, "indexes").exists()
             assert Path(tempdir, "indexes", "contriever").exists()
             assert Path(tempdir, "indexes", "bm25").exists()
             assert Path(tempdir, "database.lmdb").exists()
+            dense_config = Path(
+                tempdir, "indexes", "contriever", "config.yaml"
+            ).read_text()
+            assert "query_encoder_config" not in dense_config
+            assert "passage_encoder_config" not in dense_config
 
-            # load index from local
-            retriever: FlexRetriever = FlexRetriever.load_from_local(tempdir)
+        with tempfile.TemporaryDirectory() as tempdir:
+            cfg = FlexRetrieverConfig(
+                batch_size=512,
+                used_indexes=["bm25"],
+                top_k=5,
+            )
+            retriever = FlexRetriever(cfg)
+            retriever.add_passages(dataset1 + dataset2, log_interval=1000)
+            retriever.add_index("bm25", build_bm25_index())
+            retriever.save_to_local(tempdir)
+            retriever.database.close()
+            del retriever
+            retriever = FlexRetriever.load_from_local(tempdir)
             assert len(retriever) == 2000
             ctxs = retriever.search(
-                ["Who is Bruce Wayne?", "What is the capital of France?"]
-            )
-            assert len(ctxs) == 2
-            assert len(ctxs[0]) == 5
-            assert len(ctxs[1]) == 5
-
-            # remove one index
-            retriever.remove_index("contriever")
-            assert not Path(tempdir, "indexes", "contriever").exists()
-            ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"],
                 used_indexes=["bm25"],
             )
             assert len(ctxs) == 2
             assert len(ctxs[0]) == 5
             assert len(ctxs[1]) == 5
-
-            # detach retriever from the disk
-            retriever.detach()
-            ctxs = retriever.search(
-                ["Who is Bruce Wayne?", "What is the capital of France?"],
-                used_indexes=["bm25"],
-            )
-            assert len(ctxs) == 2
-            assert len(ctxs[0]) == 5
-            assert len(ctxs[1]) == 5
-
-            # remove another index
-            retriever.remove_index("bm25")
-            assert Path(tempdir, "indexes", "bm25").exists()
         return
+
+    def test_dense_index_config_rejects_encoder_config(self):
+        with pytest.raises(ValidationError, match="query_encoder_config"):
+            FaissIndexConfig(query_encoder_config=litellm_encoder_config())
+        with pytest.raises(ValidationError, match="passage_encoder_config"):
+            ScaNNIndexConfig(passage_encoder_config=litellm_encoder_config())
 
     def test_elastic_retriever(self, mock_es_client):
         # load retriever

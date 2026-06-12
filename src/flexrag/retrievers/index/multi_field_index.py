@@ -399,9 +399,9 @@ class MultiFieldIndex:
         return
 
     @staticmethod
-    def load_from_local(index_path: str) -> "MultiFieldIndex":
+    def load_from_local(index_path: str, **kwargs) -> "MultiFieldIndex":
         # load the index
-        index = RetrieverIndexBase.load_from_local(index_path)
+        index = RetrieverIndexBase.load_from_local(index_path, **kwargs)
 
         # load the configuration
         config_path = os.path.join(index_path, "multi_field_index_config.yaml")

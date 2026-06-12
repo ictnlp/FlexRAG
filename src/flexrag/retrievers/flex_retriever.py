@@ -20,12 +20,7 @@ from flexrag.common.database import (
 )
 from flexrag.common.dataclasses import Context, RetrievedContext
 
-from .index import (
-    RETRIEVER_INDEX,
-    MultiFieldIndex,
-    MultiFieldIndexConfig,
-    RetrieverIndexConfig,
-)
+from .index import MultiFieldIndex
 from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retreviers.flex")
@@ -328,17 +323,14 @@ class FlexRetriever(LocalRetriever):
     def add_index(
         self,
         index_name: str,
-        index_config: RetrieverIndexConfig,  # type: ignore
-        indexed_fields_config: MultiFieldIndexConfig,
+        index: MultiFieldIndex,
     ) -> None:
         """Add an index to the retriever.
 
         :param index_name: Name of the index.
         :type index_name: str
-        :param index_config: Configuration of the index.
-        :type index_config: RetrieverIndexConfig
-        :param indexed_fields_config: Configuration of the indexed fields.
-        :type indexed_fields_config: MultiFieldIndexConfig
+        :param index: Prepared multi-field index to add.
+        :type index: MultiFieldIndex
         :raises ValueError: If the index name already exists.
         :return: None
         :rtype: None
@@ -355,9 +347,6 @@ class FlexRetriever(LocalRetriever):
         else:
             index_path = None
 
-        # prepare the index
-        index = RETRIEVER_INDEX.load(index_config)
-        index = MultiFieldIndex(indexed_fields_config, index)
         if len(self.database) > 0:
             index.build_index(self.database.ids, self.database.values(), index_path)
 
