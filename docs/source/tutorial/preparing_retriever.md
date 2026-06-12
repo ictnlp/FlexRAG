@@ -123,24 +123,28 @@ python -m flexrag.entrypoints.prepare_retriever \
 ```
 
 ### Adding Indexes to the Retriever
-Before using the retriever, you need to build the indexes for the knowledge base. For FlexRetriever, you can build the indexes using the `add_index` method. By specifying the `index_name`, `index_config`, and the `indexed_fields_config` parameter, you can create an index for the knowledge base.
+Before using the retriever, you need to build the indexes for the knowledge base. For FlexRetriever, you can build the indexes using the `add_index` method. Create a flat retriever index first, then bind it to the context fields with `IndexFieldsConfig`.
 
 
 ```python
-from flexrag.retriever import FlexRetriever
-from flexrag.retriever.index import MultiFieldIndexConfig, RetrieverIndexConfig
+from flexrag.retriever import FlexRetriever, IndexFieldsConfig
+from flexrag.retriever.index import BM25IndexConfig, RETRIEVER_INDEX, RetrieverIndexConfig
 
 RETRIEVER_PATH = "<path_to_retriever>"  # path to the retriever
 
 
 def add_bm25_index():
     retriever = FlexRetriever.load_from_local(RETRIEVER_PATH)
+    index = RETRIEVER_INDEX.load(
+        RetrieverIndexConfig(
+            index_type="bm25",
+            bm25_config=BM25IndexConfig(),
+        )
+    )
     retriever.add_index(
         index_name="bm25",
-        index_config=RetrieverIndexConfig(
-            index_type="bm25",
-        ),
-        indexed_fields_config=MultiFieldIndexConfig(
+        index=index,
+        fields_config=IndexFieldsConfig(
             indexed_fields=["title", "text"],
             # concatenate the `title` and `text` fields for indexing
             merge_method="concat",
@@ -157,12 +161,12 @@ In this example, we create a BM25 index for the `title` and `text` fields of the
 You can also build a dense index by specifying `index_type=faiss`. A dense index finds the most relevant documents by computing the semantic similarity between a query and the documents being searched. The query and documents are encoded by a query encoder and a passage encoder, respectively, to obtain their corresponding dense vectors. You can run the following code to build a dense index using Wikipedia as the knowledge base:
 
 ```python
-from flexrag.models import EncoderConfig, HFEncoderConfig
-from flexrag.retriever import FlexRetriever
+from flexrag.models import ENCODERS, EncoderConfig, HFEncoderConfig
+from flexrag.retriever import FlexRetriever, IndexFieldsConfig
 from flexrag.retriever.index import (
-    MultiFieldIndexConfig,
-    RetrieverIndexConfig,
     FaissIndexConfig,
+    RETRIEVER_INDEX,
+    RetrieverIndexConfig,
 )
 
 RETRIEVER_PATH = "<path_to_retriever>"  # path to the retriever
@@ -170,36 +174,36 @@ RETRIEVER_PATH = "<path_to_retriever>"  # path to the retriever
 
 def add_faiss_index():
     retriever = FlexRetriever.load_from_local(RETRIEVER_PATH)
-    retriever.add_index(
-        index_name="contriever",
-        index_config=RetrieverIndexConfig(
+    encoder = ENCODERS.load(
+        EncoderConfig(
+            encoder_type="hf",  # specify using Hugging Face model
+            hf_config=HFEncoderConfig(
+                # specify the Contriever model
+                # you can also choose other models
+                model_path="facebook/contriever-msmarco",
+                # use GPUs for encoding
+                # if you do not want to use GPU, set device_id to []
+                device_id=[0, 1, 2, 3],
+            ),
+        )
+    )
+    index = RETRIEVER_INDEX.load(
+        RetrieverIndexConfig(
             index_type="faiss",  # specify the index type
             faiss_config=FaissIndexConfig(
                 # leave factory_str unset to use the built-in auto mode
                 # you can also provide a specific Faiss factory string such as
                 # "Flat" or "IVF1024,Flat"
                 index_train_num=-1,  # use all available data for training
-                query_encoder_config=EncoderConfig(
-                    encoder_type="hf",  # specify using Hugging Face model
-                    hf_config=HFEncoderConfig(
-                        # specify the Contriever model
-                        # you can also choose other models
-                        model_path="facebook/contriever-msmarco",  
-                        # use the first GPU for query encoding
-                        # if you do not want to use GPU, set device_id to []
-                        device_id=[4],  
-                    ),
-                ),
-                passage_encoder_config=EncoderConfig(
-                    encoder_type="hf",
-                    hf_config=HFEncoderConfig(
-                        model_path="facebook/contriever-msmarco",
-                        device_id=[0, 1, 2, 3],  # use four GPUs for data parallelism
-                    ),
-                ),
             ),
         ),
-        indexed_fields_config=MultiFieldIndexConfig(
+        query_encoder=encoder,
+        passage_encoder=encoder,
+    )
+    retriever.add_index(
+        index_name="contriever",
+        index=index,
+        fields_config=IndexFieldsConfig(
             indexed_fields=["title", "text"],
             merge_method="concat",  # concatenate the `title` and `text` fields for indexing
         ),
@@ -210,7 +214,7 @@ def add_faiss_index():
 add_faiss_index()
 ```
 
-In the above code, we create a Faiss index for the `title` and `text` fields of the knowledge base. The `index_type` parameter specifies the type of index to be built, which is set to `faiss`. The `faiss_config` parameter specifies the configuration for the Faiss index, including the query encoder and passage encoder configurations. In this case, we use the `facebook/contriever-msmarco` model as the encoder.
+In the above code, we create a Faiss index for the `title` and `text` fields of the knowledge base. The `index_type` parameter specifies the type of index to be built, which is set to `faiss`. The encoder is constructed separately and injected into the Faiss index. In this case, we use the `facebook/contriever-msmarco` model as the encoder.
 
 ```{note}
 In the above script, we specify the `device_id` as `[0,1,2,3]` to use 4 GPUs for encoding the text field. This configuration will speed up the encoding process. If you do not have multiple GPUs, you can simply set `device_id=[0]` to use a single GPU or `device_id=[]` to use CPU.
@@ -224,6 +228,7 @@ RETRIEVER_PATH="<path_to_retriever>"  # path to the retriever
 python -m flexrag.entrypoints.add_index \
     retriever_path=$RETRIEVER_PATH \
     index_name=bm25 \
+    index_type=bm25 \
     rebuild=False \
     indexed_fields=["title","text"] \
     merge_method="concat"

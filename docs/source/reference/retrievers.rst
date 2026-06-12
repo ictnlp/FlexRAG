@@ -80,6 +80,10 @@ Editable Retriever
     :members:
     :inherited-members:
 
+.. autoclass:: flexrag.retriever.IndexFieldsConfig
+    :members:
+    :inherited-members:
+
 .. autoclass:: flexrag.retriever.FlexRetriever
     :members:
     :show-inheritance:
@@ -150,15 +154,6 @@ For example, to load the ``BM25Index``, you can use the following configuration:
     :inherited-members:
 
 .. autoclass:: flexrag.retriever.index.BM25Index
-    :members:
-    :show-inheritance:
-
-.. MultiFieldIndex
-.. autoclass:: flexrag.retriever.index.MultiFieldIndexConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.retriever.index.MultiFieldIndex
     :members:
     :show-inheritance:
 

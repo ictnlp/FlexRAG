@@ -1,5 +1,5 @@
 from .elastic_retriever import ElasticRetriever, ElasticRetrieverConfig
-from .flex_retriever import FlexRetriever, FlexRetrieverConfig
+from .flex_retriever import FlexRetriever, FlexRetrieverConfig, IndexFieldsConfig
 from .hyde_retriever import HydeRetriever, HydeRetrieverConfig
 from .index import (
     RETRIEVER_INDEX,
@@ -7,8 +7,6 @@ from .index import (
     BM25IndexConfig,
     FaissIndex,
     FaissIndexConfig,
-    MultiFieldIndex,
-    MultiFieldIndexConfig,
     RetrieverIndexConfig,
     ScaNNIndex,
     ScaNNIndexConfig,
@@ -38,6 +36,7 @@ __all__ = [
     "ElasticRetrieverConfig",
     "FlexRetriever",
     "FlexRetrieverConfig",
+    "IndexFieldsConfig",
     "HydeRetriever",
     "HydeRetrieverConfig",
     "RETRIEVER_INDEX",
@@ -45,8 +44,6 @@ __all__ = [
     "BM25IndexConfig",
     "FaissIndex",
     "FaissIndexConfig",
-    "MultiFieldIndex",
-    "MultiFieldIndexConfig",
     "RetrieverIndexConfig",
     "ScaNNIndex",
     "ScaNNIndexConfig",

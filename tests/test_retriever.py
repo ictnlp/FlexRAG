@@ -13,6 +13,7 @@ from flexrag.retrievers import (
     ElasticRetrieverConfig,
     FlexRetriever,
     FlexRetrieverConfig,
+    IndexFieldsConfig,
     TypesenseRetriever,
     TypesenseRetrieverConfig,
 )
@@ -20,8 +21,6 @@ from flexrag.retrievers.index import (
     RETRIEVER_INDEX,
     BM25IndexConfig,
     FaissIndexConfig,
-    MultiFieldIndex,
-    MultiFieldIndexConfig,
     RetrieverIndexConfig,
     ScaNNIndexConfig,
 )
@@ -52,7 +51,21 @@ def litellm_encoder_config() -> EncoderConfig:
     )
 
 
-def build_contriever_index(encoder) -> MultiFieldIndex:
+def contriever_fields_config() -> IndexFieldsConfig:
+    return IndexFieldsConfig(
+        indexed_fields=["text"],
+        merge_method="max",
+    )
+
+
+def bm25_fields_config() -> IndexFieldsConfig:
+    return IndexFieldsConfig(
+        indexed_fields=["title", "section", "text"],
+        merge_method="max",
+    )
+
+
+def build_contriever_index(encoder):
     base_index = RETRIEVER_INDEX.load(
         RetrieverIndexConfig(
             index_type="faiss",
@@ -62,28 +75,15 @@ def build_contriever_index(encoder) -> MultiFieldIndex:
     )
     assert base_index.query_encoder is encoder
     assert base_index.passage_encoder is encoder
-    return MultiFieldIndex(
-        MultiFieldIndexConfig(
-            indexed_fields=["text"],
-            merge_method="max",
-        ),
-        base_index,
-    )
+    return base_index
 
 
-def build_bm25_index() -> MultiFieldIndex:
-    base_index = RETRIEVER_INDEX.load(
+def build_bm25_index():
+    return RETRIEVER_INDEX.load(
         RetrieverIndexConfig(
             index_type="bm25",
             bm25_config=BM25IndexConfig(batch_size=512),
         )
-    )
-    return MultiFieldIndex(
-        MultiFieldIndexConfig(
-            indexed_fields=["title", "section", "text"],
-            merge_method="max",
-        ),
-        base_index,
     )
 
 
@@ -150,7 +150,11 @@ class TestRetrievers:
             )
             retriever = FlexRetriever(cfg)
             retriever.add_passages(dataset1, log_interval=1000)
-            retriever.add_index("contriever", build_contriever_index(encoder))
+            retriever.add_index(
+                "contriever",
+                build_contriever_index(encoder),
+                fields_config=contriever_fields_config(),
+            )
             assert len(retriever) == 1000
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"]
@@ -170,7 +174,11 @@ class TestRetrievers:
             assert len(ctxs[1]) == 5
 
             # add new index
-            retriever.add_index("bm25", build_bm25_index())
+            retriever.add_index(
+                "bm25",
+                build_bm25_index(),
+                fields_config=bm25_fields_config(),
+            )
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"],
                 used_indexes=["contriever", "bm25"],
@@ -202,6 +210,12 @@ class TestRetrievers:
             assert Path(tempdir, "indexes", "contriever").exists()
             assert Path(tempdir, "indexes", "bm25").exists()
             assert Path(tempdir, "database.lmdb").exists()
+            assert Path(
+                tempdir, "indexes", "contriever", "index_fields_config.yaml"
+            ).exists()
+            assert not Path(
+                tempdir, "indexes", "contriever", "multi_field_index_config.yaml"
+            ).exists()
             dense_config = Path(
                 tempdir, "indexes", "contriever", "config.yaml"
             ).read_text()
@@ -216,10 +230,18 @@ class TestRetrievers:
             )
             retriever = FlexRetriever(cfg)
             retriever.add_passages(dataset1 + dataset2, log_interval=1000)
-            retriever.add_index("bm25", build_bm25_index())
+            retriever.add_index(
+                "bm25",
+                build_bm25_index(),
+                fields_config=bm25_fields_config(),
+            )
             retriever.save_to_local(tempdir)
             retriever.database.close()
             del retriever
+            assert Path(tempdir, "indexes", "bm25", "index_fields_config.yaml").exists()
+            assert not Path(
+                tempdir, "indexes", "bm25", "multi_field_index_config.yaml"
+            ).exists()
             retriever = FlexRetriever.load_from_local(tempdir)
             assert len(retriever) == 2000
             ctxs = retriever.search(

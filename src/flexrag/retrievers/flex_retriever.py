@@ -1,7 +1,10 @@
 import os
+import pickle
 import shutil
 from collections import defaultdict
 from typing import Annotated, Any, Generator, Iterable, Optional
+
+import numpy as np
 
 from flexrag.common import (
     __VERSION__,
@@ -20,7 +23,7 @@ from flexrag.common.database import (
 )
 from flexrag.common.dataclasses import Context, RetrievedContext
 
-from .index import MultiFieldIndex
+from .index import RetrieverIndexBase
 from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retreviers.flex")
@@ -93,6 +96,312 @@ def _build_retriever_card(
 
 
 @configure
+class IndexFieldsConfig:
+    """Configuration for binding a retriever index to context fields.
+
+    :param indexed_fields: Fields to index. If ``None``, all fields are indexed.
+        Defaults to None.
+    :type indexed_fields: Optional[list[str]]
+    :param merge_method: Method to merge scores from multiple indexed fields of
+        the same context. Available choices are "max", "sum", "mean", and
+        "concat". Defaults to "max".
+    :type merge_method: str
+    """
+
+    indexed_fields: Optional[list[str]] = None
+    merge_method: Annotated[str, Choices("max", "sum", "mean", "concat")] = "max"
+
+
+class _IndexBinding:
+    """Internal binding between a flat index and FlexRetriever context fields."""
+
+    def __init__(
+        self,
+        index: RetrieverIndexBase,
+        fields_config: IndexFieldsConfig | None = None,
+    ):
+        self.index = index
+        self.fields_config = extract_config(
+            fields_config or IndexFieldsConfig(),
+            IndexFieldsConfig,
+        )
+
+        if self.index.cfg.index_path is not None:
+            mapping_path = os.path.join(
+                self.index.cfg.index_path, "context_mapping.pkl"
+            )
+            if os.path.exists(mapping_path):
+                with open(mapping_path, "rb") as f:
+                    mapping = pickle.load(f)
+                self.context_id_to_index = mapping["context_id_to_index"]
+                self.index_to_context_id = mapping["index_to_context_id"]
+                self.max_field_num = mapping["max_field_num"]
+            else:
+                assert len(self.index) == 0, (
+                    "The index should be empty before building the field binding."
+                )
+                self._reset_mapping()
+        else:
+            assert len(self.index) == 0, "The index should be empty before building."
+            self._reset_mapping()
+
+        assert len(self.index_to_context_id) == len(self.index), (
+            "The length of the index and the context-id mapping should be the same."
+        )
+        return
+
+    def _reset_mapping(self) -> None:
+        self.index_to_context_id: dict[int, str] = {}
+        self.context_id_to_index: dict[str, list[int]] = defaultdict(list)
+        self.max_field_num = 1
+        return
+
+    def _iter_index_data(
+        self,
+        context_ids: Iterable[str],
+        data: Iterable[dict[str, Any]],
+    ) -> Generator[tuple[str, Any], None, None]:
+        for context_id, item in zip(context_ids, data):
+            if self.fields_config.indexed_fields is None:
+                indexed_fields = list(item.keys())
+            else:
+                indexed_fields = [
+                    field for field in self.fields_config.indexed_fields if field in item
+                ]
+
+            if self.fields_config.merge_method == "concat":
+                concat_text = ""
+                for field in indexed_fields:
+                    assert isinstance(item[field], str)
+                    concat_text += f"{field}: {item[field]} "
+                yield context_id, concat_text
+            else:
+                self.max_field_num = max(self.max_field_num, len(indexed_fields))
+                for field in indexed_fields:
+                    yield context_id, item[field]
+        return
+
+    def build_index(
+        self,
+        context_ids: Iterable[str],
+        data: Iterable[dict[str, Any]],
+        index_path: Optional[str] = None,
+    ) -> None:
+        self._reset_mapping()
+        row_context_ids: list[str] = []
+
+        def get_data() -> Generator[Any, None, None]:
+            for context_id, item in self._iter_index_data(context_ids, data):
+                row_context_ids.append(context_id)
+                yield item
+            return
+
+        self.index.build_index(get_data())
+        for idx, context_id in enumerate(row_context_ids):
+            self.context_id_to_index[context_id].append(idx)
+            self.index_to_context_id[idx] = context_id
+
+        index_path = index_path or self.index.cfg.index_path
+        if index_path is not None:
+            self.save_to_local(index_path=index_path)
+        return
+
+    def search_batch(
+        self,
+        query: list[Any],
+        top_k: int,
+        batch_size: int | None = None,
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
+        **search_kwargs,
+    ) -> tuple[list[list[str]], np.ndarray]:
+        batch_size = batch_size or self.index.cfg.batch_size
+
+        def get_batch():
+            batch = []
+            for item in query:
+                batch.append(item)
+                if len(batch) == batch_size:
+                    yield batch
+                    batch = []
+            if batch:
+                yield batch
+
+        scores = []
+        indices = []
+        total = len(query) if hasattr(query, "__len__") else None
+        with SimpleProgressLogger(
+            logger, total, interval=log_interval, display=display
+        ) as p_logger:
+            for q in get_batch():
+                r = self.search(q, top_k, **search_kwargs)
+                indices.extend(r[0])
+                scores.append(r[1])
+                p_logger.update(step=len(q), desc="Searching")
+        return indices, np.concatenate(scores, axis=0)
+
+    def search(
+        self,
+        query: list[Any],
+        top_k: int,
+        **search_kwargs,
+    ) -> tuple[list[list[str]], np.ndarray]:
+        indices_batch, scores_batch = self.index.search(
+            query, top_k * self.max_field_num, **search_kwargs
+        )
+
+        new_indices = []
+        new_scores = []
+        for indices, scores in zip(indices_batch, scores_batch):
+            retrieved = defaultdict(list)
+            for idx, score in zip(indices, scores):
+                context_id = self.index_to_context_id[idx]
+                retrieved[context_id].append(score)
+
+            for context_id in retrieved:
+                match self.fields_config.merge_method:
+                    case "max":
+                        retrieved[context_id] = max(retrieved[context_id])
+                    case "sum":
+                        retrieved[context_id] = sum(retrieved[context_id])
+                    case "concat":
+                        retrieved[context_id] = retrieved[context_id][0]
+                    case "mean":
+                        retrieved[context_id] = sum(retrieved[context_id]) / len(
+                            retrieved[context_id]
+                        )
+                    case _:
+                        raise ValueError(
+                            f"Unknown merge method: {self.fields_config.merge_method}"
+                        )
+
+            sorted_indices = sorted(retrieved.items(), key=lambda x: x[1], reverse=True)
+            new_indices.append([x[0] for x in sorted_indices[:top_k]])
+            new_scores.append([x[1] for x in sorted_indices[:top_k]])
+
+        return new_indices, np.array(new_scores)
+
+    def insert_batch(
+        self,
+        context_ids: Iterable[str],
+        data: Iterable[dict[str, Any]],
+        batch_size: Optional[int] = None,
+        serialize: bool = True,
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
+    ) -> None:
+        assert self.index.is_addable, "Current index is not addable."
+        batch_size = batch_size or self.index.cfg.batch_size
+        row_context_ids = []
+        offset = len(self.index)
+
+        def get_data_batch() -> Generator[list[Any], None, None]:
+            batch = []
+            for context_id, item in self._iter_index_data(context_ids, data):
+                batch.append(item)
+                row_context_ids.append(context_id)
+                if len(batch) == batch_size:
+                    yield batch
+                    batch = []
+            if batch:
+                yield batch
+            return
+
+        with SimpleProgressLogger(
+            logger, interval=log_interval, display=display
+        ) as p_logger:
+            for batch in get_data_batch():
+                self.index.insert(batch)
+                p_logger.update(step=len(batch), desc="Adding data")
+
+        for idx, context_id in enumerate(row_context_ids):
+            row_index = offset + idx
+            self.context_id_to_index[context_id].append(row_index)
+            self.index_to_context_id[row_index] = context_id
+
+        if (self.index.cfg.index_path is not None) and serialize:
+            self.save_to_local()
+        return
+
+    def insert(
+        self,
+        context_ids: list[str],
+        data: list[dict[str, Any]],
+        serialize: bool = True,
+    ) -> None:
+        assert len(context_ids) == len(data), (
+            "The length of context_ids and data should be the same."
+        )
+        assert self.index.is_addable, "Current index is not addable."
+        offset = len(self.index)
+        rows = list(self._iter_index_data(context_ids, data))
+        if len(rows) == 0:
+            return
+
+        row_context_ids = [row[0] for row in rows]
+        self.index.insert([row[1] for row in rows])
+        for idx, context_id in enumerate(row_context_ids):
+            row_index = offset + idx
+            self.context_id_to_index[context_id].append(row_index)
+            self.index_to_context_id[row_index] = context_id
+
+        if (self.index.cfg.index_path is not None) and serialize:
+            self.save_to_local()
+        return
+
+    def clear(self) -> None:
+        self._reset_mapping()
+        self.index.clear()
+        return
+
+    def save_to_local(self, index_path: Optional[str] = None) -> None:
+        index_path = index_path or self.index.cfg.index_path
+        if index_path is None:
+            raise ValueError("index_path is not set.")
+
+        self.index.save_to_local(index_path)
+        config_path = os.path.join(index_path, "index_fields_config.yaml")
+        self.fields_config.dump(config_path)
+
+        context_mapping_path = os.path.join(index_path, "context_mapping.pkl")
+        with open(context_mapping_path, "wb") as f:
+            pickle.dump(
+                {
+                    "context_id_to_index": self.context_id_to_index,
+                    "index_to_context_id": self.index_to_context_id,
+                    "max_field_num": self.max_field_num,
+                },
+                f,
+            )
+        return
+
+    @staticmethod
+    def load_from_local(index_path: str, **kwargs) -> "_IndexBinding":
+        index = RetrieverIndexBase.load_from_local(index_path, **kwargs)
+        config_path = os.path.join(index_path, "index_fields_config.yaml")
+        assert os.path.exists(config_path), (
+            f"Configuration file not found in {index_path}."
+        )
+        fields_config = IndexFieldsConfig.load(config_path)
+        return _IndexBinding(index=index, fields_config=fields_config)
+
+    @property
+    def is_addable(self) -> bool:
+        return self.index.is_addable
+
+    def __len__(self) -> int:
+        return len(self.context_id_to_index)
+
+    @property
+    def infimum(self) -> float:
+        return self.index.infimum
+
+    @property
+    def supremum(self) -> float:
+        return self.index.supremum
+
+
+@configure
 class FlexRetrieverConfig(LocalRetrieverConfig):
     """Configuration class for FlexRetriever.
 
@@ -132,7 +441,7 @@ class FlexRetriever(LocalRetriever):
         self.cfg = extract_config(cfg, FlexRetrieverConfig)
         # load the retriever if the retriever_path is set
         self.database = self._load_database()
-        self.index_table = self._load_index()
+        self.index_table: dict[str, _IndexBinding] = self._load_index()
 
         # consistency check
         self._check_consistency()
@@ -323,14 +632,18 @@ class FlexRetriever(LocalRetriever):
     def add_index(
         self,
         index_name: str,
-        index: MultiFieldIndex,
+        index: RetrieverIndexBase,
+        fields_config: IndexFieldsConfig | None = None,
     ) -> None:
         """Add an index to the retriever.
 
         :param index_name: Name of the index.
         :type index_name: str
-        :param index: Prepared multi-field index to add.
-        :type index: MultiFieldIndex
+        :param index: Prepared flat index to bind to retriever fields.
+        :type index: RetrieverIndexBase
+        :param fields_config: Field binding configuration. If None, all fields
+            are indexed and field hits are merged with ``max``.
+        :type fields_config: Optional[IndexFieldsConfig]
         :raises ValueError: If the index name already exists.
         :return: None
         :rtype: None
@@ -347,11 +660,12 @@ class FlexRetriever(LocalRetriever):
         else:
             index_path = None
 
+        binding = _IndexBinding(index=index, fields_config=fields_config)
         if len(self.database) > 0:
-            index.build_index(self.database.ids, self.database.values(), index_path)
+            binding.build_index(self.database.ids, self.database.values(), index_path)
 
         # add index to the index table
-        self.index_table[index_name] = index
+        self.index_table[index_name] = binding
         self._check_consistency()
         logger.info(f"Finished adding index: {index_name}")
         return
@@ -373,7 +687,7 @@ class FlexRetriever(LocalRetriever):
         index.clear()
 
         # update the configuration
-        if index_name in self.cfg.used_indexes:
+        if self.cfg.used_indexes is not None and index_name in self.cfg.used_indexes:
             self.cfg.used_indexes.remove(index_name)
         return
 
@@ -490,7 +804,7 @@ class FlexRetriever(LocalRetriever):
             database = NaiveRetrieverDatabase()
         return database
 
-    def _load_index(self) -> dict[str, MultiFieldIndex]:
+    def _load_index(self) -> dict[str, _IndexBinding]:
         # load indexes
         indexes = {}
         if self.cfg.retriever_path is None:
@@ -500,7 +814,7 @@ class FlexRetriever(LocalRetriever):
         indexes_names = os.listdir(os.path.join(self.cfg.retriever_path, "indexes"))
         for index_name in indexes_names:
             index_path = os.path.join(self.cfg.retriever_path, "indexes", index_name)
-            index = MultiFieldIndex.load_from_local(index_path)
+            index = _IndexBinding.load_from_local(index_path)
             indexes[index_name] = index
         return indexes
 

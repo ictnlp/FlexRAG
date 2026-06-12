@@ -6,18 +6,16 @@ from hydra.core.config_store import ConfigStore
 
 from flexrag.common import configure, extract_config
 from flexrag.models import ENCODERS, EncoderConfig
-from flexrag.retrievers import FlexRetriever
+from flexrag.retrievers import FlexRetriever, IndexFieldsConfig
 from flexrag.retrievers.index import (
     RETRIEVER_INDEX,
-    MultiFieldIndex,
-    MultiFieldIndexConfig,
     RetrieverIndexConfig,
 )
 from flexrag.retrievers.index.index_base import DenseIndexBase
 
 
 @configure
-class Config(RetrieverIndexConfig, MultiFieldIndexConfig):
+class Config(RetrieverIndexConfig, IndexFieldsConfig):
     index_name: Optional[str] = None
     retriever_path: Optional[str] = None
     query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)
@@ -53,7 +51,7 @@ def main(cfg: Config):
             if passage_encoder is not None:
                 index_kwargs["passage_encoder"] = passage_encoder
     base_index = RETRIEVER_INDEX.load(cfg, **index_kwargs)
-    retriever.add_index(cfg.index_name, MultiFieldIndex(cfg, base_index))
+    retriever.add_index(cfg.index_name, base_index, fields_config=cfg)
     return
 
 
