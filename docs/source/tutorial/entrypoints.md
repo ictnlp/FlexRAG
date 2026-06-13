@@ -88,7 +88,6 @@ python -m flexrag.entrypoints.run_interactive \
     modular_config.retriever_type=flex \
     modular_config.flex_config.top_k=5 \
     modular_config.flex_config.retriever_path=${RETRIEVER_PATH} \
-    modular_config.flex_config.used_indexes=[bm25] \
     modular_config.response_type=original \
     modular_config.generator_type=openai \
     modular_config.openai_config.model_name='gpt-4o-mini' \
@@ -113,7 +112,6 @@ modular_config:
     flex_config:
         top_k: 5
         retriever_path: <path_to_retriever>
-        used_indexes: [bm25]
     response_type: original
     generator_type: openai
     openai_config:

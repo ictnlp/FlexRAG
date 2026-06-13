@@ -145,7 +145,6 @@ class TestRetrievers:
             # in mem retriever
             cfg = FlexRetrieverConfig(
                 batch_size=512,
-                used_indexes=["contriever"],
                 top_k=5,
             )
             retriever = FlexRetriever(cfg)
@@ -225,7 +224,6 @@ class TestRetrievers:
         with tempfile.TemporaryDirectory() as tempdir:
             cfg = FlexRetrieverConfig(
                 batch_size=512,
-                used_indexes=["bm25"],
                 top_k=5,
             )
             retriever = FlexRetriever(cfg)
@@ -258,6 +256,16 @@ class TestRetrievers:
             FaissIndexConfig(query_encoder_config=litellm_encoder_config())
         with pytest.raises(ValidationError, match="passage_encoder_config"):
             ScaNNIndexConfig(passage_encoder_config=litellm_encoder_config())
+
+    def test_flex_retriever_config_rejects_search_runtime_options(self):
+        with pytest.raises(ValidationError, match="used_indexes"):
+            FlexRetrieverConfig(used_indexes=["bm25"])
+        with pytest.raises(ValidationError, match="indexes_merge_method"):
+            FlexRetrieverConfig(indexes_merge_method="linear")
+        with pytest.raises(ValidationError, match="indexes_merge_weights"):
+            FlexRetrieverConfig(indexes_merge_weights=[0.5, 0.5])
+        with pytest.raises(ValidationError, match="rrf_base"):
+            FlexRetrieverConfig(rrf_base=30)
 
     def test_elastic_retriever(self, mock_es_client):
         # load retriever

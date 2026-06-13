@@ -56,7 +56,6 @@ python -m flexrag.entrypoints.eval_assistant \
     simple_config.model_name='gpt-4o-mini' \
     simple_config.api_key=${OPENAI_KEY} \
     simple_config.retriever_path=${DB_PATH} \
-    simple_config.used_indexes=[contriever] \
     eval_config.metrics_type=[retrieval_success_rate,generation_f1,generation_em] \
     eval_config.retrieval_success_rate_config.eval_field=text \
     log_interval=10

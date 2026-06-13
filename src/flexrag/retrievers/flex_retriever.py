@@ -403,29 +403,7 @@ class _IndexBinding:
 
 @configure
 class FlexRetrieverConfig(LocalRetrieverConfig):
-    """Configuration class for FlexRetriever.
-
-    :param indexes_merge_method: Method to merge the scores of multiple indexes.
-        Available choices are "rrf" and "linear". Default is "rrf".
-        * "rrf": Reciprocal Rank Fusion (RRF) method.
-        * "linear": Linear combination of the scores.
-    :type indexes_merge_method: str
-    :param merge_weights: List of weights for each index. Default is None.
-        If None, all indexes will be treated equally.
-        This option is used in both "rrf" and "linear" methods.
-    :type merge_weights: Optional[list[float]]
-    :param used_indexes: List of indexes to use for retrieval. Default is None.
-        If None, all indexes will be used.
-    :type used_indexes: Optional[list[str]]
-    :param rrf_base: Base for the RRF method. Default is 60.
-        This option is only used when `indexes_merge_method` is "rrf".
-    :type rrf_base: int
-    """
-
-    indexes_merge_method: Annotated[str, Choices("rrf", "linear")] = "rrf"
-    indexes_merge_weights: Optional[list[float]] = None
-    used_indexes: Optional[list[str]] = None
-    rrf_base: int = 60
+    """Configuration class for FlexRetriever."""
 
 
 @RETRIEVERS("flex", config_class=FlexRetrieverConfig)
@@ -496,7 +474,10 @@ class FlexRetriever(LocalRetriever):
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         top_k = search_kwargs.pop("top_k", self.cfg.top_k)
-        used_indexes = search_kwargs.pop("used_indexes", self.cfg.used_indexes)
+        used_indexes = search_kwargs.pop("used_indexes", None)
+        merge_method = search_kwargs.pop("indexes_merge_method", "rrf")
+        merge_weights = search_kwargs.pop("indexes_merge_weights", None)
+        rrf_base = search_kwargs.pop("rrf_base", 60)
         if used_indexes is None:
             used_indexes = list(self.index_table.keys())
         for index_name in used_indexes:
@@ -518,17 +499,14 @@ class FlexRetriever(LocalRetriever):
             merged_scores = all_scores[0].tolist()
             merged_ids = all_context_ids[0]
         else:  # merge multiple indexes
-            merge_method = search_kwargs.pop(
-                "indexes_merge_method", self.cfg.indexes_merge_method
-            )
             match merge_method:
                 case "rrf":
                     # prepare merge weights
-                    if self.cfg.indexes_merge_weights is not None:
-                        assert len(self.cfg.indexes_merge_weights) == len(used_indexes)
+                    if merge_weights is not None:
+                        assert len(merge_weights) == len(used_indexes)
                         merge_weights = [
-                            i / sum(self.cfg.indexes_merge_weights)
-                            for i in self.cfg.indexes_merge_weights
+                            i / sum(merge_weights)
+                            for i in merge_weights
                         ]
                     else:
                         merge_weights = [1.0 / len(all_scores)] * len(all_scores)
@@ -541,18 +519,18 @@ class FlexRetriever(LocalRetriever):
                             sort_ranks = scores[i].argsort()[::-1] + 1
                             for ctx_id, rank in zip(ctx_ids[i], sort_ranks):
                                 scores_dict[ctx_id] += merge_weight / (
-                                    rank + self.cfg.rrf_base
+                                    rank + rrf_base
                                 )
                         sorted_items = sorted(scores_dict.items(), key=lambda x: -x[1])
                         merged_ids.append([item[0] for item in sorted_items][:top_k])
                         merged_scores.append([item[1] for item in sorted_items][:top_k])
                 case "linear":
                     # prepare merge weights
-                    if self.cfg.indexes_merge_weights is not None:
-                        assert len(self.cfg.indexes_merge_weights) == len(used_indexes)
+                    if merge_weights is not None:
+                        assert len(merge_weights) == len(used_indexes)
                         merge_weights = [
-                            i / sum(self.cfg.indexes_merge_weights)
-                            for i in self.cfg.indexes_merge_weights
+                            i / sum(merge_weights)
+                            for i in merge_weights
                         ]
                     else:
                         merge_weights = [1.0 / len(all_scores)] * len(all_scores)
@@ -687,8 +665,6 @@ class FlexRetriever(LocalRetriever):
         index.clear()
 
         # update the configuration
-        if self.cfg.used_indexes is not None and index_name in self.cfg.used_indexes:
-            self.cfg.used_indexes.remove(index_name)
         return
 
     def save_to_local(self, retriever_path: str = None) -> None:
