@@ -27,6 +27,7 @@ from flexrag.processors.text_processors import (
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers")
 _RETRIEVAL_CACHE_NAMESPACE = "retrieval.search"
 _RETRIEVAL_CACHE_SCHEMA_VERSION = 1
+DEFAULT_TOP_K = 10
 _RUNTIME_ONLY_CONFIG_FIELDS = {
     "batch_size",
     "query_preprocess_pipeline",
@@ -41,15 +42,12 @@ _RUNTIME_ONLY_SEARCH_KWARGS = {
 class RetrieverBaseConfig:
     """Base configuration class for all retrievers.
 
-    :param top_k: The number of retrieved documents. Default: 10.
-    :type top_k: int
     :param batch_size: The batch size for retrieval. Default: 32.
     :type batch_size: int
     :param query_preprocess_pipeline: The text process pipeline for query. Default: TextProcessPipelineConfig.
     :type query_preprocess_pipeline: TextProcessPipelineConfig
     """
 
-    top_k: int = 10
     batch_size: int = 32
     query_preprocess_pipeline: TextProcessPipelineConfig = field(
         default_factory=TextProcessPipelineConfig
@@ -73,12 +71,14 @@ class RetrieverBase(ABC):
     async def async_search(
         self,
         query: list[Any],
+        top_k: int = DEFAULT_TOP_K,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         """Search queries asynchronously."""
         return await asyncio.to_thread(
             self.search,
             query=query,
+            top_k=top_k,
             **search_kwargs,
         )
 
@@ -87,6 +87,7 @@ class RetrieverBase(ABC):
         query: Iterable[Any] | Any,
         disable_cache: bool = False,
         no_preprocess: bool = False,
+        top_k: int = DEFAULT_TOP_K,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         """Search queries with batching and runtime result caching.
@@ -98,11 +99,15 @@ class RetrieverBase(ABC):
         :type disable_cache: bool
         :param no_preprocess: Whether to preprocess the query. Default: False.
         :type no_preprocess: bool
+        :param top_k: The number of retrieved documents. Defaults to 10.
+        :type top_k: int
         :param search_kwargs: Other search arguments.
         :type search_kwargs: Any
         :return: A batch of list that contains k RetrievedContext.
         :rtype: list[list[RetrievedContext]]
         """
+        search_kwargs = dict(search_kwargs)
+        search_kwargs["top_k"] = top_k
 
         # normalize query
         if isinstance(query, str):
@@ -227,6 +232,7 @@ class RetrieverBase(ABC):
         self,
         sample_num: int = 10000,
         test_times: int = 10,
+        top_k: int = DEFAULT_TOP_K,
         **search_kwargs,
     ) -> float:
         """Test the speed of the retriever.
@@ -245,7 +251,7 @@ class RetrieverBase(ABC):
         for _ in range(test_times):
             query = [sents[i % len(sents)] for i in range(sample_num)]
             start_time = time.perf_counter()
-            _ = self.search(query, top_k=self.cfg.top_k, **search_kwargs)
+            _ = self.search(query, top_k=top_k, **search_kwargs)
             end_time = time.perf_counter()
             total_times.append(end_time - start_time)
         avg_time = sum(total_times) / test_times

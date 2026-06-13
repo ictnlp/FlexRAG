@@ -15,6 +15,7 @@ from flexrag.common.configure import extract_config
 from flexrag.common.dataclasses import RetrievedContext
 
 from ..retriever_base import (
+    DEFAULT_TOP_K,
     RETRIEVERS,
     RetrieverBase,
     RetrieverBaseConfig,
@@ -83,7 +84,7 @@ class WebRetrieverBase(RetrieverBase):
 
         # search & parse
         results = []
-        top_k = search_kwargs.pop("top_k", self.cfg.top_k)
+        top_k = search_kwargs.pop("top_k", DEFAULT_TOP_K)
         with SimpleProgressLogger(
             logger, len(query), interval=log_interval, display=display
         ) as p_logger:

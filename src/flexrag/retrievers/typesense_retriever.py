@@ -11,7 +11,12 @@ from flexrag.common import (
 from flexrag.common.configure import extract_config
 from flexrag.common.dataclasses import Context, RetrievedContext
 
-from .retriever_base import RETRIEVERS, EditableRetriever, EditableRetrieverConfig
+from .retriever_base import (
+    DEFAULT_TOP_K,
+    RETRIEVERS,
+    EditableRetriever,
+    EditableRetrieverConfig,
+)
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.typesense")
 
@@ -119,7 +124,7 @@ class TypesenseRetriever(EditableRetriever):
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         # prepare search parameters
-        top_k = search_kwargs.pop("top_k", self.cfg.top_k)
+        top_k = search_kwargs.pop("top_k", DEFAULT_TOP_K)
         search_params = [
             {
                 "collection": self.index_name,

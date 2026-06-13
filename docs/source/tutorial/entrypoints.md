@@ -86,7 +86,6 @@ python -m flexrag.entrypoints.run_interactive \
     assistant_type=modular \
     modular_config.used_fields=[title,text] \
     modular_config.retriever_type=flex \
-    modular_config.flex_config.top_k=5 \
     modular_config.flex_config.retriever_path=${RETRIEVER_PATH} \
     modular_config.response_type=original \
     modular_config.generator_type=openai \
@@ -110,7 +109,6 @@ modular_config:
     used_fields: [title, text]
     retriever_type: flex
     flex_config:
-        top_k: 5
         retriever_path: <path_to_retriever>
     response_type: original
     generator_type: openai

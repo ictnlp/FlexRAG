@@ -145,7 +145,6 @@ class TestRetrievers:
             # in mem retriever
             cfg = FlexRetrieverConfig(
                 batch_size=512,
-                top_k=5,
             )
             retriever = FlexRetriever(cfg)
             retriever.add_passages(dataset1, log_interval=1000)
@@ -156,7 +155,8 @@ class TestRetrievers:
             )
             assert len(retriever) == 1000
             ctxs = retriever.search(
-                ["Who is Bruce Wayne?", "What is the capital of France?"]
+                ["Who is Bruce Wayne?", "What is the capital of France?"],
+                top_k=5,
             )
             assert len(ctxs) == 2
             assert len(ctxs[0]) == 5
@@ -166,7 +166,8 @@ class TestRetrievers:
             retriever.add_passages(dataset2, log_interval=1000)
             assert len(retriever) == 2000
             ctxs = retriever.search(
-                ["Who is Bruce Wayne?", "What is the capital of France?"]
+                ["Who is Bruce Wayne?", "What is the capital of France?"],
+                top_k=5,
             )
             assert len(ctxs) == 2
             assert len(ctxs[0]) == 5
@@ -180,6 +181,7 @@ class TestRetrievers:
             )
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"],
+                top_k=5,
                 used_indexes=["contriever", "bm25"],
             )
             assert len(ctxs) == 2
@@ -187,6 +189,7 @@ class TestRetrievers:
             assert len(ctxs[1]) == 5
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"],
+                top_k=5,
                 used_indexes=["bm25"],
             )
             assert len(ctxs) == 2
@@ -194,6 +197,7 @@ class TestRetrievers:
             assert len(ctxs[1]) == 5
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"],
+                top_k=5,
                 used_indexes=["contriever"],
             )
             assert len(ctxs) == 2
@@ -224,7 +228,6 @@ class TestRetrievers:
         with tempfile.TemporaryDirectory() as tempdir:
             cfg = FlexRetrieverConfig(
                 batch_size=512,
-                top_k=5,
             )
             retriever = FlexRetriever(cfg)
             retriever.add_passages(dataset1 + dataset2, log_interval=1000)
@@ -244,6 +247,7 @@ class TestRetrievers:
             assert len(retriever) == 2000
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"],
+                top_k=5,
                 used_indexes=["bm25"],
             )
             assert len(ctxs) == 2
@@ -258,6 +262,8 @@ class TestRetrievers:
             ScaNNIndexConfig(passage_encoder_config=litellm_encoder_config())
 
     def test_flex_retriever_config_rejects_search_runtime_options(self):
+        with pytest.raises(ValidationError, match="top_k"):
+            FlexRetrieverConfig(top_k=5)
         with pytest.raises(ValidationError, match="used_indexes"):
             FlexRetrieverConfig(used_indexes=["bm25"])
         with pytest.raises(ValidationError, match="indexes_merge_method"):

@@ -24,7 +24,12 @@ from flexrag.common.database import (
 from flexrag.common.dataclasses import Context, RetrievedContext
 
 from .index import RetrieverIndexBase
-from .retriever_base import RETRIEVERS, LocalRetriever, LocalRetrieverConfig
+from .retriever_base import (
+    DEFAULT_TOP_K,
+    RETRIEVERS,
+    LocalRetriever,
+    LocalRetrieverConfig,
+)
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retreviers.flex")
 
@@ -473,7 +478,7 @@ class FlexRetriever(LocalRetriever):
         query: list[str],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
-        top_k = search_kwargs.pop("top_k", self.cfg.top_k)
+        top_k = search_kwargs.pop("top_k", DEFAULT_TOP_K)
         used_indexes = search_kwargs.pop("used_indexes", None)
         merge_method = search_kwargs.pop("indexes_merge_method", "rrf")
         merge_weights = search_kwargs.pop("indexes_merge_weights", None)

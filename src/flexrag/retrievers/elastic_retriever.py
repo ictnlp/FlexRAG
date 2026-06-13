@@ -14,6 +14,7 @@ from flexrag.common.configure import extract_config
 from flexrag.common.dataclasses import Context, RetrievedContext
 
 from .retriever_base import (
+    DEFAULT_TOP_K,
     RETRIEVERS,
     EditableRetriever,
     EditableRetrieverConfig,
@@ -172,7 +173,7 @@ class ElasticRetriever(EditableRetriever):
 
         # prepare search body
         body = []
-        top_k = search_kwargs.pop("top_k", self.cfg.top_k)
+        top_k = search_kwargs.pop("top_k", DEFAULT_TOP_K)
         for q in query:
             body.append({"index": self.index_name})
             body.append(
