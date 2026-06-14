@@ -344,7 +344,7 @@ class DenseIndexBase(RetrieverIndexBase):
         else:
             mmap_path = None
 
-        def get_batch() -> Generator[tuple[list[int], list[Any]], None, None]:
+        def get_batch() -> Generator[list[Any], None, None]:
             """A helper function that yields data in batches."""
             batch = []
             for item in data:
@@ -375,6 +375,7 @@ class DenseIndexBase(RetrieverIndexBase):
         # concatenate the embeddings
         if isinstance(embeddings[0], str):
             logger.info("Copying embeddings to memory map")
+            assert mmap_path is not None
             emb_path = embeddings[0]
             emb = np.load(emb_path)
             emb_map = np.memmap(

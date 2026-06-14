@@ -672,14 +672,17 @@ class FlexRetriever(LocalRetriever):
         # update the configuration
         return
 
-    def save_to_local(self, retriever_path: str = None) -> None:
+    def save_to_local(self, retriever_path: Optional[str] = None) -> None:
         # check if the retriever is serializable
-        if self.cfg.retriever_path is not None:
-            if retriever_path == self.cfg.retriever_path:
-                return  # skip saving if the path is the same
-        else:
-            assert retriever_path is not None, "`retriever_path` is not set."
-            self.cfg.retriever_path = retriever_path
+        if retriever_path is None:
+            retriever_path = self.cfg.retriever_path
+        elif (
+            self.cfg.retriever_path is not None
+            and retriever_path == self.cfg.retriever_path
+        ):
+            return  # skip saving if the path is the same
+        assert retriever_path is not None, "`retriever_path` is not set."
+        self.cfg.retriever_path = retriever_path
         self._check_retriever_path(retriever_path)
         logger.info(f"Serializing retriever to {retriever_path}")
 
@@ -748,7 +751,7 @@ class FlexRetriever(LocalRetriever):
         log_interval: int = 10000,
         display: ProgressDisplay = "auto",
     ) -> None:
-        def get_data() -> Generator[tuple[Any, int], None, None]:
+        def get_data() -> Generator[dict[str, Any], None, None]:
             for ctx_id in context_ids:
                 yield self.database[ctx_id]
 

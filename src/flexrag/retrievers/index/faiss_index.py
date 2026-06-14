@@ -286,7 +286,7 @@ class FaissIndex(DenseIndexBase):
         scores = self._postprocess_scores(scores)
         return indices, scores
 
-    def save_to_local(self, index_path: str = None) -> None:
+    def save_to_local(self, index_path: Optional[str] = None) -> None:
         # check if the index is serializable
         if index_path is not None:
             self.cfg.index_path = index_path

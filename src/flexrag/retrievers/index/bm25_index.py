@@ -162,12 +162,12 @@ class BM25Index(RetrieverIndexBase):
     def is_addable(self) -> bool:
         return False
 
-    def save_to_local(self, index_path: str = None) -> None:
+    def save_to_local(self, index_path: Optional[str] = None) -> None:
         # check if the index is serializable
         if index_path is not None:
             self.cfg.index_path = index_path
         assert self.cfg.index_path is not None, "`index_path` is not set."
-        if not os.path.exists(index_path):
+        if not os.path.exists(self.cfg.index_path):
             os.makedirs(self.cfg.index_path)
         logger.info(f"Serializing index to {self.cfg.index_path}")
 

@@ -354,9 +354,9 @@ class LocalRetriever(EditableRetriever):
     @staticmethod
     def load_from_hub(
         repo_id: str,
-        revision: str = None,
-        token: str = None,
-        cache_dir: str = FLEXRAG_CACHE_DIR,
+        revision: Optional[str] = None,
+        token: Optional[str] = None,
+        cache_dir: str | os.PathLike[str] = FLEXRAG_CACHE_DIR,
         **kwargs,
     ) -> "LocalRetriever":
         """Load a retriever from the HuggingFace Hub.
@@ -399,9 +399,9 @@ class LocalRetriever(EditableRetriever):
     def save_to_hub(
         self,
         repo_id: str,
-        token: str = os.environ.get("HF_TOKEN", None),
+        token: Optional[str] = os.environ.get("HF_TOKEN", None),
         commit_message: str = "Update FlexRAG retriever",
-        retriever_card: str = None,
+        retriever_card: Optional[str] = None,
         private: bool = False,
         **kwargs,
     ) -> str:
@@ -468,7 +468,7 @@ class LocalRetriever(EditableRetriever):
         return repo_url
 
     @staticmethod
-    def load_from_local(repo_path: str = None, **kwargs) -> "LocalRetriever":
+    def load_from_local(repo_path: str, **kwargs) -> "LocalRetriever":
         """Load a retriever from the local disk.
 
         :param repo_path: The path to the local database. Default: None.
@@ -493,7 +493,7 @@ class LocalRetriever(EditableRetriever):
         return retriever
 
     @abstractmethod
-    def save_to_local(self, retriever_path: str = None):
+    def save_to_local(self, retriever_path: Optional[str] = None) -> None:
         """Save the retriever to the local disk.
 
         :param retriever_path: The path to the local database. Default: None.

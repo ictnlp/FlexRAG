@@ -2,7 +2,7 @@ import os
 import re
 import shutil
 from copy import deepcopy
-from typing import Any, Iterable
+from typing import Any, Iterable, Optional
 
 import numpy as np
 
@@ -157,7 +157,7 @@ class ScaNNIndex(DenseIndexBase):
         scores = self._postprocess_scores(scores)
         return indices, scores
 
-    def save_to_local(self, index_path: str = None) -> None:
+    def save_to_local(self, index_path: Optional[str] = None) -> None:
         # check if the index is serializable
         if index_path is not None:
             self.cfg.index_path = index_path
