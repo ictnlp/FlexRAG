@@ -431,17 +431,19 @@ class LocalRetriever(EditableRetriever):
                         f"the retriever will be saved temporarily at {tmp_dir}."
                     )
                 )
-                self.save_to_local(tmp_dir, update_config=True)
-                self.save_to_hub(
-                    token=token,
-                    repo_id=repo_id,
-                    commit_message=commit_message,
-                    retriever_card=retriever_card,
-                    private=private,
-                    **kwargs,
-                )
-            self.cfg.retriever_path = None
-            return
+                try:
+                    self.save_to_local(tmp_dir)
+                    return self.save_to_hub(
+                        token=token,
+                        repo_id=repo_id,
+                        commit_message=commit_message,
+                        retriever_card=retriever_card,
+                        private=private,
+                        **kwargs,
+                    )
+                finally:
+                    if self.cfg.retriever_path == tmp_dir:
+                        self.detach()
 
         # prepare the client
         api = HfApi(token=token)

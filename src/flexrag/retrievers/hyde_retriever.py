@@ -57,8 +57,8 @@ class HydeRetriever(FlexRetriever):
     The original paper is available at https://aclanthology.org/2023.acl-long.99/.
     """
 
-    def __init__(self, cfg: HydeRetrieverConfig, no_check=False):
-        super().__init__(cfg, no_check)
+    def __init__(self, cfg: HydeRetrieverConfig) -> None:
+        super().__init__(cfg)
         generator = GENERATORS.load(cfg)
         self.rewriter = HydeRewriter(
             generator=generator, task=cfg.task, language=cfg.language
