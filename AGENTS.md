@@ -37,6 +37,15 @@
 - Keep changes minimal and local; preserve naming and structure already used by the surrounding module.
 - Avoid introducing new framework layers unless the task clearly requires them.
 
+## Docstring Conventions
+- Use reStructuredText-style docstrings for public documentation.
+- Use Python annotations as the source of truth for types. Do not add `:type:` fields in new or updated docstrings.
+- Public methods on base classes, protocols, and abstract interfaces must provide complete docstrings, including a concise behavior description, parameters, return values, and important side effects.
+- Public methods on subclasses may rely on the base method documentation when they only implement the inherited contract. Add or update docstrings when the subclass introduces extra parameters, behavior differences, return-shape differences, side effects, cache/download behavior, or error-handling differences.
+- Private methods have no mandatory docstring requirement. Add a concise one-line docstring when the helper's behavior is non-obvious or domain-specific.
+- Benchmark, dataset, task, and metric integrations should document their source when available, including at least one relevant link such as the paper, official repository, Hugging Face dataset, download source, official metric, or evaluation protocol.
+- Configuration class docstrings should be prioritized and kept complete, especially for user-facing options, defaults, available choices, download/cache behavior, and externally visible effects.
+
 ## Configuration And Registry Conventions
 - Configuration classes generally use `@configure` from `src/flexrag/common/configure.py`.
 - `@configure` produces pydantic dataclasses with `extra="forbid"`; do not rely on undeclared config fields.
