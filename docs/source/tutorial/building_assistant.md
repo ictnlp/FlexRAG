@@ -6,6 +6,7 @@ To build your RAG assistant, you can create a Python script file and import the 
 
 ```python
 from dataclasses import dataclass
+from typing import Optional
 
 from flexrag.assistant import ASSISTANTS, AssistantBase
 from flexrag.models import OpenAIGenerator, OpenAIGeneratorConfig
@@ -14,13 +15,14 @@ from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
 
 
 @dataclass
-class SimpleAssistantConfig(FlexRetrieverConfig, OpenAIGeneratorConfig): ...
+class SimpleAssistantConfig(FlexRetrieverConfig, OpenAIGeneratorConfig):
+    retriever_path: Optional[str] = None
 
 
 @ASSISTANTS("simple", config_class=SimpleAssistantConfig)
 class SimpleAssistant(AssistantBase):
     def __init__(self, config: SimpleAssistantConfig):
-        self.retriever = FlexRetriever(config)
+        self.retriever = FlexRetriever(config, retriever_path=config.retriever_path)
         self.generator = OpenAIGenerator(config)
         return
 

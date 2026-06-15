@@ -106,11 +106,6 @@ class FlexRetrieverConfig(LocalRetrieverConfig):
     :param query_preprocess_pipeline: Text processing pipeline applied to
         queries before search unless ``no_preprocess=True`` is passed at
         runtime.
-    :param retriever_path: Optional local retriever root. When set,
-        FlexRetriever attaches to disk, stores the database under
-        ``database.lmdb``, stores context indexes under ``indexes/``, and saves
-        ``config.yaml`` plus the retriever card. When ``None``, the retriever
-        stays in memory until :meth:`save_to_local` is called.
     """
 
 
@@ -122,16 +117,29 @@ class FlexRetriever(LocalRetriever):
 
     cfg: FlexRetrieverConfig
 
-    def __init__(self, cfg: FlexRetrieverConfig) -> None:
+    def __init__(
+        self,
+        cfg: FlexRetrieverConfig,
+        retriever_path: Optional[str] = None,
+    ) -> None:
         super().__init__(cfg)
         self.cfg = extract_config(cfg, FlexRetrieverConfig)
-        # load the retriever if the retriever_path is set
+        self._retriever_path = retriever_path
         self.database = self._load_database()
         self.index_table: dict[str, ContextIndexBase] = self._load_index()
 
         # consistency check
         self._check_consistency()
         return
+
+    @property
+    def retriever_path(self) -> Optional[str]:
+        """Return the local artifact root attached to this retriever.
+
+        :return: The local retriever artifact path, or ``None`` when the
+            retriever is detached from disk.
+        """
+        return self._retriever_path
 
     @trace("retriever.flex_retriever.add_passages")
     def add_passages(
@@ -172,6 +180,8 @@ class FlexRetriever(LocalRetriever):
             log_interval=log_interval,
             display=display,
         )
+        if self.retriever_path is not None:
+            self._save_metadata(self.retriever_path)
         logger.info("Finished adding passages.")
         return
 
@@ -301,10 +311,10 @@ class FlexRetriever(LocalRetriever):
         # clear the database
         self.database.clear()
 
-        # clear the directory
-        if self.cfg.retriever_path is not None:
-            if os.path.exists(self.cfg.retriever_path):
-                shutil.rmtree(self.cfg.retriever_path)
+        if self.retriever_path is not None:
+            self._save_metadata(self.retriever_path)
+            for index_name, index in self.index_table.items():
+                index.save_to_local(self._get_index_path(index_name))
         return
 
     def __len__(self) -> int:
@@ -334,8 +344,8 @@ class FlexRetriever(LocalRetriever):
             )
 
         # prepare index path
-        if self.cfg.retriever_path is not None:
-            index_path = os.path.join(self.cfg.retriever_path, "indexes", index_name)
+        if self.retriever_path is not None:
+            index_path = self._get_index_path(index_name)
         else:
             index_path = None
 
@@ -350,9 +360,13 @@ class FlexRetriever(LocalRetriever):
             )
             if index_path is not None:
                 index.save_to_local(index_path)
+        elif index_path is not None:
+            index.save_to_local(index_path)
 
         # add index to the index table
         self.index_table[index_name] = index
+        if self.retriever_path is not None:
+            self._save_metadata(self.retriever_path)
         self._check_consistency()
         logger.info(f"Finished adding index: {index_name}")
         return
@@ -370,10 +384,11 @@ class FlexRetriever(LocalRetriever):
         # remove the index
         index = self.index_table.pop(index_name)
         index.clear()
-        if self.cfg.retriever_path is not None:
-            index_path = os.path.join(self.cfg.retriever_path, "indexes", index_name)
+        if self.retriever_path is not None:
+            index_path = self._get_index_path(index_name)
             if os.path.exists(index_path):
                 shutil.rmtree(index_path)
+            self._save_metadata(self.retriever_path)
 
         # update the configuration
         return
@@ -381,15 +396,11 @@ class FlexRetriever(LocalRetriever):
     def save_to_local(self, retriever_path: Optional[str] = None) -> None:
         # check if the retriever is serializable
         if retriever_path is None:
-            retriever_path = self.cfg.retriever_path
-        elif (
-            self.cfg.retriever_path is not None
-            and retriever_path == self.cfg.retriever_path
-        ):
-            return  # skip saving if the path is the same
+            retriever_path = self.retriever_path
         assert retriever_path is not None, "`retriever_path` is not set."
-        self.cfg.retriever_path = retriever_path
-        self._check_retriever_path(retriever_path)
+        retriever_path = os.fspath(retriever_path)
+        self._retriever_path = retriever_path
+        self._save_metadata(retriever_path)
         logger.info(f"Serializing retriever to {retriever_path}")
 
         # save the database
@@ -410,15 +421,27 @@ class FlexRetriever(LocalRetriever):
                 yield batch_ids, batch_data
             return
 
-        new_db = LMDBRetrieverDatabase(os.path.join(retriever_path, "database.lmdb"))
-        for batch_ids, batch_data in get_data():
-            new_db[batch_ids] = batch_data
-        self.database = new_db
+        database_path = os.path.join(retriever_path, "database.lmdb")
+        current_database_path = (
+            self.database.database_path
+            if isinstance(self.database, LMDBRetrieverDatabase)
+            else None
+        )
+        if current_database_path is None or os.path.abspath(
+            current_database_path
+        ) != os.path.abspath(database_path):
+            if os.path.exists(database_path):
+                shutil.rmtree(database_path)
+            new_db = LMDBRetrieverDatabase(database_path)
+            for batch_ids, batch_data in get_data():
+                new_db[batch_ids] = batch_data
+            if isinstance(self.database, LMDBRetrieverDatabase):
+                self.database.close()
+            self.database = new_db
 
         # save the index
         for index_name, index in self.index_table.items():
-            index_path = os.path.join(retriever_path, "indexes", index_name)
-            index.save_to_local(index_path)
+            index.save_to_local(self._get_index_path(index_name))
         return
 
     def detach(self):
@@ -438,13 +461,15 @@ class FlexRetriever(LocalRetriever):
 
         # detach the database
         if isinstance(self.database, LMDBRetrieverDatabase):
+            old_db = self.database
             new_db = NaiveRetrieverDatabase()
             for batch_ids, batch_data in get_data():
                 new_db[batch_ids] = batch_data
             self.database = new_db
+            old_db.close()
 
-        # update the configuration
-        self.cfg.retriever_path = None
+        # update the runtime state
+        self._retriever_path = None
         return
 
     def _update_index(
@@ -460,10 +485,8 @@ class FlexRetriever(LocalRetriever):
         # update index
         for index_name, index in self.index_table.items():
             # prepare index path
-            if self.cfg.retriever_path is not None:
-                index_path = os.path.join(
-                    self.cfg.retriever_path, "indexes", index_name
-                )
+            if self.retriever_path is not None:
+                index_path = self._get_index_path(index_name)
             else:
                 index_path = None
             if index.is_addable:
@@ -493,8 +516,8 @@ class FlexRetriever(LocalRetriever):
         return
 
     def _load_database(self) -> RetrieverDatabaseBase:
-        if self.cfg.retriever_path is not None:
-            database_path = os.path.join(self.cfg.retriever_path, "database.lmdb")
+        if self.retriever_path is not None:
+            database_path = os.path.join(self.retriever_path, "database.lmdb")
             database = LMDBRetrieverDatabase(database_path)
         else:
             database = NaiveRetrieverDatabase()
@@ -503,27 +526,29 @@ class FlexRetriever(LocalRetriever):
     def _load_index(self) -> dict[str, ContextIndexBase]:
         # load indexes
         indexes = {}
-        if self.cfg.retriever_path is None:
+        if self.retriever_path is None:
             return indexes
-        if not os.path.exists(os.path.join(self.cfg.retriever_path, "indexes")):
+        index_root = os.path.join(self.retriever_path, "indexes")
+        if not os.path.exists(index_root):
             return indexes
-        indexes_names = os.listdir(os.path.join(self.cfg.retriever_path, "indexes"))
+        indexes_names = os.listdir(index_root)
         for index_name in indexes_names:
-            index_path = os.path.join(self.cfg.retriever_path, "indexes", index_name)
+            index_path = self._get_index_path(index_name)
             index = ContextIndexBase.load_from_local(index_path)
             indexes[index_name] = index
         return indexes
 
     def _check_consistency(self) -> None:
-        if self.cfg.retriever_path is not None:
-            self._check_retriever_path(self.cfg.retriever_path)
         for index_name, index in self.index_table.items():
             assert len(index) == len(self.database), "Index and database size mismatch"
         return
 
-    def _check_retriever_path(self, retriever_path: str) -> None:
-        if not os.path.exists(retriever_path):
-            os.makedirs(retriever_path)
+    def _get_index_path(self, index_name: str) -> str:
+        assert self.retriever_path is not None, "`retriever_path` is not set."
+        return os.path.join(self.retriever_path, "indexes", index_name)
+
+    def _save_metadata(self, retriever_path: str) -> None:
+        os.makedirs(retriever_path, exist_ok=True)
 
         # save the retriever card
         card_path = os.path.join(retriever_path, "README.md")
@@ -531,19 +556,17 @@ class FlexRetriever(LocalRetriever):
             retriever_card = _build_retriever_card(
                 retriever_type=self.__class__.__name__,
                 version=__VERSION__,
-                repo_path=self.cfg.retriever_path,
+                repo_path=retriever_path,
             )
             with open(card_path, "w", encoding="utf-8") as f:
                 f.write(retriever_card)
 
         # save the configuration
         cfg_path = os.path.join(retriever_path, "config.yaml")
-        if not os.path.exists(cfg_path):
-            self.cfg.dump(cfg_path)
+        self.cfg.dump(cfg_path)
         id_path = os.path.join(retriever_path, "cls.id")
-        if not os.path.exists(id_path):
-            with open(id_path, "w", encoding="utf-8") as f:
-                f.write(self.__class__.__name__)
+        with open(id_path, "w", encoding="utf-8") as f:
+            f.write(self.__class__.__name__)
 
     def __getitem__(self, context_id: str) -> dict:
         return self.database[context_id]

@@ -97,8 +97,8 @@ def add_passages():
     retriever = FlexRetriever(
         FlexRetrieverConfig(
             batch_size=4096,
-            retriever_path=RETRIEVER_PATH,
-        )
+        ),
+        retriever_path=RETRIEVER_PATH,
     )
     retriever.add_passages(passages=corpus, log_interval=100000)
     return
@@ -118,7 +118,7 @@ python -m flexrag.entrypoints.prepare_retriever \
     saving_fields=$CORPUS_FIELDS \
     id_field='id' \
     retriever_type=flex \
-    flex_config.retriever_path=$RETRIEVER_PATH \
+    retriever_path=$RETRIEVER_PATH \
     reinit=True
 ```
 

@@ -313,15 +313,7 @@ class EditableRetriever(RetrieverBase):
 
 @configure
 class LocalRetrieverConfig(EditableRetrieverConfig):
-    """The configuration class for LocalRetriever.
-
-    :param retriever_path: The path to the local database. Default: None.
-        If specified, all modifications to the retriever will be applied simultaneously on the disk.
-        If not specified, the retriever will be kept in memory.
-    :type retriever_path: Optional[str]
-    """
-
-    retriever_path: Optional[str] = None
+    """The configuration class for LocalRetriever."""
 
 
 class LocalRetriever(EditableRetriever):
@@ -350,6 +342,15 @@ class LocalRetriever(EditableRetriever):
     """
 
     cfg: LocalRetrieverConfig
+
+    @property
+    def retriever_path(self) -> Optional[str]:
+        """Return the local artifact root attached to this retriever.
+
+        :return: The local retriever artifact path, or ``None`` when the
+            retriever is detached from disk.
+        """
+        return None
 
     @staticmethod
     def load_from_hub(
@@ -423,7 +424,7 @@ class LocalRetriever(EditableRetriever):
         :rtype: str
         """
         # make a temporary directory if retriever_path is not specified
-        if self.cfg.retriever_path is None:
+        if self.retriever_path is None:
             with tempfile.TemporaryDirectory(prefix="flexrag-retriever") as tmp_dir:
                 logger.info(
                     (
@@ -442,7 +443,7 @@ class LocalRetriever(EditableRetriever):
                         **kwargs,
                     )
                 finally:
-                    if self.cfg.retriever_path == tmp_dir:
+                    if self.retriever_path == tmp_dir:
                         self.detach()
 
         # prepare the client
@@ -459,10 +460,11 @@ class LocalRetriever(EditableRetriever):
         repo_id = repo_url.repo_id
 
         # push to hub
+        assert self.retriever_path is not None, "`retriever_path` is not set."
         api.upload_folder(
             repo_id=repo_id,
             commit_message=commit_message,
-            folder_path=self.cfg.retriever_path,
+            folder_path=self.retriever_path,
             **kwargs,
         )
         return repo_url
@@ -486,10 +488,9 @@ class LocalRetriever(EditableRetriever):
         # prepare the configuration
         config_path = os.path.join(repo_path, "config.yaml")
         cfg: LocalRetrieverConfig = config_cls.load(config_path)
-        cfg.retriever_path = repo_path
 
         # load the retriever
-        retriever = retriever_cls(cfg)
+        retriever = retriever_cls(cfg, retriever_path=repo_path, **kwargs)
         return retriever
 
     @abstractmethod

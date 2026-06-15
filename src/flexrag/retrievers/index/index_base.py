@@ -1,5 +1,6 @@
 import os
 import pickle
+import shutil
 from abc import ABC, abstractmethod
 from collections import defaultdict
 from typing import Annotated, Any, Generator, Iterable, Optional
@@ -599,7 +600,8 @@ class ContextIndexBase(ABC):
         """Save the complete logical context index to disk.
 
         The context root stores the context config and row/context mapping. Raw
-        artifacts are saved under the ``raw/`` child directory.
+        artifacts are saved under the ``raw/`` child directory when the raw
+        index is non-empty.
 
         :param index_path: Logical context-index root.
         :return: None.
@@ -611,7 +613,11 @@ class ContextIndexBase(ABC):
         with open(os.path.join(index_path, "cls.id"), "w", encoding="utf-8") as f:
             f.write(self.__class__.__name__)
 
-        self.raw_index.save_to_local(os.path.join(index_path, "raw"))
+        raw_path = os.path.join(index_path, "raw")
+        if os.path.exists(raw_path):
+            shutil.rmtree(raw_path)
+        if len(self.raw_index) > 0:
+            self.raw_index.save_to_local(raw_path)
         with open(os.path.join(index_path, "context_mapping.pkl"), "wb") as f:
             pickle.dump(
                 {

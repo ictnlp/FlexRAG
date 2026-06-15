@@ -28,15 +28,9 @@ you can use the following configuration:
 
 .. code-block:: python
 
-    from flexrag.retriever import RetrieverConfig, RETRIEVERS, FlexRetrieverConfig
+    from flexrag.retriever import LocalRetriever
 
-    config = RetrieverConfig(
-        retriever_type='flex',
-        flex_config=FlexRetrieverConfig(
-            retriever_path='<path_to_retriever>',
-        )
-    )
-    retriever = RETRIEVERS.load(config)
+    retriever = LocalRetriever.load_from_local('<path_to_retriever>')
 
 Editable Retriever
 ------------------

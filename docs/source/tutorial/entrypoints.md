@@ -85,8 +85,7 @@ RETRIEVER_PATH=<path_to_retriever>
 python -m flexrag.entrypoints.run_interactive \
     assistant_type=modular \
     modular_config.used_fields=[title,text] \
-    modular_config.retriever_type=flex \
-    modular_config.flex_config.retriever_path=${RETRIEVER_PATH} \
+    modular_config.retriever_type=${RETRIEVER_PATH} \
     modular_config.response_type=original \
     modular_config.generator_type=openai \
     modular_config.openai_config.model_name='gpt-4o-mini' \
@@ -107,9 +106,7 @@ defaults:
 assistant_type: modular
 modular_config:
     used_fields: [title, text]
-    retriever_type: flex
-    flex_config:
-        retriever_path: <path_to_retriever>
+    retriever_type: <path_to_retriever>
     response_type: original
     generator_type: openai
     openai_config:
