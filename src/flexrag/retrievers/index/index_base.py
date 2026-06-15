@@ -37,6 +37,10 @@ class RawIndexBase(ABC):
     config_cls: type[Any]
     cfg: Any
 
+    def __init__(self, cfg: Any, **_: Any) -> None:
+        self.cfg = extract_config(cfg, self.config_cls)
+        return
+
     @abstractmethod
     def build_index(
         self,
@@ -712,7 +716,7 @@ class DenseRawIndexBase(RawIndexBase):
         :param passage_encoder: Optional encoder used for indexed passages. If
             omitted, ``query_encoder`` is reused.
         """
-        self.cfg = extract_config(cfg, self.config_cls)
+        super().__init__(cfg)
         self.query_encoder = query_encoder
         self.passage_encoder = passage_encoder or query_encoder
         self.distance_function = self.cfg.distance_function

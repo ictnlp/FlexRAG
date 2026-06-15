@@ -4,7 +4,6 @@ import bm25s
 import numpy as np
 
 from flexrag.common import LOGGER_MANAGER, Choices, configure
-from flexrag.common.configure import extract_config
 
 from .index_base import (
     DEFAULT_INDEX_BATCH_SIZE,
@@ -79,9 +78,9 @@ class BM25RawIndex(RawIndexBase):
     cfg: BM25RawIndexConfig
 
     def __init__(self, cfg: BM25RawIndexConfig) -> None:
-        self.cfg = extract_config(cfg, BM25RawIndexConfig)
+        super().__init__(cfg)
         try:
-            import Stemmer
+            import Stemmer  # type: ignore
 
             self._stemmer = Stemmer.Stemmer(self.cfg.lang)
         except ImportError:

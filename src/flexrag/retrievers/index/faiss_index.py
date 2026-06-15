@@ -213,14 +213,16 @@ class FaissRawIndex(DenseRawIndexBase):
         def get_search_params(index):
             if isinstance(index, faiss.IndexRefine):
                 params = faiss.IndexRefineSearchParameters(
-                    k_factor=k_factor,
+                    k_factor=k_factor,  # type: ignore
                     base_index_params=get_search_params(
                         faiss.downcast_index(index.base_index)
-                    ),
+                    ),  # type: ignore
                 )
             elif isinstance(index, faiss.IndexPreTransform):
                 params = faiss.SearchParametersPreTransform(
-                    index_params=get_search_params(faiss.downcast_index(index.index))
+                    index_params=get_search_params(  # type: ignore
+                        faiss.downcast_index(index.index)
+                    )
                 )
             elif isinstance(index, faiss.IndexIVFPQ):
                 if hasattr(index, "quantizer"):
@@ -238,13 +240,15 @@ class FaissRawIndex(DenseRawIndexBase):
             elif isinstance(index, faiss.IndexIVF):
                 if hasattr(index, "quantizer"):
                     params = faiss.SearchParametersIVF(
-                        nprobe=n_probe,
+                        nprobe=n_probe,  # type: ignore
                         quantizer_params=get_search_params(
                             faiss.downcast_index(index.quantizer)
-                        ),
+                        ),  # type: ignore
                     )
                 else:
-                    params = faiss.SearchParametersIVF(nprobe=n_probe)
+                    params = faiss.SearchParametersIVF(
+                        nprobe=n_probe  # type: ignore
+                    )
             elif isinstance(index, faiss.IndexHNSW):
                 params = faiss.SearchParametersHNSW(efSearch=efSearch)
             elif isinstance(index, faiss.IndexPQ):
