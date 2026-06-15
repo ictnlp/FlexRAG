@@ -1,5 +1,7 @@
 import os
+import pickle
 from abc import ABC, abstractmethod
+from collections import defaultdict
 from typing import Annotated, Any, Generator, Iterable, Optional
 from uuid import uuid4
 
@@ -15,85 +17,70 @@ from flexrag.common import (
     configure,
     trace,
 )
+from flexrag.common.configure import extract_config
 from flexrag.models import EncoderProtocol
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index")
 
 
-@configure
-class RetrieverIndexBaseConfig:
-    """The configuration for the `RetrieverIndexBase`.
+DEFAULT_INDEX_BATCH_SIZE = 512
 
-    :batch_size: The batch size to add data to the index. Defaults to 512.
-    :type batch_size: int
-    :param index_path: The path to save the index.
-        If not specified, the index will be kept in memory.
-        Defaults to None.
-    :type index_path: Optional[str]
+
+class RawIndexBase(ABC):
+    """Base class for row-level indexes.
+
+    Raw indexes index flat data rows and return row ids from ``search``. They do
+    not own a configured local path; callers pass an explicit path when saving or
+    loading raw artifacts.
     """
 
-    batch_size: int = 512
-    index_path: Optional[str] = None
-
-
-class RetrieverIndexBase(ABC):
-    """The base class for all retriever indexes.
-    This class provides the basic interface for building, adding, and searching the index.
-
-    The subclass should implement the following methods:
-    - `build_index`: Build the index from the data.
-    - `insert`: Add a batch of data to the index.
-    - `search`: Search for the top_k most similar data indices to the query.
-    - `serialize`: Serialize the index to the disk.
-    - `clear`: Clear the index and remove the serialized index files.
-    - `__len__`: Return the number of data in the index.
-    - `is_addable`: Return whether the index is addable.
-    """
-
-    cfg: RetrieverIndexBaseConfig
+    config_cls: type[Any]
+    cfg: Any
 
     @abstractmethod
-    def build_index(self, data: Iterable[Any]) -> None:
-        """Build the index.
+    def build_index(
+        self,
+        data: Iterable[Any],
+        batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
+        scratch_path: str | None = None,
+    ) -> None:
+        """Build the raw index from flat row data.
 
-        This method only builds the in-memory index state. Callers that own
-        additional metadata should persist the complete index explicitly after
-        building.
+        Raw indexes do not receive context IDs and must preserve the input row
+        order as the row ID space returned by :meth:`search`.
 
-        :param data: The data to build the index.
-        :type data: Iterable[Any]
-        :return: None
+        :param data: Flat data rows to index.
+        :param batch_size: Runtime batch size used by implementations that
+            encode or add data in batches. Defaults to
+            :data:`DEFAULT_INDEX_BATCH_SIZE`.
+        :param scratch_path: Optional directory for temporary build artifacts.
+        :return: None.
         """
         return
 
     def insert_batch(
         self,
         data: Iterable[Any],
-        batch_size: Optional[int] = None,
-        serialize: bool = True,
+        batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
         log_interval: int = 10000,
         display: ProgressDisplay = "auto",
     ) -> None:
-        """Add data to the index in batches.
-        This method will automatically perform the `serialize` method if the `index_path` is set.
+        """Insert flat row data in batches.
 
-        :param data: The data to add.
-        :type data: Iterable[Any]
-        :param batch_size: The batch size to add data to the index. Defaults to self.batch_size.
-        :type batch_size: Optional[int]
-        :param serialize: Whether to serialize the index after adding data. Defaults to True.
-        :type serialize: bool
-        :param log_interval: The interval to log the progress. Defaults to 10000.
-        :type log_interval: int
-        :param display: The display mode for progress updates. Defaults to "auto".
-        :type display: ProgressDisplay
-        :return: None
+        This helper calls :meth:`insert` for each batch and does not persist the
+        index. Callers that own a storage path are responsible for saving after
+        mutation.
+
+        :param data: Flat rows to insert.
+        :param batch_size: Runtime batch size used for insertion. Defaults to
+            :data:`DEFAULT_INDEX_BATCH_SIZE`.
+        :param log_interval: Number of inserted rows between progress updates.
+        :param display: Progress display mode.
+        :return: None.
         """
         assert self.is_addable, "Current index is not addable."
-        batch_size = batch_size or self.cfg.batch_size
 
         def get_data_batch() -> Generator[list[Any], None, None]:
-            """A helper function that yields data in batches."""
             batch = []
             for item in data:
                 batch.append(item)
@@ -102,67 +89,51 @@ class RetrieverIndexBase(ABC):
                     batch = []
             if batch:
                 yield batch
+            return
 
-        # iterate over the data in batches
         with SimpleProgressLogger(
             logger, interval=log_interval, display=display
         ) as p_logger:
             for batch in get_data_batch():
-                self.insert(batch, serialize=False)
+                self.insert(batch)
                 p_logger.update(step=len(batch), desc="Adding data")
-
-        # serialize if the `index_path` is set
-        if (self.cfg.index_path is not None) and serialize:
-            self.save_to_local()
         return
 
     @abstractmethod
-    def insert(
-        self,
-        data: list[Any],
-        serialize: bool = True,
-    ) -> None:
-        """Add a batch of data to the index.
+    def insert(self, data: list[Any]) -> None:
+        """Insert one batch of flat row data.
 
-        :param data: The data to add.
-        :type data: list[Any]
-        :param serialize: Whether to serialize the index after adding data. Defaults to True.
-        :type serialize: bool
-        :return: None
+        Implementations may raise ``NotImplementedError`` when the underlying
+        index does not support incremental insertion.
+
+        :param data: Flat rows to append to the raw index.
+        :return: None.
         """
         return
 
-    @trace("retriever.index.search")
+    @trace("retriever.raw_index.search")
     def search_batch(
         self,
         query: Iterable[Any],
         top_k: int = 10,
-        batch_size: Optional[int] = None,
+        batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
         log_interval: int = 10000,
         display: ProgressDisplay = "auto",
         **search_kwargs,
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Search for the top_k most similar data indices to the query.
-        This method will search the index in batches.
+        """Search flat queries in batches.
 
-        :param query: The query data.
-        :type query: list[Any]
-        :param top_k: The number of most similar data indices to return, defaults to 10.
-        :type top_k: int, optional
-        :param batch_size: The batch size to search. Defaults to self.batch_size.
-        :type batch_size: Optional[int]
-        :param log_interval: The interval to log the progress. Defaults to 10000.
-        :type log_interval: int
-        :param display: The display mode for progress updates. Defaults to "auto".
-        :type display: ProgressDisplay
-        :param search_kwargs: Additional search arguments.
-        :type search_kwargs: Any
-        :return: The indices and scores of the top_k most similar data indices.
-        :rtype: tuple[np.ndarray, np.ndarray]
+        :param query: Query items accepted by the raw index implementation.
+        :param top_k: Number of row-level hits to return per query.
+        :param batch_size: Runtime batch size used for searching. Defaults to
+            :data:`DEFAULT_INDEX_BATCH_SIZE`.
+        :param log_interval: Number of queried items between progress updates.
+        :param display: Progress display mode.
+        :param search_kwargs: Extra search options forwarded to :meth:`search`.
+        :return: A pair ``(row_indices, scores)`` with one row per query.
         """
 
         def get_batch():
-            """Yield data in batches."""
             batch = []
             for item in query:
                 batch.append(item)
@@ -171,22 +142,20 @@ class RetrieverIndexBase(ABC):
                     batch = []
             if batch:
                 yield batch
+            return
 
         scores = []
         indices = []
-        batch_size = batch_size or self.cfg.batch_size
         total = len(query) if hasattr(query, "__len__") else None
         with SimpleProgressLogger(
             logger, total, interval=log_interval, display=display
         ) as p_logger:
             for q in get_batch():
                 r = self.search(q, top_k, **search_kwargs)
-                scores.append(r[1])
                 indices.append(r[0])
+                scores.append(r[1])
                 p_logger.update(step=len(q), desc="Searching")
-        scores = np.concatenate(scores, axis=0)
-        indices = np.concatenate(indices, axis=0)
-        return indices, scores
+        return np.concatenate(indices, axis=0), np.concatenate(scores, axis=0)
 
     @abstractmethod
     def search(
@@ -195,112 +164,558 @@ class RetrieverIndexBase(ABC):
         top_k: int,
         **search_kwargs,
     ) -> tuple[np.ndarray, np.ndarray]:
-        """Search for the top_k most similar data indices to the query.
+        """Search the raw index and return row-level results.
 
-        :param query: The query data.
-        :type query: list[Any]
-        :param top_k: The number of most similar data indices to return, defaults to 10.
-        :type top_k: int, optional
-        :param search_kwargs: Additional search arguments.
-        :type search_kwargs: Any
-        :return: The indices and scores of the top_k most similar data indices.
-        :rtype: tuple[np.ndarray, np.ndarray]
+        :param query: Query items accepted by the raw index implementation.
+        :param top_k: Number of row-level hits to return per query.
+        :param search_kwargs: Implementation-specific search options.
+        :return: A pair ``(row_indices, scores)``. ``row_indices`` contains raw
+            integer row IDs, not context IDs.
         """
         return
 
     @property
     @abstractmethod
     def is_addable(self) -> bool:
+        """Whether the raw index supports incremental insertion.
+
+        :return: ``True`` if :meth:`insert` can append data without rebuilding.
+        """
+        return
+
+    def _save_config(self, index_path: str) -> None:
+        os.makedirs(index_path, exist_ok=True)
+        self.cfg.dump(os.path.join(index_path, "config.yaml"))
         return
 
     @abstractmethod
-    def save_to_local(self, index_path: Optional[str] = None) -> None:
-        """Serialize the index to self.index_path.
-        If the `index_path` is given, the index will be serialized to the `index_path`.
+    def save_to_local(self, index_path: str) -> None:
+        """Save raw index artifacts to a concrete directory.
 
-        :param index_path: The path to serialize the index. Defaults to self.index_path.
-        :type index_path: str, optional
+        Raw index paths are explicit call arguments rather than config fields.
+        The caller owns the lifecycle of the directory.
+
+        :param index_path: Directory where raw config and artifacts are saved.
+        :return: None.
         """
         return
 
-    @staticmethod
-    def load_from_local(index_path: str, **kwargs) -> "RetrieverIndexBase":
-        """Load the index from the local path.
+    @classmethod
+    def load_from_local(cls, index_path: str, **kwargs) -> "RawIndexBase":
+        """Load raw index artifacts from a concrete directory.
 
-        :param index_path: The path to load the index.
-        :type index_path: str
-        :param kwargs: Additional arguments to pass to the index constructor.
-            Dense indexes require explicit encoder dependencies here.
-        :type kwargs: Any
+        :param index_path: Directory containing raw config and artifacts.
+        :param kwargs: Extra constructor dependencies, such as dense encoders.
+        :return: Loaded raw index instance.
         """
         assert os.path.exists(index_path), f"Index path {index_path} does not exist."
+        config_path = os.path.join(index_path, "config.yaml")
+        assert os.path.exists(config_path), (
+            f"Configuration file {config_path} does not exist."
+        )
+        cfg = cls.config_cls.load(config_path)
+        index = cls(cfg, **kwargs)
+        index._load_from_local(index_path)
+        return index
 
-        # load cls_id
+    @abstractmethod
+    def _load_from_local(self, index_path: str) -> None:
+        return
+
+    @abstractmethod
+    def clear(self) -> None:
+        """Clear in-memory raw index state without deleting disk artifacts.
+
+        :return: None.
+        """
+        return
+
+    @abstractmethod
+    def __len__(self) -> int:
+        """Return the number of flat rows in the raw index.
+
+        :return: Number of indexed raw rows.
+        """
+        return
+
+    @property
+    @abstractmethod
+    def infimum(self) -> float:
+        """Return the lower bound of raw index scores.
+
+        :return: Minimum possible score used for score normalization.
+        """
+        return
+
+    @property
+    @abstractmethod
+    def supremum(self) -> float:
+        """Return the upper bound of raw index scores.
+
+        :return: Maximum possible score used for score normalization.
+        """
+        return
+
+
+@configure
+class IndexFieldsConfig:
+    """Configuration for projecting context fields into an index.
+
+    :param indexed_fields: Context fields to index. If ``None``, all fields in
+        each context are indexed. Missing fields are skipped. Defaults to
+        ``None``.
+    :param merge_method: How to merge multiple field-level scores belonging to
+        the same context. Available choices are ``"max"``, ``"sum"``,
+        ``"mean"``, and ``"concat"``. Defaults to ``"max"``.
+    """
+
+    indexed_fields: Optional[list[str]] = None
+    merge_method: Annotated[str, Choices("max", "sum", "mean", "concat")] = "max"
+
+
+class ContextIndexBase(ABC):
+    """Base class for retriever-facing context-level indexes.
+
+    Context indexes own the logical index lifecycle. They project context
+    dictionaries into flat raw-index rows, keep the row/context mapping, and
+    return context IDs from search.
+    """
+
+    raw_index_cls: type[RawIndexBase]
+    raw_config_cls: type[Any]
+    config_cls: type[IndexFieldsConfig] = IndexFieldsConfig
+    cfg: IndexFieldsConfig
+
+    def __init__(self, cfg: IndexFieldsConfig, **raw_kwargs) -> None:
+        """Create an in-memory context-level index.
+
+        :param cfg: Context index configuration.
+        :param raw_kwargs: Dependencies forwarded to the raw index constructor,
+            such as dense query and passage encoders.
+        """
+        self.cfg = extract_config(cfg, self.config_cls)
+        raw_cfg = extract_config(self.cfg, self.raw_config_cls)
+        self.raw_index = self.raw_index_cls(raw_cfg, **raw_kwargs)
+        self._reset_mapping()
+        self._check_mapping_consistency()
+        return
+
+    def _reset_mapping(self) -> None:
+        self.index_to_context_id: dict[int, str] = {}
+        self.context_id_to_index: dict[str, list[int]] = defaultdict(list)
+        self.max_field_num = 1
+        return
+
+    def _check_mapping_consistency(self) -> None:
+        assert len(self.index_to_context_id) == len(self.raw_index), (
+            "The length of the raw index and the context-id mapping should be the same."
+        )
+        return
+
+    def _load_state_from_local(self, index_path: str, **raw_kwargs) -> None:
+        raw_path = os.path.join(index_path, "raw")
+        if os.path.exists(os.path.join(raw_path, "config.yaml")):
+            self.raw_index = self.raw_index_cls.load_from_local(
+                raw_path,
+                **raw_kwargs,
+            )
+
+        mapping_path = os.path.join(index_path, "context_mapping.pkl")
+        if os.path.exists(mapping_path):
+            with open(mapping_path, "rb") as f:
+                mapping = pickle.load(f)
+            self.context_id_to_index = defaultdict(
+                list,
+                mapping["context_id_to_index"],
+            )
+            self.index_to_context_id = mapping["index_to_context_id"]
+            self.max_field_num = mapping["max_field_num"]
+        else:
+            assert len(self.raw_index) == 0, (
+                "The raw index should be empty before building context mapping."
+            )
+            self._reset_mapping()
+        return
+
+    def _iter_index_data(
+        self,
+        context_ids: Iterable[str],
+        data: Iterable[dict[str, Any]],
+    ) -> Generator[tuple[str, Any], None, None]:
+        for context_id, item in zip(context_ids, data):
+            if self.cfg.indexed_fields is None:
+                indexed_fields = list(item.keys())
+            else:
+                indexed_fields = [
+                    field for field in self.cfg.indexed_fields if field in item
+                ]
+
+            if self.cfg.merge_method == "concat":
+                concat_text = ""
+                for field in indexed_fields:
+                    assert isinstance(item[field], str)
+                    concat_text += f"{field}: {item[field]} "
+                yield context_id, concat_text
+            else:
+                self.max_field_num = max(self.max_field_num, len(indexed_fields))
+                for field in indexed_fields:
+                    yield context_id, item[field]
+        return
+
+    def build_index(
+        self,
+        context_ids: Iterable[str],
+        data: Iterable[dict[str, Any]],
+        batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
+        scratch_path: str | None = None,
+    ) -> None:
+        """Build the context index from context IDs and context data.
+
+        This resets the raw index and all row/context mappings. It only updates
+        in-memory state; call :meth:`save_to_local` explicitly to persist.
+
+        :param context_ids: Context IDs corresponding to ``data``.
+        :param data: Context dictionaries to project into raw-index rows.
+        :param batch_size: Runtime batch size forwarded to the underlying raw
+            index build. Defaults to :data:`DEFAULT_INDEX_BATCH_SIZE`.
+        :param scratch_path: Optional directory for temporary build artifacts,
+            such as dense embedding memmaps.
+        :return: None.
+        """
+        self.raw_index.clear()
+        self._reset_mapping()
+        row_context_ids: list[str] = []
+
+        def get_data() -> Generator[Any, None, None]:
+            for context_id, item in self._iter_index_data(context_ids, data):
+                row_context_ids.append(context_id)
+                yield item
+            return
+
+        self.raw_index.build_index(
+            get_data(),
+            batch_size=batch_size,
+            scratch_path=scratch_path,
+        )
+        for idx, context_id in enumerate(row_context_ids):
+            self.context_id_to_index[context_id].append(idx)
+            self.index_to_context_id[idx] = context_id
+
+        return
+
+    def search_batch(
+        self,
+        query: list[Any],
+        top_k: int,
+        batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
+        **search_kwargs,
+    ) -> tuple[list[list[str]], np.ndarray]:
+        """Search queries in batches and return context-level results.
+
+        :param query: Query items accepted by the underlying raw index.
+        :param top_k: Number of context-level hits to return per query.
+        :param batch_size: Runtime batch size used for searching. Defaults to
+            :data:`DEFAULT_INDEX_BATCH_SIZE`.
+        :param log_interval: Number of queried items between progress updates.
+        :param display: Progress display mode.
+        :param search_kwargs: Extra search options forwarded to raw search.
+        :return: A pair ``(context_ids, scores)``.
+        """
+
+        def get_batch():
+            batch = []
+            for item in query:
+                batch.append(item)
+                if len(batch) == batch_size:
+                    yield batch
+                    batch = []
+            if batch:
+                yield batch
+            return
+
+        scores = []
+        indices = []
+        total = len(query) if hasattr(query, "__len__") else None
+        with SimpleProgressLogger(
+            logger, total, interval=log_interval, display=display
+        ) as p_logger:
+            for q in get_batch():
+                r = self.search(q, top_k, **search_kwargs)
+                indices.extend(r[0])
+                scores.append(r[1])
+                p_logger.update(step=len(q), desc="Searching")
+        return indices, np.concatenate(scores, axis=0)
+
+    def search(
+        self,
+        query: list[Any],
+        top_k: int,
+        **search_kwargs,
+    ) -> tuple[list[list[str]], np.ndarray]:
+        """Search the context index.
+
+        The underlying raw index may return multiple rows for the same context.
+        Scores are merged according to ``self.cfg.merge_method`` before the
+        final top-k context IDs are returned.
+
+        :param query: Query items accepted by the underlying raw index.
+        :param top_k: Number of context-level hits to return per query.
+        :param search_kwargs: Extra search options forwarded to raw search.
+        :return: A pair ``(context_ids, scores)``.
+        """
+        indices_batch, scores_batch = self.raw_index.search(
+            query, top_k * self.max_field_num, **search_kwargs
+        )
+
+        new_indices = []
+        new_scores = []
+        for indices, scores in zip(indices_batch, scores_batch):
+            retrieved = defaultdict(list)
+            for idx, score in zip(indices, scores):
+                context_id = self.index_to_context_id[idx]
+                retrieved[context_id].append(score)
+
+            for context_id in retrieved:
+                match self.cfg.merge_method:
+                    case "max":
+                        retrieved[context_id] = max(retrieved[context_id])
+                    case "sum":
+                        retrieved[context_id] = sum(retrieved[context_id])
+                    case "concat":
+                        retrieved[context_id] = retrieved[context_id][0]
+                    case "mean":
+                        retrieved[context_id] = sum(retrieved[context_id]) / len(
+                            retrieved[context_id]
+                        )
+                    case _:
+                        raise ValueError(
+                            f"Unknown merge method: {self.cfg.merge_method}"
+                        )
+
+            sorted_indices = sorted(retrieved.items(), key=lambda x: x[1], reverse=True)
+            new_indices.append([x[0] for x in sorted_indices[:top_k]])
+            new_scores.append([x[1] for x in sorted_indices[:top_k]])
+
+        return new_indices, np.array(new_scores)
+
+    def insert_batch(
+        self,
+        context_ids: Iterable[str],
+        data: Iterable[dict[str, Any]],
+        batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
+    ) -> None:
+        """Insert contexts in batches.
+
+        This method is available only when the underlying raw index is addable.
+        It updates the row/context mapping and optionally persists the complete
+        context index.
+
+        :param context_ids: Context IDs corresponding to ``data``.
+        :param data: Context dictionaries to project and insert.
+        :param batch_size: Runtime batch size used for insertion. Defaults to
+            :data:`DEFAULT_INDEX_BATCH_SIZE`.
+        :param log_interval: Number of inserted raw rows between progress
+            updates.
+        :param display: Progress display mode.
+        :return: None.
+        """
+        assert self.raw_index.is_addable, "Current index is not addable."
+        row_context_ids = []
+        offset = len(self.raw_index)
+
+        def get_data_batch() -> Generator[list[Any], None, None]:
+            batch = []
+            for context_id, item in self._iter_index_data(context_ids, data):
+                batch.append(item)
+                row_context_ids.append(context_id)
+                if len(batch) == batch_size:
+                    yield batch
+                    batch = []
+            if batch:
+                yield batch
+            return
+
+        with SimpleProgressLogger(
+            logger, interval=log_interval, display=display
+        ) as p_logger:
+            for batch in get_data_batch():
+                self.raw_index.insert(batch)
+                p_logger.update(step=len(batch), desc="Adding data")
+
+        for idx, context_id in enumerate(row_context_ids):
+            row_index = offset + idx
+            self.context_id_to_index[context_id].append(row_index)
+            self.index_to_context_id[row_index] = context_id
+
+        return
+
+    def insert(
+        self,
+        context_ids: list[str],
+        data: list[dict[str, Any]],
+    ) -> None:
+        """Insert one batch of contexts.
+
+        :param context_ids: Context IDs corresponding to ``data``.
+        :param data: Context dictionaries to project and insert.
+        :return: None.
+        """
+        assert len(context_ids) == len(data), (
+            "The length of context_ids and data should be the same."
+        )
+        assert self.raw_index.is_addable, "Current index is not addable."
+        offset = len(self.raw_index)
+        rows = list(self._iter_index_data(context_ids, data))
+        if len(rows) == 0:
+            return
+
+        row_context_ids = [row[0] for row in rows]
+        self.raw_index.insert([row[1] for row in rows])
+        for idx, context_id in enumerate(row_context_ids):
+            row_index = offset + idx
+            self.context_id_to_index[context_id].append(row_index)
+            self.index_to_context_id[row_index] = context_id
+
+        return
+
+    def clear(self) -> None:
+        """Clear in-memory state.
+
+        :return: None.
+        """
+        self._reset_mapping()
+        self.raw_index.clear()
+        return
+
+    def save_to_local(self, index_path: str) -> None:
+        """Save the complete logical context index to disk.
+
+        The context root stores the context config and row/context mapping. Raw
+        artifacts are saved under the ``raw/`` child directory.
+
+        :param index_path: Logical context-index root.
+        :return: None.
+        """
+        os.makedirs(index_path, exist_ok=True)
+        logger.info(f"Serializing context index to {index_path}")
+
+        self.cfg.dump(os.path.join(index_path, "config.yaml"))
+        with open(os.path.join(index_path, "cls.id"), "w", encoding="utf-8") as f:
+            f.write(self.__class__.__name__)
+
+        self.raw_index.save_to_local(os.path.join(index_path, "raw"))
+        with open(os.path.join(index_path, "context_mapping.pkl"), "wb") as f:
+            pickle.dump(
+                {
+                    "context_id_to_index": self.context_id_to_index,
+                    "index_to_context_id": self.index_to_context_id,
+                    "max_field_num": self.max_field_num,
+                },
+                f,
+            )
+        return
+
+    @staticmethod
+    def load_from_local(index_path: str, **kwargs) -> "ContextIndexBase":
+        """Load a context index from a logical artifact directory.
+
+        :param index_path: Directory containing context config, mapping, and
+            the ``raw/`` child artifact directory.
+        :param kwargs: Extra constructor dependencies forwarded to the raw
+            index, such as dense encoders.
+        :return: Loaded context-level index.
+        """
+        assert os.path.exists(index_path), f"Index path {index_path} does not exist."
         id_path = os.path.join(index_path, "cls.id")
         assert os.path.exists(id_path), f"Index ID file {id_path} does not exist."
-        index_name = open(id_path, "r").read().strip()
-        index_cls = RETRIEVER_INDEX[index_name]["item"]
+        with open(id_path, "r", encoding="utf-8") as f:
+            index_name = f.read().strip()
 
-        # load configuration
+        index_cls = RETRIEVER_INDEX[index_name]["item"]
         config_cls = RETRIEVER_INDEX[index_name]["config_class"]
         config_path = os.path.join(index_path, "config.yaml")
         assert os.path.exists(config_path), (
             f"Configuration file {config_path} does not exist."
         )
         cfg = config_cls.load(config_path)
-        cfg.index_path = index_path
-
-        # load the index
         index = index_cls(cfg, **kwargs)
+        index._load_state_from_local(index_path, **kwargs)
+        index._check_mapping_consistency()
         return index
 
-    @abstractmethod
-    def clear(self) -> None:
-        """Reset the index and remove the serialized index files."""
-        return
+    @property
+    def is_addable(self) -> bool:
+        """Whether the context index supports incremental insertion.
 
-    @abstractmethod
+        :return: ``True`` when the underlying raw index is addable.
+        """
+        return self.raw_index.is_addable
+
     def __len__(self) -> int:
-        """Return the number of data in the index."""
-        return
+        """Return the number of indexed contexts.
+
+        :return: Number of distinct context IDs in the mapping.
+        """
+        return len(self.context_id_to_index)
 
     @property
-    @abstractmethod
     def infimum(self) -> float:
-        """Return the infimum of the similarity scores for the index."""
-        return
+        """Return the lower bound of context-level scores.
+
+        :return: Minimum possible score inherited from the raw index.
+        """
+        return self.raw_index.infimum
 
     @property
-    @abstractmethod
     def supremum(self) -> float:
-        """Return the supremum of the similarity scores for the index."""
-        return
+        """Return the upper bound of context-level scores.
+
+        :return: Maximum possible score inherited from the raw index.
+        """
+        return self.raw_index.supremum
 
 
 @configure
-class DenseIndexBaseConfig(RetrieverIndexBaseConfig):
-    """The configuration for the `DenseIndexBase`.
+class DenseRawIndexBaseConfig:
+    """Configuration for dense raw indexes.
 
-    :param distance_function: The distance function to use. Defaults to "IP".
-        available choices are "IP", "L2", and "COS.
-    :type distance_function: str
+    :param distance_function: Vector distance or similarity function. Available
+        choices are ``"IP"``, ``"L2"``, and ``"COS"``. Defaults to ``"IP"``.
     """
 
     distance_function: Annotated[str, Choices("IP", "L2", "COS")] = "IP"
 
 
-class DenseIndexBase(RetrieverIndexBase):
-    """The base class for all dense indexes."""
+class DenseRawIndexBase(RawIndexBase):
+    """Base class for dense row-level indexes.
+
+    Dense raw indexes use injected encoders to convert query and passage data
+    into vectors before indexing or searching.
+    """
+
+    config_cls: type[DenseRawIndexBaseConfig] = DenseRawIndexBaseConfig
 
     def __init__(
         self,
-        cfg: DenseIndexBaseConfig,
+        cfg: DenseRawIndexBaseConfig,
         query_encoder: EncoderProtocol,
         passage_encoder: EncoderProtocol | None = None,
     ):
+        """Create a dense raw index.
+
+        :param cfg: Dense raw index configuration.
+        :param query_encoder: Encoder used for search queries.
+        :param passage_encoder: Optional encoder used for indexed passages. If
+            omitted, ``query_encoder`` is reused.
+        """
+        self.cfg = extract_config(cfg, self.config_cls)
         self.query_encoder = query_encoder
         self.passage_encoder = passage_encoder or query_encoder
-        self.distance_function = cfg.distance_function
+        self.distance_function = self.cfg.distance_function
         return
 
     def encode_data_batch(
@@ -308,56 +723,48 @@ class DenseIndexBase(RetrieverIndexBase):
         data: Iterable[Any],
         is_query: bool = False,
         use_memmap: bool = True,
+        batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
+        scratch_path: str | None = None,
         log_interval: int = 10000,
         display: ProgressDisplay = "auto",
     ) -> np.ndarray:
-        """A helper function that encodes all data into embeddings.
+        """Encode data into embeddings in batches.
 
-        :param data: The data to encode.
-        :type data: Iterable[dict[str, Any]]
-        :param is_query: Whether the data is query data.
-            If True, the query encoder will be used.
-            If False, the passage encoder will be used.
-            Defaults to False.
-        :type is_query: bool
-        :param use_memmap: Whether to use memory mapping for the embeddings.
-            If True, the embeddings will be saved to disk and loaded as a memory map.
-            If False, the embeddings will be kept in memory.
-            Note that you should remove the memory map file after use.
-            Defaults to True.
-        :type use_memmap: bool
-        :param log_interval: The interval to log the progress. Defaults to 10000.
-        :type log_interval: int
-        :param display: The display mode for progress updates. Defaults to "auto".
-        :type display: ProgressDisplay
-        :return: The embeddings of the data.
-        :rtype: np.ndarray
+        :param data: Query or passage data accepted by the selected encoder.
+        :param is_query: Whether to encode with the query encoder. If
+            ``False``, the passage encoder is used.
+        :param use_memmap: Whether to stage embeddings through a temporary
+            memory map to reduce peak memory use.
+        :param batch_size: Runtime batch size used for encoder calls. Defaults
+            to :data:`DEFAULT_INDEX_BATCH_SIZE`.
+        :param scratch_path: Optional directory for temporary embedding files.
+            If omitted, uses ``FLEXRAG_CACHE_DIR/embeddings``.
+        :param log_interval: Number of encoded items between progress updates.
+        :param display: Progress display mode.
+        :return: Encoded embeddings.
         """
-
-        # prepare_mmap_path
         if use_memmap:
-            if self.cfg.index_path is not None:
-                mmap_path = os.path.join(self.cfg.index_path, "embeddings")
-            else:
+            if scratch_path is None:
                 mmap_path = os.path.join(FLEXRAG_CACHE_DIR, "embeddings")
+            else:
+                mmap_path = os.path.join(scratch_path, "embeddings")
             os.makedirs(mmap_path, exist_ok=True)
         else:
             mmap_path = None
 
         def get_batch() -> Generator[list[Any], None, None]:
-            """A helper function that yields data in batches."""
             batch = []
             for item in data:
                 batch.append(item)
-                if len(batch) == self.cfg.batch_size:
+                if len(batch) == batch_size:
                     yield batch
                     batch = []
             if batch:
                 yield batch
+            return
 
         embeddings = []
         n_embeddings = 0
-        # encode the data
         with SimpleProgressLogger(
             logger, interval=log_interval, display=display
         ) as p_logger:
@@ -372,14 +779,13 @@ class DenseIndexBase(RetrieverIndexBase):
                 n_embeddings += emb.shape[0]
                 p_logger.update(step=len(batch), desc="Encoding data")
 
-        # concatenate the embeddings
         if isinstance(embeddings[0], str):
             logger.info("Copying embeddings to memory map")
             assert mmap_path is not None
             emb_path = embeddings[0]
             emb = np.load(emb_path)
             emb_map = np.memmap(
-                os.path.join(mmap_path, f"embeddings.npy"),
+                os.path.join(mmap_path, "embeddings.npy"),
                 dtype=np.float32,
                 mode="w+",
                 shape=(n_embeddings, emb.shape[1]),
@@ -397,27 +803,18 @@ class DenseIndexBase(RetrieverIndexBase):
         return embeddings
 
     def encode_data(self, data: list[Any], is_query: bool = False) -> np.ndarray:
-        """A helper function that encodes the data using the encoder.
+        """Encode one batch of data and normalize it for the metric.
 
-        :param data: The data to be encoded.
-        :type data: list[Any]
-        :param is_query: Whether the data is query data.
-            If True, the query encoder will be used.
-            If False, the passage encoder will be used.
-            Defaults to False.
-        :type is_query: bool
-        :return: The encoded data.
-        :rtype: np.ndarray
+        :param data: Query or passage data accepted by the selected encoder.
+        :param is_query: Whether to encode with the query encoder. If
+            ``False``, the passage encoder is used.
+        :return: Float32 embeddings ready for the raw index.
         """
-        # set the encoder
         if is_query:
-            assert self.query_encoder is not None, "Query encoder is not set."
             encoder = self.query_encoder
         else:
-            assert self.passage_encoder is not None, "Passage encoder is not set."
             encoder = self.passage_encoder
-
-        # encode the data
+        assert encoder is not None, "Encoder is not set."
         embeds = encoder.encode(data).astype("float32")
         return self._normalize_embeddings_for_metric(embeds)
 
@@ -436,41 +833,43 @@ class DenseIndexBase(RetrieverIndexBase):
     def add_embeddings_batch(
         self,
         embeds: np.ndarray,
+        batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
         log_interval: int = 10000,
         display: ProgressDisplay = "auto",
     ) -> None:
-        """A helper function that adds embeddings to the index in batches.
-        This method will not serialize the index automatically.
-        Thus, you should call the `serialize` method after adding all data.
+        """Add embeddings to the raw index in batches.
 
-        :param embeds: The embeddings to add.
-        :type embeds: np.ndarray
-        :param log_interval: The interval to log the progress. Defaults to 10000.
-        :type log_interval: int
-        :param display: The display mode for progress updates. Defaults to "auto".
-        :type display: ProgressDisplay
-        :return: None
+        :param embeds: Embeddings to add to the raw index.
+        :param batch_size: Runtime batch size used for adding embeddings.
+            Defaults to :data:`DEFAULT_INDEX_BATCH_SIZE`.
+        :param log_interval: Number of embeddings between progress updates.
+        :param display: Progress display mode.
+        :return: None.
         """
         with SimpleProgressLogger(
             logger, embeds.shape[0], log_interval, display=display
         ) as p_logger:
-            for i in range(0, embeds.shape[0], self.cfg.batch_size):
-                batch_embeds = embeds[i : i + self.cfg.batch_size]
+            for i in range(0, embeds.shape[0], batch_size):
+                batch_embeds = embeds[i : i + batch_size]
                 self.add_embeddings(batch_embeds)
                 p_logger.update(step=batch_embeds.shape[0], desc="Adding embeddings")
         return
 
     @abstractmethod
     def add_embeddings(self, embeds: np.ndarray) -> None:
-        """A helper function that adds embeddings to the index.
+        """Add one batch of embeddings to the raw index.
 
-        :param embeds: The embeddings to add.
-        :type embeds: np.ndarray
-        :return: None
+        :param embeds: Embeddings to add.
+        :return: None.
         """
         return
 
     def insert(self, data: list[Any]) -> None:
+        """Encode and insert one batch of passage data.
+
+        :param data: Passage data accepted by the passage encoder.
+        :return: None.
+        """
         embeddings = self.encode_data(data, is_query=False)
         self.add_embeddings(embeddings)
         return
@@ -478,12 +877,18 @@ class DenseIndexBase(RetrieverIndexBase):
     @property
     @abstractmethod
     def embedding_size(self) -> int:
-        """Return the embedding size of the index."""
+        """Return the embedding dimension used by this raw index.
+
+        :return: Embedding dimension.
+        """
         return
 
     @property
     def infimum(self) -> float:
-        # Dense index scores follow the convention "larger is more relevant".
+        """Return the lower bound of dense similarity scores.
+
+        :return: Minimum possible score for the configured distance function.
+        """
         if self.distance_function == "L2":
             return float("-inf")
         if self.distance_function == "COS":
@@ -492,7 +897,10 @@ class DenseIndexBase(RetrieverIndexBase):
 
     @property
     def supremum(self) -> float:
-        # Dense index scores follow the convention "larger is more relevant".
+        """Return the upper bound of dense similarity scores.
+
+        :return: Maximum possible score for the configured distance function.
+        """
         if self.distance_function == "L2":
             return 0.0
         if self.distance_function == "COS":
@@ -500,4 +908,4 @@ class DenseIndexBase(RetrieverIndexBase):
         return float("inf")
 
 
-RETRIEVER_INDEX = Register[RetrieverIndexBase]("index")
+RETRIEVER_INDEX = Register[ContextIndexBase]("index")

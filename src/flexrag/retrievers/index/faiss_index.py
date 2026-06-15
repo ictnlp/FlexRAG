@@ -1,88 +1,81 @@
 import os
-import shutil
-from copy import deepcopy
 from typing import Any, Iterable, Optional
 
 import faiss
 import numpy as np
 
 from flexrag.common import LOGGER_MANAGER, configure
-from flexrag.common.configure import extract_config
 from flexrag.models import EncoderProtocol
 
-from .index_base import RETRIEVER_INDEX, DenseIndexBase, DenseIndexBaseConfig
+from .index_base import (
+    DEFAULT_INDEX_BATCH_SIZE,
+    RETRIEVER_INDEX,
+    ContextIndexBase,
+    DenseRawIndexBase,
+    DenseRawIndexBaseConfig,
+    IndexFieldsConfig,
+)
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retriever.index.faiss")
 
 
 @configure
-class FaissIndexConfig(DenseIndexBaseConfig):
-    """The configuration for the `FaissIndex`.
+class FaissRawIndexConfig(DenseRawIndexBaseConfig):
+    """Configuration for row-level Faiss indexing.
 
-    :param factory_str: Building param: the factory string to build the index. Defaults to None.
-        If set to None, the index will be chosen automatically based on the corpus size.
-    :type factory_str: Optional[str]
-    :param index_train_num: Building param: the number of data used to train the index. Defaults to -1.
-        If set to -1, all data will be used to train the index.
-    :type index_train_num: int
-    :param n_probe: Inference param: the number of probes. Defaults to None.
-        If not set, the number of probes will be set to `index.nlist // 8` when the
-        resolved index contains an IVF component.
-    :type n_probe: Optional[int]
-    :param k_factor: Inference param: the k factor for search. Defaults to 10.
-    :type k_factor: int
-    :param polysemous_ht: Inference param: the polysemous hash table. Defaults to 0.
-    :type polysemous_ht: int
-    :param efSearch: Inference param: the efSearch for HNSW. Defaults to 100.
-    :type efSearch: int
+    :param distance_function: Vector distance or similarity function. Available
+        choices are ``"IP"``, ``"L2"``, and ``"COS"``. Defaults to ``"IP"``.
+    :param factory_str: Optional Faiss factory string. If ``None``, FlexRAG
+        selects a factory string based on embedding size and corpus size.
+    :param index_train_num: Number of embeddings sampled to train trainable
+        Faiss indexes. ``-1`` means all embeddings. Defaults to -1.
+    :param n_probe: Number of IVF cells to probe during search. If ``None``,
+        a default is derived from the index when possible.
+    :param k_factor: Refinement factor used for Faiss refine indexes. Defaults
+        to 10.
+    :param polysemous_ht: Polysemous hash threshold used by compatible Faiss
+        indexes. Defaults to 0.
+    :param efSearch: HNSW search effort used by compatible Faiss indexes.
+        Defaults to 100.
     """
 
     factory_str: Optional[str] = None
     index_train_num: int = -1
-    # Inference Arguments
     n_probe: Optional[int] = None
     k_factor: int = 10
     polysemous_ht: int = 0
     efSearch: int = 100
 
 
-@RETRIEVER_INDEX("faiss", config_class=FaissIndexConfig)
-class FaissIndex(DenseIndexBase):
-    """FaissIndex employs `faiss <https://github.com/facebookresearch/faiss>`_ library to build and search indexes with embeddings.
-    FaissIndex runs on CPU-backed Faiss indexes.
-    FaissIndex supports both automatic index selection and explicit Faiss factory strings.
-    FaissIndex provides a flexible and efficient way to build and search indexes with embeddings.
-    """
+class FaissRawIndex(DenseRawIndexBase):
+    """Row-level Faiss index."""
 
-    cfg: FaissIndexConfig
+    config_cls = FaissRawIndexConfig
+    cfg: FaissRawIndexConfig
 
     def __init__(
         self,
-        cfg: FaissIndexConfig,
+        cfg: FaissRawIndexConfig,
         query_encoder: EncoderProtocol,
         passage_encoder: EncoderProtocol | None = None,
     ) -> None:
         super().__init__(cfg, query_encoder, passage_encoder)
-        self.cfg = extract_config(cfg, FaissIndexConfig)
-        # prepare index
         self.index = None
-
-        # load the index if index_path is provided
-        if self.cfg.index_path is not None:
-            if os.path.exists(self.cfg.index_path):
-                logger.info(f"Loading index from {self.cfg.index_path}")
-                try:
-                    index_path = os.path.join(self.cfg.index_path, "index.faiss")
-                    self.index = faiss.read_index(index_path, faiss.IO_FLAG_MMAP)
-                except:
-                    raise FileNotFoundError(
-                        f"Unable to load index from {self.cfg.index_path}"
-                    )
         return
 
-    def build_index(self, data: Iterable[Any]) -> None:
+    def build_index(
+        self,
+        data: Iterable[Any],
+        batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
+        scratch_path: str | None = None,
+    ) -> None:
         self.clear()
-        embeddings = self.encode_data_batch(data, is_query=False)
+        embeddings = self.encode_data_batch(
+            data,
+            is_query=False,
+            batch_size=batch_size,
+            scratch_path=scratch_path,
+        )
         factory_str = self._resolve_factory_str(
             embedding_size=embeddings.shape[1],
             embedding_length=embeddings.shape[0],
@@ -94,7 +87,7 @@ class FaissIndex(DenseIndexBase):
             factory_str=factory_str,
         )
         self._train_index(embeddings)
-        self.add_embeddings_batch(embeddings)
+        self.add_embeddings_batch(embeddings, batch_size=batch_size)
         if isinstance(embeddings, np.memmap):
             emb_path = embeddings.filename
             os.remove(emb_path)
@@ -102,8 +95,8 @@ class FaissIndex(DenseIndexBase):
 
     def _resolve_factory_str(
         self,
-        embedding_size: int,  # the dimension of the embeddings
-        embedding_length: int,  # the number of the embeddings
+        embedding_size: int,
+        embedding_length: int,
         factory_str: Optional[str] = None,
     ) -> str:
         if factory_str is not None:
@@ -136,7 +129,7 @@ class FaissIndex(DenseIndexBase):
             logger.info(f"Auto set index to {resolved_factory_str}")
             logger.info(
                 f"We recommend to set n_probe to {n_list // 8} "
-                f"for better inference performance."
+                "for better inference performance."
             )
             return resolved_factory_str
 
@@ -153,7 +146,7 @@ class FaissIndex(DenseIndexBase):
             )
             logger.info(
                 f"We recommend to set n_probe to {n_list // 8} "
-                f"for better inference performance."
+                "for better inference performance."
             )
             return resolved_factory_str
 
@@ -161,17 +154,16 @@ class FaissIndex(DenseIndexBase):
         logger.info(f"Auto set index to {resolved_factory_str}")
         logger.info(
             f"We recommend to set n_probe to {n_list // 8} "
-            f"for better inference performance."
+            "for better inference performance."
         )
         return resolved_factory_str
 
     def _prepare_index(
         self,
         distance_function: str,
-        embedding_size: int,  # the dimension of the embeddings
+        embedding_size: int,
         factory_str: str,
     ):
-        # prepare distance function
         match distance_function:
             case "IP" | "COS":
                 basic_metric = faiss.METRIC_INNER_PRODUCT
@@ -180,12 +172,7 @@ class FaissIndex(DenseIndexBase):
             case _:
                 raise ValueError(f"Unknown distance function: {distance_function}")
 
-        index = faiss.index_factory(
-            embedding_size,
-            factory_str,
-            basic_metric,
-        )
-        return index
+        return faiss.index_factory(embedding_size, factory_str, basic_metric)
 
     def _train_index(self, embeddings: np.ndarray) -> None:
         if self.is_trained:
@@ -216,12 +203,6 @@ class FaissIndex(DenseIndexBase):
         return
 
     def _prepare_search_params(self, **kwargs):
-        """A helper function to prepare search parameters for the index.
-
-        :return: The search parameters for the index.
-        :rtype: faiss.SearchParameters
-        """
-        # set search kwargs
         k_factor = kwargs.get("k_factor", self.cfg.k_factor)
         n_probe = kwargs.get("n_probe", self.cfg.n_probe)
         if n_probe is None:
@@ -286,38 +267,28 @@ class FaissIndex(DenseIndexBase):
         scores = self._postprocess_scores(scores)
         return indices, scores
 
-    def save_to_local(self, index_path: Optional[str] = None) -> None:
-        # check if the index is serializable
-        if index_path is not None:
-            self.cfg.index_path = index_path
-        assert self.cfg.index_path is not None, "`index_path` is not set."
-        assert self.index.is_trained, "Index should be trained first."
-        if not os.path.exists(self.cfg.index_path):
-            os.makedirs(self.cfg.index_path)
-        logger.info(f"Serializing index to {self.cfg.index_path}")
-
-        # save the configuration
-        cfg = deepcopy(self.cfg)
-        cfg.index_path = ""
-        config_path = os.path.join(self.cfg.index_path, "config.yaml")
-        cfg.dump(config_path)
-        id_path = os.path.join(self.cfg.index_path, "cls.id")
-        with open(id_path, "w", encoding="utf-8") as f:
-            f.write(self.__class__.__name__)
-
-        # serialize the index
-        index_path = os.path.join(self.cfg.index_path, "index.faiss")
-        faiss.write_index(self.index, index_path)
+    def save_to_local(self, index_path: str) -> None:
+        assert self.index is not None and self.index.is_trained, (
+            "Index should be trained first."
+        )
+        self._save_config(index_path)
+        faiss.write_index(self.index, os.path.join(index_path, "index.faiss"))
         return
 
-    def clear(self):
+    def _load_from_local(self, index_path: str) -> None:
+        try:
+            self.index = faiss.read_index(
+                os.path.join(index_path, "index.faiss"),
+                faiss.IO_FLAG_MMAP,
+            )
+        except Exception as exc:
+            raise FileNotFoundError(f"Unable to load index from {index_path}") from exc
+        return
+
+    def clear(self) -> None:
         if self.index is None:
             return
         self.index.reset()
-
-        if self.cfg.index_path is not None:
-            if os.path.exists(self.cfg.index_path):
-                shutil.rmtree(self.cfg.index_path)
         return
 
     @property
@@ -344,3 +315,46 @@ class FaissIndex(DenseIndexBase):
         if self.index is None:
             return 0
         return self.index.ntotal
+
+
+@configure
+class FaissIndexConfig(FaissRawIndexConfig, IndexFieldsConfig):
+    """Configuration for context-level FaissIndex.
+
+    :param indexed_fields: Context fields to index. If ``None``, all fields are
+        indexed. Defaults to ``None``.
+    :param merge_method: How to merge multiple field-level scores for the same
+        context. Available choices are ``"max"``, ``"sum"``, ``"mean"``, and
+        ``"concat"``. Defaults to ``"max"``.
+    :param distance_function: Vector distance or similarity function. Available
+        choices are ``"IP"``, ``"L2"``, and ``"COS"``. Defaults to ``"IP"``.
+    :param factory_str: Optional Faiss factory string. If ``None``, FlexRAG
+        selects a factory string based on embedding size and corpus size.
+    :param index_train_num: Number of embeddings sampled to train trainable
+        Faiss indexes. ``-1`` means all embeddings. Defaults to -1.
+    :param n_probe: Number of IVF cells to probe during search. If ``None``,
+        a default is derived from the index when possible.
+    :param k_factor: Refinement factor used for Faiss refine indexes. Defaults
+        to 10.
+    :param polysemous_ht: Polysemous hash threshold used by compatible Faiss
+        indexes. Defaults to 0.
+    :param efSearch: HNSW search effort used by compatible Faiss indexes.
+        Defaults to 100.
+    """
+
+
+@RETRIEVER_INDEX("faiss", config_class=FaissIndexConfig)
+class FaissIndex(ContextIndexBase):
+    """Context-level Faiss index."""
+
+    raw_index_cls = FaissRawIndex
+    raw_config_cls = FaissRawIndexConfig
+    config_cls = FaissIndexConfig
+
+    @property
+    def query_encoder(self):
+        return self.raw_index.query_encoder
+
+    @property
+    def passage_encoder(self):
+        return self.raw_index.passage_encoder

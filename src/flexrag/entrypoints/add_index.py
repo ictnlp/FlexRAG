@@ -6,16 +6,31 @@ from hydra.core.config_store import ConfigStore
 
 from flexrag.common import configure, extract_config
 from flexrag.models import ENCODERS, EncoderConfig
-from flexrag.retrievers import FlexRetriever, IndexFieldsConfig
+from flexrag.retrievers import FlexRetriever
 from flexrag.retrievers.index import (
     RETRIEVER_INDEX,
+    DenseRawIndexBase,
     RetrieverIndexConfig,
 )
-from flexrag.retrievers.index.index_base import DenseIndexBase
 
 
 @configure
-class Config(RetrieverIndexConfig, IndexFieldsConfig):
+class Config(RetrieverIndexConfig):
+    """Configuration for the ``add_index`` entrypoint.
+
+    :param index_name: Name used to attach the created context index to the
+        target retriever. Must be provided by the caller.
+    :param retriever_path: Local FlexRetriever directory to update. Must be
+        provided by the caller.
+    :param query_encoder_config: Encoder configuration used for dense indexes
+        that require query encoding.
+    :param passage_encoder_config: Optional separate passage encoder
+        configuration for dense indexes. When omitted, dense indexes reuse the
+        query encoder.
+    :param rebuild: Whether to remove an existing index with ``index_name``
+        before creating the new one. Defaults to False.
+    """
+
     index_name: Optional[str] = None
     retriever_path: Optional[str] = None
     query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)
@@ -41,7 +56,7 @@ def main(cfg: Config):
     # add index
     index_kwargs = {}
     index_cls = RETRIEVER_INDEX[str(cfg.index_type)]["item"]
-    if issubclass(index_cls, DenseIndexBase):
+    if issubclass(index_cls.raw_index_cls, DenseRawIndexBase):
         query_encoder = ENCODERS.load(cfg.query_encoder_config)
         if query_encoder is None:
             raise ValueError("query_encoder_config must be configured for dense index.")
@@ -50,8 +65,8 @@ def main(cfg: Config):
             passage_encoder = ENCODERS.load(cfg.passage_encoder_config)
             if passage_encoder is not None:
                 index_kwargs["passage_encoder"] = passage_encoder
-    base_index = RETRIEVER_INDEX.load(cfg, **index_kwargs)
-    retriever.add_index(cfg.index_name, base_index, fields_config=cfg)
+    index = RETRIEVER_INDEX.load(cfg, **index_kwargs)
+    retriever.add_index(cfg.index_name, index)
     return
 
 

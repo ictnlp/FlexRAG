@@ -1,5 +1,3 @@
-import os
-import shutil
 from typing import Annotated, Any, Iterable, Optional
 
 import bm25s
@@ -8,36 +6,39 @@ import numpy as np
 from flexrag.common import LOGGER_MANAGER, Choices, configure
 from flexrag.common.configure import extract_config
 
-from .index_base import RETRIEVER_INDEX, RetrieverIndexBase, RetrieverIndexBaseConfig
+from .index_base import (
+    DEFAULT_INDEX_BATCH_SIZE,
+    RETRIEVER_INDEX,
+    ContextIndexBase,
+    IndexFieldsConfig,
+    RawIndexBase,
+)
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index.bm25")
 
 
 @configure
-class BM25IndexConfig(RetrieverIndexBaseConfig):
-    """Configuration class for BM25Index.
+class BM25RawIndexConfig:
+    """Configuration for row-level BM25 indexing.
 
-    :param method: BM25S method. Default: "lucene".
-        Available options: "atire", "bm25l", "bm25+", "lucene", "robertson".
-    :type method: str
-    :param idf_method: IDF method. Default: None.
-        Available options: "atire", "bm25l", "bm25+", "lucene", "robertson".
-    :type idf_method: Optional[str]
-    :param backend: Backend for BM25S. Default: "auto".
-        Available options: "numpy", "numba", "auto".
-    :type backend: str
-    :param k1: BM25S parameter k1. Default: 1.5.
-    :type k1: float
-    :param b: BM25S parameter b. Default: 0.75.
-    :type b: float
-    :param delta: BM25S parameter delta. Default: 0.5.
-    :type delta: float
-    :param lang: Language for Tokenization. Default: "english".
-    :type lang: str
-    :param show_progress: Whether to show progress bar during indexing. Default: True.
-    :type show_progress: bool
-    :param mmap: Whether to use memory-maps for loading the index. Default: True.
-    :type mmap: bool
+    :param method: BM25S scoring method. Available choices are ``"atire"``,
+        ``"bm25l"``, ``"bm25+"``, ``"lucene"``, and ``"robertson"``. Defaults
+        to ``"lucene"``.
+    :param idf_method: BM25S IDF method. If ``None``, BM25S uses the default
+        method for ``method``. Available choices are ``"atire"``, ``"bm25l"``,
+        ``"bm25+"``, ``"lucene"``, and ``"robertson"``.
+    :param backend: BM25S execution backend. Available choices are ``"numpy"``,
+        ``"numba"``, and ``"auto"``. Defaults to ``"auto"``.
+    :param k1: BM25 term-frequency saturation parameter. Defaults to 1.5.
+    :param b: BM25 document-length normalization parameter. Defaults to 0.75.
+    :param delta: Delta parameter used by BM25 variants that support it.
+        Defaults to 0.5.
+    :param lang: Language used for tokenization, stemming, and stopwords.
+        Defaults to ``"english"``.
+    :param show_progress: Whether BM25S should display progress while building
+        the raw index. Defaults to ``True``.
+    :param mmap: Whether to memory-map BM25S artifacts when loading from disk.
+        Defaults to ``True``.
     """
 
     method: Annotated[
@@ -71,81 +72,66 @@ class BM25IndexConfig(RetrieverIndexBaseConfig):
     mmap: bool = True
 
 
-@RETRIEVER_INDEX("bm25", config_class=BM25IndexConfig)
-class BM25Index(RetrieverIndexBase):
-    """BM25Index is a index that retrieves passages using the BM25 algorithm.
-    The implementation is based on the `bm25s <https://github.com/xhluca/bm25s>`_ project.
-    """
+class BM25RawIndex(RawIndexBase):
+    """Row-level BM25 index backed by bm25s."""
 
-    def __init__(self, cfg: BM25IndexConfig) -> None:
-        self.cfg = extract_config(cfg, BM25IndexConfig)
+    config_cls = BM25RawIndexConfig
+    cfg: BM25RawIndexConfig
+
+    def __init__(self, cfg: BM25RawIndexConfig) -> None:
+        self.cfg = extract_config(cfg, BM25RawIndexConfig)
         try:
             import Stemmer
 
-            self._stemmer = Stemmer.Stemmer(cfg.lang)
-        except:
+            self._stemmer = Stemmer.Stemmer(self.cfg.lang)
+        except ImportError:
             logger.warning(
                 "Stemmer is not available. "
-                "You can install `PyStemmer` by `pip install PyStemmer` for better results."
+                "You can install `PyStemmer` by `pip install PyStemmer` "
+                "for better results."
             )
             self._stemmer = None
 
-        # initialize the index
         self.index = bm25s.BM25(
-            method=cfg.method,
-            idf_method=cfg.idf_method,
-            backend=cfg.backend,
-            k1=cfg.k1,
-            b=cfg.b,
-            delta=cfg.delta,
+            method=self.cfg.method,
+            idf_method=self.cfg.idf_method,
+            backend=self.cfg.backend,
+            k1=self.cfg.k1,
+            b=self.cfg.b,
+            delta=self.cfg.delta,
         )
-        self.show_progress = cfg.show_progress
-
-        # load the index if index_path is provided
-        if self.cfg.index_path is not None:
-            if os.path.exists(self.cfg.index_path):
-                logger.info(f"Loading index from {self.cfg.index_path}")
-                try:
-                    self.index = bm25s.BM25.load(
-                        self.cfg.index_path, mmap=self.cfg.mmap
-                    )
-                except:
-                    raise FileNotFoundError(
-                        f"Unable to load index from {self.cfg.index_path}"
-                    )
         return
 
-    def build_index(self, data: Iterable[Any]) -> None:
-        # prepare the data
+    def build_index(
+        self,
+        data: Iterable[Any],
+        batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
+        scratch_path: str | None = None,
+    ) -> None:
         logger.info("Preparing the passages for indexing.")
         items = list(data)
 
-        # tokenize and build index
         logger.info("Building the index.")
         indexed_tokens = bm25s.tokenize(
             items,
             stopwords=self.cfg.lang,
             stemmer=self._stemmer,
-            show_progress=self.show_progress,
+            show_progress=self.cfg.show_progress,
             leave=True,
         )
         self.index.index(
             indexed_tokens,
-            show_progress=self.show_progress,
+            show_progress=self.cfg.show_progress,
             leave_progress=True,
         )
-
-        # serialize index
-        if self.cfg.index_path is not None:
-            self.save_to_local()
         return
 
     def insert(self, data: list[Any]) -> None:
-        raise NotImplementedError("BM25Index does not support inserting data.")
+        raise NotImplementedError("BM25RawIndex does not support inserting data.")
 
     def search(
         self,
-        query: list[str],  # bm25 algorithm can only process string
+        query: list[str],
         top_k: int,
         **search_kwargs,
     ) -> tuple[np.ndarray, np.ndarray]:
@@ -162,24 +148,16 @@ class BM25Index(RetrieverIndexBase):
     def is_addable(self) -> bool:
         return False
 
-    def save_to_local(self, index_path: Optional[str] = None) -> None:
-        # check if the index is serializable
-        if index_path is not None:
-            self.cfg.index_path = index_path
-        assert self.cfg.index_path is not None, "`index_path` is not set."
-        if not os.path.exists(self.cfg.index_path):
-            os.makedirs(self.cfg.index_path)
-        logger.info(f"Serializing index to {self.cfg.index_path}")
+    def save_to_local(self, index_path: str) -> None:
+        self._save_config(index_path)
+        self.index.save(index_path)
+        return
 
-        # save the configuration
-        config_path = os.path.join(self.cfg.index_path, "config.yaml")
-        self.cfg.dump(config_path)
-        id_path = os.path.join(self.cfg.index_path, "cls.id")
-        with open(id_path, "w", encoding="utf-8") as f:
-            f.write(self.__class__.__name__)
-
-        # serialize the index
-        self.index.save(self.cfg.index_path)
+    def _load_from_local(self, index_path: str) -> None:
+        try:
+            self.index = bm25s.BM25.load(index_path, mmap=self.cfg.mmap)
+        except Exception as exc:
+            raise FileNotFoundError(f"Unable to load index from {index_path}") from exc
         return
 
     def clear(self) -> None:
@@ -187,9 +165,6 @@ class BM25Index(RetrieverIndexBase):
             del self.index.scores
         if hasattr(self.index, "vocab_dict"):
             del self.index.vocab_dict
-        if self.cfg.index_path is not None:
-            if os.path.exists(self.cfg.index_path):
-                shutil.rmtree(self.cfg.index_path)
         return
 
     def __len__(self) -> int:
@@ -204,3 +179,41 @@ class BM25Index(RetrieverIndexBase):
     @property
     def supremum(self) -> float:
         return float("inf")
+
+
+@configure
+class BM25IndexConfig(BM25RawIndexConfig, IndexFieldsConfig):
+    """Configuration for context-level BM25Index.
+
+    :param indexed_fields: Context fields to index. If ``None``, all fields are
+        indexed. Defaults to ``None``.
+    :param merge_method: How to merge multiple field-level scores for the same
+        context. Available choices are ``"max"``, ``"sum"``, ``"mean"``, and
+        ``"concat"``. Defaults to ``"max"``.
+    :param method: BM25S scoring method. Available choices are ``"atire"``,
+        ``"bm25l"``, ``"bm25+"``, ``"lucene"``, and ``"robertson"``. Defaults
+        to ``"lucene"``.
+    :param idf_method: BM25S IDF method. If ``None``, BM25S uses the default
+        method for ``method``.
+    :param backend: BM25S execution backend. Available choices are ``"numpy"``,
+        ``"numba"``, and ``"auto"``. Defaults to ``"auto"``.
+    :param k1: BM25 term-frequency saturation parameter. Defaults to 1.5.
+    :param b: BM25 document-length normalization parameter. Defaults to 0.75.
+    :param delta: Delta parameter used by BM25 variants that support it.
+        Defaults to 0.5.
+    :param lang: Language used for tokenization, stemming, and stopwords.
+        Defaults to ``"english"``.
+    :param show_progress: Whether BM25S should display progress while building
+        the raw index. Defaults to ``True``.
+    :param mmap: Whether to memory-map BM25S artifacts when loading from disk.
+        Defaults to ``True``.
+    """
+
+
+@RETRIEVER_INDEX("bm25", config_class=BM25IndexConfig)
+class BM25Index(ContextIndexBase):
+    """Context-level BM25 index."""
+
+    raw_index_cls = BM25RawIndex
+    raw_config_cls = BM25RawIndexConfig
+    config_cls = BM25IndexConfig

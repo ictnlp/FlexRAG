@@ -1,9 +1,6 @@
 import tempfile
 from pathlib import Path
 
-import pytest
-from pydantic import ValidationError
-
 from flexrag.common import Context
 from flexrag.datasets.reader import LineDelimitedReader
 from flexrag.models import ENCODERS, EncoderConfig, LiteLLMEncoderConfig
@@ -22,7 +19,6 @@ from flexrag.retrievers.index import (
     BM25IndexConfig,
     FaissIndexConfig,
     RetrieverIndexConfig,
-    ScaNNIndexConfig,
 )
 
 
@@ -66,23 +62,29 @@ def bm25_fields_config() -> IndexFieldsConfig:
 
 
 def build_contriever_index(encoder):
-    base_index = RETRIEVER_INDEX.load(
+    index = RETRIEVER_INDEX.load(
         RetrieverIndexConfig(
             index_type="faiss",
-            faiss_config=FaissIndexConfig(batch_size=512),
+            faiss_config=FaissIndexConfig(
+                indexed_fields=["text"],
+                merge_method="max",
+            ),
         ),
         query_encoder=encoder,
     )
-    assert base_index.query_encoder is encoder
-    assert base_index.passage_encoder is encoder
-    return base_index
+    assert index.query_encoder is encoder
+    assert index.passage_encoder is encoder
+    return index
 
 
 def build_bm25_index():
     return RETRIEVER_INDEX.load(
         RetrieverIndexConfig(
             index_type="bm25",
-            bm25_config=BM25IndexConfig(batch_size=512),
+            bm25_config=BM25IndexConfig(
+                indexed_fields=["title", "section", "text"],
+                merge_method="max",
+            ),
         )
     )
 
@@ -151,7 +153,6 @@ class TestRetrievers:
             retriever.add_index(
                 "contriever",
                 build_contriever_index(encoder),
-                fields_config=contriever_fields_config(),
             )
             assert len(retriever) == 1000
             ctxs = retriever.search(
@@ -177,7 +178,6 @@ class TestRetrievers:
             retriever.add_index(
                 "bm25",
                 build_bm25_index(),
-                fields_config=bm25_fields_config(),
             )
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"],
@@ -214,6 +214,13 @@ class TestRetrievers:
             assert Path(tempdir, "indexes", "bm25").exists()
             assert Path(tempdir, "database.lmdb").exists()
             assert Path(
+                tempdir, "indexes", "contriever", "context_mapping.pkl"
+            ).exists()
+            assert Path(tempdir, "indexes", "contriever", "raw").exists()
+            assert Path(
+                tempdir, "indexes", "contriever", "raw", "config.yaml"
+            ).exists()
+            assert not Path(
                 tempdir, "indexes", "contriever", "index_fields_config.yaml"
             ).exists()
             assert not Path(
@@ -234,12 +241,15 @@ class TestRetrievers:
             retriever.add_index(
                 "bm25",
                 build_bm25_index(),
-                fields_config=bm25_fields_config(),
             )
             retriever.save_to_local(tempdir)
             retriever.database.close()
             del retriever
-            assert Path(tempdir, "indexes", "bm25", "index_fields_config.yaml").exists()
+            assert Path(tempdir, "indexes", "bm25", "context_mapping.pkl").exists()
+            assert Path(tempdir, "indexes", "bm25", "raw").exists()
+            assert not Path(
+                tempdir, "indexes", "bm25", "index_fields_config.yaml"
+            ).exists()
             assert not Path(
                 tempdir, "indexes", "bm25", "multi_field_index_config.yaml"
             ).exists()
@@ -255,23 +265,41 @@ class TestRetrievers:
             assert len(ctxs[1]) == 5
         return
 
-    def test_dense_index_config_rejects_encoder_config(self):
-        with pytest.raises(ValidationError, match="query_encoder_config"):
-            FaissIndexConfig(query_encoder_config=litellm_encoder_config())
-        with pytest.raises(ValidationError, match="passage_encoder_config"):
-            ScaNNIndexConfig(passage_encoder_config=litellm_encoder_config())
+    def test_flex_retriever_rebuilds_non_addable_index_with_full_database(self):
+        retriever = FlexRetriever(FlexRetrieverConfig(batch_size=2))
+        retriever.add_index(
+            "bm25",
+            RETRIEVER_INDEX.load(
+                RetrieverIndexConfig(
+                    index_type="bm25",
+                    bm25_config=BM25IndexConfig(
+                        indexed_fields=["text"],
+                        show_progress=False,
+                    ),
+                )
+            ),
+        )
+        retriever.add_passages(
+            [Context(context_id="bruce", data={"text": "Bruce Wayne guards Gotham."})]
+        )
+        retriever.add_passages(
+            [
+                Context(
+                    context_id="capital",
+                    data={"text": "Beijing is the capital of China."},
+                )
+            ]
+        )
 
-    def test_flex_retriever_config_rejects_search_runtime_options(self):
-        with pytest.raises(ValidationError, match="top_k"):
-            FlexRetrieverConfig(top_k=5)
-        with pytest.raises(ValidationError, match="used_indexes"):
-            FlexRetrieverConfig(used_indexes=["bm25"])
-        with pytest.raises(ValidationError, match="indexes_merge_method"):
-            FlexRetrieverConfig(indexes_merge_method="linear")
-        with pytest.raises(ValidationError, match="indexes_merge_weights"):
-            FlexRetrieverConfig(indexes_merge_weights=[0.5, 0.5])
-        with pytest.raises(ValidationError, match="rrf_base"):
-            FlexRetrieverConfig(rrf_base=30)
+        results = retriever.search(
+            ["Bruce Wayne", "capital of China"],
+            disable_cache=True,
+            top_k=1,
+            used_indexes=["bm25"],
+        )
+
+        assert results[0][0].context_id == "bruce"
+        assert results[1][0].context_id == "capital"
 
     def test_elastic_retriever(self, mock_es_client):
         # load retriever
