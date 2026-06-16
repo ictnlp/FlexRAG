@@ -1,5 +1,5 @@
 from flexrag.common import ContentPart
-from flexrag.models.process_worker_pool import ProcessWorkerPoolClient
+from flexrag.runtime.process_worker_pool import ProcessWorkerPoolClient
 
 from .encoder_base import EncoderBase
 

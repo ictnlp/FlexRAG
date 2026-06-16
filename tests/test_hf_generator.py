@@ -10,7 +10,7 @@ from flexrag.models.generators.hf_generator import (
     _content_part_to_hf,
     _turn_to_hf,
 )
-from flexrag.models.process_worker import build_worker_config
+from flexrag.runtime.process_worker import build_worker_config
 
 
 def test_content_part_to_hf_maps_rich_modalities():

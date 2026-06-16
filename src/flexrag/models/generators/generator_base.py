@@ -5,7 +5,7 @@ from typing import Any, Optional, Protocol
 
 from flexrag.common import ChatMessages, ChatTurn, ProgressDisplay, Register, configure
 from flexrag.common.logging import SimpleProgressLogger
-from flexrag.models.async_client_base import AsyncClientMixin, ConfigT
+from flexrag.runtime.async_client import AsyncClientMixin, ConfigT
 
 
 @configure

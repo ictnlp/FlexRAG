@@ -4,8 +4,8 @@ from abc import abstractmethod
 import numpy as np
 
 from flexrag.common import configure
-from flexrag.common.async_utils import BackgroundEventLoop
 from flexrag.common.dataclasses import RetrievedContext
+from flexrag.runtime.event_loop import BackgroundEventLoop
 
 from .ranker_base import RankerBase, RankerBaseConfig, RankingResult
 

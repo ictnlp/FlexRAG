@@ -1,4 +1,4 @@
-from flexrag.models.process_worker_pool import ProcessWorkerPoolClient
+from flexrag.runtime.process_worker_pool import ProcessWorkerPoolClient
 
 from .scorer_base import PairScorerBase
 

@@ -5,7 +5,7 @@ from typing import Protocol
 import numpy as np
 
 from flexrag.common import ProgressDisplay, Register, SimpleProgressLogger
-from flexrag.models.async_client_base import AsyncClientMixin, ConfigT
+from flexrag.runtime.async_client import AsyncClientMixin, ConfigT
 
 
 class PairScorerProtocol(Protocol):

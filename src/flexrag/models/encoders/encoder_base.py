@@ -6,7 +6,7 @@ import numpy as np
 from PIL.ImageFile import ImageFile
 
 from flexrag.common import ContentPart, ProgressDisplay, Register, SimpleProgressLogger
-from flexrag.models.async_client_base import AsyncClientMixin, ConfigT
+from flexrag.runtime.async_client import AsyncClientMixin, ConfigT
 
 EncoderInput: TypeAlias = str | ImageFile | ContentPart
 
