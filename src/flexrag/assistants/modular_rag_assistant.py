@@ -3,10 +3,10 @@ from typing import Any, Optional
 
 from flexrag.common import LOGGER_MANAGER, configure, data
 from flexrag.common.dataclasses import ChatMessages, RetrievedContext
-from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
-from flexrag.processors.rankers import RANKERS, RankerConfig
-from flexrag.processors.refiners import REFINERS, RefinerConfig
-from flexrag.retrievers import RETRIEVERS, RetrieverConfig
+from flexrag.models.generators import GenerationConfig, GeneratorProtocol
+from flexrag.processors.rankers.ranker_base import RankerBase
+from flexrag.processors.refiners.refiner_base import RefinerBase
+from flexrag.retrievers.retriever_base import RetrieverBase
 
 from .assistant_base import ASSISTANTS, AssistantBase, AssistantResponse
 
@@ -31,13 +31,10 @@ class SearchResult:
 
 
 @configure
-class ModularAssistantConfig(
-    GeneratorConfig, GenerationConfig, RetrieverConfig, RankerConfig, RefinerConfig
-):
+class ModularAssistantConfig(GenerationConfig):
     """The configuration for the modular assistant.
 
     :param used_fields: The fields to use in the context. Defaults to [].
-    :type used_fields: list[str], optional
     """
 
     used_fields: list[str] = field(default_factory=list)
@@ -47,7 +44,14 @@ class ModularAssistantConfig(
 class ModularAssistant(AssistantBase):
     """The modular RAG assistant that supports retrieval, reranking, and generation."""
 
-    def __init__(self, cfg: ModularAssistantConfig):
+    def __init__(
+        self,
+        cfg: ModularAssistantConfig,
+        generator: GeneratorProtocol,
+        retriever: RetrieverBase | None = None,
+        reranker: RankerBase | None = None,
+        refiners: list[RefinerBase] | None = None,
+    ):
         # set basic args
         self.gen_cfg = cfg
         if self.gen_cfg.sample_num > 1:
@@ -55,18 +59,11 @@ class ModularAssistant(AssistantBase):
             self.gen_cfg.sample_num = 1
         self.used_fields = cfg.used_fields
 
-        # load generator
-        self.generator = GENERATORS.load(cfg)
-        assert self.generator is not None, "Generator is not loaded."
-
-        # load retriever
-        self.retriever = RETRIEVERS.load(cfg)
-
-        # load ranker
-        self.reranker = RANKERS.load(cfg)
-
-        # load refiners
-        self.refiner = REFINERS.load(cfg)
+        # attach injected resources
+        self.generator = generator
+        self.retriever = retriever
+        self.reranker = reranker
+        self.refiners = list(refiners or [])
         return
 
     def answer(
@@ -80,6 +77,8 @@ class ModularAssistant(AssistantBase):
         if self.retriever is not None:
             ctxs, search_history = self.search(messages[-1].content)
         response = self.generate_response(messages, ctxs)
+        if response.metadata is None:
+            response.metadata = {}
         response.metadata["search_histories"] = search_history
         return response
 
@@ -109,7 +108,7 @@ class ModularAssistant(AssistantBase):
             )
 
         # refine
-        for refiner in self.refiner:
+        for refiner in self.refiners:
             ctxs = refiner.refine(ctxs)
             search_histories.append(
                 SearchResult(query=f"refine: {query}", contexts=ctxs)
@@ -120,11 +119,12 @@ class ModularAssistant(AssistantBase):
     def generate_response(
         self,
         messages: ChatMessages | list[dict],
-        contexts: list[RetrievedContext] = [],
+        contexts: list[RetrievedContext] | None = None,
     ) -> AssistantResponse:
         # convert messages to ChatMessages if it's a list of dicts
         if isinstance(messages, list):
             messages = ChatMessages.from_list(messages)
+        contexts = contexts or []
 
         # if no contexts, generate response without context
         if len(contexts) == 0:

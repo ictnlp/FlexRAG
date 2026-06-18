@@ -1,5 +1,9 @@
 from flexrag.common import LOGGER_MANAGER
 from flexrag.common.dataclasses import ChatMessages, RetrievedContext
+from flexrag.models.generators import GeneratorProtocol
+from flexrag.processors.rankers.ranker_base import RankerBase
+from flexrag.processors.refiners.refiner_base import RefinerBase
+from flexrag.retrievers.retriever_base import RetrieverBase
 
 from .assistant_base import ASSISTANTS, AssistantResponse
 from .modular_rag_assistant import ModularAssistant, ModularAssistantConfig
@@ -24,8 +28,21 @@ class ChatQAAssistant(ModularAssistant):
         "nvidia/Llama3-ChatQA-1.5-70B",
     ]
 
-    def __init__(self, cfg: ModularAssistantConfig):
-        super().__init__(cfg)
+    def __init__(
+        self,
+        cfg: ModularAssistantConfig,
+        generator: GeneratorProtocol,
+        retriever: RetrieverBase | None = None,
+        reranker: RankerBase | None = None,
+        refiners: list[RefinerBase] | None = None,
+    ):
+        super().__init__(
+            cfg,
+            generator=generator,
+            retriever=retriever,
+            reranker=reranker,
+            refiners=refiners,
+        )
         logger.warning(
             f"ChatQA Assistant expects the model to be one of {self.allowed_models}."
         )
