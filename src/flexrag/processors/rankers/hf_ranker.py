@@ -1,28 +1,18 @@
 import numpy as np
 
-from flexrag.common import RetrievedContext, configure
-from flexrag.models.scorers import (
-    HFColBertScorer,
-    HFColBertScorerConfig,
-    HFCrossEncoderScorer,
-    HFCrossEncoderScorerConfig,
-    HFLogitsScorer,
-    HFLogitsScorerConfig,
-)
+from flexrag.common import RetrievedContext
+from flexrag.models.scorers import PairScorerProtocol
 
 from .ranker_base import RANKERS, RankerBase, RankerBaseConfig, RankingResult
 
 
-class _HFScorerRankerBase(RankerBase):
-    scorer_cls = None
+@RANKERS("hf", config_class=RankerBaseConfig)
+class HFRanker(RankerBase):
+    """Rank candidates with an externally provided HuggingFace pair scorer."""
 
-    def __init__(self, cfg) -> None:
+    def __init__(self, cfg: RankerBaseConfig, scorer: PairScorerProtocol) -> None:
         super().__init__(cfg)
-        if self.scorer_cls is None:
-            raise ValueError(
-                f"{self.__class__.__name__}.scorer_cls must be configured."
-            )
-        self.scorer = self.scorer_cls(cfg)
+        self.scorer = scorer
         return
 
     def _prepare_pairs(
@@ -70,45 +60,3 @@ class _HFScorerRankerBase(RankerBase):
         pairs = self._prepare_pairs(query, candidates)
         scores = await self.scorer.async_score(pairs)
         return self._build_result(query, candidates, scores)
-
-    def close(self) -> None:
-        close = getattr(self.scorer, "close", None)
-        if callable(close):
-            close()
-        return
-
-
-@configure
-class HFColBertRankerConfig(RankerBaseConfig, HFColBertScorerConfig):
-    """The configuration for the HuggingFace ColBERT ranker."""
-
-
-@RANKERS("hf_colbert", config_class=HFColBertRankerConfig)
-class HFColBertRanker(_HFScorerRankerBase):
-    """HFColBertRanker: The ranker based on the HuggingFace ColBERT model."""
-
-    scorer_cls = HFColBertScorer
-
-
-@configure
-class HFCrossEncoderRankerConfig(RankerBaseConfig, HFCrossEncoderScorerConfig):
-    """The configuration for the HuggingFace CrossEncoder ranker."""
-
-
-@RANKERS("hf_crossencoder", config_class=HFCrossEncoderRankerConfig)
-class HFCrossEncoderRanker(_HFScorerRankerBase):
-    """HFCrossEncoderRanker: The ranker based on the HuggingFace CrossEncoder model."""
-
-    scorer_cls = HFCrossEncoderScorer
-
-
-@configure
-class HFLogitsRankerConfig(RankerBaseConfig, HFLogitsScorerConfig):
-    """The configuration for the HuggingFace Logits ranker."""
-
-
-@RANKERS("hf_logits", config_class=HFLogitsRankerConfig)
-class HFLogitsRanker(_HFScorerRankerBase):
-    """HFLogitsRanker: The ranker based on the HuggingFace Logits model."""
-
-    scorer_cls = HFLogitsScorer

@@ -2,7 +2,7 @@ import re
 from dataclasses import field
 
 from flexrag.common import LOGGER_MANAGER, ChatMessages, ChatTurn, configure
-from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
+from flexrag.models.generators import GenerationConfig, GeneratorProtocol
 
 from .basic_chunkers import RecursiveChunker, RecursiveChunkerConfig
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
@@ -19,23 +19,18 @@ Additional Considerations: Avoid very long groups of paragraphs. Aim for a good 
 
 
 @configure
-class LumberChunkerConfig(GeneratorConfig):
+class LumberChunkerConfig:
     """Configuration for LumberChunker.
 
     :param system_prompt: The system prompt for the LLM.
-    :type system_prompt: str
     :param window_size: The maximum number of tokens in each group of
         paragraphs sent to the LLM. Default is 550.
-    :type window_size: int
     :param min_tail_chunks: The minimum number of paragraphs to keep
         at the end of the document. Default is 5.
-    :type min_tail_chunks: int
     :param pre_chunk_config: The configuration for the pre-chunker
         used to split the text into paragraphs.
-    :type pre_chunk_config: RecursiveChunkerConfig
     :param use_chat: Whether to use chat-based generation. Default is False.
         This is useful if using chat-based LLMs.
-    :type use_chat: bool
     """
 
     system_prompt: str = DEFAULT_SYSTEM_PROMPT
@@ -56,9 +51,10 @@ class LumberChunker(ChunkerBase):
     previous paragraphs.
     """
 
-    def __init__(self, cfg: LumberChunkerConfig) -> None:
-        # load generator
-        self.generator = GENERATORS.load(cfg)
+    def __init__(
+        self, cfg: LumberChunkerConfig, generator: GeneratorProtocol
+    ) -> None:
+        self.generator = generator
         # load pre-chunker
         self.pre_chunker = RecursiveChunker(cfg.pre_chunk_config)
         assert self.pre_chunker.chunk_size < (cfg.window_size // 2), (
@@ -118,7 +114,7 @@ class LumberChunker(ChunkerBase):
                     response = response[0][0].text_content
                 else:
                     prompt = f"{self.system_prompt}\n\nDocument:\n{current_window}"
-                    response = self.generator.generate(prompt)[0][0]
+                    response = self.generator.generate([prompt], self.gen_cfg)[0][0]
                 match = re.search(r"Answer: ID (\d+)", response)
                 assert match is not None
                 split_id = int(match.group(1))

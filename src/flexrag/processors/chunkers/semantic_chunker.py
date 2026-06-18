@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 import numpy as np
 
 from flexrag.common import LOGGER_MANAGER, Choices, configure
-from flexrag.models import ENCODERS, EncoderConfig
+from flexrag.models.encoders import EncoderProtocol
 
 from .basic_chunkers import SentenceChunker, SentenceChunkerConfig
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
@@ -13,26 +13,20 @@ logger = LOGGER_MANAGER.get_logger("flexrag.processors.chunkers.semantic_chunker
 
 
 @configure
-class SemanticChunkerConfig(EncoderConfig):
+class SemanticChunkerConfig:
     """Configuration for SemanticChunker.
 
     :param max_tokens: The maximum number of tokens in each chunk. Default is None.
-    :type max_tokens: Optional[int]
     :param threshold: The threshold for semantic similarity. Default is None.
         If provided, the `threshold_percentile` and `max_tokens` will be ignored.
-    :type threshold: Optional[float]
     :param threshold_percentile: The ratio of the threshold for semantic similarity. Default is None.
         Should be a value between 0 and 100. Higher values will result in more chunks. 5 is a good starting point.
         If provided, the `max_tokens` will be ignored.
-    :type threshold_percentile: Optional[float]
     :param similarity_window: The window size for calculating semantic similarity. Default is None.
-    :type similarity_window: Optional[int]
     :param similarity_function: The similarity function to use. Default is "COS".
         Available choices are "L2" for the reciprocal of euclidean distance, "IP" for inner product, and "COS" for cosine similarity.
-    :type similarity_function: str
     :param pre_chunk_config: The configuration for the pre-chunker used to split the text into sentences.
         Default is SentenceChunkerConfig with max_sents=1, max_tokens=128, and overlap=0.
-    :type pre_chunk_config: SentenceChunkerConfig
 
     The similarity higher than the threshold will be considered as coherent, and the chunks will be split at the points where the similarity is below the threshold.
     Thus, at least one of `max_tokens`, `threshold`, or `threshold_percentile` should be provided.
@@ -45,31 +39,26 @@ class SemanticChunkerConfig(EncoderConfig):
     For example, to split the text into chunks with a maximum of 512 tokens, you can use the following configuration:
 
         >>> from flexrag.chunking import SemanticChunker, SemanticChunkerConfig
-        >>> from flexrag.models import HFEncoderConfig
+        >>> from flexrag.models import HFEncoder, HFEncoderConfig
+        >>> encoder = HFEncoder(HFEncoderConfig(model_path="BAAI/bge-small-en-v1.5"))
         >>> config = SemanticChunkerConfig(
         ...     max_tokens=512,
-        ...     encoder_type="hf",
-        ...     hf_config=HFEncoderConfig(model_path="BAAI/bge-small-en-v1.5"),
         ... )
-        >>> chunker = SemanticChunker(config)
+        >>> chunker = SemanticChunker(config, encoder=encoder)
 
     To split the text into chunks with a threshold_percentile of 5%, you can use the following configuration:
 
         >>> config = SemanticChunkerConfig(
         ...     threshold_percentile=5,
-        ...     encoder_type="hf",
-        ...     hf_config=HFEncoderConfig(model_path="BAAI/bge-small-en-v1.5"),
         ... )
-        >>> chunker = SemanticChunker(config)
+        >>> chunker = SemanticChunker(config, encoder=encoder)
 
     To split the text into chunks with a given threshold, you can use the following configuration:
 
         >>> config = SemanticChunkerConfig(
         ...     threshold=0.8,
-        ...     encoder_type="hf",
-        ...     hf_config=HFEncoderConfig(model_path="BAAI/bge-small-en-v1.5"),
         ... )
-        >>> chunker = SemanticChunker(config)
+        >>> chunker = SemanticChunker(config, encoder=encoder)
     """
 
     max_tokens: Optional[int] = None
@@ -91,7 +80,7 @@ class SemanticChunker(ChunkerBase):
     https://github.com/FullStackRetrieval-com/RetrievalTutorials/blob/main/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb
     """
 
-    def __init__(self, cfg: SemanticChunkerConfig) -> None:
+    def __init__(self, cfg: SemanticChunkerConfig, encoder: EncoderProtocol) -> None:
         # set the basic configurations
         self.max_tokens = cfg.max_tokens if cfg.max_tokens is not None else float("inf")
         self.threshold = cfg.threshold
@@ -120,9 +109,7 @@ class SemanticChunker(ChunkerBase):
         assert cfg.pre_chunk_config.overlap == 0, "pre_chunk_config.overlap must be 0"
         self.prechunker = SentenceChunker(cfg.pre_chunk_config)
 
-        # load the encoder
-        self.encoder = ENCODERS.load(cfg)
-        assert self.encoder is not None, "Encoder is not configured properly."
+        self.encoder = encoder
         return
 
     def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:

@@ -4,21 +4,18 @@ from pathlib import Path
 
 from flexrag.common import configure, trace
 from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
-from flexrag.models import GENERATORS, GeneratorConfig
+from flexrag.models.generators import GeneratorProtocol
 
 from .ranker_base import RANKERS, RankerBase, RankerBaseConfig, RankingResult
 
 
 @configure
-class RankGPTRankerConfig(RankerBaseConfig, GeneratorConfig):
+class RankGPTRankerConfig(RankerBaseConfig):
     """The configuration for the RankGPT ranker.
 
     :param step_size: the step size for the slide window ranking. Default is 10.
-    :type step_size: int
     :param window_size: the window size for the slide window ranking. Default is 20.
-    :type window_size: int
     :param max_chunk_size: the maximum chunk size for the slide window ranking. Default is 300.
-    :type max_chunk_size: int
     """
 
     step_size: int = 10
@@ -33,9 +30,9 @@ class RankGPTRanker(RankerBase):
     Code was adapted from the original implementation from https://github.com/sunnweiwei/RankGPT
     """
 
-    def __init__(self, cfg: RankGPTRankerConfig):
+    def __init__(self, cfg: RankGPTRankerConfig, generator: GeneratorProtocol):
         super().__init__(cfg)
-        self.generator = GENERATORS.load(cfg)
+        self.generator = generator
 
         # load prompt
         prompt_path = Path(__file__).parent / "ranker_prompts" / "rankgpt_prompt.json"
