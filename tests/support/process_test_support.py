@@ -5,41 +5,40 @@ import numpy as np
 
 from flexrag.common import configure
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
-from flexrag.models.encoders.encoder_base import (
-    EncoderInput,
-    extract_text_encoder_inputs,
+from flexrag.models.encoders import LocalEncoderBase
+from flexrag.models.generators import GenerationConfig, LocalGeneratorBase
+from flexrag.models.scorers import LocalPairScorerBase
+from flexrag.resources.runtime_adapters import (
+    ProcessEncoderAdapter,
+    ProcessGeneratorAdapter,
+    ProcessScorerAdapter,
 )
-from flexrag.models.encoders.local_process_encoder_base import LocalProcessEncoderBase
-from flexrag.models.generators.generator_base import GenerationConfig
-from flexrag.models.generators.local_process_generator_base import (
-    LocalProcessGeneratorBase,
-)
-from flexrag.models.scorers.local_process_scorer_base import LocalProcessScorerBase
 
 
 @configure
 class FakeLocalTextEncoderConfig:
     device_id: list[int] = field(default_factory=list)
+    batch_size: int = 32
     delay_s: float = 0.0
     error_on: str | None = None
     embedding_dim: int = 3
 
 
-class FakeLocalTextEncoderImpl:
+class FakeLocalTextEncoderImpl(LocalEncoderBase):
     def __init__(self, config: FakeLocalTextEncoderConfig) -> None:
+        super().__init__(batch_size=config.batch_size)
         self.delay_s = config.delay_s
         self.error_on = config.error_on
         self._embedding_dim = config.embedding_dim
         return
 
-    def encode(self, inputs: EncoderInput | list[EncoderInput]) -> np.ndarray:
-        texts = extract_text_encoder_inputs(inputs, encoder_name="FakeLocalTextEncoder")
+    def _encode_batch(self, inputs: list[str]) -> np.ndarray:
         if self.delay_s > 0:
             time.sleep(self.delay_s)
-        if self.error_on is not None and any(self.error_on in text for text in texts):
+        if self.error_on is not None and any(self.error_on in text for text in inputs):
             raise ValueError(f"boom: {self.error_on}")
         embeddings = []
-        for text in texts:
+        for text in inputs:
             checksum = sum((i + 1) * ord(ch) for i, ch in enumerate(text)) % 997
             vector = [
                 float(len(text)),
@@ -54,24 +53,39 @@ class FakeLocalTextEncoderImpl:
         return self._embedding_dim
 
 
-class FakeLocalTextEncoder(LocalProcessEncoderBase):
+class FakeLocalTextEncoder(ProcessEncoderAdapter):
     impl_cls = FakeLocalTextEncoderImpl
+
+    def __init__(
+        self,
+        config: FakeLocalTextEncoderConfig,
+        *,
+        batch_size: int = 32,
+    ) -> None:
+        super().__init__(
+            config,
+            input_format="text",
+            batch_size=batch_size,
+        )
+        return
 
 
 @configure
 class FakeLocalPairScorerConfig:
     device_id: list[int] = field(default_factory=list)
+    batch_size: int = 32
     delay_s: float = 0.0
     error_on: str | None = None
 
 
-class FakeLocalPairScorerImpl:
+class FakeLocalPairScorerImpl(LocalPairScorerBase):
     def __init__(self, config: FakeLocalPairScorerConfig) -> None:
+        super().__init__(batch_size=config.batch_size)
         self.delay_s = config.delay_s
         self.error_on = config.error_on
         return
 
-    def score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
+    def _score_batch(self, pairs: list[tuple[str, str]]) -> np.ndarray:
         if self.delay_s > 0:
             time.sleep(self.delay_s)
         if self.error_on is not None and any(
@@ -89,29 +103,39 @@ class FakeLocalPairScorerImpl:
         return np.array(scores, dtype=np.float32)
 
 
-class FakeLocalPairScorer(LocalProcessScorerBase):
+class FakeLocalPairScorer(ProcessScorerAdapter):
     impl_cls = FakeLocalPairScorerImpl
+
+    def __init__(
+        self,
+        config: FakeLocalPairScorerConfig,
+        *,
+        batch_size: int = 32,
+    ) -> None:
+        super().__init__(config, batch_size=batch_size)
+        return
 
 
 @configure
 class FakeLocalGeneratorConfig:
     device_id: list[int] = field(default_factory=list)
+    batch_size: int = 1
     delay_s: float = 0.0
     error_on: str | None = None
 
 
-class FakeLocalGeneratorImpl:
+class FakeLocalGeneratorImpl(LocalGeneratorBase):
     def __init__(self, config: FakeLocalGeneratorConfig) -> None:
+        super().__init__(batch_size=config.batch_size)
         self.delay_s = config.delay_s
         self.error_on = config.error_on
         return
 
-    def generate(
+    def _generate_batch(
         self,
-        prefixes: list[str] | str,
+        prefixes: list[str],
         generation_config: GenerationConfig | None = None,
     ) -> list[list[str]]:
-        prefixes = prefixes if isinstance(prefixes, list) else [prefixes]
         if self.delay_s > 0:
             time.sleep(self.delay_s)
         if self.error_on is not None and any(
@@ -127,14 +151,12 @@ class FakeLocalGeneratorImpl:
             for prefix in prefixes
         ]
 
-    def chat(
+    def _chat_batch(
         self,
-        messages: list[ChatMessages] | ChatMessages,
+        messages: list[ChatMessages],
         generation_config: GenerationConfig | None = None,
     ) -> list[list[ChatTurn]]:
-        if isinstance(messages, ChatMessages):
-            messages = [messages]
-        elif not all(isinstance(message, ChatMessages) for message in messages):
+        if not all(isinstance(message, ChatMessages) for message in messages):
             raise TypeError(
                 "FakeLocalGeneratorImpl.chat expects normalized ChatMessages batches."
             )
@@ -163,5 +185,14 @@ class FakeLocalGeneratorImpl:
         ]
 
 
-class FakeLocalGenerator(LocalProcessGeneratorBase):
+class FakeLocalGenerator(ProcessGeneratorAdapter):
     impl_cls = FakeLocalGeneratorImpl
+
+    def __init__(
+        self,
+        config: FakeLocalGeneratorConfig,
+        *,
+        batch_size: int = 1,
+    ) -> None:
+        super().__init__(config, batch_size=batch_size)
+        return

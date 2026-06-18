@@ -7,10 +7,7 @@ import numpy as np
 from flexrag.common import ContentPart, configure, trace
 
 from ..generators.litellm_generator import _image_part
-from .encoder_base import (
-    ENCODERS,
-    EncoderBase,
-)
+from .encoder_base import ENCODERS, RemoteEncoderBase
 
 litellm.suppress_debug_info = True
 
@@ -37,9 +34,6 @@ class LiteLLMEncoderConfig:
     :type embedding_size: Optional[int]
     :param input_type: Provider-specific embedding input type. Defaults to None.
     :type input_type: Optional[str]
-    :param max_concurrency: Maximum number of in-flight API requests created by
-        the encoder proxy. Defaults to 1.
-    :type max_concurrency: int
     :param extra_kwargs: Additional provider-specific LiteLLM embedding kwargs.
         Explicit top-level config fields take precedence over conflicting keys here.
     :type extra_kwargs: dict[str, Any]
@@ -64,18 +58,19 @@ class LiteLLMEncoderConfig:
     proxy: Optional[str] = None
     embedding_size: Optional[int] = None
     input_type: Optional[str] = None
-    max_concurrency: int = 1
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
 @ENCODERS("litellm", config_class=LiteLLMEncoderConfig)
-class LiteLLMEncoder(EncoderBase[LiteLLMEncoderConfig]):
-    def _get_max_concurrency(self) -> int:
-        return max(1, self._config.max_concurrency)
-
-    async def _create_client(self, config: LiteLLMEncoderConfig):
+class LiteLLMEncoder(RemoteEncoderBase):
+    def __init__(self, config: LiteLLMEncoderConfig):
+        self._config = config
         self._embedding_size = config.embedding_size
         self._input_type = config.input_type
+        self._client = self._build_client(config)
+        return
+
+    def _build_client(self, config: LiteLLMEncoderConfig):
         provider = (config.provider or "").strip()
         model_name = (config.model_name or "").strip()
         assert provider, "`provider` must be provided for LiteLLM models."
@@ -98,7 +93,7 @@ class LiteLLMEncoder(EncoderBase[LiteLLMEncoderConfig]):
         }
 
     @trace("encoder.litellm_encode")
-    async def _async_encode_impl(self, client, inputs: list[ContentPart]) -> np.ndarray:
+    async def async_encode(self, inputs: list[ContentPart]) -> np.ndarray:
         text_indices: list[int] = []
         text_inputs: list[str] = []
         image_indices: list[int] = []
@@ -121,11 +116,11 @@ class LiteLLMEncoder(EncoderBase[LiteLLMEncoderConfig]):
 
         results: list[np.ndarray | None] = [None] * len(inputs)
         if text_inputs:
-            text_embeddings = await self._embed_inputs(client, text_inputs)
+            text_embeddings = await self._embed_inputs(text_inputs)
             for idx, embedding in zip(text_indices, text_embeddings, strict=True):
                 results[idx] = embedding
         if image_inputs:
-            image_embeddings = await self._embed_inputs(client, image_inputs)
+            image_embeddings = await self._embed_inputs(image_inputs)
             for idx, embedding in zip(image_indices, image_embeddings, strict=True):
                 results[idx] = embedding
 
@@ -134,9 +129,9 @@ class LiteLLMEncoder(EncoderBase[LiteLLMEncoderConfig]):
             raise RuntimeError("Some LiteLLMEncoder inputs did not produce embeddings.")
         return np.stack(ready_results, axis=0)
 
-    async def _embed_inputs(self, client, inputs: list[Any]) -> np.ndarray:
-        request_kwargs = dict(client["request_kwargs"])
-        request_kwargs["model"] = client["model"]
+    async def _embed_inputs(self, inputs: list[Any]) -> np.ndarray:
+        request_kwargs = dict(self._client["request_kwargs"])
+        request_kwargs["model"] = self._client["model"]
         request_kwargs["input"] = inputs
         request_kwargs["input_type"] = self._input_type
         request_kwargs["dimensions"] = self._embedding_size

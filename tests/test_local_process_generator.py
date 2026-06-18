@@ -54,14 +54,14 @@ async def test_local_process_generator_sync_async_consistency():
 async def test_local_process_generator_batch_scheduling():
     prefixes = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
     with FakeLocalGenerator(
-        FakeLocalGeneratorConfig(device_id=[0, 1, 2], delay_s=0.2)
+        FakeLocalGeneratorConfig(device_id=[0, 1, 2], delay_s=0.2),
+        batch_size=2,
     ) as generator:
         await generator.async_generate(
             ["warmup-1", "warmup-2", "warmup-3", "warmup-4", "warmup-5", "warmup-6"],
-            batch_size=2,
         )
         start = time.perf_counter()
-        outputs = await generator.async_generate(prefixes, batch_size=2)
+        outputs = await generator.async_generate(prefixes)
         elapsed = time.perf_counter() - start
 
         assert outputs == expected_generated(prefixes)
@@ -110,10 +110,11 @@ async def test_local_process_generator_pipeline_mode_uses_single_worker_concurre
 
     prefixes = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
     with PipelineFakeLocalGenerator(
-        FakeLocalGeneratorConfig(device_id=[0, 1, 2], delay_s=0.2)
+        FakeLocalGeneratorConfig(device_id=[0, 1, 2], delay_s=0.2),
+        batch_size=2,
     ) as generator:
         start = time.perf_counter()
-        outputs = await generator.async_generate(prefixes, batch_size=2)
+        outputs = await generator.async_generate(prefixes)
         elapsed = time.perf_counter() - start
 
         assert outputs == expected_generated(prefixes)

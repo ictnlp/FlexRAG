@@ -7,9 +7,7 @@ from PIL import Image
 from flexrag.common import LOGGER_MANAGER
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.models import (
-    EncoderProtocol,
     GenerationConfig,
-    GeneratorProtocol,
     HFClipEncoder,
     HFClipEncoderConfig,
     HFEncoder,
@@ -23,6 +21,8 @@ from flexrag.models import (
     SentenceTransformerEncoder,
     SentenceTransformerEncoderConfig,
 )
+from flexrag.models.encoders import EncoderProtocol
+from flexrag.models.generators import GeneratorProtocol
 
 logger = LOGGER_MANAGER.get_logger("tests.test_model")
 

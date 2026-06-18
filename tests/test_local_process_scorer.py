@@ -44,7 +44,8 @@ async def test_local_process_scorer_batch_scheduling():
         ("foxtrot", "six"),
     ]
     with FakeLocalPairScorer(
-        FakeLocalPairScorerConfig(device_id=[0, 1, 2], delay_s=0.2)
+        FakeLocalPairScorerConfig(device_id=[0, 1, 2], delay_s=0.2),
+        batch_size=2,
     ) as scorer:
         await scorer.async_score(
             [
@@ -55,10 +56,9 @@ async def test_local_process_scorer_batch_scheduling():
                 ("warmup-5", "candidate"),
                 ("warmup-6", "candidate"),
             ],
-            batch_size=2,
         )
         start = time.perf_counter()
-        scores = await scorer.async_score(pairs, batch_size=2)
+        scores = await scorer.async_score(pairs)
         elapsed = time.perf_counter() - start
 
         assert np.array_equal(scores, expected_scores(pairs))

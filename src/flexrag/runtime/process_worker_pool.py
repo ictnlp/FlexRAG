@@ -30,8 +30,19 @@ class ProcessWorkerPoolClient:
             self._available_workers.put_nowait(worker)
         return
 
+    def __len__(self) -> int:
+        """Return the number of worker subprocesses in the pool."""
+        return len(self._workers)
+
     @classmethod
     def from_config(cls, impl_cls: type, config):
+        """Create a worker pool using one worker per configured device.
+
+        :param impl_cls: Worker implementation class to instantiate in each
+            subprocess.
+        :param config: Dataclass configuration passed to each worker.
+        :return: A process worker pool client.
+        """
         worker_visible_device_groups = [
             [gpu_id] for gpu_id in (list(getattr(config, "device_id", [])) or [])
         ] or [None]
@@ -48,6 +59,15 @@ class ProcessWorkerPoolClient:
         config,
         worker_visible_device_groups: list[list[int] | None],
     ):
+        """Create a worker pool with explicit visible-device groups.
+
+        :param impl_cls: Worker implementation class to instantiate in each
+            subprocess.
+        :param config: Dataclass configuration passed to each worker.
+        :param worker_visible_device_groups: Per-worker visible device IDs.
+            ``None`` creates a worker without device remapping.
+        :return: A process worker pool client.
+        """
         return cls(
             impl_path=get_symbol_path(impl_cls),
             config_cls_path=get_symbol_path(type(config)),
@@ -56,9 +76,26 @@ class ProcessWorkerPoolClient:
         )
 
     async def call_primary(self, attribute: str, *args, **kwargs):
+        """Call an attribute on the primary worker.
+
+        :param attribute: Method or attribute name to call through worker RPC.
+        :param args: Positional arguments forwarded to the worker call.
+        :param kwargs: Keyword arguments forwarded to the worker call.
+        :return: Result returned by the primary worker.
+        """
         return await self._workers[0].call(attribute, *args, **kwargs)
 
     async def call_available(self, attribute: str, *args, **kwargs):
+        """Call an attribute on the next available worker.
+
+        The selected worker is returned to the availability queue after the RPC
+        finishes or raises.
+
+        :param attribute: Method or attribute name to call through worker RPC.
+        :param args: Positional arguments forwarded to the worker call.
+        :param kwargs: Keyword arguments forwarded to the worker call.
+        :return: Result returned by the selected worker.
+        """
         if len(self._workers) == 1:
             return await self.call_primary(attribute, *args, **kwargs)
 
@@ -69,6 +106,11 @@ class ProcessWorkerPoolClient:
             self._available_workers.put_nowait(worker)
 
     async def close(self) -> None:
+        """Close all worker subprocess clients.
+
+        Worker close errors are intentionally suppressed so shutdown can
+        continue across the whole pool.
+        """
         for worker in self._workers:
             try:
                 worker.close()

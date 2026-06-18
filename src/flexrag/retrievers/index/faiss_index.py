@@ -5,7 +5,7 @@ import faiss
 import numpy as np
 
 from flexrag.common import LOGGER_MANAGER, configure
-from flexrag.models import EncoderProtocol
+from flexrag.models.encoders import EncoderProtocol
 
 from .index_base import (
     DEFAULT_INDEX_BATCH_SIZE,

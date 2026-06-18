@@ -4,8 +4,7 @@ import torch
 from flexrag.common import configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
-from .local_process_scorer_base import LocalProcessScorerBase
-from .scorer_base import SCORERS
+from .scorer_base import SCORERS, LocalPairScorerBase
 
 
 @configure
@@ -14,15 +13,22 @@ class HFCrossEncoderScorerConfig(HFModelConfig):
 
     :param max_encode_length: the maximum length for the input encoding. Default is 512.
     :type max_encode_length: int
+    :param batch_size: Maximum direct-use batch size. This value is ignored
+        when the scorer is created through Runtime or ResourceManager;
+        configure the runtime or resource batch size instead.
     """
 
     max_encode_length: int = 512
+    batch_size: int = 32
 
 
-class HFCrossEncoderScorerImpl:
+@SCORERS("hf_cross_encoder", config_class=HFCrossEncoderScorerConfig)
+class HFCrossEncoderScorer(LocalPairScorerBase):
     """HFCrossEncoderScorer: The scorer based on the HuggingFace Cross Encoder model."""
 
     def __init__(self, cfg: HFCrossEncoderScorerConfig):
+        super().__init__(batch_size=cfg.batch_size)
+
         # load model
         self.model, self.tokenizer = load_hf_model(
             cfg.model_path,
@@ -37,7 +43,7 @@ class HFCrossEncoderScorerImpl:
 
     @trace("scorer.cross_encoder")
     @torch.no_grad()
-    def score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
+    def _score_batch(self, pairs: list[tuple[str, str]]) -> np.ndarray:
         # score the candidates
         inputs = self.tokenizer(
             pairs,
@@ -49,8 +55,3 @@ class HFCrossEncoderScorerImpl:
         inputs = inputs.to(self.model.device)
         scores = self.model(**inputs).logits.view(-1).cpu().numpy()
         return np.atleast_1d(scores)
-
-
-@SCORERS("hf_cross_encoder", config_class=HFCrossEncoderScorerConfig)
-class HFCrossEncoderScorer(LocalProcessScorerBase):
-    impl_cls = HFCrossEncoderScorerImpl

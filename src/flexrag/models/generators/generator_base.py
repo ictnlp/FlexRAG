@@ -3,9 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import field
 from typing import Any, Optional, Protocol
 
-from flexrag.common import ChatMessages, ChatTurn, ProgressDisplay, Register, configure
-from flexrag.common.logging import SimpleProgressLogger
-from flexrag.runtime.async_client import AsyncClientMixin, ConfigT
+from flexrag.common import ChatMessages, ChatTurn, Register, configure
 
 
 @configure
@@ -66,262 +64,310 @@ class GenerationConfig:
 
 
 class GeneratorProtocol(Protocol):
+    """Protocol for directly usable raw generators.
+
+    Raw generators expose a common canonical-batch interface for direct use.
+    Implementations do not provide runtime policies such as deployment
+    batching, progress logging, process isolation, retry, or rate limiting.
+    """
+
     def chat(
         self,
-        messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
-        generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
-    ) -> list[list[ChatTurn]]: ...
-
-    async def async_chat(
-        self,
-        messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
-        generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
-    ) -> list[list[ChatTurn]]: ...
-
-    def generate(
-        self,
-        prefixes: list[str] | str,
-        generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
-    ) -> list[list[str]]: ...
-
-    async def async_generate(
-        self,
-        prefixes: list[str] | str,
-        generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
-    ) -> list[list[str]]: ...
-
-
-class GeneratorBase(AsyncClientMixin[ConfigT], ABC):
-    """Base class for client-backed generator implementations."""
-
-    def __init__(self, config: ConfigT):
-        AsyncClientMixin.__init__(self, config)
-        return
-
-    @staticmethod
-    def _unwrap_exception_group(exc: Exception):
-        while isinstance(exc, ExceptionGroup) and len(exc.exceptions) == 1:
-            exc = exc.exceptions[0]
-        return exc
-
-    @staticmethod
-    def _normalize_messages(
-        messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
-    ) -> list[ChatMessages]:
-        if isinstance(messages, ChatMessages):
-            return [messages]
-        if not messages:
-            return []
-        if isinstance(messages[0], dict):
-            return [ChatMessages.from_list(messages)]
-
-        normalized: list[ChatMessages] = []
-        for message in messages:
-            if isinstance(message, ChatMessages):
-                normalized.append(message)
-            else:
-                normalized.append(ChatMessages.from_list(message))
-        return normalized
-
-    @abstractmethod
-    async def _async_generate_impl(
-        self,
-        client,
-        prefixes: list[str],
-        generation_config: GenerationConfig | None,
-    ) -> list[list[str]]:
-        return
-
-    @abstractmethod
-    async def _async_chat_impl(
-        self,
-        client,
         messages: list[ChatMessages],
-        generation_config: GenerationConfig | None,
-    ) -> list[list[ChatTurn]]:
-        return
-
-    async def _async_generate_core(
-        self,
-        prefixes: list[str] | str,
         generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
+    ) -> list[list[ChatTurn]]:
+        """Generate chat responses for a batch of conversations.
+
+        :param messages: Normalized chat conversations to process.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate assistant turns for each input
+            conversation.
+        """
+        ...
+
+    async def async_chat(
+        self,
+        messages: list[ChatMessages],
+        generation_config: GenerationConfig | None = None,
+    ) -> list[list[ChatTurn]]:
+        """Generate chat responses asynchronously for a batch of conversations.
+
+        :param messages: Normalized chat conversations to process.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate assistant turns for each input
+            conversation.
+        """
+        ...
+
+    def generate(
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig | None = None,
     ) -> list[list[str]]:
-        prefixes = prefixes if isinstance(prefixes, list) else [prefixes]
-        if batch_size is None:
-            batches = [prefixes]
-        else:
-            batches = [
-                prefixes[i : i + batch_size]
-                for i in range(0, len(prefixes), batch_size)
-            ]
+        """Generate text completions for a batch of prefixes.
 
-        client = await self._get_async_client()
-        semaphore = await self._get_async_semaphore()
-        results: list[None | list[list[str]]] = [None] * len(batches)
-
-        with SimpleProgressLogger(
-            total=len(prefixes), interval=log_interval, display=display
-        ) as p_logger:
-
-            async def _generate_task(idx: int, batch: list[str]) -> None:
-                async with semaphore:
-                    res = await self._async_generate_impl(
-                        client, batch, generation_config
-                    )
-                results[idx] = res
-                p_logger.update(len(batch), desc="Generating")
-                return
-
-            try:
-                async with asyncio.TaskGroup() as tg:
-                    for idx, batch in enumerate(batches):
-                        tg.create_task(
-                            _generate_task(idx, batch), name=f"generate_batch_{idx}"
-                        )
-            except ExceptionGroup as exc:
-                raise self._unwrap_exception_group(exc) from exc
-
-        ready_results = [result for result in results if result is not None]
-        if len(ready_results) != len(results):
-            raise RuntimeError("Some generate tasks did not produce results.")
-        merged: list[list[str]] = []
-        for batch_result in ready_results:
-            merged.extend(batch_result)
-        return merged
-
-    async def _async_chat_core(
-        self,
-        messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
-        generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
-    ) -> list[list[ChatTurn]]:
-        normalized_messages = self._normalize_messages(messages)
-        if batch_size is None:
-            batches = [normalized_messages]
-        else:
-            batches = [
-                normalized_messages[i : i + batch_size]
-                for i in range(0, len(normalized_messages), batch_size)
-            ]
-
-        client = await self._get_async_client()
-        semaphore = await self._get_async_semaphore()
-        results: list[None | list[list[ChatTurn]]] = [None] * len(batches)
-
-        with SimpleProgressLogger(
-            total=len(normalized_messages), interval=log_interval, display=display
-        ) as p_logger:
-
-            async def _chat_task(idx: int, batch: list[ChatMessages]) -> None:
-                async with semaphore:
-                    res = await self._async_chat_impl(client, batch, generation_config)
-                results[idx] = res
-                p_logger.update(len(batch), desc="Chatting")
-                return
-
-            try:
-                async with asyncio.TaskGroup() as tg:
-                    for idx, batch in enumerate(batches):
-                        tg.create_task(_chat_task(idx, batch), name=f"chat_batch_{idx}")
-            except ExceptionGroup as exc:
-                raise self._unwrap_exception_group(exc) from exc
-
-        ready_results = [result for result in results if result is not None]
-        if len(ready_results) != len(results):
-            raise RuntimeError("Some chat tasks did not produce results.")
-        merged: list[list[ChatTurn]] = []
-        for batch_result in ready_results:
-            merged.extend(batch_result)
-        return merged
+        :param prefixes: Text prefixes to continue.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate completions for each input prefix.
+        """
+        ...
 
     async def async_generate(
         self,
-        prefixes: list[str] | str,
+        prefixes: list[str],
         generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
     ) -> list[list[str]]:
-        return await self._run_coroutine_async(
-            self._async_generate_core(
-                prefixes,
-                generation_config=generation_config,
-                batch_size=batch_size,
-                log_interval=log_interval,
-                display=display,
+        """Generate text completions asynchronously for a batch of prefixes.
+
+        :param prefixes: Text prefixes to continue.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate completions for each input prefix.
+        """
+        ...
+
+
+class LocalGeneratorBase(ABC):
+    """Thin base class for directly usable local generators.
+
+    Subclasses implement synchronous canonical-batch ``_generate_batch`` and
+    ``_chat_batch``. The public methods split direct-use calls according to
+    ``batch_size`` and merge the resulting batches. The async methods are
+    convenience wrappers built with ``asyncio.to_thread``; they keep an event
+    loop responsive but do not provide process isolation, retry, rate limiting,
+    progress logging, or true Python-level parallelism.
+    """
+
+    def __init__(self, batch_size: int = 1) -> None:
+        """Initialize direct-use local generator batching.
+
+        :param batch_size: Maximum batch size used by the raw local generator's
+            public ``generate`` and ``chat`` methods.
+        :raises ValueError: If ``batch_size`` is not greater than zero.
+        """
+        if batch_size <= 0:
+            raise ValueError("batch_size must be greater than 0.")
+        self.batch_size = batch_size
+        return
+
+    def chat(
+        self,
+        messages: list[ChatMessages],
+        generation_config: GenerationConfig | None = None,
+    ) -> list[list[ChatTurn]]:
+        """Generate chat responses for a batch of conversations.
+
+        :param messages: Normalized chat conversations to process.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate assistant turns for each input
+            conversation.
+        """
+        results: list[list[ChatTurn]] = []
+        for i in range(0, len(messages), self.batch_size):
+            results.extend(
+                self._chat_batch(
+                    messages[i : i + self.batch_size],
+                    generation_config=generation_config,
+                )
             )
+        return results
+
+    @abstractmethod
+    def _chat_batch(
+        self,
+        messages: list[ChatMessages],
+        generation_config: GenerationConfig | None = None,
+    ) -> list[list[ChatTurn]]:
+        """Generate chat responses for one implementation batch.
+
+        :param messages: Normalized chat conversations to process.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate assistant turns for each input
+            conversation.
+        """
+        return
+
+    async def async_chat(
+        self,
+        messages: list[ChatMessages],
+        generation_config: GenerationConfig | None = None,
+    ) -> list[list[ChatTurn]]:
+        """Generate chat responses asynchronously for a batch of conversations.
+
+        :param messages: Normalized chat conversations to process.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate assistant turns for each input
+            conversation.
+        """
+        return await asyncio.to_thread(
+            self.chat,
+            messages,
+            generation_config=generation_config,
         )
 
     def generate(
         self,
-        prefixes: list[str] | str,
+        prefixes: list[str],
         generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
     ) -> list[list[str]]:
-        return self._run_coroutine_sync(
-            self._async_generate_core(
-                prefixes,
-                generation_config=generation_config,
-                batch_size=batch_size,
-                log_interval=log_interval,
-                display=display,
+        """Generate text completions for a batch of prefixes.
+
+        :param prefixes: Text prefixes to continue.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate completions for each input prefix.
+        """
+        results: list[list[str]] = []
+        for i in range(0, len(prefixes), self.batch_size):
+            results.extend(
+                self._generate_batch(
+                    prefixes[i : i + self.batch_size],
+                    generation_config=generation_config,
+                )
             )
+        return results
+
+    @abstractmethod
+    def _generate_batch(
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig | None = None,
+    ) -> list[list[str]]:
+        """Generate text completions for one implementation batch.
+
+        :param prefixes: Text prefixes to continue.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate completions for each input prefix.
+        """
+        return
+
+    async def async_generate(
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig | None = None,
+    ) -> list[list[str]]:
+        """Generate text completions asynchronously for a batch of prefixes.
+
+        :param prefixes: Text prefixes to continue.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate completions for each input prefix.
+        """
+        return await asyncio.to_thread(
+            self.generate,
+            prefixes,
+            generation_config=generation_config,
         )
 
-    async def async_chat(
-        self,
-        messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
-        generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
-    ) -> list[list[ChatTurn]]:
-        return await self._run_coroutine_async(
-            self._async_chat_core(
-                messages,
-                generation_config=generation_config,
-                batch_size=batch_size,
-                log_interval=log_interval,
-                display=display,
-            )
+
+class RemoteGeneratorBase(ABC):
+    """Thin base class for directly usable remote generators.
+
+    Subclasses implement single-sample async core methods. The public async
+    batch methods call those cores sequentially for direct use. The synchronous
+    methods run the async batch methods with ``asyncio.run`` and must not be
+    called from an already running event loop.
+    """
+
+    @staticmethod
+    def _ensure_sync_bridge_allowed(method_name: str) -> None:
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        raise RuntimeError(
+            f"{method_name} cannot be called from a running event loop. "
+            f"Use async_{method_name} instead."
         )
+
+    @abstractmethod
+    async def _async_chat_one(
+        self,
+        messages: ChatMessages,
+        generation_config: GenerationConfig | None = None,
+    ) -> list[ChatTurn]:
+        """Generate chat responses for one conversation.
+
+        :param messages: Normalized chat conversation to process.
+        :param generation_config: Optional generation options for this call.
+        :return: Candidate assistant turns for the input conversation.
+        """
+        return
+
+    @abstractmethod
+    async def _async_generate_one(
+        self,
+        prefix: str,
+        generation_config: GenerationConfig | None = None,
+    ) -> list[str]:
+        """Generate text completions for one prefix.
+
+        :param prefix: Text prefix to continue.
+        :param generation_config: Optional generation options for this call.
+        :return: Candidate completions for the input prefix.
+        """
+        return
 
     def chat(
         self,
-        messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
+        messages: list[ChatMessages],
         generation_config: GenerationConfig | None = None,
-        batch_size: int = 1,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
     ) -> list[list[ChatTurn]]:
-        return self._run_coroutine_sync(
-            self._async_chat_core(
-                messages,
-                generation_config=generation_config,
-                batch_size=batch_size,
-                log_interval=log_interval,
-                display=display,
-            )
-        )
+        """Generate chat responses synchronously for a batch of conversations.
+
+        :param messages: Normalized chat conversations to process.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate assistant turns for each input
+            conversation.
+        :raises RuntimeError: If called from a running event loop.
+        """
+        self._ensure_sync_bridge_allowed("chat")
+        return asyncio.run(self.async_chat(messages, generation_config))
+
+    async def async_chat(
+        self,
+        messages: list[ChatMessages],
+        generation_config: GenerationConfig | None = None,
+    ) -> list[list[ChatTurn]]:
+        """Generate chat responses asynchronously for a batch of conversations.
+
+        :param messages: Normalized chat conversations to process.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate assistant turns for each input
+            conversation.
+        """
+        return [
+            await self._async_chat_one(message, generation_config)
+            for message in messages
+        ]
+
+    def generate(
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig | None = None,
+    ) -> list[list[str]]:
+        """Generate text completions synchronously for a batch of prefixes.
+
+        :param prefixes: Text prefixes to continue.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate completions for each input prefix.
+        :raises RuntimeError: If called from a running event loop.
+        """
+        self._ensure_sync_bridge_allowed("generate")
+        return asyncio.run(self.async_generate(prefixes, generation_config))
+
+    async def async_generate(
+        self,
+        prefixes: list[str],
+        generation_config: GenerationConfig | None = None,
+    ) -> list[list[str]]:
+        """Generate text completions asynchronously for a batch of prefixes.
+
+        :param prefixes: Text prefixes to continue.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate completions for each input prefix.
+        """
+        return [
+            await self._async_generate_one(prefix, generation_config)
+            for prefix in prefixes
+        ]
 
 
 GENERATORS = Register[GeneratorProtocol]("generator")

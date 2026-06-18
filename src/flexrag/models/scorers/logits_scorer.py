@@ -6,8 +6,7 @@ import torch
 from flexrag.common import Choices, configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
-from .local_process_scorer_base import LocalProcessScorerBase
-from .scorer_base import SCORERS
+from .scorer_base import SCORERS, LocalPairScorerBase
 
 
 @configure
@@ -26,6 +25,9 @@ class HFLogitsScorerConfig(HFModelConfig):
     :type positive_token: str
     :param negative_token: the negative token for the seq2seq model. Default is "▁false".
     :type negative_token: str
+    :param batch_size: Maximum direct-use batch size. This value is ignored
+        when the scorer is created through Runtime or ResourceManager;
+        configure the runtime or resource batch size instead.
     """
 
     model_type: Annotated[str, Choices("seq2seq", "causal_lm")] = "seq2seq"
@@ -33,10 +35,14 @@ class HFLogitsScorerConfig(HFModelConfig):
     input_template: str = "Query: {query} Document: {candidate} Relevant:"
     positive_token: str = "▁true"
     negative_token: str = "▁false"
+    batch_size: int = 32
 
 
-class HFLogitsScorerImpl:
+@SCORERS("hf_logits", config_class=HFLogitsScorerConfig)
+class HFLogitsScorer(LocalPairScorerBase):
     def __init__(self, cfg: HFLogitsScorerConfig):
+        super().__init__(batch_size=cfg.batch_size)
+
         # load model
         self.model, self.tokenizer = load_hf_model(
             cfg.model_path,
@@ -58,7 +64,7 @@ class HFLogitsScorerImpl:
 
     @trace("scorer.hf_logits")
     @torch.no_grad()
-    def score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
+    def _score_batch(self, pairs: list[tuple[str, str]]) -> np.ndarray:
         # prepare prompts
         input_texts = [
             self.input_template.format(query=pair[0], candidate=pair[1])
@@ -95,8 +101,3 @@ class HFLogitsScorerImpl:
             torch.cat([positive_scores, negative_scores], dim=1), dim=1
         )[:, 0]
         return np.atleast_1d(scores.cpu().float().numpy())
-
-
-@SCORERS("hf_logits", config_class=HFLogitsScorerConfig)
-class HFLogitsScorer(LocalProcessScorerBase):
-    impl_cls = HFLogitsScorerImpl

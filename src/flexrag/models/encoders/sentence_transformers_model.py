@@ -9,8 +9,7 @@ from PIL import Image
 
 from flexrag.common import ContentPart, configure, trace
 
-from .encoder_base import ENCODERS
-from .local_process_encoder_base import LocalProcessEncoderBase
+from .encoder_base import ENCODERS, LocalEncoderBase
 
 
 @configure
@@ -33,6 +32,9 @@ class SentenceTransformerEncoderConfig:
     :type prompt_dict: Optional[dict]
     :param normalize: Whether to normalize embeddings. Defaults to False.
     :type normalize: bool
+    :param batch_size: Maximum direct-use batch size. This value is ignored
+        when the encoder is created through Runtime or ResourceManager;
+        configure the runtime or resource batch size instead.
     :param model_kwargs: Additional keyword arguments for loading the model. Defaults to {}.
     :type model_kwargs: dict[str, Any]
     """
@@ -45,12 +47,16 @@ class SentenceTransformerEncoderConfig:
     prompt: Optional[str] = None
     prompt_dict: Optional[dict] = None
     normalize: bool = False
+    batch_size: int = 32
     model_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
-class SentenceTransformerEncoderImpl:
+@ENCODERS("sentence_transformer", config_class=SentenceTransformerEncoderConfig)
+class SentenceTransformerEncoder(LocalEncoderBase):
     def __init__(self, config: SentenceTransformerEncoderConfig) -> None:
         from sentence_transformers import SentenceTransformer
+
+        super().__init__(batch_size=config.batch_size)
 
         self.devices = config.device_id
         assert config.model_path is not None, "`model_path` must be provided"
@@ -76,13 +82,13 @@ class SentenceTransformerEncoderImpl:
                 "SentenceTransformerEncoder only supports text and image content blocks."
             )
         if content_part.get("image") is not None:
-            return content_part["image"]
+            return content_part["image"]  # type: ignore
         if content_part.get("image_path") is not None:
-            image = Image.open(content_part["image_path"])
+            image = Image.open(content_part["image_path"])  # type: ignore
             image.load()
             return image
         if content_part.get("url") is not None:
-            response = requests.get(content_part["url"], timeout=30)
+            response = requests.get(content_part["url"], timeout=30)  # type: ignore
             response.raise_for_status()
             image = Image.open(BytesIO(response.content))
             image.load()
@@ -119,7 +125,7 @@ class SentenceTransformerEncoderImpl:
         return self.model.encode(**args)
 
     @trace("encoder.st_encode")
-    def encode(self, inputs: list[ContentPart], **kwargs) -> np.ndarray:
+    def _encode_batch(self, inputs: list[ContentPart], **kwargs) -> np.ndarray:
         text_indices: list[int] = []
         texts: list[str] = []
         image_indices: list[int] = []
@@ -159,9 +165,4 @@ class SentenceTransformerEncoderImpl:
 
     @property
     def embedding_size(self) -> int:
-        return self.model.get_sentence_embedding_dimension()
-
-
-@ENCODERS("sentence_transformer", config_class=SentenceTransformerEncoderConfig)
-class SentenceTransformerEncoder(LocalProcessEncoderBase):
-    impl_cls = SentenceTransformerEncoderImpl
+        return self.model.get_embedding_dimension()

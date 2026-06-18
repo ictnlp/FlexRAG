@@ -1,9 +1,8 @@
-import asyncio
 import json
 import mimetypes
 import os
 from dataclasses import field
-from typing import Annotated, Any, Optional
+from typing import Any, Optional
 from urllib.parse import urlparse
 
 import litellm
@@ -11,7 +10,6 @@ import litellm
 from flexrag.common import (
     ChatMessages,
     ChatTurn,
-    Choices,
     ContentPart,
     configure,
     trace,
@@ -23,78 +21,11 @@ from flexrag.common.base64_utils import (
 )
 from flexrag.common.logging import LOGGER_MANAGER
 
-from .generator_base import GENERATORS, GenerationConfig, GeneratorBase
+from .generator_base import GENERATORS, GenerationConfig, RemoteGeneratorBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.litellm_generator")
 
 litellm.suppress_debug_info = True
-
-
-def _litellm_error_type(name: str) -> type[Exception] | None:
-    error_type = getattr(litellm, name, None)
-    if isinstance(error_type, type) and issubclass(error_type, Exception):
-        return error_type
-    return None
-
-
-_CONGESTION_ERROR_TYPES = tuple(
-    error_type
-    for error_type in (
-        _litellm_error_type("RateLimitError"),
-        _litellm_error_type("RouterRateLimitError"),
-        _litellm_error_type("Timeout"),
-        _litellm_error_type("APIConnectionError"),
-        _litellm_error_type("InternalServerError"),
-        _litellm_error_type("ServiceUnavailableError"),
-        _litellm_error_type("BadGatewayError"),
-        TimeoutError,
-        ConnectionError,
-    )
-    if error_type is not None
-)
-
-
-def _exception_status_code(exc: Exception) -> int | None:
-    for attr in ("status_code", "http_status_code", "http_status"):
-        value = getattr(exc, attr, None)
-        if isinstance(value, int):
-            return value
-    return None
-
-
-def _is_congestion_error(exc: Exception) -> bool:
-    if isinstance(exc, _CONGESTION_ERROR_TYPES):
-        return True
-    status_code = _exception_status_code(exc)
-    return status_code == 429 or (status_code is not None and status_code >= 500)
-
-
-def _set_attempts(exc: Exception, attempts: int) -> None:
-    try:
-        setattr(exc, "_flexrag_litellm_attempts", attempts)
-    except Exception:
-        pass
-    return
-
-
-def _get_attempts(exc: Exception) -> int:
-    attempts = getattr(exc, "_flexrag_litellm_attempts", 1)
-    return attempts if isinstance(attempts, int) and attempts > 0 else 1
-
-
-def _failed_chat_turn(exc: Exception) -> ChatTurn:
-    attempts = _get_attempts(exc)
-    return ChatTurn(
-        role="assistant",
-        content="",
-        metadata={
-            "failed": True,
-            "error_type": type(exc).__name__,
-            "error": str(exc),
-            "attempts": attempts,
-            "retries": attempts - 1,
-        },
-    )
 
 
 def _generation_config_to_kwargs(
@@ -128,8 +59,8 @@ def _generation_config_to_kwargs(
             kwargs["response_format"] = generation_config.response_format
         else:
             logger.warning(
-                "LiteLLMGenerator.generate does not support response_format. "
-                "This field will be ignored for generate calls."
+                "LiteLLMGenerator text generation does not support response_format. "
+                "This field will be ignored for text generation calls."
             )
     return kwargs
 
@@ -138,16 +69,16 @@ def _image_part(content_part: ContentPart) -> dict[str, Any]:
     if content_part.get("url") is not None:
         return {
             "type": "image_url",
-            "image_url": {"url": content_part["url"]},
+            "image_url": {"url": content_part["url"]},  # type: ignore
         }
     if content_part.get("image") is not None:
-        base64_image = image_to_base64(content_part["image"], format="JPEG")
+        base64_image = image_to_base64(content_part["image"], format="JPEG")  # type: ignore
         return {
             "type": "image_url",
             "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
         }
     if content_part.get("image_path") is not None:
-        image_path = content_part["image_path"]
+        image_path = content_part["image_path"]  # type: ignore
         mime_type, _ = mimetypes.guess_type(str(image_path))
         return {
             "type": "image_url",
@@ -168,12 +99,12 @@ def _file_part(
     explicit_mime_type = content_part.get("mime_type")
     explicit_file_name = content_part.get("file_name")
     if content_part.get("url") is not None:
-        file_obj["file_url"] = content_part["url"]
-        file_name = os.path.basename(urlparse(content_part["url"]).path)
+        file_obj["file_url"] = content_part["url"]  # type: ignore
+        file_name = os.path.basename(urlparse(content_part["url"]).path)  # type: ignore
         file_obj["filename"] = explicit_file_name or file_name or fallback_file_name
         return {"type": "file", "file": file_obj}
     if content_part.get("file_path") is not None:
-        file_path = content_part["file_path"]
+        file_path = content_part["file_path"]  # type: ignore
         mime_type, _ = mimetypes.guess_type(str(file_path))
         file_obj["filename"] = (
             explicit_file_name or os.path.basename(str(file_path)) or fallback_file_name
@@ -188,7 +119,7 @@ def _file_part(
         file_obj["file_data"] = (
             "data:"
             f"{explicit_mime_type or fallback_mime_type};base64,"
-            f"{binary_to_base64(content_part['binary'])}"
+            f"{binary_to_base64(content_part['binary'])}"  # type: ignore
         )
         return {"type": "file", "file": file_obj}
     raise ValueError("File content must have either 'url', 'file_path', or 'binary'.")
@@ -402,20 +333,6 @@ class LiteLLMGeneratorConfig:
     :type timeout: Optional[float]
     :param proxy: Upstream proxy setting forwarded to LiteLLM. Defaults to None.
     :type proxy: Optional[str]
-    :param failure_policy: How chat calls handle per-sample failures. ``raise``
-        preserves strict error behavior; ``empty`` returns an empty assistant turn
-        with error metadata for the failed sample. Defaults to ``raise``.
-    :type failure_policy: str
-    :param retry_times: Total number of API attempts for retryable LiteLLM request
-        failures. ``1`` disables retries. Defaults to 1.
-    :type retry_times: int
-    :param retry_min_delay: Initial retry delay in seconds. Defaults to 1.0.
-    :type retry_min_delay: float
-    :param retry_max_delay: Maximum retry delay in seconds. Defaults to 60.0.
-    :type retry_max_delay: float
-    :param rpm: Maximum number of LiteLLM requests to start per minute.
-        ``0`` disables request pacing. Defaults to 0.
-    :type rpm: float
     :param extra_kwargs: Additional provider-specific LiteLLM request kwargs.
         Explicit top-level config fields take precedence over conflicting keys here.
     :type extra_kwargs: dict[str, Any]
@@ -451,75 +368,30 @@ class LiteLLMGeneratorConfig:
 
     provider: Optional[str] = None
     model_name: Optional[str] = None
-    max_concurrency: int = 1
     api_key: Optional[str] = None
     base_url: Optional[str] = None
     api_version: Optional[str] = None
     timeout: Optional[float] = None
     proxy: Optional[str] = None
-    failure_policy: Annotated[str, Choices("raise", "empty")] = "raise"
-    retry_times: int = 1
-    retry_min_delay: float = 1.0
-    retry_max_delay: float = 60.0
-    rpm: float = 0
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self):
-        assert self.max_concurrency > 0, "max_concurrency must be greater than 0"
-        assert self.retry_times > 0, "retry_times must be greater than 0"
-        assert self.retry_min_delay >= 0, "retry_min_delay must be non-negative"
-        assert self.retry_max_delay >= self.retry_min_delay, (
-            "retry_max_delay must be greater than or equal to retry_min_delay"
-        )
-        assert self.rpm >= 0, "rpm must be non-negative"
-        return
 
 
 @GENERATORS("litellm", config_class=LiteLLMGeneratorConfig)
-class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
+class LiteLLMGenerator(RemoteGeneratorBase):
+    """Raw remote generator implemented with LiteLLM.
+
+    This class implements single-sample asynchronous core methods and inherits
+    the direct-use batch interface from ``RemoteGeneratorBase``. Runtime
+    policies such as concurrency control, rate limiting, retry, and progress
+    logging belong to the runtime adapter layer.
+    """
+
     def __init__(self, config: LiteLLMGeneratorConfig):
-        super().__init__(config)
-        self._rpm_lock: asyncio.Lock | None = None
-        self._next_request_time: float = 0.0
+        self._config = config
+        self._client = self._build_client(config)
         return
 
-    def _get_max_concurrency(self) -> int:
-        return max(1, self._config.max_concurrency)
-
-    async def _wait_for_rpm(self) -> None:
-        if self._config.rpm <= 0:
-            return
-        if self._rpm_lock is None:
-            self._rpm_lock = asyncio.Lock()
-        interval = 60.0 / self._config.rpm
-        async with self._rpm_lock:
-            loop = asyncio.get_running_loop()
-            now = loop.time()
-            if self._next_request_time > now:
-                await asyncio.sleep(self._next_request_time - now)
-                now = loop.time()
-            self._next_request_time = max(self._next_request_time, now) + interval
-        return
-
-    def _retry_delay(self, attempt: int) -> float:
-        delay = self._config.retry_min_delay * (2 ** max(0, attempt - 1))
-        return min(delay, self._config.retry_max_delay)
-
-    async def _request_with_retry(self, request_func, **request_kwargs):
-        for attempt in range(1, self._config.retry_times + 1):
-            await self._wait_for_rpm()
-            try:
-                return await request_func(**request_kwargs)
-            except Exception as exc:
-                _set_attempts(exc, attempt)
-                if not _is_congestion_error(exc) or attempt >= self._config.retry_times:
-                    raise
-                delay = self._retry_delay(attempt)
-            if delay > 0:
-                await asyncio.sleep(delay)
-        raise RuntimeError("LiteLLM request retry loop exited unexpectedly.")
-
-    async def _create_client(self, config: LiteLLMGeneratorConfig):
+    def _build_client(self, config: LiteLLMGeneratorConfig):
         provider = (config.provider or "").strip()
         model_name = (config.model_name or "").strip()
         assert provider, "`provider` must be provided for LiteLLM models."
@@ -544,62 +416,48 @@ class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
     @trace("generator.litellm_chat")
     async def _async_chat_one(
         self,
-        client,
-        message: ChatMessages,
-        generation_config: GenerationConfig | None,
+        messages: ChatMessages,
+        generation_config: GenerationConfig | None = None,
     ) -> list[ChatTurn]:
-        request_kwargs = dict(client["request_kwargs"])
+        """Generate assistant turns for one chat conversation.
+
+        The method converts FlexRAG chat turns to LiteLLM chat messages, sends
+        one asynchronous completion request, and normalizes provider response
+        choices back into ``ChatTurn`` objects.
+
+        :param messages: Normalized chat conversation to continue.
+        :param generation_config: Optional generation options for this request.
+        :return: Candidate assistant turns returned by the provider.
+        """
+        request_kwargs = dict(self._client["request_kwargs"])
         request_kwargs.update(
             _generation_config_to_kwargs(generation_config, chat=True)
         )
-        request_kwargs["model"] = client["model"]
+        request_kwargs["model"] = self._client["model"]
         request_kwargs["messages"] = [
-            _turn_to_litellm_message(turn) for turn in message
+            _turn_to_litellm_message(turn) for turn in messages
         ]
-        response = await self._request_with_retry(litellm.acompletion, **request_kwargs)
+        response = await litellm.acompletion(**request_kwargs)
         return _completion_response_to_chat_turns(response)
 
     @trace("generator.litellm_generate")
     async def _async_generate_one(
         self,
-        client,
-        prompt: str,
-        generation_config: GenerationConfig | None,
+        prefix: str,
+        generation_config: GenerationConfig | None = None,
     ) -> list[str]:
-        request_kwargs = dict(client["request_kwargs"])
+        """Generate text completions for one prefix.
+
+        The method sends one asynchronous LiteLLM text-completion request and
+        returns the provider choices as plain strings.
+
+        :param prefix: Text prefix to continue.
+        :param generation_config: Optional generation options for this request.
+        :return: Candidate text completions returned by the provider.
+        """
+        request_kwargs = dict(self._client["request_kwargs"])
         request_kwargs.update(_generation_config_to_kwargs(generation_config))
-        request_kwargs["model"] = client["model"]
-        request_kwargs["prompt"] = prompt
-        response = await self._request_with_retry(
-            litellm.atext_completion, **request_kwargs
-        )
+        request_kwargs["model"] = self._client["model"]
+        request_kwargs["prompt"] = prefix
+        response = await litellm.atext_completion(**request_kwargs)
         return _text_completion_response_to_texts(response)
-
-    async def _async_chat_impl(
-        self,
-        client,
-        messages: list[ChatMessages],
-        generation_config: GenerationConfig | None,
-    ) -> list[list[ChatTurn]]:
-        results: list[list[ChatTurn]] = []
-        for message in messages:
-            try:
-                results.append(
-                    await self._async_chat_one(client, message, generation_config)
-                )
-            except Exception as exc:
-                if self._config.failure_policy == "raise":
-                    raise
-                results.append([_failed_chat_turn(exc)])
-        return results
-
-    async def _async_generate_impl(
-        self,
-        client,
-        prefixes: list[str],
-        generation_config: GenerationConfig | None,
-    ) -> list[list[str]]:
-        return [
-            await self._async_generate_one(client, prompt, generation_config)
-            for prompt in prefixes
-        ]

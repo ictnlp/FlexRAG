@@ -12,12 +12,7 @@ from transformers import CLIPModel, PreTrainedTokenizer
 from flexrag.common import LOGGER_MANAGER, Choices, ContentPart, configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
-from .encoder_base import (
-    ENCODERS,
-    EncoderInput,
-    extract_text_encoder_inputs,
-)
-from .local_process_encoder_base import LocalProcessEncoderBase
+from .encoder_base import ENCODERS, LocalEncoderBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.hf_model")
 
@@ -42,6 +37,9 @@ class HFEncoderConfig(HFModelConfig):
     :type encode_method: str
     :param normalize: Whether to normalize the embedding. Default is False.
     :type normalize: bool
+    :param batch_size: Maximum direct-use batch size. This value is ignored
+        when the encoder is created through Runtime or ResourceManager;
+        configure the runtime or resource batch size instead.
     :param prefix: A string prefix before encoding query / passage. Default is None.
     :type prefix: Optional[str]
     :param task: The task to use. Default is None.
@@ -84,13 +82,17 @@ class HFEncoderConfig(HFModelConfig):
         ),
     ] = "mean"
     normalize: bool = False
+    batch_size: int = 32
     prefix: Optional[str] = None  # used in nomic-text-embedding
     task: Optional[str] = None  # used in jina-embedding
     other_tokenizer_kwargs: dict = field(default_factory=dict)
 
 
-class HFEncoderImpl:
+@ENCODERS("hf", config_class=HFEncoderConfig)
+class HFEncoder(LocalEncoderBase):
     def __init__(self, cfg: HFEncoderConfig):
+        super().__init__(batch_size=cfg.batch_size)
+
         # load model
         self.model, self.tokenizer = load_hf_model(
             model_path=cfg.model_path,
@@ -148,9 +150,7 @@ class HFEncoderImpl:
 
     @trace("encoder.hf_encode")
     @torch.no_grad()
-    def encode(self, inputs: EncoderInput | list[EncoderInput]) -> np.ndarray:
-        texts = extract_text_encoder_inputs(inputs, encoder_name="HFEncoder")
-
+    def _encode_batch(self, texts: list[str]) -> np.ndarray:
         # for late chunking
         if self.encode_method == "late":
             return self.contextual_encode(texts)
@@ -348,36 +348,6 @@ class HFEncoderImpl:
             prefix_lengths = 0
         return prefix_lengths
 
-
-@ENCODERS("hf", config_class=HFEncoderConfig)
-class HFEncoder(LocalProcessEncoderBase):
-    impl_cls = HFEncoderImpl
-
-    async def async_contextual_encode(
-        self, documents: list[list[str]] | list[str], overlap_size: int = 512
-    ) -> list[np.ndarray]:
-        return await self._run_coroutine_async(
-            self._async_call_primary(
-                "contextual_encode",
-                documents,
-                overlap_size=overlap_size,
-            )
-        )
-
-    def contextual_encode(
-        self, documents: list[list[str]] | list[str], overlap_size: int = 512
-    ) -> list[np.ndarray]:
-        return self._call_primary(
-            "contextual_encode",
-            documents,
-            overlap_size=overlap_size,
-        )
-
-    @cached_property
-    def prefix_length(self) -> int:
-        return self._call_primary("prefix_length")
-
-
 @configure
 class HFClipEncoderConfig(HFModelConfig):
     """Configuration for HFClipEncoder.
@@ -386,20 +356,27 @@ class HFClipEncoderConfig(HFModelConfig):
     :type max_encode_length: int
     :param normalize: Whether to normalize the embedding. Default is False.
     :type normalize: bool
+    :param batch_size: Maximum direct-use batch size. This value is ignored
+        when the encoder is created through Runtime or ResourceManager;
+        configure the runtime or resource batch size instead.
     :param convert_to_rgb: Whether to convert the image to RGB. Default is False.
     :type convert_to_rgb: bool
     """
 
     max_encode_length: int = 512
     normalize: bool = False
+    batch_size: int = 32
     convert_to_rgb: bool = False
 
 
-class HFClipEncoderImpl:
+@ENCODERS("hf_clip", config_class=HFClipEncoderConfig)
+class HFClipEncoder(LocalEncoderBase):
     model: CLIPModel
     tokenizer: PreTrainedTokenizer
 
     def __init__(self, cfg: HFClipEncoderConfig):
+        super().__init__(batch_size=cfg.batch_size)
+
         self.model, (self.tokenizer, self.processor) = load_hf_model(
             model_type="clip",
             model_path=cfg.model_path,
@@ -429,9 +406,9 @@ class HFClipEncoderImpl:
                 "HFClipEncoder only supports text and image content blocks."
             )
         if content_part.get("image") is not None:
-            return content_part["image"]
+            return content_part["image"]  # type: ignore
         if content_part.get("image_path") is not None:
-            image = Image.open(content_part["image_path"])
+            image = Image.open(content_part["image_path"])  # type: ignore
             image.load()
             return image
         if content_part.get("url") is not None:
@@ -440,7 +417,7 @@ class HFClipEncoderImpl:
             "Image content must have either 'image' or 'image_path' for HFClipEncoder."
         )
 
-    def encode(self, inputs: list[ContentPart]) -> np.ndarray:
+    def _encode_batch(self, inputs: list[ContentPart]) -> np.ndarray:
         if not inputs:
             return np.empty((0, self.embedding_size), dtype=np.float32)
 
@@ -515,8 +492,3 @@ class HFClipEncoderImpl:
         if hasattr(self.model.config, "hidden_size"):
             return self.model.config.hidden_size
         raise ValueError("Cannot determine embedding size from model config.")
-
-
-@ENCODERS("hf_clip", config_class=HFClipEncoderConfig)
-class HFClipEncoder(LocalProcessEncoderBase):
-    impl_cls = HFClipEncoderImpl

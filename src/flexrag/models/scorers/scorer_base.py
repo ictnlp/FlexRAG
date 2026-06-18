@@ -4,127 +4,89 @@ from typing import Protocol
 
 import numpy as np
 
-from flexrag.common import ProgressDisplay, Register, SimpleProgressLogger
-from flexrag.runtime.async_client import AsyncClientMixin, ConfigT
+from flexrag.common import Register
 
 
 class PairScorerProtocol(Protocol):
-    def score(
-        self,
-        pairs: list[tuple[str, str]],
-        batch_size: int = 32,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
-    ) -> np.ndarray: ...
+    """Protocol for directly usable raw pair scorers.
 
-    async def async_score(
-        self,
-        pairs: list[tuple[str, str]],
-        batch_size: int = 32,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
-    ) -> np.ndarray: ...
+    Raw pair scorers expose a common canonical-batch interface for direct use.
+    Implementations do not provide runtime policies such as deployment
+    batching, progress logging, or process isolation.
+    """
+
+    def score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
+        """Score a batch of query-candidate pairs.
+
+        :param pairs: Query-candidate pairs to score.
+        :return: One score for each input pair.
+        """
+        ...
+
+    async def async_score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
+        """Score a batch of query-candidate pairs asynchronously.
+
+        :param pairs: Query-candidate pairs to score.
+        :return: One score for each input pair.
+        """
+        ...
 
 
-class PairScorerBase(AsyncClientMixin[ConfigT], ABC):
-    """Base class for client-backed pair scorer implementations."""
+class LocalPairScorerBase(ABC):
+    """Thin base class for directly usable local pair scorers.
 
-    def __init__(self, config: ConfigT):
-        AsyncClientMixin.__init__(self, config)
+    Subclasses implement synchronous canonical-batch ``_score_batch``. The
+    public ``score`` method splits direct-use calls according to ``batch_size``
+    and merges the resulting arrays. The async method is a convenience wrapper
+    built with ``asyncio.to_thread``; it keeps an event loop responsive but does
+    not provide process isolation, progress logging, or true Python-level
+    parallelism.
+    """
+
+    def __init__(self, batch_size: int = 32) -> None:
+        """Initialize direct-use local scorer batching.
+
+        :param batch_size: Maximum batch size used by the raw local scorer's
+            public ``score`` method.
+        :raises ValueError: If ``batch_size`` is not greater than zero.
+        """
+        if batch_size <= 0:
+            raise ValueError("batch_size must be greater than 0.")
+        self.batch_size = batch_size
         return
 
-    @staticmethod
-    def _unwrap_exception_group(exc: Exception):
-        while isinstance(exc, ExceptionGroup) and len(exc.exceptions) == 1:
-            exc = exc.exceptions[0]
-        return exc
+    def score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
+        """Score a batch of query-candidate pairs.
+
+        :param pairs: Query-candidate pairs to score.
+        :return: One score for each input pair.
+        """
+        if not pairs:
+            return np.array([])
+        results = [
+            self._score_batch(pairs[i : i + self.batch_size])
+            for i in range(0, len(pairs), self.batch_size)
+        ]
+        if len(results) == 1:
+            return results[0]
+        return np.concatenate(results, axis=0)
 
     @abstractmethod
-    async def _async_score_impl(
-        self,
-        client,
-        pairs: list[tuple[str, str]],
-    ) -> np.ndarray:
+    def _score_batch(self, pairs: list[tuple[str, str]]) -> np.ndarray:
+        """Score one implementation batch.
+
+        :param pairs: Query-candidate pairs to score.
+        :return: One score for each input pair.
+        """
         return
 
-    async def _async_score_core(
-        self,
-        pairs: list[tuple[str, str]],
-        batch_size: int | None = None,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
-    ) -> np.ndarray:
-        if batch_size is None:
-            batches = [pairs]
-        else:
-            batches = [
-                pairs[i : i + batch_size] for i in range(0, len(pairs), batch_size)
-            ]
+    async def async_score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
+        """Score a batch of query-candidate pairs asynchronously.
 
-        client = await self._get_async_client()
-        semaphore = await self._get_async_semaphore()
-        results: list[None | np.ndarray] = [None] * len(batches)
-
-        with SimpleProgressLogger(
-            total=len(pairs), interval=log_interval, display=display
-        ) as p_logger:
-
-            async def _score_task(idx: int, batch: list[tuple[str, str]]) -> None:
-                async with semaphore:
-                    res = await self._async_score_impl(client, batch)
-                results[idx] = res
-                p_logger.update(len(batch), desc="Scoring")
-                return
-
-            try:
-                async with asyncio.TaskGroup() as tg:
-                    for idx, batch in enumerate(batches):
-                        tg.create_task(
-                            _score_task(idx, batch), name=f"score_batch_{idx}"
-                        )
-            except ExceptionGroup as exc:
-                raise self._unwrap_exception_group(exc) from exc
-
-        if not results:
-            return np.array([])
-        ready_results = [result for result in results if result is not None]
-        if len(ready_results) != len(results):
-            raise RuntimeError("Some score tasks did not produce results.")
-        if len(ready_results) == 1:
-            return ready_results[0]
-        return np.concatenate(ready_results, axis=0)
-
-    async def async_score(
-        self,
-        pairs: list[tuple[str, str]],
-        batch_size: int = 32,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
-    ) -> np.ndarray:
-        return await self._run_coroutine_async(
-            self._async_score_core(
-                pairs,
-                batch_size=batch_size,
-                log_interval=log_interval,
-                display=display,
-            )
-        )
-
-    def score(
-        self,
-        pairs: list[tuple[str, str]],
-        batch_size: int = 32,
-        log_interval: int = 1000,
-        display: ProgressDisplay = "auto",
-    ) -> np.ndarray:
-        return self._run_coroutine_sync(
-            self._async_score_core(
-                pairs,
-                batch_size=batch_size,
-                log_interval=log_interval,
-                display=display,
-            )
-        )
+        :param pairs: Query-candidate pairs to score.
+        :return: One score for each input pair.
+        """
+        return await asyncio.to_thread(self.score, pairs)
 
 
 SCORERS = Register[PairScorerProtocol]("scorer")

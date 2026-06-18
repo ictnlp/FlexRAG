@@ -16,8 +16,7 @@ from flexrag.common import (
 from flexrag.common.logging import LOGGER_MANAGER
 
 from ..hf_utils import HFModelConfig, load_hf_model
-from .generator_base import GENERATORS, GenerationConfig
-from .local_process_generator_base import LocalProcessGeneratorBase
+from .generator_base import GENERATORS, GenerationConfig, LocalGeneratorBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.hf_model")
 
@@ -158,11 +157,15 @@ class HFGeneratorConfig(HFModelConfig):
     :type model_type: str
     :param other_tokenizer_kwargs: Other keyword arguments for tokenizer. Default is empty dict.
     :type other_tokenizer_kwargs: dict
+    :param batch_size: Maximum direct-use batch size. This value is ignored
+        when the generator is created through Runtime or ResourceManager;
+        configure the runtime or resource batch size instead.
 
     For example, if you want to use the Qwen2.5-7B-Instruct model as a generator,
     you can use the following code:
 
     .. code-block:: python
+        from flexrag.common import ChatMessages
         from flexrag.models import HFGenerator, HFGeneratorConfig
 
         generator = HFGenerator(
@@ -173,18 +176,35 @@ class HFGeneratorConfig(HFModelConfig):
                 model_type="causal_lm",
             )
         )
-        responses = generator.chat(["Who is Bruce Wayne?"])
+        messages = [
+            ChatMessages.from_list([{"role": "user", "content": "Who is Bruce Wayne?"}])
+        ]
+        responses = generator.chat(messages)
     """
 
     parallel_mode: Annotated[str, Choices("data", "pipeline")] = "data"
     model_type: Annotated[str, Choices("causal_lm", "seq2seq", "auto")] = "auto"
+    batch_size: int = 1
     other_tokenizer_kwargs: dict = field(default_factory=dict)
 
 
-class HFGeneratorImpl:
+@GENERATORS("hf", config_class=HFGeneratorConfig)
+class HFGenerator(LocalGeneratorBase):
+    """Raw local generator backed by Hugging Face Transformers.
+
+    The constructor loads the model and tokenizer according to
+    ``HFGeneratorConfig``, which may use the Hugging Face cache or download
+    model files and may allocate accelerator memory. The public generation
+    methods process canonical batches synchronously; runtime policies such as
+    batching across calls, process isolation, progress logging, and async
+    bridging belong to runtime adapters.
+    """
+
     model: PreTrainedModel
 
     def __init__(self, cfg: HFGeneratorConfig) -> None:
+        super().__init__(batch_size=cfg.batch_size)
+
         self._resolved_model_type = _resolve_model_type(cfg)
         self.model, self.tokenizer = load_hf_model(
             model_path=cfg.model_path,
@@ -268,12 +288,19 @@ class HFGeneratorImpl:
 
     @trace("generator.hf_generate")
     @torch.no_grad()
-    def generate(
+    def _generate_batch(
         self,
-        prefixes: list[str] | str,
+        prefixes: list[str],
         generation_config: GenerationConfig | None = None,
     ) -> list[list[str]]:
-        prefixes = prefixes if isinstance(prefixes, list) else [prefixes]
+        """Generate text completions for a batch of prefixes.
+
+        :param prefixes: Text prefixes to continue.
+        :param generation_config: Optional generation options for this call.
+            ``response_format`` is ignored because HF generation does not
+            support provider-native schema constraints.
+        :return: One list of candidate completions for each input prefix.
+        """
         inputs = self._prepare_text_inputs(prefixes)
 
         hf_gen_cfg = self._get_options(generation_config)
@@ -292,19 +319,28 @@ class HFGeneratorImpl:
 
     @trace("generator.hf_chat")
     @torch.no_grad()
-    def chat(
+    def _chat_batch(
         self,
-        messages: list[ChatMessages] | ChatMessages,
+        messages: list[ChatMessages],
         generation_config: GenerationConfig | None = None,
     ) -> list[list[ChatTurn]]:
-        if isinstance(messages, ChatMessages):
-            normalized_messages = [messages]
-        else:
-            if not all(isinstance(message, ChatMessages) for message in messages):
-                raise TypeError(
-                    "HFGeneratorImpl.chat expects normalized ChatMessages batches."
-                )
-            normalized_messages = messages
+        """Generate assistant turns for a batch of normalized conversations.
+
+        The method expects canonical ``ChatMessages`` batches. Multimodal chat
+        inputs are accepted only when the loaded model is detected as
+        multimodal-capable; unsupported rich content raises ``ValueError``.
+
+        :param messages: Normalized chat conversations to continue.
+        :param generation_config: Optional generation options for this call.
+        :return: One list of candidate assistant turns for each conversation.
+        :raises TypeError: If ``messages`` is not a normalized
+            ``ChatMessages`` batch.
+        :raises ValueError: If the model or chat content does not support the
+            requested multimodal or rich-content input.
+        """
+        if not all(isinstance(message, ChatMessages) for message in messages):
+            raise TypeError("HFGenerator.chat expects normalized ChatMessages batches.")
+        normalized_messages = messages
 
         use_multimodal = _messages_have_multimodal_content(normalized_messages)
         if use_multimodal and not self._supports_multimodal:
@@ -340,16 +376,3 @@ class HFGeneratorImpl:
             [ChatTurn(role="assistant", content=text) for text in resp]
             for resp in responses
         ]
-
-
-@GENERATORS("hf", config_class=HFGeneratorConfig)
-class HFGenerator(LocalProcessGeneratorBase):
-    impl_cls = HFGeneratorImpl
-
-    def _build_worker_device_groups(self, config) -> list[list[int] | None]:
-        device_ids = list(getattr(config, "device_id", []))
-        if not device_ids:
-            return [None]
-        if config.parallel_mode == "pipeline":
-            return [device_ids]
-        return super()._build_worker_device_groups(config)

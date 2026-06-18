@@ -7,8 +7,7 @@ import torch
 from flexrag.common import configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
-from .local_process_scorer_base import LocalProcessScorerBase
-from .scorer_base import SCORERS
+from .scorer_base import SCORERS, LocalPairScorerBase
 
 
 @configure
@@ -27,6 +26,9 @@ class HFColBertScorerConfig(HFModelConfig):
     :type document_token: str
     :param normalize_embeddings: whether to normalize the embeddings. Default is True.
     :type normalize_embeddings: bool
+    :param batch_size: Maximum direct-use batch size. This value is ignored
+        when the scorer is created through Runtime or ResourceManager;
+        configure the runtime or resource batch size instead.
     """
 
     base_model_type: str = "bert"
@@ -35,14 +37,18 @@ class HFColBertScorerConfig(HFModelConfig):
     query_token: str = "[unused0]"
     document_token: str = "[unused1]"
     normalize_embeddings: bool = True
+    batch_size: int = 32
 
 
-class HFColBertScorerImpl:
+@SCORERS("hf_colbert", config_class=HFColBertScorerConfig)
+class HFColBertScorer(LocalPairScorerBase):
     """HFColBertScorer: The scorer based on the HuggingFace ColBERT model.
     Code adapted from https://github.com/hotchpotch/JQaRA/blob/main/evaluator/reranker/colbert_reranker.py
     """
 
     def __init__(self, cfg: HFColBertScorerConfig) -> None:
+        super().__init__(batch_size=cfg.batch_size)
+
         self.model, self.tokenizer = load_hf_model(
             cfg.model_path,
             tokenizer_path=cfg.tokenizer_path,
@@ -62,7 +68,7 @@ class HFColBertScorerImpl:
         return
 
     @trace("scorer.hf_colbert")
-    def score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
+    def _score_batch(self, pairs: list[tuple[str, str]]) -> np.ndarray:
         if not pairs:
             return np.array([], dtype=np.float32)
 
@@ -220,8 +226,3 @@ class HFColBertScorerImpl:
 
     def _document_encode(self, documents: list[str]):
         return self._tokenize(documents, self.document_token_id)
-
-
-@SCORERS("hf_colbert", config_class=HFColBertScorerConfig)
-class HFColBertScorer(LocalProcessScorerBase):
-    impl_cls = HFColBertScorerImpl

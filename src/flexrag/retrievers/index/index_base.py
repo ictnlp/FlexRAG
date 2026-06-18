@@ -19,7 +19,7 @@ from flexrag.common import (
     trace,
 )
 from flexrag.common.configure import extract_config
-from flexrag.models import EncoderProtocol
+from flexrag.models.encoders import EncoderProtocol
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.index")
 

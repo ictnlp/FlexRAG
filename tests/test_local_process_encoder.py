@@ -44,14 +44,14 @@ async def test_local_process_encoder_batch_scheduling():
         FakeLocalTextEncoderConfig(
             device_id=[0, 1, 2],
             delay_s=0.2,
-        )
+        ),
+        batch_size=2,
     ) as encoder:
         await encoder.async_encode(
             ["warmup-1", "warmup-2", "warmup-3", "warmup-4", "warmup-5", "warmup-6"],
-            batch_size=2,
         )
         start = time.perf_counter()
-        embeddings = await encoder.async_encode(texts, batch_size=2)
+        embeddings = await encoder.async_encode(texts)
         elapsed = time.perf_counter() - start
 
         assert np.array_equal(embeddings, expected_embeddings(texts))

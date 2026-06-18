@@ -2,7 +2,8 @@ from typing import Annotated
 
 from flexrag.common import Choices, configure, trace
 from flexrag.common.dataclasses import RetrievedContext
-from flexrag.models import GENERATORS, GeneratorBase, GeneratorConfig
+from flexrag.models import GENERATORS, GeneratorConfig
+from flexrag.models.generators import GeneratorProtocol
 
 from .flex_retriever import FlexRetriever, FlexRetrieverConfig
 from .retriever_base import RETRIEVERS
@@ -20,7 +21,7 @@ class HydeRewriter:
         "MR_TYDI": "Please write a passage in {} to answer the question in detail.\nQuestion: {}\nPassage:",
     }
 
-    def __init__(self, generator: GeneratorBase, task: str, language: str = "en"):
+    def __init__(self, generator: GeneratorProtocol, task: str, language: str = "en"):
         self.task = task
         self.language = language
         self.generator = generator
