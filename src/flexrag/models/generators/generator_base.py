@@ -1,9 +1,43 @@
 import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import field
-from typing import Any, Optional, Protocol
+from typing import Any, Optional, Protocol, TypeAlias
 
 from flexrag.common import ChatMessages, ChatTurn, Register, configure
+
+GeneratorPrefixes: TypeAlias = str | list[str]
+GeneratorMessages: TypeAlias = (
+    ChatMessages
+    | list[dict[str, Any]]
+    | list[ChatMessages]
+    | list[list[dict[str, Any]]]
+)
+
+
+def _normalize_generation_prefixes(prefixes: GeneratorPrefixes) -> list[str]:
+    if isinstance(prefixes, str):
+        return [prefixes]
+    for prefix in prefixes:
+        if not isinstance(prefix, str):
+            raise TypeError("Generator prefixes must be strings.")
+    return prefixes
+
+
+def _normalize_chat_messages(messages: GeneratorMessages) -> list[ChatMessages]:
+    if isinstance(messages, ChatMessages):
+        return [messages]
+    if not messages:
+        return []
+    if isinstance(messages[0], dict):
+        return [ChatMessages.from_list(messages)]
+
+    normalized: list[ChatMessages] = []
+    for message in messages:
+        if isinstance(message, ChatMessages):
+            normalized.append(message)
+        else:
+            normalized.append(ChatMessages.from_list(message))
+    return normalized
 
 
 @configure
@@ -73,12 +107,12 @@ class GeneratorProtocol(Protocol):
 
     def chat(
         self,
-        messages: list[ChatMessages],
+        messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[ChatTurn]]:
-        """Generate chat responses for a batch of conversations.
+        """Generate chat responses for one conversation or a batch.
 
-        :param messages: Normalized chat conversations to process.
+        :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
         :return: One list of candidate assistant turns for each input
             conversation.
@@ -87,12 +121,12 @@ class GeneratorProtocol(Protocol):
 
     async def async_chat(
         self,
-        messages: list[ChatMessages],
+        messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[ChatTurn]]:
-        """Generate chat responses asynchronously for a batch of conversations.
+        """Generate chat responses asynchronously for one conversation or a batch.
 
-        :param messages: Normalized chat conversations to process.
+        :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
         :return: One list of candidate assistant turns for each input
             conversation.
@@ -101,12 +135,12 @@ class GeneratorProtocol(Protocol):
 
     def generate(
         self,
-        prefixes: list[str],
+        prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[str]]:
-        """Generate text completions for a batch of prefixes.
+        """Generate text completions for one prefix or a batch.
 
-        :param prefixes: Text prefixes to continue.
+        :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
         :return: One list of candidate completions for each input prefix.
         """
@@ -114,12 +148,12 @@ class GeneratorProtocol(Protocol):
 
     async def async_generate(
         self,
-        prefixes: list[str],
+        prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[str]]:
-        """Generate text completions asynchronously for a batch of prefixes.
+        """Generate text completions asynchronously for one prefix or a batch.
 
-        :param prefixes: Text prefixes to continue.
+        :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
         :return: One list of candidate completions for each input prefix.
         """
@@ -151,21 +185,22 @@ class LocalGeneratorBase(ABC):
 
     def chat(
         self,
-        messages: list[ChatMessages],
+        messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[ChatTurn]]:
-        """Generate chat responses for a batch of conversations.
+        """Generate chat responses for one conversation or a batch.
 
-        :param messages: Normalized chat conversations to process.
+        :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
         :return: One list of candidate assistant turns for each input
             conversation.
         """
+        normalized_messages = _normalize_chat_messages(messages)
         results: list[list[ChatTurn]] = []
-        for i in range(0, len(messages), self.batch_size):
+        for i in range(0, len(normalized_messages), self.batch_size):
             results.extend(
                 self._chat_batch(
-                    messages[i : i + self.batch_size],
+                    normalized_messages[i : i + self.batch_size],
                     generation_config=generation_config,
                 )
             )
@@ -188,12 +223,12 @@ class LocalGeneratorBase(ABC):
 
     async def async_chat(
         self,
-        messages: list[ChatMessages],
+        messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[ChatTurn]]:
-        """Generate chat responses asynchronously for a batch of conversations.
+        """Generate chat responses asynchronously for one conversation or a batch.
 
-        :param messages: Normalized chat conversations to process.
+        :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
         :return: One list of candidate assistant turns for each input
             conversation.
@@ -206,20 +241,21 @@ class LocalGeneratorBase(ABC):
 
     def generate(
         self,
-        prefixes: list[str],
+        prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[str]]:
-        """Generate text completions for a batch of prefixes.
+        """Generate text completions for one prefix or a batch.
 
-        :param prefixes: Text prefixes to continue.
+        :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
         :return: One list of candidate completions for each input prefix.
         """
+        normalized_prefixes = _normalize_generation_prefixes(prefixes)
         results: list[list[str]] = []
-        for i in range(0, len(prefixes), self.batch_size):
+        for i in range(0, len(normalized_prefixes), self.batch_size):
             results.extend(
                 self._generate_batch(
-                    prefixes[i : i + self.batch_size],
+                    normalized_prefixes[i : i + self.batch_size],
                     generation_config=generation_config,
                 )
             )
@@ -241,12 +277,12 @@ class LocalGeneratorBase(ABC):
 
     async def async_generate(
         self,
-        prefixes: list[str],
+        prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[str]]:
-        """Generate text completions asynchronously for a batch of prefixes.
+        """Generate text completions asynchronously for one prefix or a batch.
 
-        :param prefixes: Text prefixes to continue.
+        :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
         :return: One list of candidate completions for each input prefix.
         """
@@ -307,12 +343,12 @@ class RemoteGeneratorBase(ABC):
 
     def chat(
         self,
-        messages: list[ChatMessages],
+        messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[ChatTurn]]:
-        """Generate chat responses synchronously for a batch of conversations.
+        """Generate chat responses synchronously for one conversation or a batch.
 
-        :param messages: Normalized chat conversations to process.
+        :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
         :return: One list of candidate assistant turns for each input
             conversation.
@@ -323,29 +359,30 @@ class RemoteGeneratorBase(ABC):
 
     async def async_chat(
         self,
-        messages: list[ChatMessages],
+        messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[ChatTurn]]:
-        """Generate chat responses asynchronously for a batch of conversations.
+        """Generate chat responses asynchronously for one conversation or a batch.
 
-        :param messages: Normalized chat conversations to process.
+        :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
         :return: One list of candidate assistant turns for each input
             conversation.
         """
+        normalized_messages = _normalize_chat_messages(messages)
         return [
             await self._async_chat_one(message, generation_config)
-            for message in messages
+            for message in normalized_messages
         ]
 
     def generate(
         self,
-        prefixes: list[str],
+        prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[str]]:
-        """Generate text completions synchronously for a batch of prefixes.
+        """Generate text completions synchronously for one prefix or a batch.
 
-        :param prefixes: Text prefixes to continue.
+        :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
         :return: One list of candidate completions for each input prefix.
         :raises RuntimeError: If called from a running event loop.
@@ -355,18 +392,19 @@ class RemoteGeneratorBase(ABC):
 
     async def async_generate(
         self,
-        prefixes: list[str],
+        prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
     ) -> list[list[str]]:
-        """Generate text completions asynchronously for a batch of prefixes.
+        """Generate text completions asynchronously for one prefix or a batch.
 
-        :param prefixes: Text prefixes to continue.
+        :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
         :return: One list of candidate completions for each input prefix.
         """
+        normalized_prefixes = _normalize_generation_prefixes(prefixes)
         return [
             await self._async_generate_one(prefix, generation_config)
-            for prefix in prefixes
+            for prefix in normalized_prefixes
         ]
 
 

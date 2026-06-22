@@ -150,7 +150,19 @@ class HFEncoder(LocalEncoderBase):
 
     @trace("encoder.hf_encode")
     @torch.no_grad()
-    def _encode_batch(self, texts: list[str]) -> np.ndarray:
+    def _encode_batch(self, inputs: list[ContentPart]) -> np.ndarray:
+        texts: list[str] = []
+        for part in inputs:
+            if part.get("type") != "text":
+                raise ValueError(
+                    "HFEncoder only supports text content blocks, "
+                    f"but got '{part.get('type')}'."
+                )
+            text = part.get("text", "")
+            if not isinstance(text, str):
+                raise ValueError("HFEncoder text content must be a string.")
+            texts.append(text)
+
         # for late chunking
         if self.encode_method == "late":
             return self.contextual_encode(texts)

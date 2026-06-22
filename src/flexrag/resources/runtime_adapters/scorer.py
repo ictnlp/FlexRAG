@@ -4,7 +4,11 @@ from abc import abstractmethod
 import numpy as np
 
 from flexrag.common import ProgressDisplay, SimpleProgressLogger
-from flexrag.models.scorers.scorer_base import LocalPairScorerBase
+from flexrag.models.scorers.scorer_base import (
+    LocalPairScorerBase,
+    PairScorerInput,
+    _normalize_score_pairs,
+)
 from flexrag.runtime.async_client import AsyncClientMixin, ConfigT
 from flexrag.runtime.process_worker_pool import ProcessWorkerPoolClient
 
@@ -46,20 +50,21 @@ class ScorerRuntimeAdapter(AsyncClientMixin[ConfigT]):
 
     async def async_score(
         self,
-        pairs: list[tuple[str, str]],
+        pairs: PairScorerInput,
         log_interval: int = 1000,
         display: ProgressDisplay = "auto",
     ) -> np.ndarray:
         """Score query-candidate pairs asynchronously.
 
-        :param pairs: Query-candidate pairs to score.
+        :param pairs: Query-candidate pair or pairs to score.
         :param log_interval: Progress update interval.
         :param display: Progress display mode.
         :return: One score for each input pair.
         """
+        normalized_pairs = _normalize_score_pairs(pairs)
         return await self._run_coroutine_async(
             self._async_score_core(
-                pairs,
+                normalized_pairs,
                 log_interval=log_interval,
                 display=display,
             )
@@ -67,20 +72,21 @@ class ScorerRuntimeAdapter(AsyncClientMixin[ConfigT]):
 
     def score(
         self,
-        pairs: list[tuple[str, str]],
+        pairs: PairScorerInput,
         log_interval: int = 1000,
         display: ProgressDisplay = "auto",
     ) -> np.ndarray:
         """Score query-candidate pairs synchronously.
 
-        :param pairs: Query-candidate pairs to score.
+        :param pairs: Query-candidate pair or pairs to score.
         :param log_interval: Progress update interval.
         :param display: Progress display mode.
         :return: One score for each input pair.
         """
+        normalized_pairs = _normalize_score_pairs(pairs)
         return self._run_coroutine_sync(
             self._async_score_core(
-                pairs,
+                normalized_pairs,
                 log_interval=log_interval,
                 display=display,
             )

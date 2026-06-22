@@ -1,10 +1,28 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Protocol
+from typing import Protocol, TypeAlias
 
 import numpy as np
 
 from flexrag.common import Register
+
+PairScorerInput: TypeAlias = tuple[str, str] | list[tuple[str, str]]
+
+
+def _normalize_score_pairs(pairs: PairScorerInput) -> list[tuple[str, str]]:
+    def _validate_pair(pair) -> tuple[str, str]:
+        if not (
+            isinstance(pair, tuple)
+            and len(pair) == 2
+            and isinstance(pair[0], str)
+            and isinstance(pair[1], str)
+        ):
+            raise TypeError("Scorer pairs must be tuple[str, str].")
+        return pair
+
+    if isinstance(pairs, tuple):
+        return [_validate_pair(pairs)]
+    return [_validate_pair(pair) for pair in pairs]
 
 
 class PairScorerProtocol(Protocol):
@@ -15,18 +33,18 @@ class PairScorerProtocol(Protocol):
     batching, progress logging, or process isolation.
     """
 
-    def score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
-        """Score a batch of query-candidate pairs.
+    def score(self, pairs: PairScorerInput) -> np.ndarray:
+        """Score one query-candidate pair or a batch of pairs.
 
-        :param pairs: Query-candidate pairs to score.
+        :param pairs: Query-candidate pair or pairs to score.
         :return: One score for each input pair.
         """
         ...
 
-    async def async_score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
-        """Score a batch of query-candidate pairs asynchronously.
+    async def async_score(self, pairs: PairScorerInput) -> np.ndarray:
+        """Score one query-candidate pair or a batch asynchronously.
 
-        :param pairs: Query-candidate pairs to score.
+        :param pairs: Query-candidate pair or pairs to score.
         :return: One score for each input pair.
         """
         ...
@@ -55,17 +73,18 @@ class LocalPairScorerBase(ABC):
         self.batch_size = batch_size
         return
 
-    def score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
-        """Score a batch of query-candidate pairs.
+    def score(self, pairs: PairScorerInput) -> np.ndarray:
+        """Score one query-candidate pair or a batch of pairs.
 
-        :param pairs: Query-candidate pairs to score.
+        :param pairs: Query-candidate pair or pairs to score.
         :return: One score for each input pair.
         """
-        if not pairs:
+        normalized_pairs = _normalize_score_pairs(pairs)
+        if not normalized_pairs:
             return np.array([])
         results = [
-            self._score_batch(pairs[i : i + self.batch_size])
-            for i in range(0, len(pairs), self.batch_size)
+            self._score_batch(normalized_pairs[i : i + self.batch_size])
+            for i in range(0, len(normalized_pairs), self.batch_size)
         ]
         if len(results) == 1:
             return results[0]
@@ -80,10 +99,10 @@ class LocalPairScorerBase(ABC):
         """
         return
 
-    async def async_score(self, pairs: list[tuple[str, str]]) -> np.ndarray:
-        """Score a batch of query-candidate pairs asynchronously.
+    async def async_score(self, pairs: PairScorerInput) -> np.ndarray:
+        """Score one query-candidate pair or a batch asynchronously.
 
-        :param pairs: Query-candidate pairs to score.
+        :param pairs: Query-candidate pair or pairs to score.
         :return: One score for each input pair.
         """
         return await asyncio.to_thread(self.score, pairs)

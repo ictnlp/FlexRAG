@@ -1,6 +1,4 @@
 from .encoder import (
-    EncoderInput,
-    EncoderInputFormat,
     EncoderRuntimeAdapter,
     ProcessEncoderAdapter,
     RemoteEncoderRuntimeAdapter,
@@ -13,8 +11,6 @@ from .generator import (
 from .scorer import ProcessScorerAdapter, ScorerRuntimeAdapter
 
 __all__ = [
-    "EncoderInput",
-    "EncoderInputFormat",
     "EncoderRuntimeAdapter",
     "GeneratorRuntimeAdapter",
     "ProcessEncoderAdapter",

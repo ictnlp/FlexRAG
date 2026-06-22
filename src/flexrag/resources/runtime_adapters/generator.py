@@ -4,30 +4,15 @@ from abc import abstractmethod
 from flexrag.common import ChatMessages, ChatTurn, ProgressDisplay, SimpleProgressLogger
 from flexrag.models.generators.generator_base import (
     GenerationConfig,
+    GeneratorMessages,
+    GeneratorPrefixes,
     LocalGeneratorBase,
     RemoteGeneratorBase,
+    _normalize_chat_messages,
+    _normalize_generation_prefixes,
 )
 from flexrag.runtime.async_client import AsyncClientMixin, ConfigT
 from flexrag.runtime.process_worker_pool import ProcessWorkerPoolClient
-
-
-def _normalize_chat_messages(
-    messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
-) -> list[ChatMessages]:
-    if isinstance(messages, ChatMessages):
-        return [messages]
-    if not messages:
-        return []
-    if isinstance(messages[0], dict):
-        return [ChatMessages.from_list(messages)]
-
-    normalized: list[ChatMessages] = []
-    for message in messages:
-        if isinstance(message, ChatMessages):
-            normalized.append(message)
-        else:
-            normalized.append(ChatMessages.from_list(message))
-    return normalized
 
 
 class GeneratorRuntimeAdapter(AsyncClientMixin[ConfigT]):
@@ -67,7 +52,7 @@ class GeneratorRuntimeAdapter(AsyncClientMixin[ConfigT]):
 
     async def async_generate(
         self,
-        prefixes: list[str] | str,
+        prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
         log_interval: int = 1000,
         display: ProgressDisplay = "auto",
@@ -84,7 +69,7 @@ class GeneratorRuntimeAdapter(AsyncClientMixin[ConfigT]):
         :param display: Progress display mode.
         :return: Batched candidate completions.
         """
-        normalized_prefixes = prefixes if isinstance(prefixes, list) else [prefixes]
+        normalized_prefixes = _normalize_generation_prefixes(prefixes)
         return await self._run_coroutine_async(
             self._async_generate_core(
                 normalized_prefixes,
@@ -96,7 +81,7 @@ class GeneratorRuntimeAdapter(AsyncClientMixin[ConfigT]):
 
     def generate(
         self,
-        prefixes: list[str] | str,
+        prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
         log_interval: int = 1000,
         display: ProgressDisplay = "auto",
@@ -113,7 +98,7 @@ class GeneratorRuntimeAdapter(AsyncClientMixin[ConfigT]):
         :param display: Progress display mode.
         :return: Batched candidate completions.
         """
-        normalized_prefixes = prefixes if isinstance(prefixes, list) else [prefixes]
+        normalized_prefixes = _normalize_generation_prefixes(prefixes)
         return self._run_coroutine_sync(
             self._async_generate_core(
                 normalized_prefixes,
@@ -125,7 +110,7 @@ class GeneratorRuntimeAdapter(AsyncClientMixin[ConfigT]):
 
     async def async_chat(
         self,
-        messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
+        messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
         log_interval: int = 1000,
         display: ProgressDisplay = "auto",
@@ -155,7 +140,7 @@ class GeneratorRuntimeAdapter(AsyncClientMixin[ConfigT]):
 
     def chat(
         self,
-        messages: list[ChatMessages] | list[list[dict]] | ChatMessages | list[dict],
+        messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
         log_interval: int = 1000,
         display: ProgressDisplay = "auto",

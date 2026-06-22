@@ -93,7 +93,7 @@ class LiteLLMEncoder(RemoteEncoderBase):
         }
 
     @trace("encoder.litellm_encode")
-    async def async_encode(self, inputs: list[ContentPart]) -> np.ndarray:
+    async def _async_encode_batch(self, inputs: list[ContentPart]) -> np.ndarray:
         text_indices: list[int] = []
         text_inputs: list[str] = []
         image_indices: list[int] = []

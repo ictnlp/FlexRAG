@@ -1,55 +1,17 @@
 import asyncio
 from abc import abstractmethod
-from typing import Literal, TypeAlias, cast
 
 import numpy as np
-from PIL.ImageFile import ImageFile
 
 from flexrag.common import ContentPart, ProgressDisplay, SimpleProgressLogger
-from flexrag.models.encoders.encoder_base import LocalEncoderBase, RemoteEncoderBase
+from flexrag.models.encoders.encoder_base import (
+    EncoderInputs,
+    LocalEncoderBase,
+    RemoteEncoderBase,
+    _normalize_encoder_inputs,
+)
 from flexrag.runtime.async_client import AsyncClientMixin, ConfigT
 from flexrag.runtime.process_worker_pool import ProcessWorkerPoolClient
-
-EncoderInput: TypeAlias = str | ImageFile | ContentPart
-EncoderInputFormat: TypeAlias = Literal["content", "text"]
-
-
-def _normalize_inputs(
-    inputs: EncoderInput | list[EncoderInput],
-) -> list[ContentPart]:
-    items = inputs if isinstance(inputs, list) else [inputs]
-    normalized: list[ContentPart] = []
-    for item in items:
-        if isinstance(item, str):
-            normalized.append({"type": "text", "text": item})
-            continue
-        if isinstance(item, ImageFile):
-            normalized.append({"type": "image", "image": item})
-            continue
-        if isinstance(item, dict):
-            content_type = item.get("type")
-            if not isinstance(content_type, str):
-                raise ValueError("Encoder content blocks must include a string 'type'.")
-            normalized.append(cast(ContentPart, item))
-            continue
-        raise TypeError(f"Unsupported encoder input type: {type(item).__name__}")
-    return normalized
-
-
-def _extract_text_inputs(
-    inputs: list[ContentPart],
-    *,
-    encoder_name: str,
-) -> list[str]:
-    texts: list[str] = []
-    for part in inputs:
-        if part.get("type") != "text":
-            raise ValueError(
-                f"{encoder_name} only supports text content blocks, "
-                f"but got '{part.get('type')}'."
-            )
-        texts.append(part.get("text", ""))
-    return texts
 
 
 def _merge_encode_results(results: list[None | np.ndarray]) -> np.ndarray:
@@ -67,40 +29,16 @@ class EncoderRuntimeAdapter(AsyncClientMixin[ConfigT]):
     """Managed call adapter for encoder-like resources.
 
     This base adapter provides the public sync and async call surface for
-    encoder resources. It normalizes accepted input shapes, submits work to the
-    managed background event loop, and delegates the actual encoding work to
-    subclass core methods.
+    encoder resources. It reuses model-level input canonicalization, submits
+    work to the managed background event loop, and delegates the actual
+    encoding work to subclass core methods.
     """
-
-    input_format: EncoderInputFormat = "content"
-
-    def __init__(
-        self,
-        config: ConfigT,
-        *,
-        input_format: EncoderInputFormat | None = None,
-    ) -> None:
-        super().__init__(config)
-        if input_format is not None:
-            self.input_format = input_format
-        return
 
     @staticmethod
     def _unwrap_exception_group(exc: Exception):
         while isinstance(exc, ExceptionGroup) and len(exc.exceptions) == 1:
             exc = exc.exceptions[0]
         return exc
-
-    def _prepare_encoder_inputs(
-        self,
-        inputs: list[ContentPart],
-    ) -> list[str] | list[ContentPart]:
-        if self.input_format == "text":
-            return _extract_text_inputs(
-                inputs,
-                encoder_name=self.__class__.__name__,
-            )
-        return inputs
 
     @abstractmethod
     async def _async_encode_core(
@@ -113,7 +51,7 @@ class EncoderRuntimeAdapter(AsyncClientMixin[ConfigT]):
 
     async def async_encode(
         self,
-        inputs: EncoderInput | list[EncoderInput],
+        inputs: EncoderInputs,
         log_interval: int = 1000,
         display: ProgressDisplay = "auto",
     ) -> np.ndarray:
@@ -128,7 +66,7 @@ class EncoderRuntimeAdapter(AsyncClientMixin[ConfigT]):
         :param display: Progress display mode.
         :return: Encoded embeddings.
         """
-        normalized_inputs = _normalize_inputs(inputs)
+        normalized_inputs = _normalize_encoder_inputs(inputs)
         return await self._run_coroutine_async(
             self._async_encode_core(
                 normalized_inputs,
@@ -139,7 +77,7 @@ class EncoderRuntimeAdapter(AsyncClientMixin[ConfigT]):
 
     def encode(
         self,
-        inputs: EncoderInput | list[EncoderInput],
+        inputs: EncoderInputs,
         log_interval: int = 1000,
         display: ProgressDisplay = "auto",
     ) -> np.ndarray:
@@ -154,7 +92,7 @@ class EncoderRuntimeAdapter(AsyncClientMixin[ConfigT]):
         :param display: Progress display mode.
         :return: Encoded embeddings.
         """
-        normalized_inputs = _normalize_inputs(inputs)
+        normalized_inputs = _normalize_encoder_inputs(inputs)
         return self._run_coroutine_sync(
             self._async_encode_core(
                 normalized_inputs,
@@ -189,7 +127,6 @@ class RemoteEncoderRuntimeAdapter(EncoderRuntimeAdapter[ConfigT]):
         config: ConfigT,
         impl_cls: type[RemoteEncoderBase] | None = None,
         *,
-        input_format: EncoderInputFormat | None = None,
         batch_size: int = 32,
         max_concurrency: int = 1,
         rpm: float = 0,
@@ -202,8 +139,6 @@ class RemoteEncoderRuntimeAdapter(EncoderRuntimeAdapter[ConfigT]):
         :param config: Configuration passed to the raw encoder implementation.
         :param impl_cls: Optional raw encoder implementation class. When
             omitted, subclasses must set ``impl_cls``.
-        :param input_format: Canonical input format expected by the raw encoder.
-            ``"text"`` extracts text strings from text content blocks.
         :param batch_size: Deployment batch size used for remote requests.
         :param max_concurrency: Maximum number of in-flight batch requests.
         :param rpm: Requests-per-minute limit. ``0`` disables rate limiting.
@@ -213,7 +148,7 @@ class RemoteEncoderRuntimeAdapter(EncoderRuntimeAdapter[ConfigT]):
         :param retry_max_delay: Maximum retry delay in seconds.
         :raises ValueError: If any runtime policy value is invalid.
         """
-        super().__init__(config, input_format=input_format)
+        super().__init__(config)
         if impl_cls is not None:
             self.impl_cls = impl_cls
         if batch_size <= 0:
@@ -301,10 +236,7 @@ class RemoteEncoderRuntimeAdapter(EncoderRuntimeAdapter[ConfigT]):
 
             async def _encode_task(idx: int, batch: list[ContentPart]) -> None:
                 async with semaphore:
-                    res = await self._run_with_retry(
-                        client,
-                        self._prepare_encoder_inputs(batch),
-                    )
+                    res = await self._run_with_retry(client, batch)
                 results[idx] = res
                 p_logger.update(len(batch), desc="Encoding")
                 return
@@ -337,7 +269,6 @@ class ProcessEncoderAdapter(EncoderRuntimeAdapter):
         config,
         impl_cls: type[LocalEncoderBase] | None = None,
         *,
-        input_format: EncoderInputFormat | None = None,
         batch_size: int = 32,
         device_groups: list[list[int]] | None = None,
     ):
@@ -346,15 +277,13 @@ class ProcessEncoderAdapter(EncoderRuntimeAdapter):
         :param config: Configuration passed to the raw encoder implementation.
         :param impl_cls: Optional raw encoder implementation class. When
             omitted, subclasses must set ``impl_cls``.
-        :param input_format: Canonical input format expected by the raw encoder.
-            ``"text"`` extracts text strings from text content blocks.
         :param batch_size: Deployment batch size used for worker RPC calls.
         :param device_groups: Worker device placement. ``None`` creates one
             worker inheriting the current environment, ``[]`` creates one
             CPU-only worker, and non-empty groups create one worker per group.
         :raises ValueError: If ``batch_size`` is not greater than zero.
         """
-        super().__init__(config, input_format=input_format)
+        super().__init__(config)
         if impl_cls is not None:
             self.impl_cls = impl_cls
         if batch_size <= 0:
@@ -405,10 +334,7 @@ class ProcessEncoderAdapter(EncoderRuntimeAdapter):
 
             async def _encode_task(idx: int, batch: list[ContentPart]) -> None:
                 async with semaphore:
-                    res = await client.call_available(
-                        "_encode_batch",
-                        self._prepare_encoder_inputs(batch),
-                    )
+                    res = await client.call_available("_encode_batch", batch)
                 results[idx] = res
                 p_logger.update(len(batch), desc="Encoding")
                 return
