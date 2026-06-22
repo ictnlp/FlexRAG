@@ -1,7 +1,6 @@
 # Utilities for Huggingface models
 
-from dataclasses import field
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 
 import torch
 import transformers
@@ -104,13 +103,13 @@ def guess_model_name(model_cfg: PretrainedConfig) -> str | None:
     return None
 
 
-def get_gpu_capability(device_id: list[int]) -> float:
-    """Get the GPU capability of the first GPU."""
-    if len(device_id) == 0:
+def get_gpu_capability(device_ids: list[int]) -> float:
+    """Get the minimum GPU capability among selected visible devices."""
+    if len(device_ids) == 0:
         return 0.0
     try:
         caps = []
-        for device in device_id:
+        for device in device_ids:
             cap = torch.cuda.get_device_capability(device)
             caps.append(float(f"{cap[0]}.{cap[1]}"))
         cap = min(caps)
@@ -120,9 +119,54 @@ def get_gpu_capability(device_id: list[int]) -> float:
     return cap
 
 
+def _visible_cuda_devices() -> list[int]:
+    if not torch.cuda.is_available():
+        return []
+    return list(range(torch.cuda.device_count()))
+
+
+def _device_map_cuda_devices(device_map: Any) -> list[int]:
+    if not torch.cuda.is_available() or device_map is None:
+        return []
+    if isinstance(device_map, int):
+        return [device_map]
+    if isinstance(device_map, torch.device):
+        if device_map.type == "cuda":
+            return [device_map.index or torch.cuda.current_device()]
+        return []
+    if isinstance(device_map, str):
+        if device_map in {"auto", "balanced", "balanced_low_0", "sequential"}:
+            return _visible_cuda_devices()
+        if device_map == "cuda":
+            return [torch.cuda.current_device()]
+        if device_map.startswith("cuda:"):
+            try:
+                return [int(device_map.removeprefix("cuda:"))]
+            except ValueError:
+                return []
+        return []
+    if isinstance(device_map, dict):
+        devices: set[int] = set()
+        for value in device_map.values():
+            if isinstance(value, int):
+                devices.add(value)
+            elif isinstance(value, torch.device) and value.type == "cuda":
+                devices.add(value.index or torch.cuda.current_device())
+            elif isinstance(value, str):
+                if value == "cuda":
+                    devices.add(torch.cuda.current_device())
+                elif value.startswith("cuda:"):
+                    try:
+                        devices.add(int(value.removeprefix("cuda:")))
+                    except ValueError:
+                        pass
+        return sorted(devices)
+    return _visible_cuda_devices()
+
+
 def configure_attn(
     model_path: str,
-    device_id: list[int],
+    device_map: Any,
     load_dtype: str | None | torch.dtype,
     trust_remote_code: bool = False,
     attn_implementation: str | None = "auto",
@@ -134,7 +178,7 @@ def configure_attn(
     if attn_implementation != "auto":
         return {"attn_implementation": attn_implementation}
 
-    gpu_cap = get_gpu_capability(device_id)
+    gpu_cap = get_gpu_capability(_device_map_cuda_devices(device_map))
     model_config = AutoConfig.from_pretrained(
         model_path, trust_remote_code=trust_remote_code
     )
@@ -272,10 +316,9 @@ def load_hf_model(
     model_path: str,
     tokenizer_path: Optional[str] = None,
     model_type: Optional[str] = None,
-    device_id: list[int] = [],
+    device_map: Any = "auto",
     load_dtype: str = "auto",
     trust_remote_code: bool = False,
-    pipeline_parallel: bool = False,
     is_training: bool = False,
     colbert_base_model: str = "bert",
     colbert_dim: int = 128,
@@ -311,20 +354,12 @@ def load_hf_model(
         case _:
             raise ValueError(f"Unsupported load_dtype: {load_dtype}")
 
-    # prepare device
-    if pipeline_parallel:
-        device_map = "auto"
-    elif torch.cuda.is_available() and (len(device_id) > 0):
-        device_map = device_id[0]
-    else:
-        device_map = None
-
     # configure attention implementation
     other_model_kwargs = dict(other_model_kwargs)
     attn_implementation = other_model_kwargs.pop("attn_implementation", "auto")
     attn_args = configure_attn(
         model_path=model_path,
-        device_id=device_id,
+        device_map=device_map,
         load_dtype=load_dtype,
         trust_remote_code=trust_remote_code,
         attn_implementation=attn_implementation,
@@ -414,21 +449,18 @@ class HFModelConfig:
     including `HFGenerator`, `HFEncoder` and `HFClipEncoder`.
 
     :param model_path: The path to the model. Required.
-    :type model_path: str
     :param tokenizer_path: The path to the tokenizer. None for the same as model_path. Default is None.
-    :type tokenizer_path: Optional[str]
     :param trust_remote_code: Whether to trust remote code. Default is False.
-    :type trust_remote_code: bool
-    :param device_id: The device id to use. [] for using CPU. Default is [].
-    :type device_id: list[int]
+    :param device_map: Hugging Face device map used when loading the model.
+        Defaults to "auto", which lets Transformers place the model on devices
+        visible to the current process.
     :param load_dtype: The dtype to load the model. Default is "auto". Available choices are "bfloat16", "bf16", "float32", "fp32", "float16", "fp16", "half", "8bit", "4bit", "auto",
-    :type load_dtype: str
     """
 
     model_path: Optional[str] = None
     tokenizer_path: Optional[str] = None
     trust_remote_code: bool = False
-    device_id: list[int] = field(default_factory=list)
+    device_map: Any = "auto"
     load_dtype: Annotated[
         str,
         Choices(

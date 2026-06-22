@@ -9,16 +9,22 @@ from tests.support.process_worker_env_probe_support import (
 
 
 async def main() -> None:
-    config = ProcessWorkerEnvProbeConfig(device_id=[0, 1, 2, 3])
-    pool = ProcessWorkerPoolClient.from_worker_groups(
-        ProcessWorkerEnvProbeImpl,
-        config,
-        [[0], [1], [2], [3]],
-    )
-    try:
-        reports = [await pool.call_available("report") for _ in range(4)]
-    finally:
-        await pool.close()
+    async def collect(device_groups, calls: int):
+        pool = ProcessWorkerPoolClient.from_device_groups(
+            ProcessWorkerEnvProbeImpl,
+            ProcessWorkerEnvProbeConfig(),
+            device_groups,
+        )
+        try:
+            return [await pool.call_available("report") for _ in range(calls)]
+        finally:
+            await pool.close()
+
+    reports = {
+        "explicit": await collect([[0], [1], [2], [3]], 4),
+        "cpu": await collect([], 1),
+        "inherit": await collect(None, 1),
+    }
     print(json.dumps(reports, ensure_ascii=False))
     return
 

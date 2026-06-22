@@ -181,9 +181,9 @@ def add_faiss_index():
                 # specify the Contriever model
                 # you can also choose other models
                 model_path="facebook/contriever-msmarco",
-                # use GPUs for encoding
-                # if you do not want to use GPU, set device_id to []
-                device_id=[0, 1, 2, 3],
+                # let Hugging Face place the model on visible devices
+                # if you want CPU-only loading, set device_map=None
+                device_map="auto",
             ),
         )
     )
@@ -217,7 +217,10 @@ add_faiss_index()
 In the above code, we create a Faiss index for the `title` and `text` fields of the knowledge base. The `index_type` parameter specifies the type of index to be built, which is set to `faiss`. The encoder is constructed separately and injected into the Faiss index. In this case, we use the `facebook/contriever-msmarco` model as the encoder.
 
 ```{note}
-In the above script, we specify the `device_id` as `[0,1,2,3]` to use 4 GPUs for encoding the text field. This configuration will speed up the encoding process. If you do not have multiple GPUs, you can simply set `device_id=[0]` to use a single GPU or `device_id=[]` to use CPU.
+In the above script, `device_map="auto"` lets Hugging Face place the model on
+devices visible to the current process. Use environment variables such as
+`CUDA_VISIBLE_DEVICES` to restrict visible GPUs, or set `device_map=None` for
+CPU-only loading.
 ```
 
 FlexRAG also provides a command-line tool to prepare the retriever. You can run the following command to build the retriever:

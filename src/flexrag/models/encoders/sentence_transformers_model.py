@@ -1,4 +1,3 @@
-import math
 from dataclasses import field
 from io import BytesIO
 from typing import Any, Optional
@@ -18,8 +17,7 @@ class SentenceTransformerEncoderConfig:
 
     :param model_path: The path to the model. Required.
     :type model_path: str
-    :param device_id: The device id to use. [] for CPU. Defaults to [].
-    :type device_id: list[int]
+    :param device: Device string passed to SentenceTransformer. Defaults to None.
     :param trust_remote_code: Whether to trust remote code. Defaults to False.
     :type trust_remote_code: bool
     :param task: The task to use. Defaults to None.
@@ -40,7 +38,7 @@ class SentenceTransformerEncoderConfig:
     """
 
     model_path: Optional[str] = None
-    device_id: list[int] = field(default_factory=list)
+    device: Optional[str] = None
     trust_remote_code: bool = False
     task: Optional[str] = None
     prompt_name: Optional[str] = None
@@ -58,11 +56,10 @@ class SentenceTransformerEncoder(LocalEncoderBase):
 
         super().__init__(batch_size=config.batch_size)
 
-        self.devices = config.device_id
         assert config.model_path is not None, "`model_path` must be provided"
         self.model = SentenceTransformer(
             model_name_or_path=config.model_path,
-            device=f"cuda:{config.device_id[0]}" if config.device_id else "cpu",
+            device=config.device,
             trust_remote_code=config.trust_remote_code,
             backend="torch",
             prompts=config.prompt_dict,
@@ -101,7 +98,7 @@ class SentenceTransformerEncoder(LocalEncoderBase):
     def _encode_texts(self, texts: list[str], **kwargs) -> np.ndarray:
         args = {
             "sentences": texts,
-            "batch_size": math.ceil(len(texts) / max(1, len(self.devices))),
+            "batch_size": len(texts),
             "show_progress_bar": False,
             "convert_to_numpy": True,
             "normalize_embeddings": self.normalize,
@@ -117,7 +114,7 @@ class SentenceTransformerEncoder(LocalEncoderBase):
     def _encode_images(self, images: list[Image.Image]) -> np.ndarray:
         args = {
             "sentences": images,
-            "batch_size": math.ceil(len(images) / max(1, len(self.devices))),
+            "batch_size": len(images),
             "show_progress_bar": False,
             "convert_to_numpy": True,
             "normalize_embeddings": self.normalize,

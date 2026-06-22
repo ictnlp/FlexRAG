@@ -339,6 +339,7 @@ class ProcessEncoderAdapter(EncoderRuntimeAdapter):
         *,
         input_format: EncoderInputFormat | None = None,
         batch_size: int = 32,
+        device_groups: list[list[int]] | None = None,
     ):
         """Create a process-backed encoder runtime adapter.
 
@@ -348,6 +349,9 @@ class ProcessEncoderAdapter(EncoderRuntimeAdapter):
         :param input_format: Canonical input format expected by the raw encoder.
             ``"text"`` extracts text strings from text content blocks.
         :param batch_size: Deployment batch size used for worker RPC calls.
+        :param device_groups: Worker device placement. ``None`` creates one
+            worker inheriting the current environment, ``[]`` creates one
+            CPU-only worker, and non-empty groups create one worker per group.
         :raises ValueError: If ``batch_size`` is not greater than zero.
         """
         super().__init__(config, input_format=input_format)
@@ -356,6 +360,7 @@ class ProcessEncoderAdapter(EncoderRuntimeAdapter):
         if batch_size <= 0:
             raise ValueError("batch_size must be greater than 0.")
         self._batch_size = batch_size
+        self._device_groups = device_groups
         self._worker_count = 1
         self._embedding_size = None
         return
@@ -363,7 +368,11 @@ class ProcessEncoderAdapter(EncoderRuntimeAdapter):
     async def _create_client(self, config):
         if self.impl_cls is None:
             raise ValueError(f"{self.__class__.__name__}.impl_cls must be configured.")
-        client = ProcessWorkerPoolClient.from_config(self.impl_cls, config)
+        client = ProcessWorkerPoolClient.from_device_groups(
+            self.impl_cls,
+            config,
+            self._device_groups,
+        )
         self._worker_count = len(client)
         self._embedding_size = await client.call_primary("embedding_size")
         return client

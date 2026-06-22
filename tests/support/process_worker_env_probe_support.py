@@ -1,12 +1,12 @@
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
 IMPORT_VISIBLE_DEVICES = os.environ.get("CUDA_VISIBLE_DEVICES")
 
 
 @dataclass
 class ProcessWorkerEnvProbeConfig:
-    device_id: list[int] = field(default_factory=list)
+    pass
 
 
 class ProcessWorkerEnvProbeImpl:
@@ -18,5 +18,4 @@ class ProcessWorkerEnvProbeImpl:
         return {
             "import_visible_devices": IMPORT_VISIBLE_DEVICES,
             "runtime_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
-            "config_device_id": list(self.config.device_id),
         }

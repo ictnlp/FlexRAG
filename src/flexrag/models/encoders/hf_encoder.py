@@ -61,7 +61,7 @@ class HFEncoderConfig(HFModelConfig):
         query_encoder = HFEncoder(
             HFEncoderConfig(
                 model_path="Qwen/Qwen3-Embedding-0.6B",
-                device_id=[0],
+                device_map=0,
                 prefix=prefix,
                 normalize=True,
                 encode_method="last",
@@ -98,7 +98,7 @@ class HFEncoder(LocalEncoderBase):
             model_path=cfg.model_path,
             tokenizer_path=cfg.tokenizer_path,
             load_dtype=cfg.load_dtype,
-            device_id=cfg.device_id,
+            device_map=cfg.device_map,
             trust_remote_code=cfg.trust_remote_code,
             other_tokenizer_kwargs=cfg.other_tokenizer_kwargs,
         )
@@ -382,7 +382,7 @@ class HFClipEncoder(LocalEncoderBase):
             model_path=cfg.model_path,
             tokenizer_path=cfg.tokenizer_path,
             load_dtype=cfg.load_dtype,
-            device_id=cfg.device_id,
+            device_map=cfg.device_map,
             trust_remote_code=cfg.trust_remote_code,
         )
 

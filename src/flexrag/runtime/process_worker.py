@@ -56,23 +56,15 @@ def _temporary_env(updates: dict[str, str | None]):
 def build_worker_config(
     config_cls_path: str,
     config_data: dict,
-    visible_device_ids: list[int] | None,
 ):
     """Rebuild a config object inside a worker process.
 
-    If the config exposes ``device_id``, the worker view is normalized to a
-    local device list. After the worker inherits its own
-    ``CUDA_VISIBLE_DEVICES`` setting, the selected physical GPUs are exposed as
-    ``[0, 1, ...]`` inside the subprocess.
+    Device placement is controlled by the worker process environment, not by
+    mutating raw component configuration.
     """
 
     config_cls = resolve_symbol(config_cls_path)
-    config = config_cls(**config_data)
-    if hasattr(config, "device_id"):
-        config.device_id = (
-            list(range(len(visible_device_ids))) if visible_device_ids else []
-        )
-    return config
+    return config_cls(**config_data)
 
 
 def _worker_main(
@@ -93,7 +85,7 @@ def _worker_main(
     """
 
     worker_obj = resolve_symbol(impl_path)(
-        build_worker_config(config_cls_path, config_data, visible_device_ids)
+        build_worker_config(config_cls_path, config_data)
     )
     while True:
         try:
@@ -169,10 +161,12 @@ class ProcessWorkerClient:
             ),
             daemon=True,
         )
-        visible_devices = (
-            ",".join(map(str, visible_device_ids)) if visible_device_ids else None
-        )
-        with _temporary_env({"CUDA_VISIBLE_DEVICES": visible_devices}):
+        env_updates = {}
+        if visible_device_ids is not None:
+            env_updates["CUDA_VISIBLE_DEVICES"] = ",".join(
+                map(str, visible_device_ids)
+            )
+        with _temporary_env(env_updates):
             self._process.start()
         child_conn.close()
         return

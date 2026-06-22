@@ -169,7 +169,7 @@ class TestGenerator:
         generator = HFGenerator(
             HFGeneratorConfig(
                 model_path="Qwen/Qwen3-0.6B",
-                device_id=[0],
+                device_map=0,
             )
         )
         await self.run_generator(generator)

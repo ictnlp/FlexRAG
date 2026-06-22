@@ -1,5 +1,4 @@
 import time
-from dataclasses import field
 
 import numpy as np
 
@@ -17,7 +16,6 @@ from flexrag.resources.runtime_adapters import (
 
 @configure
 class FakeLocalTextEncoderConfig:
-    device_id: list[int] = field(default_factory=list)
     batch_size: int = 32
     delay_s: float = 0.0
     error_on: str | None = None
@@ -61,18 +59,19 @@ class FakeLocalTextEncoder(ProcessEncoderAdapter):
         config: FakeLocalTextEncoderConfig,
         *,
         batch_size: int = 32,
+        device_groups: list[list[int]] | None = None,
     ) -> None:
         super().__init__(
             config,
             input_format="text",
             batch_size=batch_size,
+            device_groups=device_groups,
         )
         return
 
 
 @configure
 class FakeLocalPairScorerConfig:
-    device_id: list[int] = field(default_factory=list)
     batch_size: int = 32
     delay_s: float = 0.0
     error_on: str | None = None
@@ -111,14 +110,14 @@ class FakeLocalPairScorer(ProcessScorerAdapter):
         config: FakeLocalPairScorerConfig,
         *,
         batch_size: int = 32,
+        device_groups: list[list[int]] | None = None,
     ) -> None:
-        super().__init__(config, batch_size=batch_size)
+        super().__init__(config, batch_size=batch_size, device_groups=device_groups)
         return
 
 
 @configure
 class FakeLocalGeneratorConfig:
-    device_id: list[int] = field(default_factory=list)
     batch_size: int = 1
     delay_s: float = 0.0
     error_on: str | None = None
@@ -193,6 +192,7 @@ class FakeLocalGenerator(ProcessGeneratorAdapter):
         config: FakeLocalGeneratorConfig,
         *,
         batch_size: int = 1,
+        device_groups: list[list[int]] | None = None,
     ) -> None:
-        super().__init__(config, batch_size=batch_size)
+        super().__init__(config, batch_size=batch_size, device_groups=device_groups)
         return

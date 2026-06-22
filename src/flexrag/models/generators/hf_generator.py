@@ -142,12 +142,6 @@ def _turn_to_hf(turn: ChatTurn, *, force_rich_content: bool = False) -> dict:
 class HFGeneratorConfig(HFModelConfig):
     """Configuration for HFGenerator.
 
-    :param parallel_mode: The parallel mode to use. Default is "data".
-        Available choices:
-
-        - `data`: Use data parallel mode for model inference.
-        - `pipeline`: Use pipeline parallel mode for model inference.
-    :type parallel_mode: str
     :param model_type: The type of model to load. Default is "auto".
         Available choices:
 
@@ -171,7 +165,7 @@ class HFGeneratorConfig(HFModelConfig):
         generator = HFGenerator(
             HFGeneratorConfig(
                 model_path="Qwen/Qwen2.5-7B-Instruct",
-                device_id=[0],
+                device_map=0,
                 load_dtype="bf16",
                 model_type="causal_lm",
             )
@@ -182,7 +176,6 @@ class HFGeneratorConfig(HFModelConfig):
         responses = generator.chat(messages)
     """
 
-    parallel_mode: Annotated[str, Choices("data", "pipeline")] = "data"
     model_type: Annotated[str, Choices("causal_lm", "seq2seq", "auto")] = "auto"
     batch_size: int = 1
     other_tokenizer_kwargs: dict = field(default_factory=dict)
@@ -210,10 +203,9 @@ class HFGenerator(LocalGeneratorBase):
             model_path=cfg.model_path,
             tokenizer_path=cfg.tokenizer_path,
             model_type=self._resolved_model_type,
-            device_id=cfg.device_id,
+            device_map=cfg.device_map,
             load_dtype=cfg.load_dtype,
             trust_remote_code=cfg.trust_remote_code,
-            pipeline_parallel=cfg.parallel_mode == "pipeline",
             other_tokenizer_kwargs=cfg.other_tokenizer_kwargs,
         )
         self._supports_multimodal = self._resolved_model_type == "vlm"

@@ -35,22 +35,26 @@ class ProcessWorkerPoolClient:
         return len(self._workers)
 
     @classmethod
-    def from_config(cls, impl_cls: type, config):
-        """Create a worker pool using one worker per configured device.
+    def from_device_groups(
+        cls,
+        impl_cls: type,
+        config,
+        device_groups: list[list[int]] | None,
+    ):
+        """Create a worker pool from adapter-level device placement.
 
-        :param impl_cls: Worker implementation class to instantiate in each
-            subprocess.
-        :param config: Dataclass configuration passed to each worker.
-        :return: A process worker pool client.
+        ``None`` creates one worker that inherits the parent process environment.
+        An empty list creates one CPU-only worker by setting
+        ``CUDA_VISIBLE_DEVICES`` to an empty string. A non-empty list creates one
+        worker per listed device group.
         """
-        worker_visible_device_groups = [
-            [gpu_id] for gpu_id in (list(getattr(config, "device_id", [])) or [])
-        ] or [None]
-        return cls.from_worker_groups(
-            impl_cls,
-            config,
-            worker_visible_device_groups,
-        )
+        if device_groups is None:
+            worker_visible_device_groups = [None]
+        elif len(device_groups) == 0:
+            worker_visible_device_groups = [[]]
+        else:
+            worker_visible_device_groups = [list(group) for group in device_groups]
+        return cls.from_worker_groups(impl_cls, config, worker_visible_device_groups)
 
     @classmethod
     def from_worker_groups(

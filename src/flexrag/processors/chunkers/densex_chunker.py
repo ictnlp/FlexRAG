@@ -45,7 +45,7 @@ class DenseXChunker(ChunkerBase):
             HFGeneratorConfig(
                 model_path="chentong00/propositionizer-wiki-flan-t5-large",
                 model_type="seq2seq",
-                device_id=[0],
+                device_map=0,
             )
         )
         chunker = DenseXChunker(DenseXChunkerConfig(), generator=generator)

@@ -53,7 +53,7 @@ class HFColBertScorer(LocalPairScorerBase):
             cfg.model_path,
             tokenizer_path=cfg.tokenizer_path,
             model_type="colbert",
-            device_id=cfg.device_id,
+            device_map=cfg.device_map,
             load_dtype=cfg.load_dtype,
             trust_remote_code=cfg.trust_remote_code,
             colbert_base_model=cfg.base_model_type,

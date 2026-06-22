@@ -48,7 +48,7 @@ class HFLogitsScorer(LocalPairScorerBase):
             cfg.model_path,
             tokenizer_path=cfg.tokenizer_path,
             model_type=cfg.model_type,
-            device_id=cfg.device_id,
+            device_map=cfg.device_map,
             load_dtype=cfg.load_dtype,
             trust_remote_code=cfg.trust_remote_code,
         )

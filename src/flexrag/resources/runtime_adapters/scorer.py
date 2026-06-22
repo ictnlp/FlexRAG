@@ -104,6 +104,7 @@ class ProcessScorerAdapter(ScorerRuntimeAdapter):
         impl_cls: type[LocalPairScorerBase] | None = None,
         *,
         batch_size: int = 32,
+        device_groups: list[list[int]] | None = None,
     ):
         """Create a process-backed scorer runtime adapter.
 
@@ -111,6 +112,9 @@ class ProcessScorerAdapter(ScorerRuntimeAdapter):
         :param impl_cls: Optional raw scorer implementation class. When
             omitted, subclasses must set ``impl_cls``.
         :param batch_size: Deployment batch size used for worker RPC calls.
+        :param device_groups: Worker device placement. ``None`` creates one
+            worker inheriting the current environment, ``[]`` creates one
+            CPU-only worker, and non-empty groups create one worker per group.
         :raises ValueError: If ``batch_size`` is not greater than zero.
         """
         super().__init__(config)
@@ -119,13 +123,18 @@ class ProcessScorerAdapter(ScorerRuntimeAdapter):
         if batch_size <= 0:
             raise ValueError("batch_size must be greater than 0.")
         self._batch_size = batch_size
+        self._device_groups = device_groups
         self._worker_count = 1
         return
 
     async def _create_client(self, config):
         if self.impl_cls is None:
             raise ValueError(f"{self.__class__.__name__}.impl_cls must be configured.")
-        client = ProcessWorkerPoolClient.from_config(self.impl_cls, config)
+        client = ProcessWorkerPoolClient.from_device_groups(
+            self.impl_cls,
+            config,
+            self._device_groups,
+        )
         self._worker_count = len(client)
         return client
 

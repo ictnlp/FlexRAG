@@ -44,8 +44,9 @@ async def test_local_process_scorer_batch_scheduling():
         ("foxtrot", "six"),
     ]
     with FakeLocalPairScorer(
-        FakeLocalPairScorerConfig(device_id=[0, 1, 2], delay_s=0.2),
+        FakeLocalPairScorerConfig(delay_s=0.2),
         batch_size=2,
+        device_groups=[[0], [1], [2]],
     ) as scorer:
         await scorer.async_score(
             [
@@ -80,7 +81,10 @@ async def test_local_process_scorer_async_does_not_block_loop():
 
 
 def test_local_process_scorer_context_manager_closes_workers():
-    scorer = FakeLocalPairScorer(FakeLocalPairScorerConfig(device_id=[0, 1]))
+    scorer = FakeLocalPairScorer(
+        FakeLocalPairScorerConfig(),
+        device_groups=[[0], [1]],
+    )
     with scorer:
         scorer.score([("alpha", "one"), ("bravo", "two")])
         client = scorer._client

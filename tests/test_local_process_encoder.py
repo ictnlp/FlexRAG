@@ -42,10 +42,10 @@ async def test_local_process_encoder_batch_scheduling():
     texts = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
     with FakeLocalTextEncoder(
         FakeLocalTextEncoderConfig(
-            device_id=[0, 1, 2],
             delay_s=0.2,
         ),
         batch_size=2,
+        device_groups=[[0], [1], [2]],
     ) as encoder:
         await encoder.async_encode(
             ["warmup-1", "warmup-2", "warmup-3", "warmup-4", "warmup-5", "warmup-6"],
@@ -73,7 +73,10 @@ async def test_local_process_encoder_async_does_not_block_loop():
 
 
 def test_local_process_encoder_context_manager_closes_workers():
-    encoder = FakeLocalTextEncoder(FakeLocalTextEncoderConfig(device_id=[0, 1]))
+    encoder = FakeLocalTextEncoder(
+        FakeLocalTextEncoderConfig(),
+        device_groups=[[0], [1]],
+    )
     with encoder:
         encoder.encode(["alpha", "bravo"])
         client = encoder._client

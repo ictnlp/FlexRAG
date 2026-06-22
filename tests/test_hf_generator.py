@@ -2,6 +2,7 @@ from types import SimpleNamespace
 
 import pytest
 
+import flexrag.models.generators.hf_generator as hf_generator_module
 from flexrag.common.dataclasses import ChatTurn
 from flexrag.models.generators.hf_generator import (
     HFGenerator,
@@ -10,7 +11,6 @@ from flexrag.models.generators.hf_generator import (
     _content_part_to_hf,
     _turn_to_hf,
 )
-from flexrag.runtime.process_worker import build_worker_config
 
 
 def test_content_part_to_hf_maps_rich_modalities():
@@ -86,48 +86,24 @@ def test_config_supports_multimodal_detects_vision_and_audio():
     assert not _config_supports_multimodal(text_cfg)
 
 
-def test_build_worker_config_normalizes_multi_gpu_device_ids():
-    cfg = build_worker_config(
-        "flexrag.models.generators.hf_generator:HFGeneratorConfig",
-        {
-            "model_path": "Qwen/Qwen3-0.6B",
-            "tokenizer_path": None,
-            "trust_remote_code": False,
-            "device_id": [2, 5],
-            "load_dtype": "auto",
-            "parallel_mode": "pipeline",
-            "model_type": "auto",
-        },
-        [2, 5],
+def test_hf_generator_forwards_device_map(monkeypatch):
+    calls = {}
+
+    def fake_load_hf_model(**kwargs):
+        calls.update(kwargs)
+        return SimpleNamespace(), SimpleNamespace()
+
+    monkeypatch.setattr(
+        hf_generator_module, "_resolve_model_type", lambda cfg: "causal_lm"
     )
-    assert cfg.device_id == [0, 1]
+    monkeypatch.setattr(hf_generator_module, "load_hf_model", fake_load_hf_model)
+    monkeypatch.setattr(HFGenerator, "_patch_model", lambda self: None)
 
-
-def test_hf_generator_build_worker_device_groups_data_mode():
-    generator = HFGenerator(
+    HFGenerator(
         HFGeneratorConfig(
             model_path="Qwen/Qwen3-0.6B",
-            device_id=[0, 1, 2],
-            parallel_mode="data",
+            device_map={"": 0},
         )
     )
-    try:
-        groups = generator._build_worker_device_groups(generator._config)
-        assert groups == [[0], [1], [2]]
-    finally:
-        generator.close()
 
-
-def test_hf_generator_build_worker_device_groups_pipeline_mode():
-    generator = HFGenerator(
-        HFGeneratorConfig(
-            model_path="Qwen/Qwen3-0.6B",
-            device_id=[0, 1, 2],
-            parallel_mode="pipeline",
-        )
-    )
-    try:
-        groups = generator._build_worker_device_groups(generator._config)
-        assert groups == [[0, 1, 2]]
-    finally:
-        generator.close()
+    assert calls["device_map"] == {"": 0}

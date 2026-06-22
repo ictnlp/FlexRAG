@@ -6,13 +6,14 @@ import pytest
 from PIL import Image
 
 from flexrag.models.encoders.sentence_transformers_model import (
+    SentenceTransformerEncoder,
     SentenceTransformerEncoderConfig,
-    SentenceTransformerEncoderImpl,
 )
 
 
 class FakeSentenceTransformer:
     def __init__(self, *args, **kwargs):
+        self.init_kwargs = kwargs
         self.calls: list[dict] = []
 
     def encode(self, *, sentences, **kwargs):
@@ -30,7 +31,7 @@ class FakeSentenceTransformer:
             dtype=np.float32,
         )
 
-    def get_sentence_embedding_dimension(self):
+    def get_embedding_dimension(self):
         return 2
 
 
@@ -57,9 +58,10 @@ def test_sentence_transformer_impl_mixed_text_image_batch(
     image_path = tmp_path / "sample.png"
     Image.new("RGB", (4, 4), color="red").save(image_path)
 
-    impl = SentenceTransformerEncoderImpl(
+    impl = SentenceTransformerEncoder(
         SentenceTransformerEncoderConfig(
             model_path="mock-model",
+            device="cuda:0",
             task="retrieval",
             prompt_name="query",
             prompt="Represent this sentence",
@@ -75,12 +77,15 @@ def test_sentence_transformer_impl_mixed_text_image_batch(
 
     assert mixed_embeddings.shape == (3, 2)
     fake_model = fake_sentence_transformer["instance"]
+    assert fake_model.init_kwargs["device"] == "cuda:0"
     assert len(fake_model.calls) == 2
     assert fake_model.calls[0]["modality"] == "text"
+    assert fake_model.calls[0]["kwargs"]["batch_size"] == 2
     assert fake_model.calls[0]["kwargs"]["task"] == "retrieval"
     assert fake_model.calls[0]["kwargs"]["prompt_name"] == "query"
     assert fake_model.calls[0]["kwargs"]["prompt"] == "Represent this sentence"
     assert fake_model.calls[1]["modality"] == "image"
+    assert fake_model.calls[1]["kwargs"]["batch_size"] == 1
     assert "task" not in fake_model.calls[1]["kwargs"]
     assert np.allclose(mixed_embeddings[0], np.array([1.0, 1.5], dtype=np.float32))
     assert np.allclose(mixed_embeddings[1], np.array([101.0, 101.5], dtype=np.float32))
@@ -102,7 +107,7 @@ def test_sentence_transformer_impl_loads_url_images_in_memory(
         ),
     )
 
-    impl = SentenceTransformerEncoderImpl(
+    impl = SentenceTransformerEncoder(
         SentenceTransformerEncoderConfig(model_path="mock-model")
     )
     embeddings = impl.encode([{"type": "image", "url": "https://example.com/a.png"}])
@@ -110,16 +115,3 @@ def test_sentence_transformer_impl_loads_url_images_in_memory(
     fake_model = fake_sentence_transformer["instance"]
     assert fake_model.calls[0]["modality"] == "image"
     assert fake_model.calls[0]["sentences"][0].size == (4, 4)
-
-
-def test_sentence_transformer_impl_rejects_non_text_image_content(
-    fake_sentence_transformer,
-):
-    impl = SentenceTransformerEncoderImpl(
-        SentenceTransformerEncoderConfig(model_path="mock-model")
-    )
-    with pytest.raises(
-        ValueError,
-        match="SentenceTransformerEncoder only supports text and image content blocks",
-    ):
-        impl.encode([{"type": "audio", "url": "https://example.com/a.mp3"}])

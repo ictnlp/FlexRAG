@@ -54,8 +54,9 @@ async def test_local_process_generator_sync_async_consistency():
 async def test_local_process_generator_batch_scheduling():
     prefixes = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
     with FakeLocalGenerator(
-        FakeLocalGeneratorConfig(device_id=[0, 1, 2], delay_s=0.2),
+        FakeLocalGeneratorConfig(delay_s=0.2),
         batch_size=2,
+        device_groups=[[0], [1], [2]],
     ) as generator:
         await generator.async_generate(
             ["warmup-1", "warmup-2", "warmup-3", "warmup-4", "warmup-5", "warmup-6"],
@@ -83,7 +84,10 @@ async def test_local_process_generator_async_does_not_block_loop():
 
 
 def test_local_process_generator_context_manager_closes_workers():
-    generator = FakeLocalGenerator(FakeLocalGeneratorConfig(device_id=[0, 1]))
+    generator = FakeLocalGenerator(
+        FakeLocalGeneratorConfig(),
+        device_groups=[[0], [1]],
+    )
     with generator:
         generator.generate(["alpha", "bravo"])
         client = generator._client
@@ -104,14 +108,11 @@ async def test_local_process_generator_propagates_worker_errors():
 
 @pytest.mark.asyncio
 async def test_local_process_generator_pipeline_mode_uses_single_worker_concurrency():
-    class PipelineFakeLocalGenerator(FakeLocalGenerator):
-        def _build_worker_device_groups(self, config):
-            return [[0, 1, 2]]
-
     prefixes = ["alpha", "bravo", "charlie", "delta", "echo", "foxtrot"]
-    with PipelineFakeLocalGenerator(
-        FakeLocalGeneratorConfig(device_id=[0, 1, 2], delay_s=0.2),
+    with FakeLocalGenerator(
+        FakeLocalGeneratorConfig(delay_s=0.2),
         batch_size=2,
+        device_groups=[[0, 1, 2]],
     ) as generator:
         start = time.perf_counter()
         outputs = await generator.async_generate(prefixes)
