@@ -6,6 +6,7 @@ from .handles import (
     RefinerHandle,
     RuntimeHandleBase,
     ScorerHandle,
+    TokenizerHandle,
 )
 from .registry import ResourceEntry, Resources
 from .resource_manager import (
@@ -26,4 +27,5 @@ __all__ = [
     "Resources",
     "RuntimeHandleBase",
     "ScorerHandle",
+    "TokenizerHandle",
 ]

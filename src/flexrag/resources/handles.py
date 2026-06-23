@@ -221,3 +221,51 @@ class RefinerHandle(RuntimeHandleBase):
         contexts: list[RetrievedContext],
     ) -> list[RetrievedContext]:
         return self._resource.refine(contexts)
+
+
+class TokenizerHandle(RuntimeHandleBase):
+    """Managed tokenizer runtime handle."""
+
+    required_methods = (
+        "tokenize",
+        "detokenize",
+        "encode",
+        "decode",
+        "tokens_to_ids",
+        "ids_to_tokens",
+    )
+    required_attributes = ("reversible", "vocab_size")
+
+    def tokenize(self, text: str) -> list[str]:
+        """Tokenize text into string tokens."""
+        return self._resource.tokenize(text)
+
+    def detokenize(self, tokens: list[str]) -> str:
+        """Convert string tokens back to text."""
+        return self._resource.detokenize(tokens)
+
+    def encode(self, text: str) -> list[int]:
+        """Encode text into token ids."""
+        return self._resource.encode(text)
+
+    def decode(self, tokens: list[int]) -> str:
+        """Decode token ids into text."""
+        return self._resource.decode(tokens)
+
+    def tokens_to_ids(self, tokens: list[str]) -> list[int]:
+        """Convert string tokens to token ids."""
+        return self._resource.tokens_to_ids(tokens)
+
+    def ids_to_tokens(self, token_ids: list[int]) -> list[str]:
+        """Convert token ids to string tokens."""
+        return self._resource.ids_to_tokens(token_ids)
+
+    @property
+    def reversible(self) -> bool:
+        """Return whether tokenization is strictly reversible."""
+        return self._resource.reversible
+
+    @property
+    def vocab_size(self) -> int:
+        """Return the tokenizer vocabulary size."""
+        return self._resource.vocab_size

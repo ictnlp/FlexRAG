@@ -24,6 +24,20 @@ from flexrag.models.scorers import (
     HFLogitsScorer,
     HFLogitsScorerConfig,
 )
+from flexrag.models.tokenizer import (
+    HuggingFaceTokenizer,
+    HuggingFaceTokenizerConfig,
+    JiebaTokenizer,
+    JiebaTokenizerConfig,
+    MosesTokenizer,
+    MosesTokenizerConfig,
+    NLTKTokenizer,
+    NLTKTokenizerConfig,
+    SpaceTokenizer,
+    SpaceTokenizerConfig,
+    TikTokenTokenizer,
+    TikTokenTokenizerConfig,
+)
 from flexrag.processors.rankers import (
     HFRanker,
     HFRankerConfig,
@@ -152,3 +166,45 @@ Resources.register(
     config_class=RecompExtractiveSummarizerConfig,
     runtime_adapter_cls=DirectRuntimeAdapter,
 )(RecompExtractiveSummarizer)
+
+Resources.register(
+    "space_tokenizer",
+    interface="tokenizer",
+    config_class=SpaceTokenizerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(SpaceTokenizer)
+
+Resources.register(
+    "moses_tokenizer",
+    interface="tokenizer",
+    config_class=MosesTokenizerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(MosesTokenizer)
+
+Resources.register(
+    "nltk_tokenizer",
+    interface="tokenizer",
+    config_class=NLTKTokenizerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(NLTKTokenizer)
+
+Resources.register(
+    "jieba_tokenizer",
+    interface="tokenizer",
+    config_class=JiebaTokenizerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(JiebaTokenizer)
+
+Resources.register(
+    "hf_tokenizer",
+    interface="tokenizer",
+    config_class=HuggingFaceTokenizerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(HuggingFaceTokenizer)
+
+Resources.register(
+    "tiktoken_tokenizer",
+    interface="tokenizer",
+    config_class=TikTokenTokenizerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(TikTokenTokenizer)

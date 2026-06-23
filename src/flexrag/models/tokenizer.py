@@ -127,9 +127,17 @@ class TokenizerBase(ABC):
 TOKENIZERS = Register[TokenizerBase]("tokenizer")
 
 
-@TOKENIZERS("space")
+@configure
+class SpaceTokenizerConfig:
+    """Configuration for :class:`SpaceTokenizer`."""
+
+
+@TOKENIZERS("space", config_class=SpaceTokenizerConfig)
 class SpaceTokenizer(TokenizerBase):
     """A simple tokenizer that splits text by spaces."""
+
+    def __init__(self, cfg: SpaceTokenizerConfig | None = None) -> None:
+        return
 
     def tokenize(self, texts: str) -> list[str]:
         return texts.split()

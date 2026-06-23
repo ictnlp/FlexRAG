@@ -11,6 +11,7 @@ from .handles import (
     RefinerHandle,
     RuntimeHandleBase,
     ScorerHandle,
+    TokenizerHandle,
 )
 from .invocations import (
     BatchGeneratorInvocation,
@@ -20,6 +21,7 @@ from .invocations import (
     RemoteRankerInvocation,
     ScorerInvocation,
     SingleSampleGeneratorInvocation,
+    TokenizerInvocation,
 )
 from .registry import ResourceEntry, Resources
 from .runtime_adapters import (
@@ -34,6 +36,7 @@ _INTERFACE_HANDLE_TYPES: dict[str, type[RuntimeHandleBase]] = {
     "scorer": ScorerHandle,
     "ranker": RankerHandle,
     "refiner": RefinerHandle,
+    "tokenizer": TokenizerHandle,
 }
 
 _COMPOSITIONS: dict[tuple[str, type[Any]], tuple[type[Any], dict[str, Any]]] = {
@@ -70,6 +73,7 @@ _COMPOSITIONS: dict[tuple[str, type[Any]], tuple[type[Any], dict[str, Any]]] = {
         {"rank_method": "_async_rank_batch"},
     ),
     ("refiner", DirectRuntimeAdapter): (RefinerInvocation, {}),
+    ("tokenizer", DirectRuntimeAdapter): (TokenizerInvocation, {}),
 }
 
 

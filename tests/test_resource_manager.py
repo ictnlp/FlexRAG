@@ -6,8 +6,9 @@ from typing import Any
 import numpy as np
 import pytest
 
-from flexrag.common import ChatMessages, ChatTurn
+from flexrag.common import ChatTurn
 from flexrag.common.dataclasses import RetrievedContext
+from flexrag.models.tokenizer import SpaceTokenizerConfig
 from flexrag.processors.rankers import (
     HFRankerConfig,
     LiteLLMRankerConfig,
@@ -28,11 +29,11 @@ from flexrag.resources import (
     Resources,
     ResourceSpec,
     ScorerHandle,
+    TokenizerHandle,
 )
 from flexrag.resources.runtime_adapters import (
-    EncoderRuntimeAdapter,
-    GeneratorRuntimeAdapter,
-    ScorerRuntimeAdapter,
+    DirectRuntimeAdapter,
+    ProcessRuntimeAdapter,
 )
 from flexrag.retrievers.index import RetrieverIndexConfig
 
@@ -51,6 +52,12 @@ class FakeGeneratorConfig:
 @dataclass
 class FakeScorerConfig:
     name: str
+
+
+@dataclass
+class FakeTokenizerConfig:
+    name: str
+    vocab_size: int = 1024
 
 
 @dataclass
@@ -75,11 +82,62 @@ class FakeScorerImpl:
     pass
 
 
+class FakeTokenizerImpl:
+    def __init__(
+        self,
+        config: FakeTokenizerConfig,
+        *,
+        close_log: list[str] | None = None,
+    ) -> None:
+        self.config = config
+        self.close_log = close_log
+        return
+
+    def tokenize(self, text: str) -> list[str]:
+        return text.split()
+
+    def detokenize(self, tokens: list[str]) -> str:
+        return " ".join(tokens)
+
+    def encode(self, text: str) -> list[int]:
+        return [len(token) for token in self.tokenize(text)]
+
+    def decode(self, tokens: list[int]) -> str:
+        return " ".join(f"T{token}" for token in tokens)
+
+    def tokens_to_ids(self, tokens: list[str]) -> list[int]:
+        return [len(token) for token in tokens]
+
+    def ids_to_tokens(self, token_ids: list[int]) -> list[str]:
+        return [f"T{token_id}" for token_id in token_ids]
+
+    @property
+    def reversible(self) -> bool:
+        return True
+
+    @property
+    def vocab_size(self) -> int:
+        return self.config.vocab_size
+
+    def close(self) -> None:
+        if self.close_log is not None:
+            self.close_log.append(f"tokenizer:{self.config.name}")
+        return
+
+
 class UnsupportedImpl:
     pass
 
 
-class FakeEncoderRuntime(EncoderRuntimeAdapter):
+class _FakeProcessRuntime(ProcessRuntimeAdapter):
+    def run_sync(self, coro):
+        return asyncio.run(coro)
+
+    async def run_async(self, coro):
+        return await coro
+
+
+class FakeEncoderRuntime(_FakeProcessRuntime):
     def __init__(
         self,
         config: FakeEncoderConfig,
@@ -88,7 +146,7 @@ class FakeEncoderRuntime(EncoderRuntimeAdapter):
         constructor_log: list[dict[str, Any]] | None = None,
         close_log: list[str] | None = None,
         tag: str | None = None,
-    ):
+    ) -> None:
         self.config = config
         self.impl_cls = impl_cls
         self.close_log = close_log
@@ -103,20 +161,16 @@ class FakeEncoderRuntime(EncoderRuntimeAdapter):
             )
         return
 
-    @property
-    def embedding_size(self) -> int:
-        return self.config.embedding_size
+    async def acall(self, method: str, *args: Any, **kwargs: Any) -> np.ndarray:
+        if method != "_encode_batch":
+            raise AttributeError(method)
+        batch = args[0]
+        return np.full((len(batch), self.config.embedding_size), fill_value=len(batch))
 
-    def encode(self, inputs, log_interval: int = 1000, display: str = "auto"):
-        return np.full((len(inputs), self.embedding_size), fill_value=len(inputs))
-
-    async def async_encode(
-        self,
-        inputs,
-        log_interval: int = 1000,
-        display: str = "auto",
-    ):
-        return self.encode(inputs, log_interval=log_interval, display=display)
+    async def agetattr(self, name: str) -> Any:
+        if name == "embedding_size":
+            return self.config.embedding_size
+        raise AttributeError(name)
 
     def close(self) -> None:
         if self.close_log is not None:
@@ -124,79 +178,35 @@ class FakeEncoderRuntime(EncoderRuntimeAdapter):
         return
 
 
-class FakeGeneratorRuntime(GeneratorRuntimeAdapter):
+class FakeGeneratorRuntime(_FakeProcessRuntime):
     def __init__(
         self,
         config: FakeGeneratorConfig,
         impl_cls: type[FakeGeneratorImpl] | None = None,
         *,
-        encoder: EncoderHandle | None = None,
         constructor_log: list[dict[str, Any]] | None = None,
         close_log: list[str] | None = None,
-    ):
+    ) -> None:
         self.config = config
         self.impl_cls = impl_cls
-        self.encoder = encoder
         self.close_log = close_log
         if constructor_log is not None:
             constructor_log.append(
                 {
                     "name": config.name,
-                    "encoder": encoder,
                     "impl_cls": impl_cls,
                 }
             )
         return
 
-    def generate(
-        self,
-        prefixes,
-        generation_config=None,
-        log_interval: int = 1000,
-        display: str = "auto",
-    ):
-        if isinstance(prefixes, str):
-            prefixes = [prefixes]
-        return [[f"{self.config.name}:{prefix}"] for prefix in prefixes]
-
-    async def async_generate(
-        self,
-        prefixes,
-        generation_config=None,
-        log_interval: int = 1000,
-        display: str = "auto",
-    ):
-        return self.generate(
-            prefixes,
-            generation_config=generation_config,
-            log_interval=log_interval,
-            display=display,
-        )
-
-    def chat(
-        self,
-        messages,
-        generation_config=None,
-        log_interval: int = 1000,
-        display: str = "auto",
-    ):
-        if isinstance(messages, ChatMessages):
-            messages = [messages]
-        return [[ChatTurn(role="assistant", content=self.config.name)] for _ in messages]
-
-    async def async_chat(
-        self,
-        messages,
-        generation_config=None,
-        log_interval: int = 1000,
-        display: str = "auto",
-    ):
-        return self.chat(
-            messages,
-            generation_config=generation_config,
-            log_interval=log_interval,
-            display=display,
-        )
+    async def acall(self, method: str, *args: Any, **kwargs: Any) -> Any:
+        if method == "_generate_batch":
+            prefixes = args[0]
+            return [[f"{self.config.name}:{prefix}"] for prefix in prefixes]
+        if method == "_chat_batch":
+            messages = args[0]
+            return [[ChatTurn(role="assistant", content="1 2")] for _ in messages]
+        raise AttributeError(method)
 
     def close(self) -> None:
         if self.close_log is not None:
@@ -204,31 +214,24 @@ class FakeGeneratorRuntime(GeneratorRuntimeAdapter):
         return
 
 
-class FakeScorerRuntime(ScorerRuntimeAdapter):
+class FakeScorerRuntime(_FakeProcessRuntime):
     def __init__(
         self,
         config: FakeScorerConfig,
         impl_cls: type[FakeScorerImpl] | None = None,
         *,
         close_log: list[str] | None = None,
-    ):
+    ) -> None:
         self.config = config
         self.impl_cls = impl_cls
         self.close_log = close_log
         return
 
-    def score(self, pairs, log_interval: int = 1000, display: str = "auto"):
-        if isinstance(pairs, tuple):
-            pairs = [pairs]
+    async def acall(self, method: str, *args: Any, **kwargs: Any) -> np.ndarray:
+        if method != "_score_batch":
+            raise AttributeError(method)
+        pairs = args[0]
         return np.arange(len(pairs), dtype=float)
-
-    async def async_score(
-        self,
-        pairs,
-        log_interval: int = 1000,
-        display: str = "auto",
-    ):
-        return self.score(pairs, log_interval=log_interval, display=display)
 
     def close(self) -> None:
         if self.close_log is not None:
@@ -238,13 +241,6 @@ class FakeScorerRuntime(ScorerRuntimeAdapter):
     async def aclose(self) -> None:
         if self.close_log is not None:
             self.close_log.append(f"aclose:{self.config.name}")
-        return
-
-
-class UnsupportedRuntime:
-    def __init__(self, config, impl_cls=None):
-        self.config = config
-        self.impl_cls = impl_cls
         return
 
 
@@ -270,10 +266,17 @@ Resources.register(
 )(FakeScorerImpl)
 
 Resources.register(
+    "test_resource_manager_fake_tokenizer",
+    interface="tokenizer",
+    config_class=FakeTokenizerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(FakeTokenizerImpl)
+
+Resources.register(
     "test_resource_manager_unsupported",
     interface="unsupported",
     config_class=UnsupportedConfig,
-    runtime_adapter_cls=UnsupportedRuntime,
+    runtime_adapter_cls=DirectRuntimeAdapter,
 )(UnsupportedImpl)
 
 
@@ -294,8 +297,14 @@ def test_resource_manager_lazy_load_and_reuse():
     resources = ResourceManager.load(
         ResourceManagerConfig(
             resources=[
-                _encoder_spec("first", runtime_kwargs={"constructor_log": constructor_log}),
-                _encoder_spec("second", runtime_kwargs={"constructor_log": constructor_log}),
+                _encoder_spec(
+                    "first",
+                    runtime_kwargs={"constructor_log": constructor_log},
+                ),
+                _encoder_spec(
+                    "second",
+                    runtime_kwargs={"constructor_log": constructor_log},
+                ),
             ]
         )
     )
@@ -356,8 +365,7 @@ async def test_resource_manager_aclose_order_uses_async_close():
     assert close_log == ["aclose:second", "aclose:first"]
 
 
-@pytest.mark.asyncio
-async def test_resource_manager_encoder_handle_calls_sync_and_async():
+def test_resource_manager_encoder_handle_calls_sync_and_async():
     resources = ResourceManager.load(
         ResourceManagerConfig(resources=[_encoder_spec("dense")])
     )
@@ -366,7 +374,7 @@ async def test_resource_manager_encoder_handle_calls_sync_and_async():
 
     assert encoder.embedding_size == 8
     assert encoder.encode(["a", "b"]).shape == (2, 8)
-    assert (await encoder.async_encode(["a"])).shape == (1, 8)
+    assert asyncio.run(encoder.async_encode(["a"])).shape == (1, 8)
     assert not hasattr(encoder, "close")
     assert not hasattr(encoder, "aclose")
     assert not hasattr(encoder, "_close")
@@ -415,8 +423,55 @@ def test_resource_manager_maps_generator_and_scorer_handles():
     assert scorer.score(("q", "d")).shape == (1,)
 
 
-@pytest.mark.asyncio
-async def test_resource_manager_constructs_hf_ranker_with_scorer_ref():
+def test_resource_manager_maps_tokenizer_handle():
+    close_log: list[str] = []
+    resources = ResourceManager.load(
+        ResourceManagerConfig(
+            resources=[
+                ResourceSpec(
+                    name="tokenizer",
+                    config=FakeTokenizerConfig("fake", vocab_size=42),
+                    runtime_kwargs={"close_log": close_log},
+                )
+            ]
+        )
+    )
+
+    tokenizer = resources.get("tokenizer")
+
+    assert isinstance(tokenizer, TokenizerHandle)
+    assert tokenizer.tokenize("hello world") == ["hello", "world"]
+    assert tokenizer.detokenize(["hello", "world"]) == "hello world"
+    assert tokenizer.encode("hello world") == [5, 5]
+    assert tokenizer.decode([1, 2]) == "T1 T2"
+    assert tokenizer.tokens_to_ids(["hi", "there"]) == [2, 5]
+    assert tokenizer.ids_to_tokens([2, 5]) == ["T2", "T5"]
+    assert tokenizer.reversible is True
+    assert tokenizer.vocab_size == 42
+
+    resources.close()
+    assert close_log == ["tokenizer:fake"]
+
+
+def test_resource_manager_manages_builtin_space_tokenizer():
+    resources = ResourceManager.load(
+        ResourceManagerConfig(
+            resources=[
+                ResourceSpec(name="tokenizer", config=SpaceTokenizerConfig()),
+            ]
+        )
+    )
+
+    tokenizer = resources.get("tokenizer")
+
+    assert isinstance(tokenizer, TokenizerHandle)
+    assert tokenizer.tokenize("a b") == ["a", "b"]
+    assert tokenizer.detokenize(["a", "b"]) == "a b"
+    assert tokenizer.reversible is False
+    assert tokenizer.vocab_size == 0
+
+
+def test_resource_manager_constructs_hf_ranker_with_scorer_ref():
     resources = ResourceManager.load(
         ResourceManagerConfig(
             resources=[
@@ -432,7 +487,9 @@ async def test_resource_manager_constructs_hf_ranker_with_scorer_ref():
 
     ranker = resources.get("ranker")
     result = ranker.rank("query", ["first", "second", "third"])
-    async_result = await ranker.async_rank("query", ["first", "second", "third"])
+    async_result = asyncio.run(
+        ranker.async_rank("query", ["first", "second", "third"])
+    )
 
     assert isinstance(ranker, RankerHandle)
     assert result.candidates == ["third", "second", "first"]
@@ -614,45 +671,63 @@ def test_resource_manager_constructs_extractive_summarizer_with_encoder_ref():
 
 
 def test_resource_manager_injects_refs_as_handles():
-    constructor_log: list[dict[str, Any]] = []
     resources = ResourceManager.load(
         ResourceManagerConfig(
             resources=[
-                _encoder_spec("encoder"),
+                ResourceSpec(name="scorer", config=FakeScorerConfig("scorer")),
                 ResourceSpec(
-                    name="generator",
-                    config=FakeGeneratorConfig("generator"),
-                    refs={"encoder": "encoder"},
-                    runtime_kwargs={"constructor_log": constructor_log},
+                    name="ranker",
+                    config=HFRankerConfig(),
+                    refs={"scorer": "scorer"},
                 ),
             ]
         )
     )
 
-    generator = resources.get("generator")
-    encoder = resources.get("encoder")
+    ranker = resources.get("ranker")
+    scorer = resources.get("scorer")
 
-    assert isinstance(generator, GeneratorHandle)
-    assert constructor_log[0]["encoder"] is encoder
-    assert constructor_log[0]["impl_cls"] is FakeGeneratorImpl
+    assert resources._resources["ranker"]._resource.scorer is scorer
+    assert ranker.rank("query", ["first", "second"]).candidates == [
+        "second",
+        "first",
+    ]
 
 
 def test_resource_manager_rejects_ref_and_runtime_kwarg_conflict():
     resources = ResourceManager.load(
         ResourceManagerConfig(
             resources=[
-                _encoder_spec("encoder"),
+                ResourceSpec(name="scorer", config=FakeScorerConfig("scorer")),
                 ResourceSpec(
-                    name="generator",
-                    config=FakeGeneratorConfig("generator"),
-                    refs={"encoder": "encoder"},
-                    runtime_kwargs={"encoder": object()},
+                    name="ranker",
+                    config=HFRankerConfig(),
+                    refs={"scorer": "scorer"},
+                    runtime_kwargs={"scorer": object()},
                 ),
             ]
         )
     )
 
     with pytest.raises(ValueError, match="duplicate constructor kwargs"):
+        resources.get("ranker")
+
+
+def test_resource_manager_rejects_refs_for_non_direct_runtime():
+    resources = ResourceManager.load(
+        ResourceManagerConfig(
+            resources=[
+                _encoder_spec("encoder"),
+                ResourceSpec(
+                    name="generator",
+                    config=FakeGeneratorConfig("generator"),
+                    refs={"encoder": "encoder"},
+                ),
+            ]
+        )
+    )
+
+    with pytest.raises(ValueError, match="only direct runtime"):
         resources.get("generator")
 
 
@@ -666,21 +741,23 @@ def test_resource_manager_rejects_missing_resource_and_ref():
         ResourceManagerConfig(
             resources=[
                 ResourceSpec(
-                    name="generator",
-                    config=FakeGeneratorConfig("generator"),
-                    refs={"encoder": "missing"},
+                    name="ranker",
+                    config=HFRankerConfig(),
+                    refs={"scorer": "missing"},
                 )
             ]
         )
     )
     with pytest.raises(KeyError, match="Resource not found"):
-        resources.get("generator")
+        resources.get("ranker")
 
 
 def test_resource_manager_rejects_duplicate_resource_names():
     with pytest.raises(ValueError, match="Duplicate resource name"):
         ResourceManager.load(
-            ResourceManagerConfig(resources=[_encoder_spec("dense"), _encoder_spec("dense")])
+            ResourceManagerConfig(
+                resources=[_encoder_spec("dense"), _encoder_spec("dense")]
+            )
         )
 
 

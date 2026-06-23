@@ -152,6 +152,20 @@ def test_builtin_resource_registrations_are_available():
         LiteLLMGeneratorConfig,
     )
     from flexrag.models.scorers import HFCrossEncoderScorer, HFCrossEncoderScorerConfig
+    from flexrag.models.tokenizer import (
+        HuggingFaceTokenizer,
+        HuggingFaceTokenizerConfig,
+        JiebaTokenizer,
+        JiebaTokenizerConfig,
+        MosesTokenizer,
+        MosesTokenizerConfig,
+        NLTKTokenizer,
+        NLTKTokenizerConfig,
+        SpaceTokenizer,
+        SpaceTokenizerConfig,
+        TikTokenTokenizer,
+        TikTokenTokenizerConfig,
+    )
     from flexrag.processors.rankers import (
         HFRanker,
         HFRankerConfig,
@@ -240,6 +254,21 @@ def test_builtin_resource_registrations_are_available():
     assert extractive_summarizer.interface == "refiner"
     assert extractive_summarizer.config_class is RecompExtractiveSummarizerConfig
     assert extractive_summarizer.runtime_adapter_cls is DirectRuntimeAdapter
+
+    tokenizer_cases = [
+        ("space_tokenizer", SpaceTokenizer, SpaceTokenizerConfig),
+        ("moses_tokenizer", MosesTokenizer, MosesTokenizerConfig),
+        ("nltk_tokenizer", NLTKTokenizer, NLTKTokenizerConfig),
+        ("jieba_tokenizer", JiebaTokenizer, JiebaTokenizerConfig),
+        ("hf_tokenizer", HuggingFaceTokenizer, HuggingFaceTokenizerConfig),
+        ("tiktoken_tokenizer", TikTokenTokenizer, TikTokenTokenizerConfig),
+    ]
+    for short_name, impl_cls, config_class in tokenizer_cases:
+        tokenizer = Resources.resolve_name(short_name)
+        assert tokenizer.impl_cls is impl_cls
+        assert tokenizer.interface == "tokenizer"
+        assert tokenizer.config_class is config_class
+        assert tokenizer.runtime_adapter_cls is DirectRuntimeAdapter
 
 
 def test_builtin_resource_registrations_resolve_by_config_instance():
