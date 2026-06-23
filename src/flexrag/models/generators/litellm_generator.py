@@ -380,10 +380,9 @@ class LiteLLMGeneratorConfig:
 class LiteLLMGenerator(RemoteGeneratorBase):
     """Raw remote generator implemented with LiteLLM.
 
-    This class implements single-sample asynchronous core methods and inherits
-    the direct-use batch interface from ``RemoteGeneratorBase``. Runtime
-    policies such as concurrency control, rate limiting, retry, and progress
-    logging belong to the runtime adapter layer.
+    This class constructs provider requests, implements single-sample
+    asynchronous core methods, and inherits the direct-use batch interface from
+    ``RemoteGeneratorBase``.
     """
 
     def __init__(self, config: LiteLLMGeneratorConfig):

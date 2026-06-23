@@ -250,24 +250,28 @@ class UnsupportedRuntime:
 
 Resources.register(
     "test_resource_manager_fake_encoder",
+    interface="encoder",
     config_class=FakeEncoderConfig,
     runtime_adapter_cls=FakeEncoderRuntime,
 )(FakeEncoderImpl)
 
 Resources.register(
     "test_resource_manager_fake_generator",
+    interface="generator",
     config_class=FakeGeneratorConfig,
     runtime_adapter_cls=FakeGeneratorRuntime,
 )(FakeGeneratorImpl)
 
 Resources.register(
     "test_resource_manager_fake_scorer",
+    interface="scorer",
     config_class=FakeScorerConfig,
     runtime_adapter_cls=FakeScorerRuntime,
 )(FakeScorerImpl)
 
 Resources.register(
     "test_resource_manager_unsupported",
+    interface="unsupported",
     config_class=UnsupportedConfig,
     runtime_adapter_cls=UnsupportedRuntime,
 )(UnsupportedImpl)
@@ -755,12 +759,12 @@ def test_resource_spec_rejects_unregistered_config_and_index_config():
         ResourceSpec(name="index", config=RetrieverIndexConfig())
 
 
-def test_resource_manager_rejects_runtime_adapter_without_handle_mapping():
+def test_resource_manager_rejects_interface_without_handle_mapping():
     resources = ResourceManager.load(
         ResourceManagerConfig(
             resources=[ResourceSpec(name="bad", config=UnsupportedConfig())]
         )
     )
 
-    with pytest.raises(TypeError, match="not supported"):
+    with pytest.raises(TypeError, match="Resource interface is not supported"):
         resources.get("bad")

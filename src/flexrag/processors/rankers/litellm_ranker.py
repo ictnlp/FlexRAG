@@ -43,9 +43,8 @@ class LiteLLMRanker(RemoteRankerBase):
     """Raw LiteLLM rerank implementation.
 
     The class owns provider request construction and the LiteLLM rerank call.
-    Runtime policies such as managed sync/async bridging and concurrency limits
-    are provided by ``RemoteRankerRuntimeAdapter`` when this ranker is managed
-    by ``ResourceManager``.
+    It exposes the direct-use ranker interface inherited from
+    ``RemoteRankerBase``.
     """
 
     def __init__(self, config: LiteLLMRankerConfig) -> None:

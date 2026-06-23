@@ -9,7 +9,7 @@ from flexrag.processors.refiners import (
     RecompExtractiveSummarizer,
     RecompExtractiveSummarizerConfig,
 )
-from flexrag.resources.runtime_adapters import RefinerRuntimeAdapter
+from flexrag.resources.runtime_adapters import DirectRuntimeAdapter
 
 
 class FakeGenerator:
@@ -125,7 +125,7 @@ def test_extractive_summarizer_uses_injected_encoder_without_mutating_inputs():
 
 
 def test_refiner_runtime_adapter_wraps_raw_refiner():
-    adapter = RefinerRuntimeAdapter(
+    adapter = DirectRuntimeAdapter(
         ContextArrangerConfig(order="ascending"),
         impl_cls=ContextArranger,
     )

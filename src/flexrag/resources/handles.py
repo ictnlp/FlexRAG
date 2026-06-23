@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Iterable
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
@@ -15,8 +15,6 @@ if TYPE_CHECKING:
     )
     from flexrag.models.scorers.scorer_base import PairScorerInput
     from flexrag.processors.rankers.ranker_base import RankingResult
-
-DEFAULT_INDEX_BATCH_SIZE = 512
 
 
 class RuntimeHandleBase:
@@ -188,15 +186,29 @@ class RankerHandle(RuntimeHandleBase):
         self,
         query: str,
         candidates: list[RetrievedContext | str],
+        log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> RankingResult:
-        return self._resource.rank(query, candidates)
+        return self._resource.rank(
+            query,
+            candidates,
+            log_interval=log_interval,
+            display=display,
+        )
 
     async def async_rank(
         self,
         query: str,
         candidates: list[RetrievedContext | str],
+        log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
     ) -> RankingResult:
-        return await self._resource.async_rank(query, candidates)
+        return await self._resource.async_rank(
+            query,
+            candidates,
+            log_interval=log_interval,
+            display=display,
+        )
 
 
 class RefinerHandle(RuntimeHandleBase):
@@ -209,76 +221,3 @@ class RefinerHandle(RuntimeHandleBase):
         contexts: list[RetrievedContext],
     ) -> list[RetrievedContext]:
         return self._resource.refine(contexts)
-
-
-class IndexHandle(RuntimeHandleBase):
-    """Managed retriever index runtime handle."""
-
-    required_methods = ("build_index", "insert", "search", "save_to_local", "clear")
-    required_attributes = ("cfg", "is_addable", "infimum", "supremum")
-
-    @property
-    def cfg(self) -> Any:
-        return self._resource.cfg
-
-    @property
-    def is_addable(self) -> bool:
-        return self._resource.is_addable
-
-    @property
-    def infimum(self) -> float:
-        return self._resource.infimum
-
-    @property
-    def supremum(self) -> float:
-        return self._resource.supremum
-
-    def build_index(
-        self,
-        context_ids: Iterable[str],
-        data: Iterable[dict[str, Any]],
-        batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
-        scratch_path: str | None = None,
-    ) -> None:
-        return self._resource.build_index(
-            context_ids,
-            data,
-            batch_size=batch_size,
-            scratch_path=scratch_path,
-        )
-
-    def insert_batch(
-        self,
-        context_ids: Iterable[str],
-        data: Iterable[dict[str, Any]],
-        batch_size: int = DEFAULT_INDEX_BATCH_SIZE,
-        log_interval: int = 10000,
-        display: str = "auto",
-    ) -> None:
-        return self._resource.insert_batch(
-            context_ids,
-            data,
-            batch_size=batch_size,
-            log_interval=log_interval,
-            display=display,
-        )
-
-    def insert(self, context_ids: list[str], data: list[dict[str, Any]]) -> None:
-        return self._resource.insert(context_ids, data)
-
-    def search(
-        self,
-        query: list[Any],
-        top_k: int,
-        **search_kwargs,
-    ) -> tuple[list[list[str]], np.ndarray]:
-        return self._resource.search(query, top_k, **search_kwargs)
-
-    def save_to_local(self, index_path: str) -> None:
-        return self._resource.save_to_local(index_path)
-
-    def clear(self) -> None:
-        return self._resource.clear()
-
-    def __len__(self) -> int:
-        return len(self._resource)

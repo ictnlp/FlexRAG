@@ -13,12 +13,15 @@ class ResourceEntry:
     adapter, but it does not instantiate either object.
 
     :param short_names: Serialized discriminator names for this resource.
+    :param interface: Resource call interface used by resource managers to
+        select the returned handle.
     :param config_class: Concrete configuration class for the raw resource.
     :param impl_cls: Raw resource implementation class.
     :param runtime_adapter_cls: Runtime adapter class used by resource managers.
     """
 
     short_names: tuple[str, ...]
+    interface: str
     config_class: type[Any]
     impl_cls: type[Any]
     runtime_adapter_cls: type[Any]
@@ -71,18 +74,24 @@ class _ResourceRegister:
     def register(
         self,
         *short_names: str,
+        interface: str,
         config_class: type[ConfigT],
         runtime_adapter_cls: type[Any],
     ):
         """Register a resource implementation.
 
         :param short_names: One or more serialized discriminator names.
+        :param interface: Resource call interface used to select a handle.
         :param config_class: Concrete configuration class for the resource.
         :param runtime_adapter_cls: Runtime adapter class selected by default.
         :raises ValueError: If names or config classes conflict.
         :return: A decorator that records the implementation class unchanged.
         """
         self._validate_short_names(short_names)
+        if not isinstance(interface, str):
+            raise TypeError("interface must be a string.")
+        if not interface:
+            raise ValueError("interface must not be empty.")
         if not isinstance(config_class, type):
             raise TypeError("config_class must be a class.")
         if not isinstance(runtime_adapter_cls, type):
@@ -98,6 +107,7 @@ class _ResourceRegister:
                 raise TypeError("Resource implementation must be a class.")
             entry = ResourceEntry(
                 short_names=short_names,
+                interface=interface,
                 config_class=config_class,
                 impl_cls=impl_cls,
                 runtime_adapter_cls=runtime_adapter_cls,

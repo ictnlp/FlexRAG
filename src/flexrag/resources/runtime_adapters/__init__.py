@@ -1,27 +1,9 @@
-from .encoder import (
-    EncoderRuntimeAdapter,
-    ProcessEncoderAdapter,
-    RemoteEncoderRuntimeAdapter,
-)
-from .generator import (
-    GeneratorRuntimeAdapter,
-    ProcessGeneratorAdapter,
-    RemoteGeneratorRuntimeAdapter,
-)
-from .ranker import RankerRuntimeAdapter, RemoteRankerRuntimeAdapter
-from .refiner import RefinerRuntimeAdapter
-from .scorer import ProcessScorerAdapter, ScorerRuntimeAdapter
+from .direct import DirectRuntimeAdapter
+from .process import ProcessRuntimeAdapter
+from .remote import RemoteRuntimeAdapter
 
 __all__ = [
-    "EncoderRuntimeAdapter",
-    "GeneratorRuntimeAdapter",
-    "ProcessEncoderAdapter",
-    "ProcessGeneratorAdapter",
-    "ProcessScorerAdapter",
-    "RankerRuntimeAdapter",
-    "RemoteEncoderRuntimeAdapter",
-    "RemoteGeneratorRuntimeAdapter",
-    "RemoteRankerRuntimeAdapter",
-    "RefinerRuntimeAdapter",
-    "ScorerRuntimeAdapter",
+    "DirectRuntimeAdapter",
+    "ProcessRuntimeAdapter",
+    "RemoteRuntimeAdapter",
 ]

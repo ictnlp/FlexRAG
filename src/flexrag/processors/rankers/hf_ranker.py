@@ -10,9 +10,9 @@ from .ranker_base import RANKERS, RankerBase, RankerBaseConfig, RankingResult
 class HFRankerConfig(RankerBaseConfig):
     """Configuration for pair-scorer-backed HuggingFace rankers.
 
-    This ranker does not construct the scorer itself. Pass a scorer object when
-    constructing the ranker directly, or use ResourceManager refs when creating
-    it as a managed resource.
+    The scorer is an external dependency supplied to ``HFRanker`` at
+    construction time. This config only controls ranking behavior inherited
+    from ``RankerBaseConfig``.
     """
 
 

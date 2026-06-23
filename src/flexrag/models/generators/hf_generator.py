@@ -187,10 +187,9 @@ class HFGenerator(LocalGeneratorBase):
 
     The constructor loads the model and tokenizer according to
     ``HFGeneratorConfig``, which may use the Hugging Face cache or download
-    model files and may allocate accelerator memory. The public generation
-    methods process canonical batches synchronously; runtime policies such as
-    batching across calls, process isolation, progress logging, and async
-    bridging belong to runtime adapters.
+    model files and may allocate accelerator memory. The direct-use public
+    methods process calls synchronously according to the configured raw-model
+    batch size.
     """
 
     model: PreTrainedModel

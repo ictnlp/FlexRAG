@@ -12,24 +12,65 @@ from .handles import (
     RuntimeHandleBase,
     ScorerHandle,
 )
+from .invocations import (
+    BatchGeneratorInvocation,
+    DirectRankerInvocation,
+    EncoderInvocation,
+    RefinerInvocation,
+    RemoteRankerInvocation,
+    ScorerInvocation,
+    SingleSampleGeneratorInvocation,
+)
 from .registry import ResourceEntry, Resources
 from .runtime_adapters import (
-    EncoderRuntimeAdapter,
-    GeneratorRuntimeAdapter,
-    RankerRuntimeAdapter,
-    RefinerRuntimeAdapter,
-    RemoteRankerRuntimeAdapter,
-    ScorerRuntimeAdapter,
+    DirectRuntimeAdapter,
+    ProcessRuntimeAdapter,
+    RemoteRuntimeAdapter,
 )
 
-_RUNTIME_HANDLE_TYPES: tuple[tuple[type[Any], type[RuntimeHandleBase]], ...] = (
-    (EncoderRuntimeAdapter, EncoderHandle),
-    (GeneratorRuntimeAdapter, GeneratorHandle),
-    (ScorerRuntimeAdapter, ScorerHandle),
-    (RankerRuntimeAdapter, RankerHandle),
-    (RemoteRankerRuntimeAdapter, RankerHandle),
-    (RefinerRuntimeAdapter, RefinerHandle),
-)
+_INTERFACE_HANDLE_TYPES: dict[str, type[RuntimeHandleBase]] = {
+    "encoder": EncoderHandle,
+    "generator": GeneratorHandle,
+    "scorer": ScorerHandle,
+    "ranker": RankerHandle,
+    "refiner": RefinerHandle,
+}
+
+_COMPOSITIONS: dict[tuple[str, type[Any]], tuple[type[Any], dict[str, Any]]] = {
+    ("encoder", ProcessRuntimeAdapter): (
+        EncoderInvocation,
+        {"batch_method": "_encode_batch", "batch_size": 32},
+    ),
+    ("encoder", RemoteRuntimeAdapter): (
+        EncoderInvocation,
+        {"batch_method": "_async_encode_batch", "batch_size": 32},
+    ),
+    ("generator", ProcessRuntimeAdapter): (
+        BatchGeneratorInvocation,
+        {
+            "generate_method": "_generate_batch",
+            "chat_method": "_chat_batch",
+            "batch_size": 1,
+        },
+    ),
+    ("generator", RemoteRuntimeAdapter): (
+        SingleSampleGeneratorInvocation,
+        {
+            "generate_method": "_async_generate_one",
+            "chat_method": "_async_chat_one",
+        },
+    ),
+    ("scorer", ProcessRuntimeAdapter): (
+        ScorerInvocation,
+        {"score_method": "_score_batch", "batch_size": 32},
+    ),
+    ("ranker", DirectRuntimeAdapter): (DirectRankerInvocation, {}),
+    ("ranker", RemoteRuntimeAdapter): (
+        RemoteRankerInvocation,
+        {"rank_method": "_async_rank_batch"},
+    ),
+    ("refiner", DirectRuntimeAdapter): (RefinerInvocation, {}),
+}
 
 
 @configure
@@ -45,6 +86,8 @@ class ResourceSpec:
         this when ``config`` is already a concrete config instance; it will be
         filled with the registered canonical short name.
     :param runtime_kwargs: Runtime adapter constructor keyword arguments.
+    :param invocation_kwargs: Invocation constructor keyword arguments. Use this
+        for interface-call policy such as deployment batch size.
     :param refs: Constructor dependencies expressed as resource-name
         references. Each value must be the name of another resource managed by
         the same manager. Defaults to an empty dict.
@@ -54,6 +97,7 @@ class ResourceSpec:
     config: Any
     resource: str | None = None
     runtime_kwargs: dict[str, Any] = field(default_factory=dict)
+    invocation_kwargs: dict[str, Any] = field(default_factory=dict)
     refs: dict[str, str] = field(default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -114,6 +158,7 @@ class ResourceManager:
         self.cfg = cfg
         self._specs = self._build_specs(cfg.resources)
         self._resources: dict[str, Any] = {}
+        self._invocations: dict[str, Any] = {}
         self._handles: dict[str, RuntimeHandleBase] = {}
         self._load_order: list[str] = []
         self._closed = False
@@ -165,7 +210,16 @@ class ResourceManager:
             refs[param_name] = self.get(resource_name)
         return refs
 
-    def _merge_constructor_kwargs(self, spec: ResourceSpec) -> dict[str, Any]:
+    def _merge_constructor_kwargs(
+        self,
+        spec: ResourceSpec,
+        entry: ResourceEntry,
+    ) -> dict[str, Any]:
+        if spec.refs and not issubclass(entry.runtime_adapter_cls, DirectRuntimeAdapter):
+            raise ValueError(
+                f"Resource {spec.name!r} uses refs, but only direct runtime "
+                "resources can receive dependency refs."
+            )
         conflicts = spec.refs.keys() & spec.runtime_kwargs.keys()
         if conflicts:
             conflict_names = ", ".join(sorted(conflicts))
@@ -177,22 +231,59 @@ class ResourceManager:
         return {**refs, **spec.runtime_kwargs}
 
     @staticmethod
-    def _get_handle_cls(runtime_adapter_cls: type[Any]) -> type[RuntimeHandleBase]:
-        for adapter_base, handle_cls in _RUNTIME_HANDLE_TYPES:
-            if issubclass(runtime_adapter_cls, adapter_base):
-                return handle_cls
+    def _get_handle_cls(interface: str) -> type[RuntimeHandleBase]:
+        try:
+            return _INTERFACE_HANDLE_TYPES[interface]
+        except KeyError as exc:
+            raise TypeError(
+                f"Resource interface is not supported by ResourceManager: "
+                f"{interface!r}."
+            ) from exc
+
+    @staticmethod
+    def _get_composition(
+        interface: str,
+        runtime_adapter_cls: type[Any],
+    ) -> tuple[type[Any], dict[str, Any]]:
+        try:
+            return _COMPOSITIONS[(interface, runtime_adapter_cls)]
+        except KeyError:
+            pass
+
+        for (candidate_interface, candidate_runtime_cls), composition in (
+            _COMPOSITIONS.items()
+        ):
+            if candidate_interface == interface and issubclass(
+                runtime_adapter_cls,
+                candidate_runtime_cls,
+            ):
+                return composition
         raise TypeError(
-            f"Runtime adapter is not supported by ResourceManager: "
-            f"{runtime_adapter_cls!r}."
+            "Resource runtime composition is not supported by "
+            f"ResourceManager: interface={interface!r}, "
+            f"runtime_adapter_cls={runtime_adapter_cls!r}."
         )
 
     def _load_resource(self, spec: ResourceSpec, entry: ResourceEntry) -> Any:
-        constructor_kwargs = self._merge_constructor_kwargs(spec)
+        constructor_kwargs = self._merge_constructor_kwargs(spec, entry)
         return entry.runtime_adapter_cls(
             spec.config,
             impl_cls=entry.impl_cls,
             **constructor_kwargs,
         )
+
+    def _build_invocation(
+        self,
+        spec: ResourceSpec,
+        entry: ResourceEntry,
+        resource: Any,
+    ) -> Any:
+        invocation_cls, defaults = self._get_composition(
+            entry.interface,
+            entry.runtime_adapter_cls,
+        )
+        invocation_kwargs = {**defaults, **spec.invocation_kwargs}
+        return invocation_cls(resource, **invocation_kwargs)
 
     def get(self, name: str) -> Any:
         """Get a named resource, loading and caching it on first access.
@@ -202,22 +293,33 @@ class ResourceManager:
         :raises ValueError: If refs and runtime kwargs conflict.
         :raises KeyError: If the resource name is not declared.
         :raises KeyError: If the concrete resource config is not registered.
-        :raises TypeError: If the selected runtime adapter has no handle mapping.
+        :raises TypeError: If the selected resource interface has no handle mapping.
         :return: The loaded runtime handle.
         """
         self._ensure_not_closed()
         if name not in self._resources:
             spec = self._get_spec(name)
             entry = Resources.resolve(spec.config)
-            handle_cls = self._get_handle_cls(entry.runtime_adapter_cls)
+            handle_cls = self._get_handle_cls(entry.interface)
             self._resources[name] = self._load_resource(spec, entry)
+            self._invocations[name] = self._build_invocation(
+                spec,
+                entry,
+                self._resources[name],
+            )
             self._load_order.append(name)
-            self._handles[name] = handle_cls(self._resources[name])
+            self._handles[name] = handle_cls(self._invocations[name])
         if name not in self._handles:
             spec = self._get_spec(name)
             entry = Resources.resolve(spec.config)
-            handle_cls = self._get_handle_cls(entry.runtime_adapter_cls)
-            self._handles[name] = handle_cls(self._resources[name])
+            handle_cls = self._get_handle_cls(entry.interface)
+            if name not in self._invocations:
+                self._invocations[name] = self._build_invocation(
+                    spec,
+                    entry,
+                    self._resources[name],
+                )
+            self._handles[name] = handle_cls(self._invocations[name])
         return self._handles[name]
 
     async def _aclose_resource(self, resource) -> None:
@@ -246,6 +348,7 @@ class ResourceManager:
             return
         self._closed = True
         self._handles.clear()
+        self._invocations.clear()
         while self._load_order:
             key = self._load_order.pop()
             resource = self._resources.pop(key, None)
@@ -263,6 +366,7 @@ class ResourceManager:
             return
         self._closed = True
         self._handles.clear()
+        self._invocations.clear()
         while self._load_order:
             key = self._load_order.pop()
             resource = self._resources.pop(key, None)
