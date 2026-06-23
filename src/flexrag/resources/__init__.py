@@ -4,6 +4,7 @@ from .handles import (
     GeneratorHandle,
     IndexHandle,
     RankerHandle,
+    RefinerHandle,
     RuntimeHandleBase,
     ScorerHandle,
 )
@@ -19,6 +20,7 @@ __all__ = [
     "GeneratorHandle",
     "IndexHandle",
     "RankerHandle",
+    "RefinerHandle",
     "ResourceEntry",
     "ResourceManager",
     "ResourceManagerConfig",

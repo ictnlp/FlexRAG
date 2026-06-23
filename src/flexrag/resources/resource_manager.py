@@ -8,6 +8,7 @@ from .handles import (
     EncoderHandle,
     GeneratorHandle,
     RankerHandle,
+    RefinerHandle,
     RuntimeHandleBase,
     ScorerHandle,
 )
@@ -16,6 +17,7 @@ from .runtime_adapters import (
     EncoderRuntimeAdapter,
     GeneratorRuntimeAdapter,
     RankerRuntimeAdapter,
+    RefinerRuntimeAdapter,
     RemoteRankerRuntimeAdapter,
     ScorerRuntimeAdapter,
 )
@@ -26,6 +28,7 @@ _RUNTIME_HANDLE_TYPES: tuple[tuple[type[Any], type[RuntimeHandleBase]], ...] = (
     (ScorerRuntimeAdapter, ScorerHandle),
     (RankerRuntimeAdapter, RankerHandle),
     (RemoteRankerRuntimeAdapter, RankerHandle),
+    (RefinerRuntimeAdapter, RefinerHandle),
 )
 
 

@@ -199,6 +199,18 @@ class RankerHandle(RuntimeHandleBase):
         return await self._resource.async_rank(query, candidates)
 
 
+class RefinerHandle(RuntimeHandleBase):
+    """Managed refiner runtime handle."""
+
+    required_methods = ("refine",)
+
+    def refine(
+        self,
+        contexts: list[RetrievedContext],
+    ) -> list[RetrievedContext]:
+        return self._resource.refine(contexts)
+
+
 class IndexHandle(RuntimeHandleBase):
     """Managed retriever index runtime handle."""
 

@@ -2,7 +2,7 @@ from flexrag.common import LOGGER_MANAGER
 from flexrag.common.dataclasses import ChatMessages, RetrievedContext
 from flexrag.models.generators import GeneratorProtocol
 from flexrag.processors.rankers.ranker_base import RankerBase
-from flexrag.processors.refiners.refiner_base import RefinerBase
+from flexrag.processors.refiners.refiner_base import RefinerProtocol
 from flexrag.retrievers.retriever_base import RetrieverBase
 
 from .assistant_base import ASSISTANTS, AssistantResponse
@@ -34,7 +34,7 @@ class ChatQAAssistant(ModularAssistant):
         generator: GeneratorProtocol,
         retriever: RetrieverBase | None = None,
         reranker: RankerBase | None = None,
-        refiners: list[RefinerBase] | None = None,
+        refiners: list[RefinerProtocol] | None = None,
     ):
         super().__init__(
             cfg,

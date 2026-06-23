@@ -1,5 +1,5 @@
 from .arrangers import ContextArranger, ContextArrangerConfig
-from .refiner_base import REFINERS, RefinerBase
+from .refiner_base import REFINERS, RefinerBase, RefinerProtocol
 from .summarizers import (
     AbstractiveSummarizer,
     AbstractiveSummarizerConfig,
@@ -20,6 +20,7 @@ __all__ = [
     "AbstractiveSummarizer",
     "AbstractiveSummarizerConfig",
     "RefinerBase",
+    "RefinerProtocol",
     "REFINERS",
     "RefinerConfig",
 ]

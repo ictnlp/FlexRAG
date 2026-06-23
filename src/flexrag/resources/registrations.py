@@ -32,6 +32,14 @@ from flexrag.processors.rankers import (
     RankGPTRanker,
     RankGPTRankerConfig,
 )
+from flexrag.processors.refiners import (
+    AbstractiveSummarizer,
+    AbstractiveSummarizerConfig,
+    ContextArranger,
+    ContextArrangerConfig,
+    RecompExtractiveSummarizer,
+    RecompExtractiveSummarizerConfig,
+)
 
 from .registry import Resources
 from .runtime_adapters import (
@@ -39,6 +47,7 @@ from .runtime_adapters import (
     ProcessGeneratorAdapter,
     ProcessScorerAdapter,
     RankerRuntimeAdapter,
+    RefinerRuntimeAdapter,
     RemoteEncoderRuntimeAdapter,
     RemoteGeneratorRuntimeAdapter,
     RemoteRankerRuntimeAdapter,
@@ -115,3 +124,21 @@ Resources.register(
     config_class=LiteLLMRankerConfig,
     runtime_adapter_cls=RemoteRankerRuntimeAdapter,
 )(LiteLLMRanker)
+
+Resources.register(
+    "context_arranger",
+    config_class=ContextArrangerConfig,
+    runtime_adapter_cls=RefinerRuntimeAdapter,
+)(ContextArranger)
+
+Resources.register(
+    "abstractive_summarizer",
+    config_class=AbstractiveSummarizerConfig,
+    runtime_adapter_cls=RefinerRuntimeAdapter,
+)(AbstractiveSummarizer)
+
+Resources.register(
+    "extractive_summarizer",
+    config_class=RecompExtractiveSummarizerConfig,
+    runtime_adapter_cls=RefinerRuntimeAdapter,
+)(RecompExtractiveSummarizer)

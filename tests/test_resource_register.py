@@ -143,12 +143,21 @@ def test_builtin_resource_registrations_are_available():
         RankGPTRanker,
         RankGPTRankerConfig,
     )
+    from flexrag.processors.refiners import (
+        AbstractiveSummarizer,
+        AbstractiveSummarizerConfig,
+        ContextArranger,
+        ContextArrangerConfig,
+        RecompExtractiveSummarizer,
+        RecompExtractiveSummarizerConfig,
+    )
     from flexrag.resources import Resources
     from flexrag.resources.runtime_adapters import (
         ProcessEncoderAdapter,
         ProcessGeneratorAdapter,
         ProcessScorerAdapter,
         RankerRuntimeAdapter,
+        RefinerRuntimeAdapter,
         RemoteEncoderRuntimeAdapter,
         RemoteGeneratorRuntimeAdapter,
         RemoteRankerRuntimeAdapter,
@@ -193,6 +202,21 @@ def test_builtin_resource_registrations_are_available():
     assert litellm_ranker.impl_cls is LiteLLMRanker
     assert litellm_ranker.config_class is LiteLLMRankerConfig
     assert litellm_ranker.runtime_adapter_cls is RemoteRankerRuntimeAdapter
+
+    context_arranger = Resources.resolve_name("context_arranger")
+    assert context_arranger.impl_cls is ContextArranger
+    assert context_arranger.config_class is ContextArrangerConfig
+    assert context_arranger.runtime_adapter_cls is RefinerRuntimeAdapter
+
+    abstractive_summarizer = Resources.resolve_name("abstractive_summarizer")
+    assert abstractive_summarizer.impl_cls is AbstractiveSummarizer
+    assert abstractive_summarizer.config_class is AbstractiveSummarizerConfig
+    assert abstractive_summarizer.runtime_adapter_cls is RefinerRuntimeAdapter
+
+    extractive_summarizer = Resources.resolve_name("extractive_summarizer")
+    assert extractive_summarizer.impl_cls is RecompExtractiveSummarizer
+    assert extractive_summarizer.config_class is RecompExtractiveSummarizerConfig
+    assert extractive_summarizer.runtime_adapter_cls is RefinerRuntimeAdapter
 
 
 def test_builtin_resource_registrations_resolve_by_config_instance():

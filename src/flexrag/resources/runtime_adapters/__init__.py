@@ -9,6 +9,7 @@ from .generator import (
     RemoteGeneratorRuntimeAdapter,
 )
 from .ranker import RankerRuntimeAdapter, RemoteRankerRuntimeAdapter
+from .refiner import RefinerRuntimeAdapter
 from .scorer import ProcessScorerAdapter, ScorerRuntimeAdapter
 
 __all__ = [
@@ -21,5 +22,6 @@ __all__ = [
     "RemoteEncoderRuntimeAdapter",
     "RemoteGeneratorRuntimeAdapter",
     "RemoteRankerRuntimeAdapter",
+    "RefinerRuntimeAdapter",
     "ScorerRuntimeAdapter",
 ]

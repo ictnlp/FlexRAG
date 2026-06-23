@@ -7,15 +7,22 @@ import numpy as np
 import pytest
 
 from flexrag.common import ChatMessages, ChatTurn
+from flexrag.common.dataclasses import RetrievedContext
 from flexrag.processors.rankers import (
     HFRankerConfig,
     LiteLLMRankerConfig,
     RankGPTRankerConfig,
 )
+from flexrag.processors.refiners import (
+    AbstractiveSummarizerConfig,
+    ContextArrangerConfig,
+    RecompExtractiveSummarizerConfig,
+)
 from flexrag.resources import (
     EncoderHandle,
     GeneratorHandle,
     RankerHandle,
+    RefinerHandle,
     ResourceManager,
     ResourceManagerConfig,
     Resources,
@@ -514,6 +521,92 @@ async def test_resource_manager_constructs_litellm_ranker_with_remote_runtime(
     assert isinstance(ranker, RankerHandle)
     assert all(result.candidates == ["second", "first"] for result in results)
     assert max_seen <= 2
+
+
+def test_resource_manager_constructs_context_arranger_refiner():
+    resources = ResourceManager.load(
+        ResourceManagerConfig(
+            resources=[
+                ResourceSpec(
+                    name="refiner",
+                    config=ContextArrangerConfig(order="descending"),
+                ),
+            ]
+        )
+    )
+
+    refiner = resources.get("refiner")
+    contexts = [
+        RetrievedContext(context_id="low", data={"text": "low"}, score=0.1),
+        RetrievedContext(context_id="high", data={"text": "high"}, score=0.9),
+    ]
+    refined = refiner.refine(contexts)
+
+    assert isinstance(refiner, RefinerHandle)
+    assert [ctx.context_id for ctx in refined] == ["high", "low"]
+
+
+def test_resource_manager_constructs_abstractive_summarizer_with_generator_ref():
+    resources = ResourceManager.load(
+        ResourceManagerConfig(
+            resources=[
+                ResourceSpec(name="generator", config=FakeGeneratorConfig("summary")),
+                ResourceSpec(
+                    name="refiner",
+                    config=AbstractiveSummarizerConfig(refined_field="text"),
+                    refs={"generator": "generator"},
+                ),
+            ]
+        )
+    )
+
+    refiner = resources.get("refiner")
+    contexts = [
+        RetrievedContext(
+            context_id="ctx",
+            query="query",
+            data={"text": "original text"},
+            score=1.0,
+        )
+    ]
+    refined = refiner.refine(contexts)
+
+    assert isinstance(refiner, RefinerHandle)
+    assert refined[0].data["text"] == "summary:original text"
+    assert contexts[0].data["text"] == "original text"
+
+
+def test_resource_manager_constructs_extractive_summarizer_with_encoder_ref():
+    resources = ResourceManager.load(
+        ResourceManagerConfig(
+            resources=[
+                ResourceSpec(name="encoder", config=FakeEncoderConfig("encoder")),
+                ResourceSpec(
+                    name="refiner",
+                    config=RecompExtractiveSummarizerConfig(
+                        preserved_sents=1,
+                        refined_field="text",
+                    ),
+                    refs={"encoder": "encoder"},
+                ),
+            ]
+        )
+    )
+
+    refiner = resources.get("refiner")
+    contexts = [
+        RetrievedContext(
+            context_id="ctx",
+            query="query",
+            data={"text": "First sentence is useful. Second sentence is extra."},
+            score=1.0,
+        )
+    ]
+    refined = refiner.refine(contexts)
+
+    assert isinstance(refiner, RefinerHandle)
+    assert refined[0].data["text_summary"]
+    assert contexts[0].data.get("text_summary") is None
 
 
 def test_resource_manager_injects_refs_as_handles():
