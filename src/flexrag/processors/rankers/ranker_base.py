@@ -1,5 +1,8 @@
+import asyncio
 from abc import ABC, abstractmethod
 from typing import Optional
+
+import numpy as np
 
 from flexrag.common import LOGGER_MANAGER, Register, configure
 from flexrag.common.dataclasses import RetrievedContext
@@ -41,6 +44,54 @@ class RankingResult:
     scores: Optional[list[float]] = None
 
 
+RankerCandidates = list[RetrievedContext | str]
+
+
+def _extract_ranking_texts(
+    candidates: RankerCandidates,
+    ranking_field: str | None,
+) -> list[str]:
+    texts: list[str] = []
+    for candidate in candidates:
+        if isinstance(candidate, str):
+            texts.append(candidate)
+            continue
+        if ranking_field is None:
+            raise ValueError(
+                "ranking_field must be specified when ranking RetrievedContext"
+            )
+        texts.append(candidate.data[ranking_field])
+    return texts
+
+
+def _build_ranking_result(
+    query: str,
+    candidates: RankerCandidates,
+    *,
+    reserve_num: int,
+    indices: np.ndarray | None,
+    scores: np.ndarray | None,
+) -> RankingResult:
+    if scores is not None:
+        scores = np.asarray(scores)
+        indices = np.argsort(scores)[::-1]
+    elif indices is None:
+        raise ValueError("Either indices or scores must be provided.")
+    else:
+        indices = np.asarray(indices)
+
+    if reserve_num > 0:
+        indices = indices[:reserve_num]
+
+    ranked_candidates = [candidates[int(idx)] for idx in indices]
+    ranked_scores = scores[indices].tolist() if scores is not None else None
+    return RankingResult(
+        query=query,
+        candidates=ranked_candidates,
+        scores=ranked_scores,
+    )
+
+
 class RankerBase(ABC):
     """Base class for rankers.
     The ranker can rank candidates based on a query.
@@ -78,6 +129,80 @@ class RankerBase(ABC):
             "thus the code will be run in synchronous mode"
         )
         return self.rank(query, candidates)
+
+
+class RemoteRankerBase(RankerBase):
+    """Thin base class for directly usable remote rankers.
+
+    Subclasses implement the provider-specific asynchronous rerank primitive
+    over a canonical text batch. The public methods handle direct-use candidate
+    extraction and result construction, but they do not provide runtime
+    policies such as background-loop execution or concurrency control.
+    """
+
+    @staticmethod
+    def _ensure_sync_bridge_allowed(method_name: str) -> None:
+        try:
+            asyncio.get_running_loop()
+        except RuntimeError:
+            return
+        raise RuntimeError(
+            f"{method_name} cannot be called from a running event loop. "
+            f"Use async_{method_name} instead."
+        )
+
+    @abstractmethod
+    async def _async_rank_batch(
+        self,
+        query: str,
+        candidates: list[str],
+    ) -> tuple[np.ndarray | None, np.ndarray | None]:
+        """Rank one canonical candidate text batch asynchronously.
+
+        :param query: Query string.
+        :param candidates: Candidate texts to rank.
+        :return: Ranked indices and optional scores. If scores are provided,
+            they are used to derive final ranking order.
+        """
+        return
+
+    async def async_rank(
+        self,
+        query: str,
+        candidates: RankerCandidates,
+    ) -> RankingResult:
+        """Rank candidates asynchronously for direct raw-ranker use.
+
+        :param query: Query string.
+        :param candidates: Candidate strings or retrieved contexts.
+        :return: Ranked candidates and optional scores.
+        """
+        if not candidates:
+            return RankingResult(query=query, candidates=[], scores=[])
+        texts = _extract_ranking_texts(candidates, self.ranking_field)
+        indices, scores = await self._async_rank_batch(query, texts)
+        return _build_ranking_result(
+            query=query,
+            candidates=candidates,
+            reserve_num=self.reserve_num,
+            indices=indices,
+            scores=scores,
+        )
+
+    def rank(
+        self,
+        query: str,
+        candidates: RankerCandidates,
+    ) -> RankingResult:
+        """Rank candidates synchronously for direct raw-ranker use.
+
+        :param query: Query string.
+        :param candidates: Candidate strings or retrieved contexts.
+        :return: Ranked candidates and optional scores.
+        :raises RuntimeError: If called from a running event loop.
+        """
+        self._ensure_sync_bridge_allowed("rank")
+        return asyncio.run(self.async_rank(query, candidates))
 
 
 RANKERS = Register[RankerBase]("ranker")

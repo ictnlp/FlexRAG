@@ -6,33 +6,26 @@ import numpy as np
 
 from flexrag.common import configure, trace
 
-from .ranker_base import RANKERS
-from .remote_ranker_base import RemoteRankerBase, RemoteRankerBaseConfig
+from .ranker_base import RANKERS, RankerBaseConfig, RemoteRankerBase
 
 litellm.suppress_debug_info = True
 
 
 @configure
-class LiteLLMRankerConfig(RemoteRankerBaseConfig):
+class LiteLLMRankerConfig(RankerBaseConfig):
     """Configuration for LiteLLMRanker.
 
     :param provider: LiteLLM provider prefix, e.g. ``cohere`` or ``voyage``.
-    :type provider: Optional[str]
-    :param model_name: Provider-specific rerank model identifier without the provider prefix.
-    :type model_name: Optional[str]
+    :param model_name: Provider-specific rerank model identifier without the
+        provider prefix.
     :param api_key: API key passed to LiteLLM as ``api_key``. Defaults to None.
-    :type api_key: Optional[str]
     :param base_url: Base URL passed to LiteLLM as ``api_base``. Defaults to None.
-    :type base_url: Optional[str]
-    :param api_version: Provider API version passed through to LiteLLM. Defaults to None.
-    :type api_version: Optional[str]
+    :param api_version: Provider API version passed through to LiteLLM. Defaults
+        to None.
     :param timeout: Request timeout in seconds. Defaults to None.
-    :type timeout: Optional[float]
     :param proxy: Upstream proxy setting forwarded to LiteLLM. Defaults to None.
-    :type proxy: Optional[str]
     :param extra_kwargs: Additional provider-specific LiteLLM rerank kwargs.
         Explicit top-level config fields take precedence over conflicting keys here.
-    :type extra_kwargs: dict[str, Any]
     """
 
     provider: Optional[str] = None
@@ -47,7 +40,16 @@ class LiteLLMRankerConfig(RemoteRankerBaseConfig):
 
 @RANKERS("litellm", config_class=LiteLLMRankerConfig)
 class LiteLLMRanker(RemoteRankerBase):
-    async def _create_client(self, config: LiteLLMRankerConfig):
+    """Raw LiteLLM rerank implementation.
+
+    The class owns provider request construction and the LiteLLM rerank call.
+    Runtime policies such as managed sync/async bridging and concurrency limits
+    are provided by ``RemoteRankerRuntimeAdapter`` when this ranker is managed
+    by ``ResourceManager``.
+    """
+
+    def __init__(self, config: LiteLLMRankerConfig) -> None:
+        super().__init__(config)
         provider = (config.provider or "").strip()
         model_name = (config.model_name or "").strip()
         assert provider, "`provider` must be provided for LiteLLM rankers."
@@ -64,22 +66,23 @@ class LiteLLMRanker(RemoteRankerBase):
         request_kwargs.update(
             {key: value for key, value in explicit_kwargs.items() if value is not None}
         )
-        return {
-            "model": f"{provider}/{model_name}",
-            "request_kwargs": request_kwargs,
-        }
+        self._model = f"{provider}/{model_name}"
+        self._request_kwargs = request_kwargs
+        return
 
     @trace("ranker.litellm_rerank")
-    async def _async_rank_impl(
-        self, client, query: str, candidates: list[str]
-    ) -> tuple[np.ndarray, np.ndarray | None]:
+    async def _async_rank_batch(
+        self,
+        query: str,
+        candidates: list[str],
+    ) -> tuple[np.ndarray | None, np.ndarray | None]:
         response = await litellm.arerank(
-            model=client["model"],
+            model=self._model,
             query=query,
             documents=candidates,
             top_n=len(candidates),
             return_documents=False,
-            **client["request_kwargs"],
+            **self._request_kwargs,
         )
         scores = np.zeros(len(candidates))
         for result in response.results:

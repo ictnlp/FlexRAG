@@ -8,6 +8,7 @@ from .generator import (
     ProcessGeneratorAdapter,
     RemoteGeneratorRuntimeAdapter,
 )
+from .ranker import RankerRuntimeAdapter, RemoteRankerRuntimeAdapter
 from .scorer import ProcessScorerAdapter, ScorerRuntimeAdapter
 
 __all__ = [
@@ -16,7 +17,9 @@ __all__ = [
     "ProcessEncoderAdapter",
     "ProcessGeneratorAdapter",
     "ProcessScorerAdapter",
+    "RankerRuntimeAdapter",
     "RemoteEncoderRuntimeAdapter",
     "RemoteGeneratorRuntimeAdapter",
+    "RemoteRankerRuntimeAdapter",
     "ScorerRuntimeAdapter",
 ]

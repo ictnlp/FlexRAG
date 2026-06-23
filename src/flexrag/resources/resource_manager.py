@@ -7,6 +7,7 @@ from flexrag.common import configure
 from .handles import (
     EncoderHandle,
     GeneratorHandle,
+    RankerHandle,
     RuntimeHandleBase,
     ScorerHandle,
 )
@@ -14,6 +15,8 @@ from .registry import ResourceEntry, Resources
 from .runtime_adapters import (
     EncoderRuntimeAdapter,
     GeneratorRuntimeAdapter,
+    RankerRuntimeAdapter,
+    RemoteRankerRuntimeAdapter,
     ScorerRuntimeAdapter,
 )
 
@@ -21,6 +24,8 @@ _RUNTIME_HANDLE_TYPES: tuple[tuple[type[Any], type[RuntimeHandleBase]], ...] = (
     (EncoderRuntimeAdapter, EncoderHandle),
     (GeneratorRuntimeAdapter, GeneratorHandle),
     (ScorerRuntimeAdapter, ScorerHandle),
+    (RankerRuntimeAdapter, RankerHandle),
+    (RemoteRankerRuntimeAdapter, RankerHandle),
 )
 
 

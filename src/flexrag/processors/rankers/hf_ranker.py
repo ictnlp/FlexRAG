@@ -1,16 +1,26 @@
 import numpy as np
 
-from flexrag.common import RetrievedContext
+from flexrag.common import RetrievedContext, configure
 from flexrag.models.scorers import PairScorerProtocol
 
 from .ranker_base import RANKERS, RankerBase, RankerBaseConfig, RankingResult
 
 
-@RANKERS("hf", config_class=RankerBaseConfig)
+@configure
+class HFRankerConfig(RankerBaseConfig):
+    """Configuration for pair-scorer-backed HuggingFace rankers.
+
+    This ranker does not construct the scorer itself. Pass a scorer object when
+    constructing the ranker directly, or use ResourceManager refs when creating
+    it as a managed resource.
+    """
+
+
+@RANKERS("hf", config_class=HFRankerConfig)
 class HFRanker(RankerBase):
     """Rank candidates with an externally provided HuggingFace pair scorer."""
 
-    def __init__(self, cfg: RankerBaseConfig, scorer: PairScorerProtocol) -> None:
+    def __init__(self, cfg: HFRankerConfig, scorer: PairScorerProtocol) -> None:
         super().__init__(cfg)
         self.scorer = scorer
         return

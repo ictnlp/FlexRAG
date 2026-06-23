@@ -24,14 +24,24 @@ from flexrag.models.scorers import (
     HFLogitsScorer,
     HFLogitsScorerConfig,
 )
+from flexrag.processors.rankers import (
+    HFRanker,
+    HFRankerConfig,
+    LiteLLMRanker,
+    LiteLLMRankerConfig,
+    RankGPTRanker,
+    RankGPTRankerConfig,
+)
 
 from .registry import Resources
 from .runtime_adapters import (
     ProcessEncoderAdapter,
     ProcessGeneratorAdapter,
     ProcessScorerAdapter,
+    RankerRuntimeAdapter,
     RemoteEncoderRuntimeAdapter,
     RemoteGeneratorRuntimeAdapter,
+    RemoteRankerRuntimeAdapter,
 )
 
 Resources.register(
@@ -87,3 +97,21 @@ Resources.register(
     config_class=HFLogitsScorerConfig,
     runtime_adapter_cls=ProcessScorerAdapter,
 )(HFLogitsScorer)
+
+Resources.register(
+    "hf_ranker",
+    config_class=HFRankerConfig,
+    runtime_adapter_cls=RankerRuntimeAdapter,
+)(HFRanker)
+
+Resources.register(
+    "rank_gpt_ranker",
+    config_class=RankGPTRankerConfig,
+    runtime_adapter_cls=RankerRuntimeAdapter,
+)(RankGPTRanker)
+
+Resources.register(
+    "litellm_ranker",
+    config_class=LiteLLMRankerConfig,
+    runtime_adapter_cls=RemoteRankerRuntimeAdapter,
+)(LiteLLMRanker)

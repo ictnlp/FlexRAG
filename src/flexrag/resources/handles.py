@@ -6,6 +6,7 @@ import numpy as np
 
 if TYPE_CHECKING:
     from flexrag.common import ChatTurn, ProgressDisplay
+    from flexrag.common.dataclasses import RetrievedContext
     from flexrag.models.encoders.encoder_base import EncoderInputs
     from flexrag.models.generators.generator_base import (
         GenerationConfig,
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
         GeneratorPrefixes,
     )
     from flexrag.models.scorers.scorer_base import PairScorerInput
+    from flexrag.processors.rankers.ranker_base import RankingResult
 
 DEFAULT_INDEX_BATCH_SIZE = 512
 
@@ -175,6 +177,26 @@ class ScorerHandle(RuntimeHandleBase):
             log_interval=log_interval,
             display=display,
         )
+
+
+class RankerHandle(RuntimeHandleBase):
+    """Managed ranker runtime handle."""
+
+    required_methods = ("rank", "async_rank")
+
+    def rank(
+        self,
+        query: str,
+        candidates: list[RetrievedContext | str],
+    ) -> RankingResult:
+        return self._resource.rank(query, candidates)
+
+    async def async_rank(
+        self,
+        query: str,
+        candidates: list[RetrievedContext | str],
+    ) -> RankingResult:
+        return await self._resource.async_rank(query, candidates)
 
 
 class IndexHandle(RuntimeHandleBase):

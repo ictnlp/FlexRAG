@@ -3,6 +3,7 @@ from .handles import (
     EncoderHandle,
     GeneratorHandle,
     IndexHandle,
+    RankerHandle,
     RuntimeHandleBase,
     ScorerHandle,
 )
@@ -17,6 +18,7 @@ __all__ = [
     "EncoderHandle",
     "GeneratorHandle",
     "IndexHandle",
+    "RankerHandle",
     "ResourceEntry",
     "ResourceManager",
     "ResourceManagerConfig",

@@ -135,13 +135,23 @@ def test_builtin_resource_registrations_are_available():
         LiteLLMGeneratorConfig,
     )
     from flexrag.models.scorers import HFCrossEncoderScorer, HFCrossEncoderScorerConfig
+    from flexrag.processors.rankers import (
+        HFRanker,
+        HFRankerConfig,
+        LiteLLMRanker,
+        LiteLLMRankerConfig,
+        RankGPTRanker,
+        RankGPTRankerConfig,
+    )
     from flexrag.resources import Resources
     from flexrag.resources.runtime_adapters import (
         ProcessEncoderAdapter,
         ProcessGeneratorAdapter,
         ProcessScorerAdapter,
+        RankerRuntimeAdapter,
         RemoteEncoderRuntimeAdapter,
         RemoteGeneratorRuntimeAdapter,
+        RemoteRankerRuntimeAdapter,
     )
 
     hf_generator = Resources.resolve_name("hf_generator")
@@ -168,6 +178,21 @@ def test_builtin_resource_registrations_are_available():
     assert scorer.impl_cls is HFCrossEncoderScorer
     assert scorer.config_class is HFCrossEncoderScorerConfig
     assert scorer.runtime_adapter_cls is ProcessScorerAdapter
+
+    hf_ranker = Resources.resolve_name("hf_ranker")
+    assert hf_ranker.impl_cls is HFRanker
+    assert hf_ranker.config_class is HFRankerConfig
+    assert hf_ranker.runtime_adapter_cls is RankerRuntimeAdapter
+
+    rank_gpt_ranker = Resources.resolve_name("rank_gpt_ranker")
+    assert rank_gpt_ranker.impl_cls is RankGPTRanker
+    assert rank_gpt_ranker.config_class is RankGPTRankerConfig
+    assert rank_gpt_ranker.runtime_adapter_cls is RankerRuntimeAdapter
+
+    litellm_ranker = Resources.resolve_name("litellm_ranker")
+    assert litellm_ranker.impl_cls is LiteLLMRanker
+    assert litellm_ranker.config_class is LiteLLMRankerConfig
+    assert litellm_ranker.runtime_adapter_cls is RemoteRankerRuntimeAdapter
 
 
 def test_builtin_resource_registrations_resolve_by_config_instance():
