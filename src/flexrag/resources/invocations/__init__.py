@@ -1,16 +1,15 @@
 from .encoder import EncoderInvocation
 from .generator import BatchGeneratorInvocation, SingleSampleGeneratorInvocation
-from .ranker import DirectRankerInvocation, RemoteRankerInvocation
+from .ranker import RankerInvocation
 from .refiner import RefinerInvocation
 from .scorer import ScorerInvocation
 from .tokenizer import TokenizerInvocation
 
 __all__ = [
     "BatchGeneratorInvocation",
-    "DirectRankerInvocation",
     "EncoderInvocation",
     "RefinerInvocation",
-    "RemoteRankerInvocation",
+    "RankerInvocation",
     "ScorerInvocation",
     "SingleSampleGeneratorInvocation",
     "TokenizerInvocation",

@@ -44,11 +44,8 @@ class RankingResult:
     scores: Optional[list[float]] = None
 
 
-RankerCandidates = list[RetrievedContext | str]
-
-
 def _extract_ranking_texts(
-    candidates: RankerCandidates,
+    candidates: list[RetrievedContext | str],
     ranking_field: str | None,
 ) -> list[str]:
     texts: list[str] = []
@@ -66,7 +63,7 @@ def _extract_ranking_texts(
 
 def _build_ranking_result(
     query: str,
-    candidates: RankerCandidates,
+    candidates: list[RetrievedContext | str],
     *,
     reserve_num: int,
     indices: np.ndarray | None,
@@ -121,7 +118,9 @@ class RankerBase(ABC):
         return
 
     async def async_rank(
-        self, query: str, candidates: list[RetrievedContext | str]
+        self,
+        query: str,
+        candidates: list[RetrievedContext | str],
     ) -> RankingResult:
         """The asynchronous version of `rank`."""
         logger.warning(
@@ -169,7 +168,7 @@ class RemoteRankerBase(RankerBase):
     async def async_rank(
         self,
         query: str,
-        candidates: RankerCandidates,
+        candidates: list[RetrievedContext | str],
     ) -> RankingResult:
         """Rank candidates asynchronously for direct raw-ranker use.
 
@@ -192,7 +191,7 @@ class RemoteRankerBase(RankerBase):
     def rank(
         self,
         query: str,
-        candidates: RankerCandidates,
+        candidates: list[RetrievedContext | str],
     ) -> RankingResult:
         """Rank candidates synchronously for direct raw-ranker use.
 

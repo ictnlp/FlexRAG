@@ -11,7 +11,8 @@ from flexrag.processors.rankers import (
     RankGPTRankerConfig,
     RankingResult,
 )
-from flexrag.resources.runtime_adapters import RemoteRankerRuntimeAdapter
+from flexrag.resources.invocations import RankerInvocation
+from flexrag.resources.runtime_adapters import RemoteRuntimeAdapter
 
 QUERY = "What is the capital of China?"
 CANDIDATES = [
@@ -139,7 +140,7 @@ async def test_litellm_ranker_direct_async_rank(mock_litellm_client):
 
 @pytest.mark.asyncio
 async def test_remote_ranker_runtime_adapter_wraps_litellm_ranker(mock_litellm_client):
-    adapter = RemoteRankerRuntimeAdapter(
+    runtime = RemoteRuntimeAdapter(
         LiteLLMRankerConfig(
             provider="cohere",
             model_name="rerank-v3.5",
@@ -148,12 +149,13 @@ async def test_remote_ranker_runtime_adapter_wraps_litellm_ranker(mock_litellm_c
         impl_cls=LiteLLMRanker,
         max_concurrency=1,
     )
+    adapter = RankerInvocation(runtime)
 
     try:
         sync_result = adapter.rank(QUERY, CANDIDATES)
         async_result = await adapter.async_rank(QUERY, CANDIDATES)
     finally:
-        adapter.close()
+        runtime.close()
 
     assert_ranked_descending(sync_result)
     assert_same_result(sync_result, async_result)

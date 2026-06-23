@@ -15,10 +15,9 @@ from .handles import (
 )
 from .invocations import (
     BatchGeneratorInvocation,
-    DirectRankerInvocation,
     EncoderInvocation,
+    RankerInvocation,
     RefinerInvocation,
-    RemoteRankerInvocation,
     ScorerInvocation,
     SingleSampleGeneratorInvocation,
     TokenizerInvocation,
@@ -67,11 +66,8 @@ _COMPOSITIONS: dict[tuple[str, type[Any]], tuple[type[Any], dict[str, Any]]] = {
         ScorerInvocation,
         {"score_method": "_score_batch", "batch_size": 32},
     ),
-    ("ranker", DirectRuntimeAdapter): (DirectRankerInvocation, {}),
-    ("ranker", RemoteRuntimeAdapter): (
-        RemoteRankerInvocation,
-        {"rank_method": "_async_rank_batch"},
-    ),
+    ("ranker", DirectRuntimeAdapter): (RankerInvocation, {}),
+    ("ranker", RemoteRuntimeAdapter): (RankerInvocation, {}),
     ("refiner", DirectRuntimeAdapter): (RefinerInvocation, {}),
     ("tokenizer", DirectRuntimeAdapter): (TokenizerInvocation, {}),
 }
