@@ -1,7 +1,7 @@
 from typing import Any
 
-from flexrag.runtime.async_client import AsyncClientMixin, ConfigT
-from flexrag.runtime.process_worker_pool import ProcessWorkerPoolClient
+from flexrag.resources.runtime.async_client import AsyncClientMixin, ConfigT
+from flexrag.resources.runtime.process_worker_pool import ProcessWorkerPoolClient
 
 
 class ProcessRuntimeAdapter(AsyncClientMixin[ConfigT]):

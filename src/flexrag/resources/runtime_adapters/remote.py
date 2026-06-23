@@ -2,7 +2,7 @@ import asyncio
 import inspect
 from typing import Any
 
-from flexrag.runtime.async_client import AsyncClientMixin, ConfigT
+from flexrag.resources.runtime.async_client import AsyncClientMixin, ConfigT
 
 
 class RemoteRuntimeAdapter(AsyncClientMixin[ConfigT]):

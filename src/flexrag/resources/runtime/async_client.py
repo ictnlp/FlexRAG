@@ -4,7 +4,7 @@ import threading
 from abc import abstractmethod
 from typing import Generic, TypeVar
 
-from flexrag.runtime.event_loop import BackgroundEventLoop
+from .event_loop import BackgroundEventLoop
 
 ConfigT = TypeVar("ConfigT")
 
