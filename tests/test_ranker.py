@@ -1,96 +1,160 @@
+import numpy as np
 import pytest
 
-from flexrag.common import LOGGER_MANAGER
-from flexrag.models import LiteLLMGeneratorConfig
+from flexrag.common import ChatTurn
 from flexrag.processors.rankers import (
-    HFColBertRanker,
-    HFColBertRankerConfig,
-    HFCrossEncoderRanker,
-    HFCrossEncoderRankerConfig,
-    HFLogitsRanker,
-    HFLogitsRankerConfig,
+    HFRanker,
+    HFRankerConfig,
     LiteLLMRanker,
     LiteLLMRankerConfig,
     RankGPTRanker,
     RankGPTRankerConfig,
     RankingResult,
 )
+from flexrag.resources.runtime_adapters import RemoteRankerRuntimeAdapter
 
-logger = LOGGER_MANAGER.get_logger("tests.test_ranker")
+QUERY = "What is the capital of China?"
+CANDIDATES = [
+    "Shanghai is the largest city in China.",
+    "The capital of China is Beijing.",
+]
 
 
-class TestRanker:
-    query = "What is the capital of China?"
-    candidates = [
-        "The capital of China is Beijing.",
-        "Shanghai is the largest city in China.",
+class FakeScorer:
+    def __init__(self) -> None:
+        self.calls: list[list[tuple[str, str]]] = []
+        return
+
+    def score(self, pairs):
+        self.calls.append(pairs)
+        return np.array([0.1, 0.9])
+
+    async def async_score(self, pairs):
+        return self.score(pairs)
+
+
+class FakeGenerator:
+    def __init__(self, response: str = "2 1") -> None:
+        self.response = response
+        self.calls = []
+        return
+
+    def chat(self, messages, generation_config=None):
+        self.calls.append(messages)
+        return [[ChatTurn(role="assistant", content=self.response)]]
+
+    async def async_chat(self, messages, generation_config=None):
+        return self.chat(messages, generation_config=generation_config)
+
+    def generate(self, prefixes, generation_config=None):
+        raise NotImplementedError
+
+    async def async_generate(self, prefixes, generation_config=None):
+        raise NotImplementedError
+
+
+def assert_same_result(left: RankingResult, right: RankingResult) -> None:
+    assert left.query == right.query
+    assert left.candidates == right.candidates
+    assert left.scores == right.scores
+
+
+def assert_ranked_descending(result: RankingResult) -> None:
+    assert result.query == QUERY
+    assert sorted(result.candidates) == sorted(CANDIDATES)
+    assert result.scores is not None
+    assert result.scores == sorted(result.scores, reverse=True)
+
+
+@pytest.mark.asyncio
+async def test_hf_ranker_uses_injected_scorer_sync_and_async():
+    scorer = FakeScorer()
+    ranker = HFRanker(HFRankerConfig(), scorer=scorer)
+
+    sync_result = ranker.rank(QUERY, CANDIDATES)
+    async_result = await ranker.async_rank(QUERY, CANDIDATES)
+
+    assert sync_result.candidates == [CANDIDATES[1], CANDIDATES[0]]
+    assert sync_result.scores == [0.9, 0.1]
+    assert_same_result(sync_result, async_result)
+    assert scorer.calls == [
+        [(QUERY, CANDIDATES[0]), (QUERY, CANDIDATES[1])],
+        [(QUERY, CANDIDATES[0]), (QUERY, CANDIDATES[1])],
     ]
 
-    def valid_result(self, r1: RankingResult, r2: RankingResult) -> None:
-        for c1, c2 in zip(r1.candidates, r2.candidates):
-            assert c1 == c2
-        if r1.scores is not None:
-            for s1, s2 in zip(r1.scores, r2.scores):
-                assert s1 - s2 < 1e-4
-        return
 
-    async def run_ranker(self, ranker) -> None:
-        try:
-            r1 = ranker.rank(self.query, self.candidates)
-            r2 = await ranker.async_rank(self.query, self.candidates)
-            self.valid_result(r1, r2)
-        finally:
-            close = getattr(ranker, "close", None)
-            if callable(close):
-                close()
+@pytest.mark.asyncio
+async def test_rank_gpt_uses_injected_generator_sync_and_async():
+    generator = FakeGenerator(response="2 1")
+    ranker = RankGPTRanker(
+        RankGPTRankerConfig(window_size=2, step_size=1),
+        generator=generator,
+    )
 
-    @pytest.mark.asyncio
-    async def test_rank_litellm(self, mock_litellm_client):
-        ranker = LiteLLMRanker(
-            LiteLLMRankerConfig(
-                provider="cohere",
-                model_name="rerank-v3.5",
-                api_key="test",
-            )
+    sync_result = ranker.rank(QUERY, CANDIDATES)
+    async_result = await ranker.async_rank(QUERY, CANDIDATES)
+
+    assert sync_result.candidates == [CANDIDATES[1], CANDIDATES[0]]
+    assert sync_result.scores is None
+    assert_same_result(sync_result, async_result)
+    assert len(generator.calls) == 2
+
+
+def test_litellm_ranker_direct_sync_rank(mock_litellm_client):
+    ranker = LiteLLMRanker(
+        LiteLLMRankerConfig(
+            provider="cohere",
+            model_name="rerank-v3.5",
+            api_key="test",
         )
-        await self.run_ranker(ranker)
-        return
+    )
 
-    @pytest.mark.gpu
-    @pytest.mark.asyncio
-    async def test_rank_gpt(self, mock_litellm_client):
-        ranker = RankGPTRanker(
-            RankGPTRankerConfig(
-                generator_type="litellm",
-                litellm_config=LiteLLMGeneratorConfig(
-                    provider="openai",
-                    model_name="gpt-4o-mini",
-                ),
-            )
-        )
-        await self.run_ranker(ranker)
-        return
+    result = ranker.rank(QUERY, CANDIDATES)
+    call = mock_litellm_client["calls"]["arerank"][0]
 
-    @pytest.mark.asyncio
-    async def test_rank_hf_cross(self):
-        ranker = HFCrossEncoderRanker(
-            HFCrossEncoderRankerConfig(model_path="cross-encoder/ms-marco-MiniLM-L6-v2")
-        )
-        await self.run_ranker(ranker)
-        return
+    assert_ranked_descending(result)
+    assert call["model"] == "cohere/rerank-v3.5"
+    assert call["query"] == QUERY
+    assert call["documents"] == CANDIDATES
+    assert call["top_n"] == len(CANDIDATES)
+    assert not call["return_documents"]
+    assert call["kwargs"]["api_key"] == "test"
 
-    @pytest.mark.asyncio
-    async def test_rank_hf_seq2seq(self):
-        ranker = HFLogitsRanker(
-            HFLogitsRankerConfig(model_path="unicamp-dl/InRanker-small")
-        )
-        await self.run_ranker(ranker)
-        return
 
-    @pytest.mark.asyncio
-    async def test_rank_hf_colbert(self):
-        ranker = HFColBertRanker(
-            HFColBertRankerConfig(model_path="colbert-ir/colbertv2.0")
+@pytest.mark.asyncio
+async def test_litellm_ranker_direct_async_rank(mock_litellm_client):
+    ranker = LiteLLMRanker(
+        LiteLLMRankerConfig(
+            provider="cohere",
+            model_name="rerank-v3.5",
+            api_key="test",
         )
-        await self.run_ranker(ranker)
-        return
+    )
+
+    result = await ranker.async_rank(QUERY, CANDIDATES)
+
+    assert_ranked_descending(result)
+    assert len(mock_litellm_client["calls"]["arerank"]) == 1
+
+
+@pytest.mark.asyncio
+async def test_remote_ranker_runtime_adapter_wraps_litellm_ranker(mock_litellm_client):
+    adapter = RemoteRankerRuntimeAdapter(
+        LiteLLMRankerConfig(
+            provider="cohere",
+            model_name="rerank-v3.5",
+            api_key="test",
+        ),
+        impl_cls=LiteLLMRanker,
+        max_concurrency=1,
+    )
+
+    try:
+        sync_result = adapter.rank(QUERY, CANDIDATES)
+        async_result = await adapter.async_rank(QUERY, CANDIDATES)
+    finally:
+        adapter.close()
+
+    assert_ranked_descending(sync_result)
+    assert_same_result(sync_result, async_result)
+    assert len(mock_litellm_client["calls"]["arerank"]) == 2

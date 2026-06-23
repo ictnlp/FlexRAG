@@ -1,13 +1,21 @@
+import asyncio
 from dataclasses import dataclass
+from types import SimpleNamespace
 from typing import Any
 
 import numpy as np
 import pytest
 
 from flexrag.common import ChatMessages, ChatTurn
+from flexrag.processors.rankers import (
+    HFRankerConfig,
+    LiteLLMRankerConfig,
+    RankGPTRankerConfig,
+)
 from flexrag.resources import (
     EncoderHandle,
     GeneratorHandle,
+    RankerHandle,
     ResourceManager,
     ResourceManagerConfig,
     Resources,
@@ -394,6 +402,118 @@ def test_resource_manager_maps_generator_and_scorer_handles():
     assert isinstance(scorer, ScorerHandle)
     assert generator.generate("hello") == [["generator:hello"]]
     assert scorer.score(("q", "d")).shape == (1,)
+
+
+@pytest.mark.asyncio
+async def test_resource_manager_constructs_hf_ranker_with_scorer_ref():
+    resources = ResourceManager.load(
+        ResourceManagerConfig(
+            resources=[
+                ResourceSpec(name="scorer", config=FakeScorerConfig("scorer")),
+                ResourceSpec(
+                    name="ranker",
+                    config=HFRankerConfig(),
+                    refs={"scorer": "scorer"},
+                ),
+            ]
+        )
+    )
+
+    ranker = resources.get("ranker")
+    result = ranker.rank("query", ["first", "second", "third"])
+    async_result = await ranker.async_rank("query", ["first", "second", "third"])
+
+    assert isinstance(ranker, RankerHandle)
+    assert result.candidates == ["third", "second", "first"]
+    assert async_result.candidates == result.candidates
+
+
+def test_resource_manager_constructs_rank_gpt_ranker_with_generator_ref():
+    resources = ResourceManager.load(
+        ResourceManagerConfig(
+            resources=[
+                ResourceSpec(name="generator", config=FakeGeneratorConfig("generator")),
+                ResourceSpec(
+                    name="ranker",
+                    config=RankGPTRankerConfig(window_size=2, step_size=1),
+                    refs={"generator": "generator"},
+                ),
+            ]
+        )
+    )
+
+    ranker = resources.get("ranker")
+    result = ranker.rank("query", ["first", "second"])
+
+    assert isinstance(ranker, RankerHandle)
+    assert result.candidates == ["first", "second"]
+
+
+@pytest.mark.asyncio
+async def test_resource_manager_constructs_litellm_ranker_with_remote_runtime(
+    monkeypatch,
+):
+    import litellm
+
+    active = 0
+    max_seen = 0
+
+    async def fake_arerank(
+        *,
+        model,
+        query,
+        documents,
+        top_n,
+        return_documents,
+        **request_kwargs,
+    ):
+        nonlocal active, max_seen
+        assert model == "cohere/rerank-v3.5"
+        assert top_n == len(documents)
+        assert not return_documents
+        assert request_kwargs["api_key"] == "test"
+        active += 1
+        max_seen = max(max_seen, active)
+        await asyncio.sleep(0.01)
+        active -= 1
+        return SimpleNamespace(
+            results=[
+                SimpleNamespace(index=0, relevance_score=0.1),
+                SimpleNamespace(index=1, relevance_score=0.9),
+            ]
+        )
+
+    monkeypatch.setattr(litellm, "arerank", fake_arerank)
+    resources = ResourceManager.load(
+        ResourceManagerConfig(
+            resources=[
+                ResourceSpec(
+                    name="ranker",
+                    config=LiteLLMRankerConfig(
+                        provider="cohere",
+                        model_name="rerank-v3.5",
+                        api_key="test",
+                    ),
+                    runtime_kwargs={"max_concurrency": 2},
+                )
+            ]
+        )
+    )
+
+    try:
+        ranker = resources.get("ranker")
+        results = await asyncio.gather(
+            *[
+                ranker.async_rank(f"query-{idx}", ["first", "second"])
+                for idx in range(4)
+            ]
+        )
+    finally:
+        resources.close()
+
+    assert isinstance(ranker, RankerHandle)
+    assert all(result.candidates == ["second", "first"] for result in results)
+    assert max_seen <= 2
 
 
 def test_resource_manager_injects_refs_as_handles():
