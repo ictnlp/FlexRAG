@@ -1,5 +1,4 @@
 import re
-from dataclasses import field
 
 from flexrag.assistants import AssistantBase, AssistantResponse
 from flexrag.common import ChatMessages, configure
@@ -14,7 +13,7 @@ from flexrag.metrics import (
     Rouge,
     RougeConfig,
 )
-from flexrag.models.generators import GENERATORS, GenerationConfig, GeneratorConfig
+from flexrag.models.generators import GenerationConfig, GeneratorProtocol
 
 from ..open_qa_base import OpenQATask, OpenQATaskConfig
 from ..task_base import TASKS
@@ -104,10 +103,9 @@ Just return the letters "A", "B", or "C", with no text around it.
 class _SimpleQAMetric:
     """The evaluation metric for SimpleQA Task."""
 
-    def __init__(self, cfg: GeneratorConfig):
-        self.generator = GENERATORS.load(cfg)
+    def __init__(self, generator: GeneratorProtocol):
+        self.generator = generator
         self.gen_cfg = GenerationConfig(do_sample=False)
-        assert self.generator is not None, "Generator is not loaded."
         return
 
     def __call__(
@@ -151,20 +149,21 @@ class _SimpleQAMetric:
 
 @configure
 class SimpleQATaskConfig(OpenQATaskConfig, SimpleQADatasetConfig):
-    """Configuration for SimpleQA Task.
-
-    :param llm_judger: The configuration for the LLM judger used in evaluation.
-        If not specified, the LLM judger will not be used and the evaluation will only
-        include traditional metrics like F1 and Exact Match. Default is None.
-    :type llm_judger: GeneratorConfig
-    """
-
-    llm_judger: GeneratorConfig = field(default_factory=GeneratorConfig)
+    """Configuration for SimpleQA Task."""
 
 
 @TASKS("simple_qa", config_class=SimpleQATaskConfig)
 class SimpleQATask(OpenQATask):
     """The SimpleQA Task for open domain question answering."""
+
+    def __init__(
+        self,
+        config: SimpleQATaskConfig,
+        llm_judger: GeneratorProtocol | None = None,
+    ):
+        self.llm_judger = llm_judger
+        super().__init__(config)
+        return
 
     def load_dataset(self) -> MappingDataset[QASample]:
         return SimpleQADataset(self.config)
@@ -175,9 +174,9 @@ class SimpleQATask(OpenQATask):
             "exact_match": ExactMatch(ExactMatchConfig()),
             "rouge": Rouge(RougeConfig()),
         }
-        if self.config.llm_judger.generator_type is not None:
+        if self.llm_judger is not None:
             self.logger.info("LLM judger is enabled for evaluation.")
-            metrics["llm_judger"] = _SimpleQAMetric(self.config.llm_judger)
+            metrics["llm_judger"] = _SimpleQAMetric(self.llm_judger)
         return Evaluator(metrics)
 
     def evaluate(self, assistant: AssistantBase, sample: QASample) -> AssistantResponse:

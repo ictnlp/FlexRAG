@@ -1,5 +1,4 @@
 import re
-from dataclasses import field
 
 from flexrag.assistants import AssistantBase, AssistantResponse
 from flexrag.common import configure
@@ -15,7 +14,7 @@ from flexrag.metrics import (
     Rouge,
     RougeConfig,
 )
-from flexrag.models import GENERATORS, GenerationConfig, GeneratorConfig
+from flexrag.models.generators import GenerationConfig, GeneratorProtocol
 
 from ..contextual_qa_base import ContextualQATask, ContextualQATaskConfig
 from ..task_base import TASKS
@@ -57,10 +56,9 @@ class _LiteraryQAMetric:
 
     template = _METRIC_TEMPLATE
 
-    def __init__(self, cfg: GeneratorConfig):
-        self.generator = GENERATORS.load(cfg)
+    def __init__(self, generator: GeneratorProtocol):
+        self.generator = generator
         self.gen_cfg = GenerationConfig(do_sample=False)
-        assert self.generator is not None, "Generator is not loaded."
         return
 
     def __call__(
@@ -103,15 +101,7 @@ class _LiteraryQAMetric:
 
 @configure
 class LiteraryQATaskConfig(ContextualQATaskConfig, LiteraryQADatasetConfig):
-    """Configuration for LiteraryQA Task.
-
-    :param llm_judger: The configuration for the LLM judger used in evaluation.
-        If not specified, the LLM judger will not be used and the evaluation will only
-        include traditional metrics like F1 and Exact Match. Default is None.
-    :type llm_judger: GeneratorConfig
-    """
-
-    llm_judger: GeneratorConfig = field(default_factory=GeneratorConfig)
+    """Configuration for LiteraryQA Task."""
 
 
 @TASKS("literary_qa", config_class=LiteraryQATaskConfig)
@@ -126,6 +116,15 @@ class LiteraryQATask(ContextualQATask):
         "\n\nReturn only the final answer text, with no extra commentary."
     )
 
+    def __init__(
+        self,
+        config: LiteraryQATaskConfig,
+        llm_judger: GeneratorProtocol | None = None,
+    ):
+        self.llm_judger = llm_judger
+        super().__init__(config)
+        return
+
     def load_dataset(self) -> LiteraryQADataset:
         return LiteraryQADataset(self.config)
 
@@ -135,8 +134,8 @@ class LiteraryQATask(ContextualQATask):
             "exact_match": ExactMatch(ExactMatchConfig()),
             "rouge": Rouge(RougeConfig()),
         }
-        if self.config.llm_judger.generator_type is not None:
-            metrics["llm_judger"] = _LiteraryQAMetric(self.config.llm_judger)
+        if self.llm_judger is not None:
+            metrics["llm_judger"] = _LiteraryQAMetric(self.llm_judger)
             self.logger.info("LLM judger is included in the evaluation metrics.")
         return Evaluator(metrics)
 

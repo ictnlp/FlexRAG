@@ -1,5 +1,4 @@
 import re
-from dataclasses import field
 
 from flexrag.assistants import AssistantBase, AssistantResponse
 from flexrag.common import ChatMessages, configure
@@ -14,7 +13,7 @@ from flexrag.metrics import (
     Rouge,
     RougeConfig,
 )
-from flexrag.models.generators import GENERATORS, GenerationConfig, GeneratorConfig
+from flexrag.models.generators import GenerationConfig, GeneratorProtocol
 
 from ..open_qa_base import OpenQATask, OpenQATaskConfig
 from ..task_base import TASKS
@@ -44,10 +43,9 @@ confidence: The extracted confidence score between 0% and 100% from [response]. 
 class _BrowseCompMetric:
     """The evaluation metric for BrowseComp Task."""
 
-    def __init__(self, cfg: GeneratorConfig):
-        self.generator = GENERATORS.load(cfg)
+    def __init__(self, generator: GeneratorProtocol):
+        self.generator = generator
         self.gen_cfg = GenerationConfig(do_sample=False)
-        assert self.generator is not None, "Generator is not loaded."
         return
 
     def __call__(
@@ -82,15 +80,7 @@ class _BrowseCompMetric:
 
 @configure
 class BrowseCompTaskConfig(OpenQATaskConfig, BrowseCompDatasetConfig):
-    """Configuration for BrowseComp Task.
-
-    :param llm_judger: The configuration for the LLM judger used in evaluation.
-        If not specified, the LLM judger will not be used and the evaluation will only
-        include traditional metrics like F1 and Exact Match. Default is None.
-    :type llm_judger: GeneratorConfig
-    """
-
-    llm_judger: GeneratorConfig = field(default_factory=GeneratorConfig)
+    """Configuration for BrowseComp Task."""
 
 
 @TASKS("browsecomp", config_class=BrowseCompTaskConfig)
@@ -104,6 +94,15 @@ class BrowseCompTask(OpenQATask):
         " your answer}}"
     )
 
+    def __init__(
+        self,
+        config: BrowseCompTaskConfig,
+        llm_judger: GeneratorProtocol | None = None,
+    ):
+        self.llm_judger = llm_judger
+        super().__init__(config)
+        return
+
     def load_dataset(self) -> MappingDataset[QASample]:
         return BrowseCompDataset(self.config)
 
@@ -113,8 +112,8 @@ class BrowseCompTask(OpenQATask):
             "exact_match": ExactMatch(ExactMatchConfig()),
             "rouge": Rouge(RougeConfig()),
         }
-        if self.config.llm_judger.generator_type is not None:
-            metrics["llm_judger"] = _BrowseCompMetric(self.config.llm_judger)
+        if self.llm_judger is not None:
+            metrics["llm_judger"] = _BrowseCompMetric(self.llm_judger)
             self.logger.info("LLM judger is enabled for evaluation.")
         return Evaluator(metrics)
 

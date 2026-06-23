@@ -3,7 +3,7 @@ import re
 from flexrag.common import trace
 from flexrag.common.configure import configure
 from flexrag.common.dataclasses import ChatMessages
-from flexrag.models.generators import GENERATORS, GenerationConfig, GeneratorConfig
+from flexrag.models.generators import GenerationConfig, GeneratorProtocol
 
 from ..metrics_base import METRICS
 
@@ -93,7 +93,7 @@ Just return the letters "A", "B", or "C", with no text around it.
 
 
 @configure
-class ShortformCorrectnessConfig(GeneratorConfig):
+class ShortformCorrectnessConfig:
     """Configuration class for ShortformCorrectness metric."""
 
 
@@ -101,9 +101,13 @@ class ShortformCorrectnessConfig(GeneratorConfig):
 class ShortformCorrectness:
     """Metric to evaluate the correctness of LLM-generated answers using another LLM as a judge."""
 
-    def __init__(self, cfg: ShortformCorrectnessConfig) -> None:
+    def __init__(
+        self,
+        cfg: ShortformCorrectnessConfig,
+        generator: GeneratorProtocol,
+    ) -> None:
         self.template = TEMPLATE
-        self.model = GENERATORS.load(cfg)
+        self.model = generator
         self.gen_cfg = GenerationConfig(do_sample=False)
         return
 

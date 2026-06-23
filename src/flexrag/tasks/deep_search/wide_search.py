@@ -1,7 +1,6 @@
 import json
 import re
 import traceback
-from dataclasses import field
 from io import StringIO
 from pathlib import Path
 from typing import Any, Optional
@@ -14,7 +13,7 @@ from flexrag.common import ChatMessages, configure
 from flexrag.datasets.benchmarks import WideSearchDataset, WideSearchDatasetConfig
 from flexrag.datasets.core import MappingDataset, QASample
 from flexrag.metrics import Evaluator
-from flexrag.models.generators import GENERATORS, GenerationConfig, GeneratorConfig
+from flexrag.models.generators import GenerationConfig, GeneratorProtocol
 
 from ..open_qa_base import OpenQATask, OpenQATaskConfig
 from ..task_base import TASKS
@@ -115,10 +114,9 @@ def _parse_date(content: str):
 class _WideSearchOfficialMetric:
     """Official-style metric wrapper for WideSearch."""
 
-    def __init__(self, cfg: GeneratorConfig):
-        self.generator = GENERATORS.load(cfg)
+    def __init__(self, generator: GeneratorProtocol):
+        self.generator = generator
         self.gen_cfg = GenerationConfig(do_sample=False)
-        assert self.generator is not None, "Generator is not loaded."
         return
 
     def _chat(self, prompt: str) -> str:
@@ -564,31 +562,34 @@ class _WideSearchOfficialMetric:
 
 @configure
 class WideSearchTaskConfig(OpenQATaskConfig, WideSearchDatasetConfig):
-    """Configuration for WideSearch Task.
-
-    :param llm_judger: The configuration for the LLM judger used in official
-        WideSearch evaluation.
-    :type llm_judger: GeneratorConfig
-    """
-
-    llm_judger: GeneratorConfig = field(default_factory=GeneratorConfig)
+    """Configuration for WideSearch Task."""
 
 
 @TASKS("widesearch", "wide_search", config_class=WideSearchTaskConfig)
 class WideSearchTask(OpenQATask):
     """The WideSearch Task for broad information-seeking assistants."""
 
+    def __init__(
+        self,
+        config: WideSearchTaskConfig,
+        llm_judger: GeneratorProtocol | None = None,
+    ):
+        self.llm_judger = llm_judger
+        super().__init__(config)
+        return
+
     def load_dataset(self) -> MappingDataset[QASample]:
         return WideSearchDataset(self.config)
 
     def load_evaluator(self) -> Evaluator:
-        if self.config.llm_judger.generator_type is None:
+        if self.llm_judger is None:
             raise ValueError(
-                "WideSearch official evaluation requires `llm_judger` because "
-                "the metric uses LLM-based column/key alignment and field judging."
+                "WideSearch official evaluation requires `llm_judger` to be "
+                "passed to WideSearchTask because the metric uses LLM-based "
+                "column/key alignment and field judging."
             )
         return Evaluator(
-            {"official_score": _WideSearchOfficialMetric(self.config.llm_judger)}
+            {"official_score": _WideSearchOfficialMetric(self.llm_judger)}
         )
 
     def evaluate(self, assistant: AssistantBase, sample: QASample) -> AssistantResponse:

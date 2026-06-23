@@ -1,5 +1,4 @@
 from collections import defaultdict
-from dataclasses import field
 
 from flexrag.assistants import AssistantBase, AssistantResponse
 from flexrag.common import RetrievedContext, configure
@@ -14,7 +13,7 @@ from flexrag.metrics import (
     Rouge,
     RougeConfig,
 )
-from flexrag.models.generators import GENERATORS, GenerationConfig, GeneratorConfig
+from flexrag.models.generators import GenerationConfig, GeneratorProtocol
 
 from ..multisession_qa_base import MultiSessionQATask, MultiSessionQATaskConfig
 from ..task_base import TASKS
@@ -29,11 +28,10 @@ _METRIC_TEMPLATES = {
 
 
 class _LongMemEvalMetric:
-    def __init__(self, cfg: GeneratorConfig):
-        self.generator = GENERATORS.load(cfg)
+    def __init__(self, generator: GeneratorProtocol):
+        self.generator = generator
         self.gen_cfg = GenerationConfig(do_sample=False)
         self.default = False
-        assert self.generator is not None, "Generator is not loaded"
         return
 
     def __call__(
@@ -93,20 +91,21 @@ class _LongMemEvalMetric:
 
 @configure
 class LongMemEvalTaskConfig(MultiSessionQATaskConfig, LongMemEvalDatasetConfig):
-    """Configuration for LongMemEval Task.
-
-    :param llm_judger: The configuration for the LLM judger used in evaluation.
-        If not specified, the LLM judger will not be used and the evaluation will only
-        include traditional metrics like F1 and Exact Match. Default is None.
-    :type llm_judger: GeneratorConfig
-    """
-
-    llm_judger: GeneratorConfig = field(default_factory=GeneratorConfig)
+    """Configuration for LongMemEval Task."""
 
 
 @TASKS("longmemeval", "long_mem_eval", config_class=LongMemEvalTaskConfig)
 class LongMemEvalTask(MultiSessionQATask):
     """LongMemEval Task."""
+
+    def __init__(
+        self,
+        config: LongMemEvalTaskConfig,
+        llm_judger: GeneratorProtocol | None = None,
+    ):
+        self.llm_judger = llm_judger
+        super().__init__(config)
+        return
 
     def load_dataset(self) -> LongMemEvalDataset:
         return LongMemEvalDataset(self.config)
@@ -117,9 +116,9 @@ class LongMemEvalTask(MultiSessionQATask):
             "exact_match": ExactMatch(ExactMatchConfig()),
             "rouge": Rouge(RougeConfig()),
         }
-        if self.config.llm_judger.generator_type is not None:
+        if self.llm_judger is not None:
             self.logger.info("LLM judger is enabled for evaluation.")
-            metrics["llm_judger"] = _LongMemEvalMetric(self.config.llm_judger)
+            metrics["llm_judger"] = _LongMemEvalMetric(self.llm_judger)
         return Evaluator(metrics)
 
     def evaluate(

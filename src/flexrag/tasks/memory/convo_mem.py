@@ -1,5 +1,3 @@
-from dataclasses import field
-
 from flexrag.assistants import AssistantBase, AssistantResponse
 from flexrag.common import configure
 from flexrag.datasets.benchmarks import ConvoMemDataset, ConvoMemDatasetConfig
@@ -13,7 +11,7 @@ from flexrag.metrics import (
     Rouge,
     RougeConfig,
 )
-from flexrag.models.generators import GENERATORS, GenerationConfig, GeneratorConfig
+from flexrag.models.generators import GenerationConfig, GeneratorProtocol
 
 from ..multisession_qa_base import MultiSessionQATask, MultiSessionQATaskConfig
 from ..task_base import TASKS
@@ -28,12 +26,11 @@ _METRIC_TEMPLATES = {
 
 
 class _ConvoMemMetric:
-    def __init__(self, cfg: GeneratorConfig, subset: str):
-        self.generator = GENERATORS.load(cfg)
+    def __init__(self, generator: GeneratorProtocol, subset: str):
+        self.generator = generator
         self.gen_cfg = GenerationConfig(do_sample=False)
         self.subset = subset
         self.default = 0
-        assert self.generator is not None, "Generator is not loaded"
         return
 
     def __call__(
@@ -107,20 +104,21 @@ class _ConvoMemMetric:
 
 @configure
 class ConvoMemTaskConfig(MultiSessionQATaskConfig, ConvoMemDatasetConfig):
-    """Configuration for ConvoMem Task.
-
-    :param llm_judger: The configuration for the LLM judger used in evaluation.
-        If not specified, the LLM judger will not be used and the evaluation will only
-        include traditional metrics like F1 and Exact Match. Default is None.
-    :type llm_judger: GeneratorConfig
-    """
-
-    llm_judger: GeneratorConfig = field(default_factory=GeneratorConfig)
+    """Configuration for ConvoMem Task."""
 
 
 @TASKS("convomem", config_class=ConvoMemTaskConfig)
 class ConvoMemTask(MultiSessionQATask):
     """ConvoMem Task."""
+
+    def __init__(
+        self,
+        config: ConvoMemTaskConfig,
+        llm_judger: GeneratorProtocol | None = None,
+    ):
+        self.llm_judger = llm_judger
+        super().__init__(config)
+        return
 
     def load_dataset(self) -> ConvoMemDataset:
         return ConvoMemDataset(self.config)
@@ -131,10 +129,10 @@ class ConvoMemTask(MultiSessionQATask):
             "exact_match": ExactMatch(ExactMatchConfig()),
             "rouge": Rouge(RougeConfig()),
         }
-        if self.config.llm_judger.generator_type is not None:
+        if self.llm_judger is not None:
             self.logger.info("LLM judger is enabled for evaluation.")
             metrics["llm_judger"] = _ConvoMemMetric(
-                self.config.llm_judger, self.config.subset
+                self.llm_judger, self.config.subset
             )
         return Evaluator(metrics)
 

@@ -1,5 +1,4 @@
 import re
-from dataclasses import field
 
 from flexrag.assistants import AssistantBase, AssistantResponse
 from flexrag.common import ChatMessages, configure
@@ -14,7 +13,7 @@ from flexrag.metrics import (
     Rouge,
     RougeConfig,
 )
-from flexrag.models.generators import GENERATORS, GenerationConfig, GeneratorConfig
+from flexrag.models.generators import GenerationConfig, GeneratorProtocol
 
 from ..open_qa_base import OpenQATask, OpenQATaskConfig
 from ..task_base import TASKS
@@ -43,10 +42,9 @@ confidence: 从[response]中抽取的置信度，范围为0%到100%；如果[res
 class _BrowseCompZHMetric:
     """The evaluation metric for BrowseComp-ZH Task."""
 
-    def __init__(self, cfg: GeneratorConfig):
-        self.generator = GENERATORS.load(cfg)
+    def __init__(self, generator: GeneratorProtocol):
+        self.generator = generator
         self.gen_cfg = GenerationConfig(do_sample=False)
-        assert self.generator is not None, "Generator is not loaded."
         return
 
     def __call__(
@@ -129,14 +127,7 @@ class _BrowseCompZHMetric:
 
 @configure
 class BrowseCompZHTaskConfig(OpenQATaskConfig, BrowseCompZHDatasetConfig):
-    """Configuration for BrowseComp-ZH Task.
-
-    :param llm_judger: The configuration for the LLM judger used in evaluation.
-        If not specified, calibration-style evaluation will be disabled.
-    :type llm_judger: GeneratorConfig
-    """
-
-    llm_judger: GeneratorConfig = field(default_factory=GeneratorConfig)
+    """Configuration for BrowseComp-ZH Task."""
 
 
 @TASKS("browsecomp_zh", config_class=BrowseCompZHTaskConfig)
@@ -150,6 +141,15 @@ class BrowseCompZHTask(OpenQATask):
         "Confidence: {{请给出 0% 到 100% 之间的置信度}}"
     )
 
+    def __init__(
+        self,
+        config: BrowseCompZHTaskConfig,
+        llm_judger: GeneratorProtocol | None = None,
+    ):
+        self.llm_judger = llm_judger
+        super().__init__(config)
+        return
+
     def load_dataset(self) -> MappingDataset[QASample]:
         return BrowseCompZHDataset(self.config)
 
@@ -159,8 +159,8 @@ class BrowseCompZHTask(OpenQATask):
             "exact_match": ExactMatch(ExactMatchConfig()),
             "rouge": Rouge(RougeConfig()),
         }
-        if self.config.llm_judger.generator_type is not None:
-            metrics["llm_judger"] = _BrowseCompZHMetric(self.config.llm_judger)
+        if self.llm_judger is not None:
+            metrics["llm_judger"] = _BrowseCompZHMetric(self.llm_judger)
             self.logger.info("LLM judger is enabled for evaluation.")
         return Evaluator(metrics)
 
