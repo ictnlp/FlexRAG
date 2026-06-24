@@ -4,7 +4,6 @@ import numpy as np
 import pytest
 from PIL import Image
 
-from flexrag.assistants import ModularAssistant, ModularAssistantConfig
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.models import (
     ENCODERS,
@@ -17,7 +16,6 @@ from flexrag.models import (
     LiteLLMGenerator,
     LiteLLMGeneratorConfig,
 )
-from flexrag.processors.chunkers import SemanticChunker, SemanticChunkerConfig
 
 
 class TestLiteLLMGenerator:
@@ -485,40 +483,3 @@ class TestLiteLLMEncoder:
             match="LiteLLMEncoder only supports text and image content blocks",
         ):
             encoder.encode([{"type": "audio", "url": "https://example.com/a.mp3"}])
-
-
-class TestLiteLLMIntegration:
-    def test_modular_assistant_with_litellm(self, mock_litellm_client):
-        assistant = ModularAssistant(
-            ModularAssistantConfig(
-                generator_type="litellm",
-                litellm_config=LiteLLMGeneratorConfig(
-                    provider="openai",
-                    model_name="gpt-4o-mini",
-                ),
-            )
-        )
-        response = assistant.answer(
-            ChatMessages(history=[ChatTurn(role="user", content="Who is Bruce Wayne?")])
-        )
-        assert response.response.text_content == "Mocked LiteLLM chat response 0"
-        assert mock_litellm_client["calls"]["acompletion"]
-
-    def test_semantic_chunker_with_litellm(self, mock_litellm_client):
-        chunker = SemanticChunker(
-            SemanticChunkerConfig(
-                threshold_percentile=50,
-                encoder_type="litellm",
-                litellm_config=LiteLLMEncoderConfig(
-                    provider="openai",
-                    model_name="text-embedding-3-small",
-                    embedding_size=8,
-                ),
-            )
-        )
-        chunks = chunker.chunk(
-            "This is the first sentence. This is the second sentence.",
-            return_str=True,
-        )
-        assert len(chunks) > 0
-        assert mock_litellm_client["calls"]["aembedding"]

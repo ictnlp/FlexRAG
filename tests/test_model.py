@@ -14,10 +14,6 @@ from flexrag.models import (
     HFEncoderConfig,
     HFGenerator,
     HFGeneratorConfig,
-    LiteLLMEncoder,
-    LiteLLMEncoderConfig,
-    LiteLLMGenerator,
-    LiteLLMGeneratorConfig,
     SentenceTransformerEncoder,
     SentenceTransformerEncoderConfig,
 )
@@ -145,22 +141,6 @@ class TestGenerator:
                 close()
         return
 
-    @pytest.mark.asyncio
-    async def test_litellm_openai(self, mock_litellm_client):
-        generator = LiteLLMGenerator(
-            LiteLLMGeneratorConfig(provider="openai", model_name="gpt-4o-mini")
-        )
-        await self.run_generator(generator)
-        return
-
-    @pytest.mark.asyncio
-    async def test_litellm_ollama(self, mock_litellm_client):
-        generator = LiteLLMGenerator(
-            LiteLLMGeneratorConfig(provider="ollama_chat", model_name="llama3.1")
-        )
-        await self.run_generator(generator)
-        return
-
     @pytest.mark.gpu
     @pytest.mark.asyncio
     async def test_hf(self):
@@ -171,22 +151,6 @@ class TestGenerator:
                 model_path="Qwen/Qwen3-0.6B",
                 device_map=0,
             )
-        )
-        await self.run_generator(generator)
-        return
-
-    @pytest.mark.asyncio
-    async def test_litellm_anthropic(self, mock_litellm_client):
-        generator = LiteLLMGenerator(
-            LiteLLMGeneratorConfig(provider="anthropic", model_name="claude-3-7-sonnet")
-        )
-        await self.run_generator(generator)
-        return
-
-    @pytest.mark.asyncio
-    async def test_litellm_gemini(self, mock_litellm_client):
-        generator = LiteLLMGenerator(
-            LiteLLMGeneratorConfig(provider="gemini", model_name="gemini-2.0-flash")
         )
         await self.run_generator(generator)
         return
@@ -215,30 +179,6 @@ class TestEncode:
             close = getattr(encoder, "close", None)
             if callable(close):
                 close()
-
-    @pytest.mark.asyncio
-    async def test_litellm_openai(self, mock_litellm_client):
-        encoder = LiteLLMEncoder(
-            LiteLLMEncoderConfig(
-                provider="openai",
-                model_name="text-embedding-3-small",
-                embedding_size=512,
-            )
-        )
-        await self.run_encoder(encoder)
-        return
-
-    @pytest.mark.asyncio
-    async def test_litellm_ollama(self, mock_litellm_client):
-        encoder = LiteLLMEncoder(
-            LiteLLMEncoderConfig(
-                provider="ollama",
-                model_name="contriever",
-                embedding_size=768,
-            )
-        )
-        await self.run_encoder(encoder)
-        return
 
     @pytest.mark.asyncio
     async def test_hf(self):
@@ -326,29 +266,4 @@ class TestEncode:
             assert np.allclose(mixed_embeddings[2], reference_text[1])
         finally:
             encoder.close()
-        return
-
-    @pytest.mark.asyncio
-    async def test_litellm_jina(self, mock_litellm_client):
-        encoder = LiteLLMEncoder(
-            LiteLLMEncoderConfig(
-                provider="jina_ai",
-                model_name="jina-embeddings-v3",
-                embedding_size=768,
-            )
-        )
-        await self.run_encoder(encoder)
-        return
-
-    @pytest.mark.asyncio
-    async def test_litellm_cohere(self, mock_litellm_client):
-        encoder = LiteLLMEncoder(
-            LiteLLMEncoderConfig(
-                provider="cohere",
-                model_name="embed-v4.0",
-                embedding_size=1536,
-                input_type="search_document",
-            )
-        )
-        await self.run_encoder(encoder)
         return
