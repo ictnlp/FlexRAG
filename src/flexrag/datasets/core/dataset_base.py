@@ -150,12 +150,18 @@ class ConcatDataset(MappingDataset[ItemTypeConcat]):
         self.datasets = datasets
         return
 
-    def __getitem__(self, index: int) -> ItemTypeConcat:
+    def get_item(self, index: int) -> ItemTypeConcat:
+        original_index = index
+        if index < 0:
+            index += len(self)
+        if index < 0:
+            raise IndexError(f"Index {original_index} out of range.")
+
         for dataset in self.datasets:
             if index < len(dataset):
                 return dataset[index]
             index -= len(dataset)
-        raise IndexError(f"Index {index} out of range.")
+        raise IndexError(f"Index {original_index} out of range.")
 
     def __iter__(self) -> Iterator[ItemTypeConcat]:
         for dataset in self.datasets:
