@@ -95,7 +95,7 @@ class MultiSessionQATask(TaskBase):
                     golden_answers.append(item.answers)
                     response = self.evaluate(assistant=assistant, sample=item)
                     responses.append(response.response.text_content or "")
-                    contexts.append(response.contexts)
+                    contexts.append(response.contexts or [])
                     metadatas.append(item.meta_data)
                     f.write(
                         json_dump(
