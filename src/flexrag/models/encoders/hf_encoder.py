@@ -17,12 +17,14 @@ from .encoder_base import ENCODERS, LocalEncoderBase
 logger = LOGGER_MANAGER.get_logger("flexrag.models.hf_model")
 
 
+_HF_ENCODE_METHODS = ("cls", "mean", "mean_without_prefix", "last")
+
+
 @configure
 class HFEncoderConfig(HFModelConfig):
     """Configuration for HFEncoder.
 
     :param max_encode_length: The maximum length of the input sequence. Default is None.
-    :type max_encode_length: Optional[int]
     :param encode_method: The method to get the embedding. Default is "mean".
         Available choices:
 
@@ -31,21 +33,13 @@ class HFEncoderConfig(HFModelConfig):
         - `mean_without_prefix`: Use the mean pooling of all token representations without
           considering the prefix tokens (only for models with prefix).
         - `last`: Use the last token representation (usually used in decoder-only models).
-        - `late`: Use `Late Chunking <https://arxiv.org/abs/2409.04701>`_ to get the embeddings.
-          If this method is chosen, the input texts will be concatenated as a single document.
-          The final embeddings will be computed by mean pooling over each text chunk hiddens.
-    :type encode_method: str
     :param normalize: Whether to normalize the embedding. Default is False.
-    :type normalize: bool
     :param batch_size: Maximum direct-use batch size. This value is ignored
         when the encoder is created through Runtime or ResourceManager;
         configure the runtime or resource batch size instead.
     :param prefix: A string prefix before encoding query / passage. Default is None.
-    :type prefix: Optional[str]
     :param task: The task to use. Default is None.
-    :type task: Optional[str]
     :param other_tokenizer_kwargs: Other keyword arguments for tokenizer. Default is empty dict.
-    :type other_tokenizer_kwargs: dict
 
     For example, if you want to use the Qwen3-Embedding-0.6B model as an query encoder,
     you can use the following code:
@@ -73,13 +67,7 @@ class HFEncoderConfig(HFModelConfig):
     max_encode_length: Optional[int] = None
     encode_method: Annotated[
         str,
-        Choices(
-            "cls",
-            "mean",
-            "mean_without_prefix",
-            "last",
-            "late",
-        ),
+        Choices(*_HF_ENCODE_METHODS),
     ] = "mean"
     normalize: bool = False
     batch_size: int = 32
@@ -91,6 +79,12 @@ class HFEncoderConfig(HFModelConfig):
 @ENCODERS("hf", config_class=HFEncoderConfig)
 class HFEncoder(LocalEncoderBase):
     def __init__(self, cfg: HFEncoderConfig):
+        if cfg.encode_method not in _HF_ENCODE_METHODS:
+            available_methods = ", ".join(_HF_ENCODE_METHODS)
+            raise ValueError(
+                f"Unsupported HFEncoder encode_method '{cfg.encode_method}'. "
+                f"Available choices are: {available_methods}."
+            )
         super().__init__(batch_size=cfg.batch_size)
 
         # load model
@@ -163,10 +157,6 @@ class HFEncoder(LocalEncoderBase):
                 raise ValueError("HFEncoder text content must be a string.")
             texts.append(text)
 
-        # for late chunking
-        if self.encode_method == "late":
-            return self.contextual_encode(texts)
-
         # add prefix if needed
         if self.prefix:
             texts = [self.prefix + text for text in texts]
@@ -199,148 +189,6 @@ class HFEncoder(LocalEncoderBase):
         embeddings = self.get_embedding(output, mask)
         return embeddings
 
-    @torch.no_grad()
-    def contextual_encode(
-        self, documents: list[list[str]] | list[str], overlap_size: int = 512
-    ) -> list[np.ndarray]:
-        """Encode documents using `late chunking <http://arxiv.org/abs/2409.04701>`_ method.
-
-        :param documents: A list of input documents, each document is a list of text chunks.
-        :type documents: list[list[str]] | list[str]
-        :param overlap_size: The size of overlap between two encoding windows. Default is 512.
-            This is used to reduce the boundary effect when encoding documents longer than the
-            maximum encoding length of the model.
-        :type overlap_size: int
-        :return: The encoded embeddings for each document.
-        :rtype: list[np.ndarray]
-        """
-        if isinstance(documents[0], str):
-            documents = [documents]
-
-        # prepare input text with prefix
-        full_documents: list[str] = []
-        doc_boundaries: list[list[tuple[int, int]]] = []
-        for doc_chunks in documents:
-            full_text = ""
-            chunk_boundaries: list[tuple[int, int]] = []
-            for idx, text in enumerate(doc_chunks):
-                if idx == 0 and self.prefix:
-                    full_text += self.prefix + " " + text
-                    chunk_boundaries.append((len(self.prefix) + 1, len(full_text)))
-                elif idx == 0:
-                    full_text += text
-                    chunk_boundaries.append((0, len(full_text)))
-                else:
-                    full_text += " " + text
-                    chunk_boundaries.append(
-                        (len(full_text) - len(text) - 1, len(full_text))
-                    )
-            full_documents.append(full_text)
-            doc_boundaries.append(chunk_boundaries)
-
-        # tokenize full text
-        encoding_args = {"padding": True, "truncation": False}
-        input_dict = self.tokenizer(
-            full_documents,
-            return_offsets_mapping=True,
-            return_tensors="pt",
-            add_special_tokens=True,
-            **encoding_args,
-        ).to(self.model.device)
-
-        # prepare chunk ids
-        chunk_ids_mask: list[torch.Tensor] = []
-        for doc_idx, chunk_boundaries in enumerate(doc_boundaries):
-            chunk_ids = []
-            current_chunk_idx = 0
-            for start, end in input_dict["offset_mapping"][doc_idx].tolist():
-                if start == end == 0:
-                    chunk_ids.append(0)  # special token
-                    continue
-                while (current_chunk_idx < len(chunk_boundaries)) and (
-                    start > chunk_boundaries[current_chunk_idx][1]
-                ):
-                    current_chunk_idx += 1
-                if (
-                    (current_chunk_idx < len(chunk_boundaries))
-                    and (end >= chunk_boundaries[current_chunk_idx][0])
-                    and (start <= chunk_boundaries[current_chunk_idx][1])
-                ):
-                    chunk_ids.append(current_chunk_idx + 1)  # chunk_id starts from 1
-                else:
-                    chunk_ids.append(0)  # prefix / suffix / space tokens.
-            chunk_ids = torch.tensor(
-                chunk_ids, dtype=torch.long, device=self.model.device
-            )
-            chunk_ids_mask.append(chunk_ids)
-
-        # for jina embedding v3
-        if hasattr(self.model, "_adaptation_map") and (self.task is not None):
-            bsz = input_dict["input_ids"].size(0)
-            task_id = self.model._adaptation_map.get(self.task, None)
-            if task_id is not None:
-                input_dict["adapter_mask"] = torch.full(
-                    (bsz,), task_id, dtype=torch.int32, device=self.model.device
-                )
-
-        # divide long document into sliding windows
-        window_indices: list[tuple[int, int]] = []
-        if (self.max_encoding_length is not None) and (
-            input_dict["input_ids"].size(1) > self.max_encoding_length
-        ):
-            assert overlap_size < self.max_encoding_length, (
-                "`overlap_size` must be smaller than `max_encoding_length`"
-            )
-            for i in range(
-                0,
-                input_dict["input_ids"].size(1),
-                self.max_encoding_length - overlap_size,
-            ):
-                start = i
-                end = min(i + self.max_encoding_length, input_dict["input_ids"].size(1))
-                window_indices.append((start, end))
-        else:
-            window_indices.append((0, input_dict["input_ids"].size(1)))
-
-        # forward for hiddens with sliding window
-        hidden_states = []
-        for start, end in window_indices:
-            batch_input_ids = input_dict["input_ids"][:, start:end]
-            batch_attn_mask = input_dict["attention_mask"][:, start:end]
-            batch_input_dict = {
-                "input_ids": batch_input_ids,
-                "attention_mask": batch_attn_mask,
-            }
-            if "adapter_mask" in input_dict:
-                batch_input_dict["adapter_mask"] = input_dict["adapter_mask"]
-            outputs = self.model(**batch_input_dict)
-            if start > 0:
-                hidden_states.append(outputs.last_hidden_state[:, overlap_size:, :])
-            else:
-                hidden_states.append(outputs.last_hidden_state)
-        hidden_states = torch.cat(hidden_states, dim=1)
-
-        # mean pooling for each chunk
-        document_embeddings: list[np.ndarray] = []
-        for idx, texts in enumerate(documents):
-            embeddings = torch.zeros(
-                (len(texts) + 1, hidden_states.size(-1)),
-                device=hidden_states.device,
-                dtype=hidden_states.dtype,
-            )
-            # index_reduce_ is in beta, use index_add_ for stability.
-            embeddings.index_add_(0, chunk_ids_mask[idx], hidden_states[idx])
-            token_counts = torch.bincount(
-                chunk_ids_mask[idx], minlength=len(texts) + 1
-            )[1:]
-            embeddings = embeddings[1:] / torch.clamp(token_counts, min=1).unsqueeze(1)
-            if self.normalize:
-                embeddings = F.normalize(embeddings, dim=1)
-            embeddings = embeddings.float().cpu().numpy()
-            document_embeddings.append(embeddings)
-
-        return document_embeddings
-
     @property
     def embedding_size(self) -> int:
         return self.model.config.hidden_size
@@ -359,6 +207,7 @@ class HFEncoder(LocalEncoderBase):
         else:
             prefix_lengths = 0
         return prefix_lengths
+
 
 @configure
 class HFClipEncoderConfig(HFModelConfig):
