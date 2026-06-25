@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 from flexrag.common import configure
 
@@ -26,6 +26,8 @@ class DoclingParser(DocumentParserBase):
                 "`docling` to use DoclingParser."
             ) from error
 
+        self.generate_page_images = config.generate_page_images
+        self.generate_picture_images = config.generate_picture_images
         pdf_pipeline_options = PdfPipelineOptions(
             do_ocr=config.do_ocr,
             do_table_structure=config.do_table_structure,
@@ -40,15 +42,24 @@ class DoclingParser(DocumentParserBase):
         return
 
     def parse(self, input_file_path: str) -> Document:
-        assert os.path.exists(input_file_path)
-        document_ = self.doc_converter.convert(input_file_path).document
+        input_path = Path(input_file_path)
+        if not input_path.exists():
+            raise FileNotFoundError(input_path)
+
+        document_ = self.doc_converter.convert(input_path).document
         document = Document(
-            source_file_path=input_file_path,
+            source_file_path=str(input_path),
             text=document_.export_to_markdown(),
             title=document_.name,
         )
-        if document.pagaes.image is not None:
-            document.screenshots = [p.image.pil_image for p in document_.pages]
-        if document.pictures.image is not None:
-            document.images = [p.image.pil_image for p in document_.pictures]
+        if self.generate_page_images:
+            for page_no in sorted(document_.pages):
+                image_ref = document_.pages[page_no].image
+                if image_ref is not None and image_ref.pil_image is not None:
+                    document.screenshots.append(image_ref.pil_image)
+        if self.generate_picture_images:
+            for picture in document_.pictures:
+                image_ref = picture.image
+                if image_ref is not None and image_ref.pil_image is not None:
+                    document.images.append(image_ref.pil_image)
         return document
