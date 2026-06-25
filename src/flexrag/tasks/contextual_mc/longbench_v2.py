@@ -57,7 +57,7 @@ class LongBenchV2Task(ContextualMCTask):
     def evaluate(
         self, assistant: AssistantBase, sample: ContextualMCSample
     ) -> AssistantResponse:
-        # construct the question with retrieved contexts
+        # construct the question with provided contexts
         prompt = self.instruct.format(
             question=sample.question,
             A=sample.choices[0],

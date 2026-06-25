@@ -93,16 +93,12 @@ ContentPart: TypeAlias = (
 
 @data
 class Context:
-    """The dataclass for retrieved context.
+    """The dataclass for a context.
 
     :param context_id: The unique identifier of the context. Default: None.
-    :type context_id: Optional[str]
     :param data: The context data. Default: {}.
-    :type data: dict
-    :param source: The source of the retrieved data. Default: None.
-    :type source: Optional[str]
+    :param source: The source of the context. Default: None.
     :param meta_data: The metadata of the context. Default: {}.
-    :type meta_data: dict
     """
 
     context_id: Optional[str] = None
@@ -113,14 +109,12 @@ class Context:
 
 @data
 class RetrievedContext(Context):
-    """The dataclass for retrieved context.
+    """The dataclass for a context returned by retrieval.
 
     :param retriever: The name of the retriever. Default: None.
-    :type retriever: Optional[str]
     :param query: The query for retrieval. Default: None.
-    :type query: Optional[str]
-    :param score: The relevance score of the retrieved data. Default: None.
-    :type score: Optional[float]
+    :param score: The retrieval score assigned by the retriever. This is not
+        the golden relevance grade from qrels. Default: None.
     """
 
     retriever: Optional[str] = None
