@@ -130,11 +130,13 @@ class FramesDataset(MappingDataset[IRQASample]):
 
     def get_item(self, index: int) -> IRQASample:
         qid = self._qids[index]
+        contexts = self._resolve_contexts(qid)
         return IRQASample(
             question_id=qid,
             question=self._queries_data[qid],
             answers=self._answers_data[qid],
-            contexts=self._resolve_contexts(qid),
+            contexts=contexts,
+            qrels={ctx.context_id: 1.0 for ctx in contexts if ctx.context_id is not None},
             meta_data=self._meta_data[qid],
         )
 

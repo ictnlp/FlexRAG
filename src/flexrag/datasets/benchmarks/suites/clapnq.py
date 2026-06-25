@@ -120,11 +120,13 @@ class ClapNQDataset(MappingDataset[IRQASample]):
 
     def get_item(self, index: int) -> IRQASample:
         qid = self._qids[index]
+        doc_ids = self._doc_ids_data[qid]
         return IRQASample(
             question_id=qid,
             question=self._queries_data[qid],
             answers=self._answers_data[qid],
-            contexts=[self._context_data[ctx_id] for ctx_id in self._doc_ids_data[qid]],
+            contexts=[self._context_data[ctx_id] for ctx_id in doc_ids],
+            qrels={ctx_id: 1.0 for ctx_id in doc_ids},
             meta_data=self._meta_data[qid],
         )
 

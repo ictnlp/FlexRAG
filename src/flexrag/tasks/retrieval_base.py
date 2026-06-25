@@ -4,10 +4,15 @@ from abc import abstractmethod
 from pathlib import Path
 from typing import Optional
 
-from flexrag.common import LOGGER_MANAGER, Context, SimpleProgressLogger, configure
+from flexrag.common import (
+    LOGGER_MANAGER,
+    Context,
+    RetrievedContext,
+    SimpleProgressLogger,
+    configure,
+)
 from flexrag.common.database import json_dump
 from flexrag.datasets.benchmarks import RetrievalDatasetBase
-from flexrag.datasets.core import IRSample, RankingSample
 from flexrag.metrics import Evaluator
 from flexrag.retrievers import RetrieverBase
 
@@ -78,7 +83,8 @@ class RetrievalTask(TaskBase):
         # search and answer questions
         questions: list[str] = []
         goldens: list[list[Context]] = []
-        retrieved: list[list[Context]] = []
+        retrieved: list[list[RetrievedContext]] = []
+        evaluation_qrels: list[dict[str, float]] = []
         self.query_ids: list[str] = []
         self.qrels: dict[str, dict[str, float]] = {}
         p_logger = SimpleProgressLogger(self.logger, interval=self.config.log_interval)
@@ -86,9 +92,11 @@ class RetrievalTask(TaskBase):
             for idx, item in enumerate(self.testset):
                 qid = item.question_id or str(idx)
                 self.query_ids.append(qid)
-                self.qrels[qid] = self._build_qrels(item)
+                sample_qrels = dict(item.qrels)
+                self.qrels[qid] = sample_qrels
+                evaluation_qrels.append(sample_qrels)
                 questions.append(item.question)
-                goldens.append(item.contexts)
+                goldens.append(item.contexts or [])
                 ctxs = retriever.search(query=item.question)[0]
                 retrieved.append(ctxs)
                 f.write(
@@ -96,6 +104,7 @@ class RetrievalTask(TaskBase):
                         {
                             "question": item.question,
                             "golden_contexts": item.contexts,
+                            "qrels": item.qrels,
                             "metadata": item.meta_data,
                             "contexts": ctxs,
                         },
@@ -111,6 +120,7 @@ class RetrievalTask(TaskBase):
             questions=questions,
             retrieved_contexts=retrieved,
             golden_contexts=goldens,
+            qrels=evaluation_qrels,
             log=True,
         )
 
@@ -132,14 +142,6 @@ class RetrievalTask(TaskBase):
                 )
             )
         return
-
-    @staticmethod
-    def _build_qrels(item: IRSample | RankingSample) -> dict[str, float]:
-        qrels: dict[str, float] = {}
-        for context in item.contexts or []:
-            score = getattr(context, "score", None)
-            qrels[context.context_id] = 1.0 if score is None else float(score)
-        return qrels
 
     @abstractmethod
     def load_dataset(self) -> RetrievalDatasetBase:

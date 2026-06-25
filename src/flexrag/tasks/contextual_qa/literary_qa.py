@@ -2,7 +2,7 @@ import re
 
 from flexrag.assistants import AssistantBase, AssistantResponse
 from flexrag.common import configure
-from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
+from flexrag.common.dataclasses import ChatMessages, ChatTurn, Context
 from flexrag.datasets.benchmarks import LiteraryQADataset, LiteraryQADatasetConfig
 from flexrag.datasets.core import ContextualQASample
 from flexrag.metrics import (
@@ -66,7 +66,7 @@ class _LiteraryQAMetric:
         questions: list[str],
         responses: list[str],
         golden_responses: list[list[str]],
-        golden_contexts: list[list[RetrievedContext]],
+        golden_contexts: list[list[Context]],
     ):
         prompts = []
         for question, response, golden_response, ctx in zip(

@@ -73,7 +73,12 @@ class BrowseCompPlusDatasetConfig:
 
 @DATASETS("browsecomp_plus", config_class=BrowseCompPlusDatasetConfig)
 class BrowseCompPlusDataset(MappingDataset[IRQASample]):
-    """Dataset for the BrowseComp-Plus end-to-end RAG benchmark."""
+    """Dataset for the BrowseComp-Plus end-to-end RAG benchmark.
+
+    The ``qrels`` field uses graded relevance: ``2.0`` for gold documents that
+    are evidence documents containing the final answer, ``1.0`` for supporting
+    evidence documents, and ``0.0`` for mined hard-negative documents.
+    """
 
     def __init__(self, config: BrowseCompPlusDatasetConfig):
         if config.data_path is None:
@@ -116,6 +121,7 @@ class BrowseCompPlusDataset(MappingDataset[IRQASample]):
         self._queries_data: dict[str, str] = {}
         self._answers_data: dict[str, list[str]] = {}
         self._evidence_docs: dict[str, list[dict]] = {}
+        self._qrels_data: dict[str, dict[str, float]] = {}
         self._meta_data: dict[str, dict] = {}
         for item in raw_dataset:
             decrypted = _transform_decrypt(item, _CANARY, skip_keys={"query_id"})
@@ -123,9 +129,15 @@ class BrowseCompPlusDataset(MappingDataset[IRQASample]):
             evidence_docs = decrypted.get("evidence_docs", [])
             gold_docs = decrypted.get("gold_docs", [])
             negative_docs = decrypted.get("negative_docs", [])
+            qrels = {doc["docid"]: 1.0 for doc in evidence_docs}
+            for doc in gold_docs:
+                qrels[doc["docid"]] = 2.0
+            for doc in negative_docs:
+                qrels.setdefault(doc["docid"], 0.0)
             self._queries_data[qid] = decrypted["query"]
             self._answers_data[qid] = [decrypted["answer"]]
             self._evidence_docs[qid] = evidence_docs
+            self._qrels_data[qid] = qrels
             self._meta_data[qid] = {
                 "evidence_doc_ids": [doc["docid"] for doc in evidence_docs],
                 "gold_doc_ids": [doc["docid"] for doc in gold_docs],
@@ -161,6 +173,7 @@ class BrowseCompPlusDataset(MappingDataset[IRQASample]):
             question=self._queries_data[qid],
             answers=self._answers_data[qid],
             contexts=self._build_contexts(qid),
+            qrels=dict(self._qrels_data[qid]),
             meta_data=self._meta_data[qid],
         )
 

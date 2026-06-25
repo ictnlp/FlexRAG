@@ -144,6 +144,7 @@ class MTRAGDataset(MappingDataset[IRDialogueSample]):
             messages=query,
             golden_responses=[answer],
             contexts=ctxs,
+            qrels=dict(self._qrels_data[qid]),
         )
 
     @property

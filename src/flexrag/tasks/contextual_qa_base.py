@@ -7,7 +7,7 @@ from typing import Optional
 from flexrag.assistants import AssistantBase, AssistantResponse
 from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
 from flexrag.common.database import json_dump
-from flexrag.common.dataclasses import RetrievedContext
+from flexrag.common.dataclasses import Context
 from flexrag.datasets.core import ContextualQASample, MappingDataset
 from flexrag.metrics import Evaluator
 
@@ -63,7 +63,7 @@ class ContextualQATask(TaskBase):
         golden_answers: list[list[str]] = []
         metadatas: list[dict] = []
         responses: list[str] = []
-        contexts: list[list[RetrievedContext]] = []
+        contexts: list[list[Context]] = []
         p_logger = SimpleProgressLogger(
             self.logger, interval=self.config.log_interval, total=len(self.testset)
         )

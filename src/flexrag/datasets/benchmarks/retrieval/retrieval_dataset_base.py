@@ -21,10 +21,6 @@ class RetrievalDatasetBase(MappingDataset[IRSample | RankingSample]):
     def _get_context(
         self,
         ctx_id: str,
-        *,
-        query: str | None = None,
-        score: float | None = None,
-        retriever: str | None = None,
     ) -> Context:
         if (
             self.corpus is not None
@@ -32,21 +28,25 @@ class RetrievalDatasetBase(MappingDataset[IRSample | RankingSample]):
             and ctx_id in self.corpus.contexts
         ):
             context = self.corpus.contexts[ctx_id]
-            if query is None and score is None and retriever is None:
-                return context
-            return RetrievedContext(
-                **asdict(context),
-                query=query,
-                score=score,
-                retriever=retriever,
+            return Context(
+                context_id=context.context_id,
+                data=dict(context.data),
+                source=context.source,
+                meta_data=dict(context.meta_data),
             )
-        if query is None and score is None and retriever is None:
-            return Context(context_id=ctx_id)
+        return Context(context_id=ctx_id)
+
+    def _build_candidate(
+        self,
+        question: str,
+        candidate: dict[str, Any],
+    ) -> RetrievedContext:
+        context = self._get_context(candidate["ctx_id"])
         return RetrievedContext(
-            context_id=ctx_id,
-            query=query,
-            score=score,
-            retriever=retriever,
+            **asdict(context),
+            query=question,
+            score=candidate.get("score"),
+            retriever=candidate.get("retriever"),
         )
 
     def build_sample(
@@ -58,27 +58,20 @@ class RetrievalDatasetBase(MappingDataset[IRSample | RankingSample]):
         candidates: list[dict[str, Any]] | None = None,
         meta_data: dict | None = None,
     ) -> IRSample | RankingSample:
-        relevant_ctxs: list[RetrievedContext] = []
+        relevant_ctxs: list[Context] = []
         for ctx_id, relevance in qrels.items():
             if relevance > 0:
-                ctx = self._get_context(ctx_id, query=question, score=relevance)
-                assert isinstance(ctx, RetrievedContext)
-                relevant_ctxs.append(ctx)
+                relevant_ctxs.append(self._get_context(ctx_id))
 
         if candidates:
-            candidate_ctxs: list[Context] = []
+            candidate_ctxs: list[RetrievedContext] = []
             for candidate in candidates:
-                ctx = self._get_context(
-                    candidate["ctx_id"],
-                    query=question,
-                    score=candidate.get("score"),
-                    retriever=candidate.get("retriever"),
-                )
-                candidate_ctxs.append(ctx)
+                candidate_ctxs.append(self._build_candidate(question, candidate))
             return RankingSample(
                 question=question,
                 question_id=question_id,
                 contexts=relevant_ctxs,
+                qrels=dict(qrels),
                 candidates=candidate_ctxs,
                 meta_data=meta_data,
             )
@@ -87,5 +80,6 @@ class RetrievalDatasetBase(MappingDataset[IRSample | RankingSample]):
             question=question,
             question_id=question_id,
             contexts=relevant_ctxs,
+            qrels=dict(qrels),
             meta_data=meta_data,
         )

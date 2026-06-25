@@ -7,7 +7,7 @@ from typing import Optional
 from flexrag.assistants import AssistantBase, AssistantResponse
 from flexrag.common import (
     LOGGER_MANAGER,
-    RetrievedContext,
+    Context,
     SimpleProgressLogger,
     configure,
 )
@@ -66,7 +66,7 @@ class ContextualMCTask(TaskBase):
         questions: list[str] = []
         golden_answers: list[list[str]] = []
         responses: list[str] = []
-        contexts: list[list[RetrievedContext]] = []
+        contexts: list[list[Context]] = []
         p_logger = SimpleProgressLogger(
             self.logger, interval=self.config.log_interval, total=len(self.testset)
         )
@@ -76,7 +76,7 @@ class ContextualMCTask(TaskBase):
                 golden_answers.append(item.answers)
                 response = self.evaluate(assistant=assistant, sample=item)
                 responses.append(response.response.text_content)
-                contexts.append(response.contexts)
+                contexts.append(item.contexts)
                 f.write(
                     json_dump(
                         {

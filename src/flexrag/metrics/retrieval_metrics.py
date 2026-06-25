@@ -79,15 +79,14 @@ class _RetrievalMetrics:
     def __init__(
         self,
         retrieved_contexts: list[list[RetrievedContext | str]],
-        golden_contexts: list[list[Context | str]],
+        qrels: list[dict[str, float]],
         k_values: list[int],
         measure: RetrievalMeasure,
     ) -> None:
         self.retrieved_contexts = retrieved_contexts
-        self.golden_contexts = golden_contexts
+        self.qrels = qrels
         self.k_values = k_values
         self.measure = measure
-        self.ctx_ids: dict[str, str] = {}
         self.measure_specs = self._get_measure_specs()
         return
 
@@ -95,10 +94,10 @@ class _RetrievalMetrics:
         scores = {measure_str: [] for measure_str, _ in self.measure_specs}
         details: dict[str, dict[str, float]] = {}
 
-        for n, (gctxs, rctxs) in enumerate(
-            zip(self.golden_contexts, self.retrieved_contexts)
+        for n, (query_qrels, rctxs) in enumerate(
+            zip(self.qrels, self.retrieved_contexts)
         ):
-            query_scores = self._evaluate_query(gctxs, rctxs)
+            query_scores = self._evaluate_query(query_qrels, rctxs)
             for measure_str, score in query_scores.items():
                 scores[measure_str].append(score)
             details[str(n)] = query_scores
@@ -110,13 +109,10 @@ class _RetrievalMetrics:
 
     def _evaluate_query(
         self,
-        golden_contexts: list[Context | str],
+        qrels: dict[str, float],
         retrieved_contexts: list[RetrievedContext | str],
     ) -> dict[str, float]:
-        qrels: dict[str, float] = {}
         retrieved: dict[str, tuple[float, int]] = {}
-        for ctx in golden_contexts:
-            qrels[self._get_context_id(ctx)] = self._get_context_relevance(ctx)
         for order, ctx in enumerate(retrieved_contexts):
             ctx_id = self._get_context_id(ctx)
             retrieved[ctx_id] = (self._get_retrieval_score(ctx), order)
@@ -154,13 +150,11 @@ class _RetrievalMetrics:
             query_scores[measure_str] = score
         return query_scores
 
-    def _get_context_id(self, ctx: Context | str) -> str:
+    def _get_context_id(self, ctx: RetrievedContext | str) -> str:
         if isinstance(ctx, str):
-            ctx_id = self.ctx_ids.get(ctx)
-            if ctx_id is None:
-                ctx_id = str(len(self.ctx_ids))
-                self.ctx_ids[ctx] = ctx_id
-            return ctx_id
+            return ctx
+        if ctx.context_id is None:
+            raise ValueError("Retrieved contexts must have a context_id.")
         return str(ctx.context_id)
 
     def _get_measure_specs(self) -> list[tuple[str, int | None]]:
@@ -187,15 +181,6 @@ class _RetrievalMetrics:
                 return [("MRR", None)]
             case _:
                 raise ValueError(f"Invalid measure: {self.measure}")
-
-    @staticmethod
-    def _get_context_relevance(ctx: Context | str) -> float:
-        if isinstance(ctx, str):
-            return 1.0
-        relevance = ctx.meta_data.get("score", 1.0)
-        if relevance is None:
-            return 1.0
-        return float(relevance)
 
     @staticmethod
     def _get_retrieval_score(ctx: RetrievedContext | str) -> float:
@@ -264,12 +249,12 @@ class RetrievalRecall:
     @trace("metrics.retrieval_recall")
     def __call__(
         self,
-        retrieved_contexts: list[list[RetrievedContext]] = None,
-        golden_contexts: list[list[Context]] = None,
+        retrieved_contexts: list[list[RetrievedContext | str]],
+        qrels: list[dict[str, float]],
     ) -> tuple[dict[str, float], dict]:
         return _RetrievalMetrics(
             retrieved_contexts=retrieved_contexts,
-            golden_contexts=golden_contexts,
+            qrels=qrels,
             k_values=self.k_values,
             measure="recall",
         ).evaluate()
@@ -298,12 +283,12 @@ class RetrievalPrecision:
     @trace("metrics.retrieval_precision")
     def __call__(
         self,
-        retrieved_contexts: list[list[RetrievedContext]] = None,
-        golden_contexts: list[list[Context]] = None,
+        retrieved_contexts: list[list[RetrievedContext | str]],
+        qrels: list[dict[str, float]],
     ) -> tuple[dict[str, float], dict]:
         return _RetrievalMetrics(
             retrieved_contexts=retrieved_contexts,
-            golden_contexts=golden_contexts,
+            qrels=qrels,
             k_values=self.k_values,
             measure="precision",
         ).evaluate()
@@ -332,12 +317,12 @@ class RetrievalMAP:
     @trace("metrics.retrieval_map")
     def __call__(
         self,
-        retrieved_contexts: list[list[RetrievedContext]] = None,
-        golden_contexts: list[list[Context]] = None,
+        retrieved_contexts: list[list[RetrievedContext | str]],
+        qrels: list[dict[str, float]],
     ) -> tuple[dict[str, float], dict]:
         return _RetrievalMetrics(
             retrieved_contexts=retrieved_contexts,
-            golden_contexts=golden_contexts,
+            qrels=qrels,
             k_values=self.k_values,
             measure="map",
         ).evaluate()
@@ -366,12 +351,12 @@ class RetrievalNDCG:
     @trace("metrics.retrieval_ndcg")
     def __call__(
         self,
-        retrieved_contexts: list[list[RetrievedContext]] = None,
-        golden_contexts: list[list[Context]] = None,
+        retrieved_contexts: list[list[RetrievedContext | str]],
+        qrels: list[dict[str, float]],
     ) -> tuple[dict[str, float], dict]:
         return _RetrievalMetrics(
             retrieved_contexts=retrieved_contexts,
-            golden_contexts=golden_contexts,
+            qrels=qrels,
             k_values=self.k_values,
             measure="ndcg",
         ).evaluate()
@@ -384,12 +369,12 @@ class RetrievalMRR:
     @trace("metrics.retrieval_mrr")
     def __call__(
         self,
-        retrieved_contexts: list[list[RetrievedContext]] = None,
-        golden_contexts: list[list[Context]] = None,
+        retrieved_contexts: list[list[RetrievedContext | str]],
+        qrels: list[dict[str, float]],
     ) -> tuple[dict[str, float], dict]:
         return _RetrievalMetrics(
             retrieved_contexts=retrieved_contexts,
-            golden_contexts=golden_contexts,
+            qrels=qrels,
             k_values=[],
             measure="mrr",
         ).evaluate()

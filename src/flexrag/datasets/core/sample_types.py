@@ -1,50 +1,46 @@
 from dataclasses import field
 from typing import Optional
 
-from flexrag.common import ChatMessages, ChatTurn, Context, data
+from flexrag.common import ChatMessages, ChatTurn, Context, RetrievedContext, data
 
 
 @data(kw_only=True)
 class IRSample:
     """The dataclass for Information Retrieval evaluation. The IRSample does
-    not have the candidates to be ranked, the contexts should be retrieved from
-    the whole corpus.
+    not have candidates to be ranked. Its ``contexts`` are optional materialized
+    golden contexts and are not retrieval inputs; ``qrels`` is the authoritative
+    relevance mapping for evaluation.
 
     :param question: The question for evaluation. Required.
-    :type question: str
     :param question_id: The unique identifier for the question. Default: None.
-    :type question_id: Optional[str]
-    :param contexts: The contexts related to the question. Default: None.
-    :type contexts: Optional[list[Context]]
+    :param contexts: Materialized golden contexts related to the question.
+        Default: None.
+    :param qrels: Mapping from context IDs to their relevance grades for this
+        question. Defaults to an empty mapping.
     :param meta_data: The metadata of the evaluation data. Default: None.
-    :type meta_data: Optional[dict]
     """
 
     question: str
     question_id: Optional[str] = None
     contexts: Optional[list[Context]] = None
+    qrels: dict[str, float] = field(default_factory=dict)
     meta_data: Optional[dict] = None
 
 
 @data(kw_only=True)
 class RankingSample(IRSample):
     """The dataclass for Passage / Document Ranking evaluation. Different from
-    IRSample, RankingSample has a list of candidate contexts to be ranked, and
-    the candidates are also included in the contexts field.
+    IRSample, RankingSample has a list of retrieved candidate contexts to be
+    ranked. The ``contexts`` field still contains only golden contexts.
 
     :param question: The question for evaluation. Required.
-    :type question: str
-    :param candidates: The candidate contexts to be ranked. Required.
-    :type candidates: list[Context]
+    :param candidates: Retrieved candidate contexts to be ranked. Required.
     :param question_id: The unique identifier for the question. Default: None.
-    :type question_id: Optional[str]
     :param contexts: The contexts related to the question. Default: None.
-    :type contexts: Optional[list[Context]]
     :param meta_data: The metadata of the evaluation data. Default: None.
-    :type meta_data: Optional[dict]
     """
 
-    candidates: list[Context]
+    candidates: list[RetrievedContext]
 
 
 @data(kw_only=True)
@@ -52,15 +48,10 @@ class MultipleChoiceSample:
     """The dataclass for Multiple Choice evaluation.
 
     :param question: The question for evaluation. Required.
-    :type question: str
     :param question_id: The unique identifier for the question. Default: None.
-    :type question_id: Optional[str]
     :param choices: The list of answer choices. Required.
-    :type choices: list[str]
     :param meta_data: The metadata of the evaluation data. Default: None.
-    :type meta_data: Optional[dict]
     :param answers: The golden answers for the question. Default: None.
-    :type answers: Optional[list[int]]
     """
 
     question: str
@@ -75,17 +66,11 @@ class ContextualMCSample(MultipleChoiceSample):
     """The dataclass for Contextualized Multiple Choice evaluation data.
 
     :param question: The question for evaluation. Required.
-    :type question: str
     :param question_id: The unique identifier for the question. Default: None.
-    :type question_id: Optional[str]
     :param choices: The list of answer choices. Required.
-    :type choices: list[str]
     :param meta_data: The metadata of the evaluation data. Default: None.
-    :type meta_data: Optional[dict]
     :param answers: The golden answers for the question. Default: None.
-    :type answers: Optional[list[int]]
     :param contexts: The contexts related to the question. Default: [].
-    :type contexts: list[Context]
     """
 
     contexts: list[Context] = field(default_factory=list)
@@ -100,17 +85,11 @@ class IRMCSample(MultipleChoiceSample, IRSample):
     and RAG tasks.
 
     :param question: The question for evaluation. Required.
-    :type question: str
     :param question_id: The unique identifier for the question. Default: None.
-    :type question_id: Optional[str]
     :param choices: The list of answer choices. Required.
-    :type choices: list[str]
     :param meta_data: The metadata of the evaluation data. Default: None.
-    :type meta_data: Optional[dict]
     :param answers: The golden answers for the question. Default: None.
-    :type answers: Optional[list[int]]
     :param contexts: The golden contexts related to the question. Default: [].
-    :type contexts: list[Context]
     """
 
 
@@ -119,13 +98,9 @@ class QASample:
     """The dataclass for QA evaluation.
 
     :param question: The question for evaluation. Required.
-    :type question: str
     :param question_id: The unique identifier for the question. Default: None.
-    :type question_id: Optional[str]
     :param meta_data: The metadata of the evaluation data. Default: None.
-    :type meta_data: Optional[dict]
     :param answers: The golden answers for the question. Default: None.
-    :type answers: Optional[list[str]]
     """
 
     question: str
@@ -139,15 +114,10 @@ class ContextualQASample(QASample):
     """The dataclass for Contextualized QA evaluation data.
 
     :param question: The question for evaluation. Required.
-    :type question: str
     :param question_id: The unique identifier for the question. Default: None.
-    :type question_id: Optional[str]
     :param meta_data: The metadata of the evaluation data. Default: None.
-    :type meta_data: Optional[dict]
     :param answers: The golden answers for the question. Default: None.
-    :type answers: Optional[list[str]]
     :param contexts: The contexts related to the question. Default: [].
-    :type contexts: list[Context]
     """
 
     contexts: list[Context] = field(default_factory=list)
@@ -162,15 +132,10 @@ class IRQASample(QASample, IRSample):
     and RAG tasks.
 
     :param question: The question for evaluation. Required.
-    :type question: str
     :param question_id: The unique identifier for the question. Default: None.
-    :type question_id: Optional[str]
     :param meta_data: The metadata of the evaluation data. Default: None.
-    :type meta_data: Optional[dict]
     :param answers: The golden answers for the question. Default: None.
-    :type answers: Optional[list[str]]
     :param contexts: The golden contexts related to the question. Default: [].
-    :type contexts: list[Context]
     """
 
 
@@ -179,18 +144,12 @@ class MultiSessionQASample(QASample):
     """The dataclass for Multi-Session QA evaluation data.
 
     :param question: The question for evaluation. Required.
-    :type question: str
     :param question_id: The unique identifier for the question. Default: None.
-    :type question_id: Optional[str]
     :param answers: The golden answers for the question. Default: None.
-    :type answers: Optional[list[str]]
     :param sessions: A list of completed conversation sessions. Default: [].
-    :type sessions: list[ChatMessages]
     :param sessions_id: The unique identifier for the conversation sessions.
         Default: None.
-    :type sessions_id: Optional[str]
     :param meta_data: The metadata of the evaluation data. Default: None.
-    :type meta_data: Optional[dict]
     """
 
     sessions: list[ChatMessages] = field(default_factory=list)
@@ -202,13 +161,9 @@ class DialogueSample:
     """The dataclass for Dialogue evaluation.
 
     :param dialogue_id: The unique identifier for the dialogue. Default: None.
-    :type dialogue_id: Optional[str]
     :param messages: The history messages of the dialogue. Required.
-    :type messages: ChatMessages
     :param golden_responses: The golden responses for the dialogue. Default: None.
-    :type golden_responses: Optional[list[ChatTurn]]
     :param meta_data: The metadata of the evaluation data. Default: None.
-    :type meta_data: Optional[dict]
     """
 
     messages: ChatMessages
@@ -222,15 +177,10 @@ class ContextualDialogueSample(DialogueSample):
     """The dataclass for Contextualized Dialogue evaluation data.
 
     :param dialogue_id: The unique identifier for the dialogue. Default: None.
-    :type dialogue_id: Optional[str]
     :param messages: The history messages of the dialogue. Required.
-    :type messages: ChatMessages
     :param golden_responses: The golden responses for the dialogue. Default: None.
-    :type golden_responses: Optional[list[ChatTurn]]
     :param contexts: The contexts related to the dialogue. Default: [].
-    :type contexts: list[Context]
     :param meta_data: The metadata of the evaluation data. Default: None.
-    :type meta_data: Optional[dict]
     """
 
     contexts: list[Context] = field(default_factory=list)
@@ -244,15 +194,13 @@ class IRDialogueSample(DialogueSample):
     as input. The ContextualDialogueSample can be used for RAG tasks.
 
     :param dialogue_id: The unique identifier for the dialogue. Default: None.
-    :type dialogue_id: Optional[str]
     :param messages: The history messages of the dialogue. Required.
-    :type messages: ChatMessages
     :param golden_responses: The golden responses for the dialogue. Default: None.
-    :type golden_responses: Optional[list[ChatTurn]]
     :param contexts: The golden contexts related to the dialogue. Default: [].
-    :type contexts: list[Context]
+    :param qrels: Mapping from context IDs to their relevance grades for this
+        dialogue. Defaults to an empty mapping.
     :param meta_data: The metadata of the evaluation data. Default: None.
-    :type meta_data: Optional[dict]
     """
 
     contexts: list[Context] = field(default_factory=list)
+    qrels: dict[str, float] = field(default_factory=dict)

@@ -298,6 +298,7 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
                 choices=choices,
                 answers=answers,
                 contexts=contexts,
+                qrels=dict(self._qrels_data[qid]),
                 meta_data=self._meta_data[qid],
             )
         # prepare sample for dialogue task
@@ -317,10 +318,11 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
             else:
                 responses = []
             sample = IRDialogueSample(
-                question_id=qid,
+                dialogue_id=qid,
                 messages=messages,
                 golden_responses=responses,
                 contexts=contexts,
+                qrels=dict(self._qrels_data[qid]),
                 meta_data=self._meta_data[qid],
             )
         # prepare sample for other tasks
@@ -331,6 +333,7 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
                 question=self._queries_data[qid],
                 answers=answers,
                 contexts=contexts,
+                qrels=dict(self._qrels_data[qid]),
                 meta_data=self._meta_data[qid],
             )
         return sample
