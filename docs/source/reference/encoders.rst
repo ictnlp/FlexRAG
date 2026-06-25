@@ -82,6 +82,17 @@ Oneline Encoders
     :exclude-members: async_encode, encode
 
 
+.. TwelveLabs Encoders
+.. autoclass:: flexrag.models.TwelveLabsEncoderConfig
+    :members:
+    :inherited-members:
+
+.. autoclass:: flexrag.models.TwelveLabsEncoder
+    :members:
+    :show-inheritance:
+    :exclude-members: async_encode, encode
+
+
 .. OpenAI Encoders
 .. autoclass:: flexrag.models.OpenAIEncoderConfig
     :members:

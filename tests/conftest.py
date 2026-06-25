@@ -359,6 +359,47 @@ def mock_anthropic_client(mocker):
 
 
 @pytest.fixture
+def mock_twelvelabs_client(mocker):
+    """Mock TwelveLabs client for testing TwelveLabsEncoder and parser."""
+
+    def make_embedding_response(text: str):
+        # Deterministic 512-dim Marengo-style embedding based on the text.
+        rng = np.random.default_rng(hash(text) % 2**32)
+        segment = mocker.MagicMock()
+        segment.float_ = rng.random(512).tolist()
+        response = mocker.MagicMock()
+        response.text_embedding.segments = [segment]
+        return response
+
+    def mock_embed_create(model_name, text, **kwargs):
+        return make_embedding_response(text)
+
+    async def mock_async_embed_create(model_name, text, **kwargs):
+        return make_embedding_response(text)
+
+    def mock_analyze(model_name, video, prompt, **kwargs):
+        response = mocker.MagicMock()
+        response.data = f"Mocked Pegasus analysis for model {model_name}."
+        return response
+
+    # Sync client (used by the encoder and the video parser)
+    mock_client = mocker.MagicMock()
+    mock_client.embed.create = mock_embed_create
+    mock_client.analyze = mock_analyze
+
+    # Async client (used by TwelveLabsEncoder.async_encode)
+    mock_async_client = mocker.MagicMock()
+    mock_async_client.embed.create = mock_async_embed_create
+
+    mock_twelvelabs_module = mocker.MagicMock()
+    mock_twelvelabs_module.TwelveLabs.return_value = mock_client
+    mock_twelvelabs_module.AsyncTwelveLabs.return_value = mock_async_client
+
+    mocker.patch.dict("sys.modules", {"twelvelabs": mock_twelvelabs_module})
+    return {"sync": mock_client, "async": mock_async_client}
+
+
+@pytest.fixture
 def mock_es_client(mocker):
     client_state = {
         "indexes": {},

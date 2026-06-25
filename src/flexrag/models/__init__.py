@@ -37,6 +37,7 @@ from .sentence_transformers_model import (
     SentenceTransformerEncoder,
     SentenceTransformerEncoderConfig,
 )
+from .twelvelabs_model import TwelveLabsEncoder, TwelveLabsEncoderConfig
 from .vllm_model import VLLMGenerator, VLLMGeneratorConfig
 
 GeneratorConfig = GENERATORS.make_config(config_name="GeneratorConfig")
@@ -76,6 +77,8 @@ __all__ = [
     "CohereEncoderConfig",
     "SentenceTransformerEncoder",
     "SentenceTransformerEncoderConfig",
+    "TwelveLabsEncoder",
+    "TwelveLabsEncoderConfig",
     "GENERATORS",
     "ENCODERS",
 ]
