@@ -44,6 +44,12 @@ class CharChunker(ChunkerBase):
     """CharChunker splits text into chunks with fixed length of characters."""
 
     def __init__(self, cfg: CharChunkerConfig) -> None:
+        if cfg.max_chars <= 0:
+            raise ValueError("max_chars must be greater than 0.")
+        if cfg.overlap < 0:
+            raise ValueError("overlap must be greater than or equal to 0.")
+        if cfg.overlap >= cfg.max_chars:
+            raise ValueError("overlap must be smaller than max_chars.")
         self.chunk_size = cfg.max_chars
         self.overlap = cfg.overlap
         return
@@ -54,7 +60,7 @@ class CharChunker(ChunkerBase):
             chunks.append(
                 Chunk(
                     text=text[i : i + self.chunk_size],
-                    start=1,
+                    start=i,
                     end=min(len(text), i + self.chunk_size),
                 )
             )
