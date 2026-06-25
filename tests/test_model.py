@@ -29,6 +29,8 @@ from flexrag.models import (
     OpenAIGeneratorConfig,
     SentenceTransformerEncoder,
     SentenceTransformerEncoderConfig,
+    TwelveLabsEncoder,
+    TwelveLabsEncoderConfig,
     VLLMGenerator,
     VLLMGeneratorConfig,
 )
@@ -255,5 +257,14 @@ class TestEncode:
     @pytest.mark.asyncio
     async def test_cohere(self, mock_cohere_client):
         encoder = CohereEncoder(CohereEncoderConfig(model="embed-v4.0", api_key="test"))
+        await self.run_encoder(encoder)
+        return
+
+    @pytest.mark.asyncio
+    async def test_twelvelabs(self, mock_twelvelabs_client):
+        encoder = TwelveLabsEncoder(
+            TwelveLabsEncoderConfig(model="marengo3.0", api_key="test")
+        )
+        assert encoder.embedding_size == 512
         await self.run_encoder(encoder)
         return

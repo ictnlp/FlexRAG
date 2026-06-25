@@ -23,3 +23,12 @@ This module provides a set of classes and functions for parsing a formated docum
     :members:
     :show-inheritance:
     :exclude-members: parse
+
+.. autoclass:: flexrag.document_parser.TwelveLabsVideoParserConfig
+    :members:
+    :inherited-members:
+
+.. autoclass:: flexrag.document_parser.TwelveLabsVideoParser
+    :members:
+    :show-inheritance:
+    :exclude-members: parse

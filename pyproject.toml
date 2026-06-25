@@ -49,6 +49,7 @@ dependencies = [
     "accelerate",
     "mixedbread",
     "voyageai",
+    "twelvelabs>=1.2.8",
     # databases
     "lmdb",
     "msgpack",
