@@ -64,7 +64,7 @@ class ContextualMCTask(TaskBase):
         """Run the Contextual Multiple Choice task."""
         # search and answer questions
         questions: list[str] = []
-        golden_answers: list[list[str]] = []
+        golden_answers: list[list[int]] = []
         responses: list[str] = []
         contexts: list[list[Context]] = []
         p_logger = SimpleProgressLogger(
@@ -75,7 +75,7 @@ class ContextualMCTask(TaskBase):
                 questions.append(item.question)
                 golden_answers.append(item.answers)
                 response = self.evaluate(assistant=assistant, sample=item)
-                responses.append(response.response.text_content)
+                responses.append(response.response.text_content or "")
                 contexts.append(item.contexts)
                 f.write(
                     json_dump(
