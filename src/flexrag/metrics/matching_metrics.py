@@ -1,9 +1,8 @@
 from abc import abstractmethod
 from collections import Counter
-from dataclasses import field
 
 from flexrag.common import configure, trace
-from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
+from flexrag.models.tokenizer import TokenizerProtocol
 from flexrag.processors.text_processors import AnswerSimplifier
 
 from .metrics_base import METRICS
@@ -100,14 +99,8 @@ def f1_recall_precision(
 class F1RecallPrecisionConfig(MatchingMetricsConfig):
     """Configuration class for F1RecallPrecision metric.
 
-    :param tokenizer_config: The tokenizer used for splitting the answer into tokens.
-        Defaults to a space tokenizer.
-    :type tokenizer_config: TokenizerConfig
+    This metric reuses the matching metric normalization options.
     """
-
-    tokenizer_config: TokenizerConfig = field(
-        default_factory=lambda: TokenizerConfig(tokenizer_type="space")
-    )
 
 
 F1Config = F1RecallPrecisionConfig
@@ -121,9 +114,9 @@ class F1(MatchingMetrics):
 
     name = "generation_f1"
 
-    def __init__(self, cfg: F1Config) -> None:
+    def __init__(self, cfg: F1Config, tokenizer: TokenizerProtocol) -> None:
         super().__init__(cfg)
-        self.tokenizer = TOKENIZERS.load(cfg.tokenizer_config)
+        self.tokenizer = tokenizer
         return
 
     def compute_item(self, golds: list[str], response: str) -> float:
@@ -140,9 +133,9 @@ class Recall(MatchingMetrics):
 
     name = "generation_recall"
 
-    def __init__(self, cfg: RecallConfig) -> None:
+    def __init__(self, cfg: RecallConfig, tokenizer: TokenizerProtocol) -> None:
         super().__init__(cfg)
-        self.tokenizer = TOKENIZERS.load(cfg.tokenizer_config)
+        self.tokenizer = tokenizer
         return
 
     def compute_item(self, golds: list[str], response: str) -> float:
@@ -159,9 +152,9 @@ class Precision(MatchingMetrics):
 
     name = "generation_precision"
 
-    def __init__(self, cfg: PrecisionConfig) -> None:
+    def __init__(self, cfg: PrecisionConfig, tokenizer: TokenizerProtocol) -> None:
         super().__init__(cfg)
-        self.tokenizer = TOKENIZERS.load(cfg.tokenizer_config)
+        self.tokenizer = tokenizer
         return
 
     def compute_item(self, golds: list[str], response: str) -> float:

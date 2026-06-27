@@ -1,4 +1,3 @@
-from dataclasses import field
 from itertools import zip_longest
 from typing import Annotated
 
@@ -6,7 +5,7 @@ import sacrebleu
 from rouge_score import rouge_scorer
 
 from flexrag.common import Choices, configure, trace
-from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
+from flexrag.models.tokenizer import TokenizerProtocol
 
 from .metrics_base import METRICS
 
@@ -101,15 +100,7 @@ class RougeConfig:
     """Configuration for ``Rouge`` metric.
     The computation of Rouge score is based on `rouge-score
     <https://github.com/google-research/google-research/tree/master/rouge>`_.
-
-    :param tokenizer_config: The tokenizer used for splitting the answer into tokens.
-        Defaults to a space tokenizer.
-    :type tokenizer_config: TokenizerConfig
     """
-
-    tokenizer_config: TokenizerConfig = field(
-        default_factory=lambda: TokenizerConfig(tokenizer_type="space")
-    )
 
 
 @METRICS("generation_rouge", config_class=RougeConfig)
@@ -120,8 +111,8 @@ class Rouge:
     This metric returns the average F1 scores for Rouge-1, Rouge-2, and Rouge-L.
     """
 
-    def __init__(self, cfg: RougeConfig) -> None:
-        self.tokenizer = TOKENIZERS.load(cfg.tokenizer_config)
+    def __init__(self, cfg: RougeConfig, tokenizer: TokenizerProtocol) -> None:
+        self.tokenizer = tokenizer
         self.scorer = rouge_scorer.RougeScorer(
             ["rouge1", "rouge2", "rougeL"],
             tokenizer=self.tokenizer,
