@@ -38,6 +38,22 @@ from flexrag.models.tokenizer import (
     TikTokenTokenizer,
     TikTokenTokenizerConfig,
 )
+from flexrag.processors.chunkers import (
+    CharChunker,
+    CharChunkerConfig,
+    DenseXChunker,
+    DenseXChunkerConfig,
+    LumberChunker,
+    LumberChunkerConfig,
+    RecursiveChunker,
+    RecursiveChunkerConfig,
+    SemanticChunker,
+    SemanticChunkerConfig,
+    SentenceChunker,
+    SentenceChunkerConfig,
+    TokenChunker,
+    TokenChunkerConfig,
+)
 from flexrag.processors.rankers import (
     HFRanker,
     HFRankerConfig,
@@ -208,3 +224,52 @@ Resources.register(
     config_class=TikTokenTokenizerConfig,
     runtime_adapter_cls=DirectRuntimeAdapter,
 )(TikTokenTokenizer)
+
+Resources.register(
+    "char_chunker",
+    interface="chunker",
+    config_class=CharChunkerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(CharChunker)
+
+Resources.register(
+    "token_chunker",
+    interface="chunker",
+    config_class=TokenChunkerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(TokenChunker)
+
+Resources.register(
+    "recursive_chunker",
+    interface="chunker",
+    config_class=RecursiveChunkerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(RecursiveChunker)
+
+Resources.register(
+    "sentence_chunker",
+    interface="chunker",
+    config_class=SentenceChunkerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(SentenceChunker)
+
+Resources.register(
+    "semantic_chunker",
+    interface="chunker",
+    config_class=SemanticChunkerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(SemanticChunker)
+
+Resources.register(
+    "lumber_chunker",
+    interface="chunker",
+    config_class=LumberChunkerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(LumberChunker)
+
+Resources.register(
+    "densex_chunker",
+    interface="chunker",
+    config_class=DenseXChunkerConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(DenseXChunker)

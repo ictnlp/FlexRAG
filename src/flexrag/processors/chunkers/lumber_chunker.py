@@ -3,6 +3,7 @@ from dataclasses import field
 
 from flexrag.common import LOGGER_MANAGER, ChatMessages, ChatTurn, configure
 from flexrag.models.generators import GenerationConfig, GeneratorProtocol
+from flexrag.models.tokenizer import TokenizerProtocol
 
 from .basic_chunkers import RecursiveChunker, RecursiveChunkerConfig
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
@@ -52,11 +53,14 @@ class LumberChunker(ChunkerBase):
     """
 
     def __init__(
-        self, cfg: LumberChunkerConfig, generator: GeneratorProtocol
+        self,
+        cfg: LumberChunkerConfig,
+        generator: GeneratorProtocol,
+        tokenizer: TokenizerProtocol,
     ) -> None:
         self.generator = generator
         # load pre-chunker
-        self.pre_chunker = RecursiveChunker(cfg.pre_chunk_config)
+        self.pre_chunker = RecursiveChunker(cfg.pre_chunk_config, tokenizer=tokenizer)
         assert self.pre_chunker.chunk_size < (cfg.window_size // 2), (
             "Pre-chunker chunk size must be less than window_size // 2"
         )

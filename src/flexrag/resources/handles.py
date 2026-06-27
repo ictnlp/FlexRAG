@@ -14,6 +14,7 @@ if TYPE_CHECKING:
         GeneratorPrefixes,
     )
     from flexrag.models.scorers.scorer_base import PairScorerInput
+    from flexrag.processors.chunkers import Chunk
     from flexrag.processors.rankers.ranker_base import RankingResult
 
 
@@ -221,6 +222,22 @@ class RefinerHandle(RuntimeHandleBase):
         contexts: list[RetrievedContext],
     ) -> list[RetrievedContext]:
         return self._resource.refine(contexts)
+
+
+class ChunkerHandle(RuntimeHandleBase):
+    """Managed chunker runtime handle."""
+
+    required_methods = ("chunk",)
+
+    def chunk(self, text: str, return_str: bool = False) -> list[Chunk] | list[str]:
+        """Split text into chunks.
+
+        :param text: Text to split.
+        :param return_str: Whether to return chunk strings instead of chunk
+            objects.
+        :return: Chunk objects or chunk strings.
+        """
+        return self._resource.chunk(text, return_str=return_str)
 
 
 class TokenizerHandle(RuntimeHandleBase):

@@ -9,6 +9,7 @@ import pytest
 from flexrag.common import ChatTurn
 from flexrag.common.dataclasses import RetrievedContext
 from flexrag.models.tokenizer import SpaceTokenizerConfig
+from flexrag.processors.chunkers import CharChunkerConfig, TokenChunkerConfig
 from flexrag.processors.rankers import (
     HFRankerConfig,
     LiteLLMRankerConfig,
@@ -20,6 +21,7 @@ from flexrag.processors.refiners import (
     RecompExtractiveSummarizerConfig,
 )
 from flexrag.resources import (
+    ChunkerHandle,
     EncoderHandle,
     GeneratorHandle,
     RankerHandle,
@@ -469,6 +471,33 @@ def test_resource_manager_manages_builtin_space_tokenizer():
     assert tokenizer.detokenize(["a", "b"]) == "a b"
     assert tokenizer.reversible is False
     assert tokenizer.vocab_size == 0
+
+
+def test_resource_manager_maps_chunker_handle():
+    resources = ResourceManager.load(
+        ResourceManagerConfig(
+            resources=[
+                ResourceSpec(name="tokenizer", config=SpaceTokenizerConfig()),
+                ResourceSpec(
+                    name="char_chunker",
+                    config=CharChunkerConfig(max_chars=3),
+                ),
+                ResourceSpec(
+                    name="token_chunker",
+                    config=TokenChunkerConfig(max_tokens=2),
+                    refs={"tokenizer": "tokenizer"},
+                ),
+            ]
+        )
+    )
+
+    char_chunker = resources.get("char_chunker")
+    token_chunker = resources.get("token_chunker")
+
+    assert isinstance(char_chunker, ChunkerHandle)
+    assert isinstance(token_chunker, ChunkerHandle)
+    assert char_chunker.chunk("abcdef", return_str=True) == ["abc", "def"]
+    assert token_chunker.chunk("a b c", return_str=True) == ["a b", "c"]
 
 
 def test_resource_manager_constructs_hf_ranker_with_scorer_ref():

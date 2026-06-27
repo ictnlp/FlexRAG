@@ -3,6 +3,7 @@ from dataclasses import field
 
 from flexrag.common import LOGGER_MANAGER, configure
 from flexrag.models.generators import GenerationConfig, GeneratorProtocol
+from flexrag.models.tokenizer import TokenizerProtocol
 
 from .basic_chunkers import RecursiveChunker, RecursiveChunkerConfig
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
@@ -39,8 +40,10 @@ class DenseXChunker(ChunkerBase):
     .. code-block:: python
 
         from flexrag.models import HFGenerator, HFGeneratorConfig
+        from flexrag.models.tokenizer import SpaceTokenizer
         from flexrag.processors.chunkers import DenseXChunker, DenseXChunkerConfig
 
+        tokenizer = SpaceTokenizer()
         generator = HFGenerator(
             HFGeneratorConfig(
                 model_path="chentong00/propositionizer-wiki-flan-t5-large",
@@ -48,7 +51,11 @@ class DenseXChunker(ChunkerBase):
                 device_map=0,
             )
         )
-        chunker = DenseXChunker(DenseXChunkerConfig(), generator=generator)
+        chunker = DenseXChunker(
+            DenseXChunkerConfig(),
+            generator=generator,
+            tokenizer=tokenizer,
+        )
         propositions = chunker.chunk("DenseX turns paragraphs into propositions.")
     """
 
@@ -56,11 +63,12 @@ class DenseXChunker(ChunkerBase):
         self,
         cfg: DenseXChunkerConfig,
         generator: GeneratorProtocol,
+        tokenizer: TokenizerProtocol,
     ) -> None:
         self.generator = generator
         self.gen_cfg = GenerationConfig(max_new_tokens=512, do_sample=False)
         # load pre-chunker
-        self.pre_chunker = RecursiveChunker(cfg.pre_chunk_config)
+        self.pre_chunker = RecursiveChunker(cfg.pre_chunk_config, tokenizer=tokenizer)
         return
 
     def chunk(self, text: str, return_str: bool = False) -> list[Chunk] | list[str]:

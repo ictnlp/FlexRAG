@@ -2,7 +2,7 @@ import re
 
 import numpy as np
 
-from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
+from flexrag.models.tokenizer import TikTokenTokenizer, TikTokenTokenizerConfig
 from flexrag.processors.chunkers import (
     CharChunker,
     CharChunkerConfig,
@@ -76,10 +76,13 @@ class TestChunker:
         return
 
     def test_token_chunker(self):
-        tokenizer = TOKENIZERS.load(TokenizerConfig())
+        tokenizer = TikTokenTokenizer(TikTokenTokenizerConfig())
 
         # chunk without overlap
-        chunker = TokenChunker(TokenChunkerConfig(max_tokens=5, overlap=0))
+        chunker = TokenChunker(
+            TokenChunkerConfig(max_tokens=5, overlap=0),
+            tokenizer=tokenizer,
+        )
         for doc in self.docs:
             chunks = chunker.chunk(doc, return_str=True)
             for chunk in chunks:
@@ -87,7 +90,10 @@ class TestChunker:
             self.chunks_test(chunks, doc)
 
         # chunk with overlap
-        chunker = TokenChunker(TokenChunkerConfig(max_tokens=5, overlap=1))
+        chunker = TokenChunker(
+            TokenChunkerConfig(max_tokens=5, overlap=1),
+            tokenizer=tokenizer,
+        )
         for doc in self.docs:
             chunks = chunker.chunk(doc, return_str=True)
             for chunk in chunks:
@@ -95,8 +101,11 @@ class TestChunker:
         return
 
     def test_recursive_chunker(self):
-        tokenizer = TOKENIZERS.load(TokenizerConfig())
-        chunker = RecursiveChunker(RecursiveChunkerConfig(max_tokens=10))
+        tokenizer = TikTokenTokenizer(TikTokenTokenizerConfig())
+        chunker = RecursiveChunker(
+            RecursiveChunkerConfig(max_tokens=10),
+            tokenizer=tokenizer,
+        )
         for doc in self.docs:
             chunks = chunker.chunk(doc, return_str=True)
             for chunk in chunks:
@@ -105,17 +114,27 @@ class TestChunker:
         return
 
     def test_sentence_chunker(self):
+        tokenizer = TikTokenTokenizer(TikTokenTokenizerConfig())
+
         # test nltk sentence splitter
-        chunker = SentenceChunker(
-            SentenceChunkerConfig(max_sents=2, sentence_splitter_type="nltk_splitter")
-        )
-        for doc in self.docs:
-            chunks = chunker.chunk(doc, return_str=True)
-            self.chunks_test(chunks, doc, strict=False)
+        try:
+            chunker = SentenceChunker(
+                SentenceChunkerConfig(
+                    max_sents=2, sentence_splitter_type="nltk_splitter"
+                ),
+                tokenizer=tokenizer,
+            )
+            for doc in self.docs:
+                chunks = chunker.chunk(doc, return_str=True)
+                self.chunks_test(chunks, doc, strict=False)
+        except LookupError:
+            # NLTK punkt data is optional in the local smoke environment.
+            pass
 
         # test regex sentence splitter
         chunker = SentenceChunker(
-            SentenceChunkerConfig(max_sents=2, sentence_splitter_type="regex")
+            SentenceChunkerConfig(max_sents=2, sentence_splitter_type="regex"),
+            tokenizer=tokenizer,
         )
         for doc in self.docs:
             chunks = chunker.chunk(doc, return_str=True)
@@ -124,22 +143,23 @@ class TestChunker:
 
     def test_sementic_chunker(self):
         encoder = _FakeEncoder()
+        tokenizer = TikTokenTokenizer(TikTokenTokenizerConfig())
         for doc in self.docs:
             # chunk with threshold_percentile
             cfg = SemanticChunkerConfig(threshold_percentile=50)
-            chunker = SemanticChunker(cfg, encoder=encoder)
+            chunker = SemanticChunker(cfg, encoder=encoder, tokenizer=tokenizer)
             chunks = chunker.chunk(doc, return_str=True)
             self.chunks_test(chunks, doc, strict=False)
 
             # chunk with threshold
             cfg = SemanticChunkerConfig(threshold=0.95)
-            chunker = SemanticChunker(cfg, encoder=encoder)
+            chunker = SemanticChunker(cfg, encoder=encoder, tokenizer=tokenizer)
             chunks = chunker.chunk(doc, return_str=True)
             self.chunks_test(chunks, doc, strict=False)
 
             # chunk with max_tokens
             cfg = SemanticChunkerConfig(max_tokens=30)
-            chunker = SemanticChunker(cfg, encoder=encoder)
+            chunker = SemanticChunker(cfg, encoder=encoder, tokenizer=tokenizer)
             chunks = chunker.chunk(doc, return_str=True)
             self.chunks_test(chunks, doc, strict=False)
         return

@@ -5,6 +5,7 @@ import numpy as np
 
 from flexrag.common import LOGGER_MANAGER, Choices, configure
 from flexrag.models.encoders import EncoderProtocol
+from flexrag.models.tokenizer import TokenizerProtocol
 
 from .basic_chunkers import SentenceChunker, SentenceChunkerConfig
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
@@ -34,31 +35,31 @@ class SemanticChunkerConfig:
     If `threshold_percentile` is provided, the threshold will be calculated automatically based on the similarity distribution.
     If `max_tokens` is provided, the threshold will be calculated to ensure the chunks are within the token limit.
 
-    The tokenizer used in the pre-chunker will be shared with the SemanticChunker.
-
     For example, to split the text into chunks with a maximum of 512 tokens, you can use the following configuration:
 
         >>> from flexrag.chunking import SemanticChunker, SemanticChunkerConfig
         >>> from flexrag.models import HFEncoder, HFEncoderConfig
+        >>> from flexrag.models.tokenizer import SpaceTokenizer
+        >>> tokenizer = SpaceTokenizer()
         >>> encoder = HFEncoder(HFEncoderConfig(model_path="BAAI/bge-small-en-v1.5"))
         >>> config = SemanticChunkerConfig(
         ...     max_tokens=512,
         ... )
-        >>> chunker = SemanticChunker(config, encoder=encoder)
+        >>> chunker = SemanticChunker(config, encoder=encoder, tokenizer=tokenizer)
 
     To split the text into chunks with a threshold_percentile of 5%, you can use the following configuration:
 
         >>> config = SemanticChunkerConfig(
         ...     threshold_percentile=5,
         ... )
-        >>> chunker = SemanticChunker(config, encoder=encoder)
+        >>> chunker = SemanticChunker(config, encoder=encoder, tokenizer=tokenizer)
 
     To split the text into chunks with a given threshold, you can use the following configuration:
 
         >>> config = SemanticChunkerConfig(
         ...     threshold=0.8,
         ... )
-        >>> chunker = SemanticChunker(config, encoder=encoder)
+        >>> chunker = SemanticChunker(config, encoder=encoder, tokenizer=tokenizer)
     """
 
     max_tokens: Optional[int] = None
@@ -80,7 +81,12 @@ class SemanticChunker(ChunkerBase):
     https://github.com/FullStackRetrieval-com/RetrievalTutorials/blob/main/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb
     """
 
-    def __init__(self, cfg: SemanticChunkerConfig, encoder: EncoderProtocol) -> None:
+    def __init__(
+        self,
+        cfg: SemanticChunkerConfig,
+        encoder: EncoderProtocol,
+        tokenizer: TokenizerProtocol,
+    ) -> None:
         # set the basic configurations
         self.max_tokens = cfg.max_tokens if cfg.max_tokens is not None else float("inf")
         self.threshold = cfg.threshold
@@ -107,7 +113,7 @@ class SemanticChunker(ChunkerBase):
                     f"setting pre_chunk_config.max_tokens to {cfg.max_tokens}"
                 )
         assert cfg.pre_chunk_config.overlap == 0, "pre_chunk_config.overlap must be 0"
-        self.prechunker = SentenceChunker(cfg.pre_chunk_config)
+        self.prechunker = SentenceChunker(cfg.pre_chunk_config, tokenizer=tokenizer)
 
         self.encoder = encoder
         return

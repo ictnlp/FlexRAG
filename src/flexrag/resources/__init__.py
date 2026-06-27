@@ -1,5 +1,6 @@
 from . import registrations as _registrations  # noqa: F401
 from .handles import (
+    ChunkerHandle,
     EncoderHandle,
     GeneratorHandle,
     RankerHandle,
@@ -16,6 +17,7 @@ from .resource_manager import (
 )
 
 __all__ = [
+    "ChunkerHandle",
     "EncoderHandle",
     "GeneratorHandle",
     "RankerHandle",

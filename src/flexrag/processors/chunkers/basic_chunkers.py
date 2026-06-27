@@ -2,7 +2,7 @@ from dataclasses import field
 from typing import Optional
 
 from flexrag.common import LOGGER_MANAGER, configure
-from flexrag.models.tokenizer import TOKENIZERS, TokenizerConfig
+from flexrag.models.tokenizer import TokenizerProtocol
 
 from .chunker_base import CHUNKERS, Chunk, ChunkerBase
 from .sentence_splitter import (
@@ -70,28 +70,22 @@ class CharChunker(ChunkerBase):
 
 
 @configure
-class TokenChunkerConfig(TokenizerConfig):
+class TokenChunkerConfig:
     """Configuration for TokenChunker.
 
     :param max_tokens: The number of tokens in each chunk. Default is 512.
-    :type max_tokens: int
     :param overlap: The number of tokens to overlap between chunks. Default is 0.
-    :type overlap: int
 
     For example, to chunk a text into chunks with 256 tokens with 128 tokens overlap:
 
     .. code-block:: python
 
         from flexrag.chunking import TokenChunkerConfig, TokenChunker
-        from flexrag.models.tokenizer import TikTokenTokenizerConfig
+        from flexrag.models.tokenizer import SpaceTokenizer
 
-        cfg = TokenChunkerConfig(
-            max_tokens=256,
-            overlap=128,
-            tokenizer_type="tiktoken",
-            tiktoken_config=TikTokenTokenizerConfig(model_name="gpt-4o"),
-        )
-        chunker = TokenChunker(cfg)
+        tokenizer = SpaceTokenizer()
+        cfg = TokenChunkerConfig(max_tokens=256, overlap=128)
+        chunker = TokenChunker(cfg, tokenizer=tokenizer)
 
     Note that the ``TokenChunker`` relies on the ``tokenize`` and ``detokenize`` methods of the tokenizer to split the text.
     Thus the space between may be lost if the tokenizer is not reversible.
@@ -105,13 +99,15 @@ class TokenChunkerConfig(TokenizerConfig):
 class TokenChunker(ChunkerBase):
     """TokenChunker splits text into chunks with fixed number of tokens."""
 
-    def __init__(self, cfg: TokenChunkerConfig) -> None:
+    def __init__(
+        self, cfg: TokenChunkerConfig, tokenizer: TokenizerProtocol
+    ) -> None:
         self.chunk_size = cfg.max_tokens
         self.overlap = cfg.overlap
-        self.tokenizer = TOKENIZERS.load(cfg)
+        self.tokenizer = tokenizer
         if not self.tokenizer.reversible:
             logger.warning(
-                f"Tokenizer {cfg.tokenizer_type} is not reversible. "
+                f"Tokenizer {type(tokenizer).__name__} is not reversible. "
                 "Some characters may be lost during detokenization."
             )
         return
@@ -146,35 +142,37 @@ class TokenChunker(ChunkerBase):
 
 
 @configure
-class RecursiveChunkerConfig(TokenizerConfig):
+class RecursiveChunkerConfig:
     """Configuration for RecursiveChunker.
 
     :param max_tokens: The maximum number of tokens in each chunk. Default is 512.
-    :type max_tokens: int
     :param separators: The separators used to split text recursively.
         The order of the separators matters. Default is ``PREDEFINED_SPLIT_PATTERNS["en"]``.
-    :type separators: dict[str, str]
 
     For example, to split a text recursively with 256 tokens in each chunk:
 
     .. code-block:: python
 
         from flexrag.chunking import RecursiveChunkerConfig, RecursiveChunker
+        from flexrag.models.tokenizer import SpaceTokenizer
 
+        tokenizer = SpaceTokenizer()
         cfg = RecursiveChunkerConfig(max_tokens=256)
-        chunker = RecursiveChunker(cfg)
+        chunker = RecursiveChunker(cfg, tokenizer=tokenizer)
 
     You can also specify your own seperator list:
 
     .. code-block:: python
 
         from flexrag.chunking import RecursiveChunkerConfig, RecursiveChunker
+        from flexrag.models.tokenizer import SpaceTokenizer
 
+        tokenizer = SpaceTokenizer()
         cfg = RecursiveChunkerConfig(
             max_tokens=256,
             split_pattern={"level1": "pattern1", "level2": "pattern2"},
         )
-        chunker = RecursiveChunker(cfg)
+        chunker = RecursiveChunker(cfg, tokenizer=tokenizer)
 
     """
 
@@ -196,16 +194,18 @@ class RecursiveChunker(ChunkerBase):
     the text will be split into tokens.
     """
 
-    def __init__(self, cfg: RecursiveChunkerConfig) -> None:
+    def __init__(
+        self, cfg: RecursiveChunkerConfig, tokenizer: TokenizerProtocol
+    ) -> None:
         self.splitter = [
             RegexSplitter(RegexSplitterConfig(pattern=p))
             for p in cfg.split_pattern.values()
         ]
         self.chunk_size = cfg.max_tokens
-        self.tokenizer = TOKENIZERS.load(cfg)
+        self.tokenizer = tokenizer
         if not self.tokenizer.reversible:
             logger.warning(
-                f"Tokenizer {cfg.tokenizer_type} is not reversible. "
+                f"Tokenizer {type(tokenizer).__name__} is not reversible. "
                 "Some characters may be lost during detokenization."
             )
         return
@@ -352,24 +352,23 @@ class RecursiveChunker(ChunkerBase):
 
 
 @configure
-class SentenceChunkerConfig(TokenizerConfig, SentenceSplitterConfig):
+class SentenceChunkerConfig(SentenceSplitterConfig):
     """Configuration for SentenceChunker.
 
     :param max_sents: The maximum number of sentences in each chunk. Default is None.
-    :type max_sents: Optional[int]
     :param max_tokens: The maximum number of tokens in each chunk. Default is None.
-    :type max_tokens: Optional[int]
     :param overlap: The number of sentences to overlap between chunks. Default is 0.
-    :type overlap: int
 
     For example, to chunk a text into chunks with 10 sentences in each chunk:
 
     .. code-block:: python
 
         from flexrag.chunking import SentenceChunkerConfig, SentenceChunker
+        from flexrag.models.tokenizer import SpaceTokenizer
 
+        tokenizer = SpaceTokenizer()
         cfg = SentenceChunkerConfig(max_sents=10)
-        chunker = SentenceChunker(cfg)
+        chunker = SentenceChunker(cfg, tokenizer=tokenizer)
 
     Note that sentences longer than ``max_tokens`` will be further split into smaller
     chunks.
@@ -386,7 +385,9 @@ class SentenceChunker(ChunkerBase):
     splitter, then merges the sentences into chunks based on the specified constraints.
     """
 
-    def __init__(self, cfg: SentenceChunkerConfig) -> None:
+    def __init__(
+        self, cfg: SentenceChunkerConfig, tokenizer: TokenizerProtocol
+    ) -> None:
         # set arguments
         assert not all(i is None for i in [cfg.max_sents, cfg.max_tokens]), (
             "At least one of max_sentences, max_tokens should be set."
@@ -394,10 +395,10 @@ class SentenceChunker(ChunkerBase):
         self.max_sents = cfg.max_sents if cfg.max_sents else float("inf")
         self.max_tokens = cfg.max_tokens if cfg.max_tokens else float("inf")
         self.overlap = cfg.overlap
-        self.tokenizer = TOKENIZERS.load(cfg)
+        self.tokenizer = tokenizer
         if not self.tokenizer.reversible:
             logger.warning(
-                f"Tokenizer {cfg.tokenizer_type} is not reversible. "
+                f"Tokenizer {type(tokenizer).__name__} is not reversible. "
                 "Some characters may be lost during detokenization."
             )
 

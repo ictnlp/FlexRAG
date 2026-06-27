@@ -1,3 +1,4 @@
+from .chunker import ChunkerInvocation
 from .encoder import EncoderInvocation
 from .generator import BatchGeneratorInvocation, SingleSampleGeneratorInvocation
 from .ranker import RankerInvocation
@@ -7,6 +8,7 @@ from .tokenizer import TokenizerInvocation
 
 __all__ = [
     "BatchGeneratorInvocation",
+    "ChunkerInvocation",
     "EncoderInvocation",
     "RefinerInvocation",
     "RankerInvocation",

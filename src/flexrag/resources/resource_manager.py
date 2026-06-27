@@ -5,6 +5,7 @@ from typing import Any
 from flexrag.common import configure
 
 from .handles import (
+    ChunkerHandle,
     EncoderHandle,
     GeneratorHandle,
     RankerHandle,
@@ -15,6 +16,7 @@ from .handles import (
 )
 from .invocations import (
     BatchGeneratorInvocation,
+    ChunkerInvocation,
     EncoderInvocation,
     RankerInvocation,
     RefinerInvocation,
@@ -35,6 +37,7 @@ _INTERFACE_HANDLE_TYPES: dict[str, type[RuntimeHandleBase]] = {
     "scorer": ScorerHandle,
     "ranker": RankerHandle,
     "refiner": RefinerHandle,
+    "chunker": ChunkerHandle,
     "tokenizer": TokenizerHandle,
 }
 
@@ -69,6 +72,7 @@ _COMPOSITIONS: dict[tuple[str, type[Any]], tuple[type[Any], dict[str, Any]]] = {
     ("ranker", DirectRuntimeAdapter): (RankerInvocation, {}),
     ("ranker", RemoteRuntimeAdapter): (RankerInvocation, {}),
     ("refiner", DirectRuntimeAdapter): (RefinerInvocation, {}),
+    ("chunker", DirectRuntimeAdapter): (ChunkerInvocation, {}),
     ("tokenizer", DirectRuntimeAdapter): (TokenizerInvocation, {}),
 }
 

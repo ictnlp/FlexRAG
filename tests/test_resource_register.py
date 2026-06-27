@@ -166,6 +166,22 @@ def test_builtin_resource_registrations_are_available():
         TikTokenTokenizer,
         TikTokenTokenizerConfig,
     )
+    from flexrag.processors.chunkers import (
+        CharChunker,
+        CharChunkerConfig,
+        DenseXChunker,
+        DenseXChunkerConfig,
+        LumberChunker,
+        LumberChunkerConfig,
+        RecursiveChunker,
+        RecursiveChunkerConfig,
+        SemanticChunker,
+        SemanticChunkerConfig,
+        SentenceChunker,
+        SentenceChunkerConfig,
+        TokenChunker,
+        TokenChunkerConfig,
+    )
     from flexrag.processors.rankers import (
         HFRanker,
         HFRankerConfig,
@@ -269,6 +285,22 @@ def test_builtin_resource_registrations_are_available():
         assert tokenizer.interface == "tokenizer"
         assert tokenizer.config_class is config_class
         assert tokenizer.runtime_adapter_cls is DirectRuntimeAdapter
+
+    chunker_cases = [
+        ("char_chunker", CharChunker, CharChunkerConfig),
+        ("token_chunker", TokenChunker, TokenChunkerConfig),
+        ("recursive_chunker", RecursiveChunker, RecursiveChunkerConfig),
+        ("sentence_chunker", SentenceChunker, SentenceChunkerConfig),
+        ("semantic_chunker", SemanticChunker, SemanticChunkerConfig),
+        ("lumber_chunker", LumberChunker, LumberChunkerConfig),
+        ("densex_chunker", DenseXChunker, DenseXChunkerConfig),
+    ]
+    for short_name, impl_cls, config_class in chunker_cases:
+        chunker = Resources.resolve_name(short_name)
+        assert chunker.impl_cls is impl_cls
+        assert chunker.interface == "chunker"
+        assert chunker.config_class is config_class
+        assert chunker.runtime_adapter_cls is DirectRuntimeAdapter
 
 
 def test_builtin_resource_registrations_resolve_by_config_instance():

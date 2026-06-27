@@ -1,9 +1,76 @@
 from abc import ABC, abstractmethod
 from functools import partial
 from itertools import chain
-from typing import Optional
+from typing import Optional, Protocol
 
 from flexrag.common import Register, configure
+
+
+class TokenizerProtocol(Protocol):
+    """Protocol for tokenizer resources.
+
+    Tokenizer users depend on this structural interface so they can accept raw
+    tokenizers and managed tokenizer handles without knowing how the tokenizer
+    was created.
+    """
+
+    def tokenize(self, text: str) -> list[str]:
+        """Tokenize text into string tokens.
+
+        :param text: Text to tokenize.
+        :return: Token strings.
+        """
+        ...
+
+    def detokenize(self, tokens: list[str]) -> str:
+        """Convert string tokens back to text.
+
+        :param tokens: Token strings to detokenize.
+        :return: Detokenized text.
+        """
+        ...
+
+    def encode(self, text: str) -> list[int]:
+        """Encode text into token ids.
+
+        :param text: Text to encode.
+        :return: Token ids.
+        """
+        ...
+
+    def decode(self, tokens: list[int]) -> str:
+        """Decode token ids into text.
+
+        :param tokens: Token ids to decode.
+        :return: Decoded text.
+        """
+        ...
+
+    def tokens_to_ids(self, tokens: list[str]) -> list[int]:
+        """Convert string tokens to token ids.
+
+        :param tokens: Token strings to convert.
+        :return: Token ids.
+        """
+        ...
+
+    def ids_to_tokens(self, token_ids: list[int]) -> list[str]:
+        """Convert token ids to string tokens.
+
+        :param token_ids: Token ids to convert.
+        :return: Token strings.
+        """
+        ...
+
+    @property
+    def reversible(self) -> bool:
+        """Return whether tokenization is strictly reversible."""
+        ...
+
+    @property
+    def vocab_size(self) -> int:
+        """Return the tokenizer vocabulary size."""
+        ...
 
 
 class TokenizerBase(ABC):
