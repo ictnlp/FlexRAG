@@ -38,7 +38,6 @@ and quickly build powerful RAG solutions out of the box.
    tutorial/building_assistant
    tutorial/entrypoints
    tutorial/using_register
-   tutorial/preparing_web_retriever
 
 .. toctree::
    :maxdepth: 1

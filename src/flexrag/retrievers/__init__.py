@@ -23,10 +23,6 @@ from .retriever_base import (
     RetrieverBaseConfig,
 )
 from .typesense_retriever import TypesenseRetriever, TypesenseRetrieverConfig
-from .web_retrievers import (
-    SimpleWebRetriever,
-    SimpleWebRetrieverConfig,
-)
 
 RetrieverConfig = RETRIEVERS.make_config(config_name="RetrieverConfig", default=None)
 
@@ -57,7 +53,5 @@ __all__ = [
     "RetrieverBaseConfig",
     "TypesenseRetriever",
     "TypesenseRetrieverConfig",
-    "SimpleWebRetriever",
-    "SimpleWebRetrieverConfig",
     "RetrieverConfig",
 ]

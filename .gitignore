@@ -163,3 +163,6 @@ wheelhouse/
 
 # codex
 .codex
+
+# temporary migration backups
+.tmp/

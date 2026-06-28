@@ -15,8 +15,6 @@ FlexRAG provides a set of predefined registers for different components. These r
 - RANKERS
 - DENSE_INDEX
 - RETRIEVERS
-- WEB_DOWNLOADERS
-- WEB_READERS
 
 ```{note}
 If you wish to develop your project by modifying the FlexRAG source code, all registrars can be used as decorators to register new components. However, if you use the `run_assistant` or `run_interactive` entrypoints of FlexRAG, **only** the `ASSISTANTS` registrar can be used to register new components.

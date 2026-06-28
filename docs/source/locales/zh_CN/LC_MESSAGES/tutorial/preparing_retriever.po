@@ -48,20 +48,6 @@ msgstr "检索器"
 msgid "The differences between these retrievers are as follows:"
 msgstr "FlexRAG 中三种类型检索器的区别如下："
 
-#: ../../source/tutorial/preparing_retriever.md:11
-#: 98a8823e98314e12bbc4d6d8ea8fc90d
-msgid ""
-"`WebRetriever`: The WebRetriever performs real-time information retrieval"
-" directly from the **internet**. It is designed to handle queries that "
-"require up-to-date or dynamic content, such as breaking news, current "
-"events, or newly published data. This retriever is ideal when static "
-"knowledge sources are insufficient. For more information, you can refer "
-"to the {doc}`./preparing_web_retriever` tutorial."
-msgstr ""
-"基于网络的检索器 `WebRetriever` "
-"：直接从互联网上进行实时信息检索。该类检索器可以获取实时的动态信息，比如突发新闻、实时事件以及最新发布的信息，非常适合被应用于静态知识库无法满足的场景。更多有关此类检索器的信息，您可以访问"
-" {doc}`./preparing_web_retriever` 以获取更多信息。"
-
 #: ../../source/tutorial/preparing_retriever.md:12
 #: 9d195d06fd5945ccab2ae4fe010ef8c1
 msgid ""

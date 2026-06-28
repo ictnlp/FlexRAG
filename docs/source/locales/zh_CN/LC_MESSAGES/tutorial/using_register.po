@@ -93,14 +93,6 @@ msgstr ""
 msgid "RETRIEVERS"
 msgstr ""
 
-#: ../../source/tutorial/using_register.md:18 031efbf509f64dacaf84ef9a1b526cbb
-msgid "WEB_DOWNLOADERS"
-msgstr ""
-
-#: ../../source/tutorial/using_register.md:19 81a2ae2f92204520a69da40e0ffff9a3
-msgid "WEB_READERS"
-msgstr ""
-
 #: ../../source/tutorial/using_register.md:22 1bcafb9a0765476aa7f8756f927bdea2
 msgid ""
 "If you wish to develop your project by modifying the FlexRAG source code,"
