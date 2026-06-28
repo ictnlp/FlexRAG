@@ -3,12 +3,12 @@ Besides using RAG assistant, you can also import FlexRAG as a library to develop
 
 ```python
 from flexrag.models import OpenAIGenerator, OpenAIGeneratorConfig
-from flexrag.retriever import LocalRetriever
+from flexrag.retriever import FlexRetriever
 
 
 def main():
     # load the retriever
-    retriever = LocalRetriever.load_from_hub("FlexRAG/enwiki_2021_atlas")
+    retriever = FlexRetriever.load_from_hub("FlexRAG/enwiki_2021_atlas")
 
     # load the generator
     generator = OpenAIGenerator(

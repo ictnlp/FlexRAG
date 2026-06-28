@@ -14,15 +14,15 @@ from flexrag.common.dataclasses import Context, RetrievedContext
 from .retriever_base import (
     DEFAULT_TOP_K,
     RETRIEVERS,
-    EditableRetriever,
-    EditableRetrieverConfig,
+    RetrieverBase,
+    RetrieverBaseConfig,
 )
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.typesense")
 
 
 @configure
-class TypesenseRetrieverConfig(EditableRetrieverConfig):
+class TypesenseRetrieverConfig(RetrieverBaseConfig):
     """Configuration class for TypesenseRetriever.
 
     :param host: Host of the Typesense server. Default: "localhost".
@@ -49,7 +49,7 @@ class TypesenseRetrieverConfig(EditableRetrieverConfig):
 
 
 @RETRIEVERS("typesense", config_class=TypesenseRetrieverConfig)
-class TypesenseRetriever(EditableRetriever):
+class TypesenseRetriever(RetrieverBase):
     def __init__(self, cfg: TypesenseRetrieverConfig) -> None:
         super().__init__(cfg)
         self.cfg = extract_config(cfg, TypesenseRetrieverConfig)
@@ -166,7 +166,7 @@ class TypesenseRetriever(EditableRetriever):
                 )
         return retrieved
 
-    def __getitem__(self, context_id: str) -> Context:
+    def get(self, context_id: str) -> Context:
         try:
             res = (
                 self.client.collections[self.index_name]
@@ -187,7 +187,7 @@ class TypesenseRetriever(EditableRetriever):
             self.client.collections[self.index_name].delete()
         return
 
-    def __len__(self) -> int:
+    def count(self) -> int:
         info = self.client.collections.retrieve()
         info = [i for i in info if i["name"] == self.index_name]
         if len(info) > 0:

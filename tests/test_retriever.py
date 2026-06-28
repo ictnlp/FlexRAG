@@ -5,12 +5,12 @@ from flexrag.common import Context
 from flexrag.datasets.reader import LineDelimitedReader
 from flexrag.models import ENCODERS, EncoderConfig, LiteLLMEncoderConfig
 from flexrag.retrievers import (
-    EditableRetriever,
     ElasticRetriever,
     ElasticRetrieverConfig,
     FlexRetriever,
     FlexRetrieverConfig,
     IndexFieldsConfig,
+    RetrieverBase,
     TypesenseRetriever,
     TypesenseRetrieverConfig,
 )
@@ -95,7 +95,7 @@ class TestRetrievers:
         "What is the capital of China?",
     ]
 
-    def run_retriever(self, retriever: EditableRetriever):
+    def run_retriever(self, retriever: RetrieverBase):
         retriever.clear()
         assert len(retriever) == 0
 
@@ -206,6 +206,9 @@ class TestRetrievers:
 
             # save index to local
             retriever.save_to_local(tempdir)
+            assert retriever.retriever_path == tempdir
+            assert "retriever_path" not in Path(tempdir, "config.yaml").read_text()
+            retriever.save_to_local()
             retriever.database.close()
             del retriever
             assert Path(tempdir).exists()
@@ -254,6 +257,8 @@ class TestRetrievers:
                 tempdir, "indexes", "bm25", "multi_field_index_config.yaml"
             ).exists()
             retriever = FlexRetriever.load_from_local(tempdir)
+            assert retriever.retriever_path == tempdir
+            assert "retriever_path" not in Path(tempdir, "config.yaml").read_text()
             assert len(retriever) == 2000
             ctxs = retriever.search(
                 ["Who is Bruce Wayne?", "What is the capital of France?"],
@@ -263,6 +268,53 @@ class TestRetrievers:
             assert len(ctxs) == 2
             assert len(ctxs[0]) == 5
             assert len(ctxs[1]) == 5
+        return
+
+    def test_flex_retriever_attached_persistence_semantics(self):
+        data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
+        dataset = load_test_corpus_slice(data_path, 0, 10)
+
+        with tempfile.TemporaryDirectory() as tempdir:
+            retriever = FlexRetriever(
+                FlexRetrieverConfig(batch_size=4),
+                retriever_path=tempdir,
+            )
+            retriever.add_index("bm25", build_bm25_index())
+            assert Path(tempdir, "cls.id").exists()
+            assert Path(tempdir, "config.yaml").exists()
+            assert Path(tempdir, "indexes", "bm25").exists()
+
+            retriever.add_passages(dataset, log_interval=1000)
+            assert len(retriever) == 10
+            retriever.detach()
+            assert retriever.retriever_path is None
+            retriever.add_passages(
+                [
+                    Context(
+                        context_id="detached-extra",
+                        data={"title": "", "section": "", "text": "Detached only."},
+                    )
+                ],
+                log_interval=1000,
+            )
+            assert len(retriever) == 11
+
+            loaded = FlexRetriever.load_from_local(tempdir)
+            assert loaded.retriever_path == tempdir
+            assert len(loaded) == 10
+            assert "bm25" in loaded.index_table
+            loaded.clear()
+            assert Path(tempdir).exists()
+            assert Path(tempdir, "cls.id").exists()
+            assert Path(tempdir, "config.yaml").exists()
+            assert Path(tempdir, "database.lmdb").exists()
+            assert Path(tempdir, "indexes", "bm25").exists()
+            loaded.database.close()
+
+            reloaded = FlexRetriever.load_from_local(tempdir)
+            assert reloaded.retriever_path == tempdir
+            assert len(reloaded) == 0
+            assert "bm25" in reloaded.index_table
         return
 
     def test_flex_retriever_rebuilds_non_addable_index_with_full_database(self):

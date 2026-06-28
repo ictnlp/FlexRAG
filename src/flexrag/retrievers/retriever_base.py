@@ -1,28 +1,21 @@
 import asyncio
-import os
-import tempfile
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Iterable
-from dataclasses import asdict, field, is_dataclass
-from typing import Any, Optional, cast
+from dataclasses import asdict, is_dataclass
+from typing import Any, cast
 
 import numpy as np
-from huggingface_hub import HfApi
 
 from flexrag.common import (
-    FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
+    ProgressDisplay,
     Register,
     configure,
     warning_once,
 )
 from flexrag.common.dataclasses import Context, RetrievedContext
 from flexrag.common.runtime_cache import get_runtime_cache, make_runtime_cache_key
-from flexrag.processors.text_processors import (
-    TextProcessPipeline,
-    TextProcessPipelineConfig,
-)
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers")
 _RETRIEVAL_CACHE_NAMESPACE = "retrieval.search"
@@ -30,7 +23,6 @@ _RETRIEVAL_CACHE_SCHEMA_VERSION = 1
 DEFAULT_TOP_K = 10
 _RUNTIME_ONLY_CONFIG_FIELDS = {
     "batch_size",
-    "query_preprocess_pipeline",
 }
 _RUNTIME_ONLY_SEARCH_KWARGS = {
     "display",
@@ -40,44 +32,52 @@ _RUNTIME_ONLY_SEARCH_KWARGS = {
 
 @configure
 class RetrieverBaseConfig:
-    """Base configuration class for all retrievers.
+    """Base configuration for collection-like retrievers.
 
-    :param batch_size: The batch size for retrieval. Default: 32.
-    :type batch_size: int
-    :param query_preprocess_pipeline: The text process pipeline for query. Default: TextProcessPipelineConfig.
-    :type query_preprocess_pipeline: TextProcessPipelineConfig
+    :param batch_size: Batch size used by direct retriever calls when adding
+        passages, searching, or serializing implementation-specific state.
+        Defaults to 32.
     """
 
     batch_size: int = 32
-    query_preprocess_pipeline: TextProcessPipelineConfig = field(
-        default_factory=TextProcessPipelineConfig
-    )
 
 
 class RetrieverBase(ABC):
-    """The base class for all retrievers.
-    The subclasses should implement the ``_search`` method and the ``fields`` property.
+    """Base class for a collection-like retriever.
+
+    Subclasses own one retrievable collection and must implement search,
+    insertion, lookup, counting, clearing, and field inspection. The default
+    asynchronous methods are direct-use conveniences backed by
+    :func:`asyncio.to_thread`; they do not provide runtime isolation.
     """
 
     cfg: RetrieverBaseConfig
 
     def __init__(self, cfg: RetrieverBaseConfig):
-        # load preprocess pipeline
-        self.query_preprocess_pipeline = TextProcessPipeline(
-            cfg.query_preprocess_pipeline
-        )
+        self.cfg = cfg
         return
 
     async def async_search(
         self,
-        query: list[Any],
+        query: Iterable[Any] | Any,
+        disable_cache: bool = False,
         top_k: int = DEFAULT_TOP_K,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
-        """Search queries asynchronously."""
+        """Search queries asynchronously.
+
+        :param query: A single query or a batch of queries.
+        :param disable_cache: Whether to bypass the runtime search cache.
+            Defaults to False.
+        :param top_k: Number of contexts to return per query. Defaults to 10.
+        :param search_kwargs: Additional implementation-specific search
+            arguments.
+        :return: Retrieved contexts grouped by input query.
+        """
         return await asyncio.to_thread(
             self.search,
             query=query,
+            disable_cache=disable_cache,
             top_k=top_k,
             **search_kwargs,
         )
@@ -86,25 +86,18 @@ class RetrieverBase(ABC):
         self,
         query: Iterable[Any] | Any,
         disable_cache: bool = False,
-        no_preprocess: bool = False,
         top_k: int = DEFAULT_TOP_K,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         """Search queries with batching and runtime result caching.
 
-        :param query: Queries to search.
-        :type query: Iterable[Any] | Any
+        :param query: A single query or a batch of queries.
         :param disable_cache: Whether to disable runtime result cache for this call.
             Defaults to False.
-        :type disable_cache: bool
-        :param no_preprocess: Whether to preprocess the query. Default: False.
-        :type no_preprocess: bool
         :param top_k: The number of retrieved documents. Defaults to 10.
-        :type top_k: int
-        :param search_kwargs: Other search arguments.
-        :type search_kwargs: Any
-        :return: A batch of list that contains k RetrievedContext.
-        :rtype: list[list[RetrievedContext]]
+        :param search_kwargs: Additional implementation-specific search
+            arguments.
+        :return: Retrieved contexts grouped by input query.
         """
         search_kwargs = dict(search_kwargs)
         search_kwargs["top_k"] = top_k
@@ -116,8 +109,6 @@ class RetrieverBase(ABC):
             query = list(query)
         else:
             query = [query]
-        if not no_preprocess:
-            query = [self.query_preprocess_pipeline(q) for q in query]
 
         # search without cache
         batch_size = max(1, self.cfg.batch_size)
@@ -213,19 +204,121 @@ class RetrieverBase(ABC):
     ) -> list[list[RetrievedContext]]:
         """Search a batch of queries.
 
-        :param query: Queries to search.
-        :type query: list[Any] | Any
-        :param search_kwargs: Keyword arguments, contains other search arguments.
-        :type search_kwargs: Any
-        :return: A batch of list that contains k RetrievedContext.
-        :rtype: list[list[RetrievedContext]]
+        :param query: Query batch to search.
+        :param search_kwargs: Additional implementation-specific search
+            arguments.
+        :return: Retrieved contexts grouped by query.
         """
         return
+
+    @abstractmethod
+    def add_passages(
+        self,
+        passages: Iterable[Context],
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
+    ) -> None:
+        """Add passages to the retriever collection.
+
+        :param passages: Contexts to insert or upsert.
+        :param log_interval: Progress logging interval. Defaults to 10000.
+        :param display: Progress display mode. Defaults to ``"auto"``.
+        :return: None.
+        """
+        return
+
+    async def async_add_passages(
+        self,
+        passages: Iterable[Context],
+        log_interval: int = 10000,
+        display: ProgressDisplay = "auto",
+    ) -> None:
+        """Add passages asynchronously.
+
+        :param passages: Contexts to insert or upsert.
+        :param log_interval: Progress logging interval. Defaults to 10000.
+        :param display: Progress display mode. Defaults to ``"auto"``.
+        :return: None.
+        """
+        return await asyncio.to_thread(
+            self.add_passages,
+            passages=passages,
+            log_interval=log_interval,
+            display=display,
+        )
+
+    @abstractmethod
+    def clear(self) -> None:
+        """Clear all contexts from the retriever collection.
+
+        :return: None.
+        """
+        return
+
+    async def async_clear(self) -> None:
+        """Clear the retriever collection asynchronously.
+
+        :return: None.
+        """
+        return await asyncio.to_thread(self.clear)
+
+    @abstractmethod
+    def get(self, context_id: str) -> Context:
+        """Get a context by id.
+
+        :param context_id: Context id to fetch.
+        :return: The fetched context.
+        :raises KeyError: If the context does not exist.
+        """
+        return
+
+    async def async_get(self, context_id: str) -> Context:
+        """Get a context by id asynchronously.
+
+        :param context_id: Context id to fetch.
+        :return: The fetched context.
+        :raises KeyError: If the context does not exist.
+        """
+        return await asyncio.to_thread(self.get, context_id=context_id)
+
+    @abstractmethod
+    def count(self) -> int:
+        """Return the number of contexts in the retriever collection.
+
+        :return: Number of contexts.
+        """
+        return
+
+    async def async_count(self) -> int:
+        """Return the number of contexts asynchronously.
+
+        :return: Number of contexts.
+        """
+        return await asyncio.to_thread(self.count)
+
+    def __getitem__(self, context_id: str) -> Context:
+        """Get a context by id.
+
+        :param context_id: Context id to fetch.
+        :return: The fetched context.
+        :raises KeyError: If the context does not exist.
+        """
+        return self.get(context_id)
+
+    def __len__(self) -> int:
+        """Return the number of contexts in the collection.
+
+        :return: Number of contexts.
+        """
+        return self.count()
 
     @property
     @abstractmethod
     def fields(self) -> list[str]:
-        """The fields of the retrieved data."""
+        """Return fields available in the retriever collection.
+
+        :return: Field names.
+        """
         return
 
     def test_speed(
@@ -238,11 +331,8 @@ class RetrieverBase(ABC):
         """Test the speed of the retriever.
 
         :param sample_num: The number of samples to test.
-        :type sample_num: int, optional
         :param test_times: The number of times to test.
-        :type test_times: int, optional
         :return: The time consumed for retrieval.
-        :rtype: float
         """
         from nltk.corpus import brown
 
@@ -263,250 +353,3 @@ class RetrieverBase(ABC):
 
 
 RETRIEVERS = Register[RetrieverBase]("retriever", True)
-
-
-@configure
-class EditableRetrieverConfig(RetrieverBaseConfig):
-    """Configuration class for LocalRetriever."""
-
-
-class EditableRetriever(RetrieverBase):
-    """The base class for all `editable` retrievers.
-    In FlexRAG, the ``EditableRetriever`` is a concept referring to a retriever that includes the ``add_passages`` and ``clear`` methods,
-    allowing you to build the retriever using your own knowledge base.
-    FlexRAG provides following editable retrievers: ``FlexRetriever``, ``ElasticRetriever``, and ``TypesenseRetriever``.
-    The subclasses should implement the ``add_passages``, ``clear``, and ``__len__`` methods.
-    """
-
-    @abstractmethod
-    def add_passages(self, passages: Iterable[Context]):
-        """
-        Add passages to the retriever database.
-
-        :param passages: The passages to add.
-        :type passages: Iterable[Context]
-        :return: None
-        """
-        return
-
-    @abstractmethod
-    def clear(self) -> None:
-        """Clear the retriever database."""
-        return
-
-    @abstractmethod
-    def __len__(self):
-        """Return the number of documents in the retriever database."""
-        return
-
-    @abstractmethod
-    def __getitem__(self, context_id: str) -> Context:
-        """Get the document at the given context ID.
-
-        :param context_id: The context ID of the document.
-        :type context_id: str
-        :return: The document at the given context ID.
-        :rtype: Context
-        """
-        return
-
-
-@configure
-class LocalRetrieverConfig(EditableRetrieverConfig):
-    """The configuration class for LocalRetriever."""
-
-
-class LocalRetriever(EditableRetriever):
-    """The base class for all `local` retrievers.
-
-    In FlexRAG, the ``LocalRetriever`` is a concept referring to a retriever that can be saved to the local disk.
-    The subclasses provide the ``save_to_local`` and ``load_from_local`` methods to save and load the retriever from the local disk,
-    and the ``save_to_hub`` and ``load_from_hub`` methods to save and load the retriever from the HuggingFace Hub.
-
-    FlexRAG provides following local retrievers: ``FlexRetriever``.
-
-    For example, to load a retriever hosted on the HuggingFace Hub, you can run the following code:
-
-    .. code-block:: python
-
-        from flexrag.retriever import LocalRetriever
-
-        retriever = LocalRetriever.load_from_hub("flexrag/wiki2021_atlas_bm25s")
-
-    To save a retriever to the HuggingFace Hub, you can run the following code:
-
-    .. code-block:: python
-
-        retriever.save_to_hub("<your-repo-id>", token="<your-token>")
-
-    """
-
-    cfg: LocalRetrieverConfig
-
-    @property
-    def retriever_path(self) -> Optional[str]:
-        """Return the local artifact root attached to this retriever.
-
-        :return: The local retriever artifact path, or ``None`` when the
-            retriever is detached from disk.
-        """
-        return None
-
-    @staticmethod
-    def load_from_hub(
-        repo_id: str,
-        revision: Optional[str] = None,
-        token: Optional[str] = None,
-        cache_dir: str | os.PathLike[str] = FLEXRAG_CACHE_DIR,
-        **kwargs,
-    ) -> "LocalRetriever":
-        """Load a retriever from the HuggingFace Hub.
-
-        :param repo_id: The repo id of the retriever on the HuggingFace Hub.
-        :type repo_id: str
-        :param revision: The revision of the retriever on the HuggingFace Hub. Default: None.
-        :type revision: str
-        :param token: The token to access the HuggingFace Hub. Default: None.
-        :type token: str
-        :param cache_dir: The cache directory to store the retriever. Default: FLEXRAG_CACHE_DIR.
-        :type cache_dir: str
-        :param kwargs: Additional arguments for the retriever.
-        :type kwargs: Any
-        :return: The loaded retriever.
-        :rtype: LocalRetriever
-        """
-        # check if the retriever exists
-        api = HfApi(token=token)
-        repo_info = api.repo_info(repo_id)
-        if repo_info is None:
-            raise ValueError(f"Retriever {repo_id} not found on the HuggingFace Hub.")
-        repo_id = repo_info.id
-        dir_name = os.path.join(
-            cache_dir, f"{repo_id.split('/')[0]}--{repo_id.split('/')[1]}"
-        )
-        # lancedb does not support loading the database from a symlink
-        snapshot = api.snapshot_download(
-            repo_id=repo_id,
-            revision=revision,
-            token=token,
-            local_dir=dir_name,
-        )
-        if snapshot is None:
-            raise RuntimeError(f"Retriever {repo_id} download failed.")
-
-        # load the retriever
-        return LocalRetriever.load_from_local(snapshot, **kwargs)
-
-    def save_to_hub(
-        self,
-        repo_id: str,
-        token: Optional[str] = os.environ.get("HF_TOKEN", None),
-        commit_message: str = "Update FlexRAG retriever",
-        retriever_card: Optional[str] = None,
-        private: bool = False,
-        **kwargs,
-    ) -> str:
-        """Save the retriever to the HuggingFace Hub.
-
-        :param repo_id: The repo id of the retriever on the HuggingFace Hub.
-        :type repo_id: str
-        :param token: The token to access the HuggingFace Hub. Default: None.
-        :type token: str
-        :param commit_message: The commit message for the retriever. Default: "Update FlexRAG retriever".
-        :type commit_message: str
-        :param retriever_card: The markdown readme file for the retriever. Default: None.
-        :type retriever_card: str
-        :param private: Whether to create a private repo. Default: False.
-        :type private: bool
-        :param kwargs: Additional arguments for uploading the retriever.
-        :type kwargs: Any
-        :return: The repo url of the retriever.
-        :rtype: str
-        """
-        # make a temporary directory if retriever_path is not specified
-        if self.retriever_path is None:
-            with tempfile.TemporaryDirectory(prefix="flexrag-retriever") as tmp_dir:
-                logger.info(
-                    (
-                        "As the `retriever_path` is not set, "
-                        f"the retriever will be saved temporarily at {tmp_dir}."
-                    )
-                )
-                try:
-                    self.save_to_local(tmp_dir)
-                    return self.save_to_hub(
-                        token=token,
-                        repo_id=repo_id,
-                        commit_message=commit_message,
-                        retriever_card=retriever_card,
-                        private=private,
-                        **kwargs,
-                    )
-                finally:
-                    if self.retriever_path == tmp_dir:
-                        self.detach()
-
-        # prepare the client
-        api = HfApi(token=token)
-
-        # create repo if not exists
-        repo_url = api.create_repo(
-            repo_id=repo_id,
-            token=api.token,
-            private=private,
-            repo_type="model",
-            exist_ok=True,
-        )
-        repo_id = repo_url.repo_id
-
-        # push to hub
-        assert self.retriever_path is not None, "`retriever_path` is not set."
-        api.upload_folder(
-            repo_id=repo_id,
-            commit_message=commit_message,
-            folder_path=self.retriever_path,
-            **kwargs,
-        )
-        return repo_url
-
-    @staticmethod
-    def load_from_local(repo_path: str, **kwargs) -> "LocalRetriever":
-        """Load a retriever from the local disk.
-
-        :param repo_path: The path to the local database. Default: None.
-        :type repo_path: str
-        :return: The loaded retriever.
-        :rtype: LocalRetriever
-        """
-        # prepare the cls
-        id_path = os.path.join(repo_path, "cls.id")
-        with open(id_path, "r", encoding="utf-8") as f:
-            retriever_name = f.read()
-        retriever_cls = RETRIEVERS[retriever_name]["item"]
-        config_cls = RETRIEVERS[retriever_name]["config_class"]
-
-        # prepare the configuration
-        config_path = os.path.join(repo_path, "config.yaml")
-        cfg: LocalRetrieverConfig = config_cls.load(config_path)
-
-        # load the retriever
-        retriever = retriever_cls(cfg, retriever_path=repo_path, **kwargs)
-        return retriever
-
-    @abstractmethod
-    def save_to_local(self, retriever_path: Optional[str] = None) -> None:
-        """Save the retriever to the local disk.
-
-        :param retriever_path: The path to the local database. Default: None.
-        :type retriever_path: str
-        :return: None
-        :rtype: None
-        """
-        return
-
-    @abstractmethod
-    def detach(self):
-        """Detach the retriever from the local database.
-        After detaching, the retriever will be kept in memory and all modifications will not be applied to the disk.
-        """
-        return

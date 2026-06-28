@@ -14,10 +14,6 @@ from .index import (
 )
 from .retriever_base import (
     RETRIEVERS,
-    EditableRetriever,
-    EditableRetrieverConfig,
-    LocalRetriever,
-    LocalRetrieverConfig,
     RetrieverBase,
     RetrieverBaseConfig,
 )
@@ -42,10 +38,6 @@ __all__ = [
     "ScaNNIndex",
     "ScaNNIndexConfig",
     "RETRIEVERS",
-    "EditableRetriever",
-    "EditableRetrieverConfig",
-    "LocalRetriever",
-    "LocalRetrieverConfig",
     "RetrieverBase",
     "RetrieverBaseConfig",
     "TypesenseRetriever",

@@ -293,23 +293,23 @@ msgid ""
 msgstr ""
 
 #: ../../source/reference/retrievers.rst:42 b12250bea91d4d978338d44d86f257af
-msgid "Editable Retriever"
+msgid "Retriever Interface"
 msgstr ""
 
 #: b270e5fd739d43558bc3bf842594e2c3
-#: flexrag.retriever.retriever_base.EditableRetrieverConfig:1 of
-msgid "Configuration class for LocalRetriever."
+#: flexrag.retriever.retriever_base.RetrieverBaseConfig:1 of
+msgid "Configuration class for FlexRetriever."
 msgstr ""
 
 #: 454d37a42b624d42b71d1b11f1c3e9ab ea80f61d8af94428be3c821670cf0832
-#: flexrag.retriever.retriever_base.EditableRetriever:1
+#: flexrag.retriever.retriever_base.RetrieverBase:1
 #: of
 msgid "Bases: :py:class:`~flexrag.retriever.retriever_base.RetrieverBase`"
 msgstr ""
 
 #: 008891a46d19435f8749d5f9dabb1212 85c64e37db0f421b85ae47893d703ca1
 #: d4ffcae6de4b41a59c56a9d1db06315a e574dab93be244ad9a26c7a56a100c03
-#: flexrag.retriever.retriever_base.EditableRetriever.add_passages:1
+#: flexrag.retriever.retriever_base.RetrieverBase.add_passages:1
 #: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:1
 #: of
 msgid "Add passages to the retriever database."
@@ -317,7 +317,7 @@ msgstr ""
 
 #: 4f354178be424fc98768cee9adbbcd4e 6dfc58cf248740268607ae20f7fa028a
 #: 74b8a74f694d48e3a93e09209c7dc1a2 7591fa25f6f04736996b57995537d9da
-#: flexrag.retriever.retriever_base.EditableRetriever.add_passages:3
+#: flexrag.retriever.retriever_base.RetrieverBase.add_passages:3
 #: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:3
 #: of
 msgid "The passages to add."
@@ -348,8 +348,8 @@ msgstr ""
 #: flexrag.retriever.index.multi_field_index.MultiFieldIndex.save_to_local:5
 #: flexrag.retriever.index.scann_index.ScaNNIndex.add_embeddings:5
 #: flexrag.retriever.index.scann_index.ScaNNIndex.build_index:6
-#: flexrag.retriever.retriever_base.EditableRetriever.add_passages:5
-#: flexrag.retriever.retriever_base.LocalRetriever.save_to_local:5
+#: flexrag.retriever.retriever_base.RetrieverBase.add_passages:5
+#: flexrag.retriever.retriever_base.FlexRetriever.save_to_local:5
 #: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:5
 #: of
 msgid "None"
@@ -359,7 +359,7 @@ msgstr ""
 #: a6e6feac5d0b40bba9226f4eb2f6c16c a95a47f9028d419cb631e629178480ca
 #: flexrag.retriever.elastic_retriever.ElasticRetriever.clear:1
 #: flexrag.retriever.flex_retriever.FlexRetriever.clear:1
-#: flexrag.retriever.retriever_base.EditableRetriever.clear:1
+#: flexrag.retriever.retriever_base.RetrieverBase.clear:1
 #: flexrag.retriever.typesense_retriever.TypesenseRetriever.clear:1 of
 msgid "Clear the retriever database."
 msgstr ""
@@ -407,9 +407,9 @@ msgstr ""
 #: 71e60f3616784f7d8fe3cee1d655292c c556814521e3477bbf9318ae17e11c4a
 #: f098dae6112d467d9724d825024a5f1d
 #: flexrag.retriever.elastic_retriever.ElasticRetriever:1
-#: flexrag.retriever.retriever_base.LocalRetriever:1
+#: flexrag.retriever.retriever_base.FlexRetriever:1
 #: flexrag.retriever.typesense_retriever.TypesenseRetriever:1 of
-msgid "Bases: :py:class:`~flexrag.retriever.retriever_base.EditableRetriever`"
+msgid "Bases: :py:class:`~flexrag.retriever.retriever_base.RetrieverBase`"
 msgstr ""
 
 #: 707c4ddfb3f14870ad59ef5f0ca42ea1
@@ -450,12 +450,12 @@ msgid "Timeout for the connection. Default: 200.0."
 msgstr ""
 
 #: a46bcde5db814e55b0af690e5a9ab98b
-#: flexrag.retriever.retriever_base.LocalRetrieverConfig:1 of
-msgid "The configuration class for LocalRetriever."
+#: flexrag.retriever.retriever_base.FlexRetrieverConfig:1 of
+msgid "The configuration class for FlexRetriever."
 msgstr ""
 
 #: ca6f9bb4285f4b5394004289921da4bf
-#: flexrag.retriever.retriever_base.LocalRetrieverConfig:3 of
+#: flexrag.retriever.retriever_base.FlexRetrieverConfig:3 of
 msgid ""
 "The path to the local database. Default: None. If specified, all "
 "modifications to the retriever will be applied simultaneously on the "
@@ -463,14 +463,14 @@ msgid ""
 msgstr ""
 
 #: a93a2d223ce44654b73c3df0f1a4cc8d
-#: flexrag.retriever.retriever_base.LocalRetriever:1 of
+#: flexrag.retriever.retriever_base.FlexRetriever:1 of
 msgid "The base class for all `local` retrievers."
 msgstr ""
 
 #: 4cf122e412ff40cfa2c58dbda10bd7ae
-#: flexrag.retriever.retriever_base.LocalRetriever:3 of
+#: flexrag.retriever.retriever_base.FlexRetriever:3 of
 msgid ""
-"In FlexRAG, the ``LocalRetriever`` is a concept referring to a retriever "
+"In FlexRAG, the ``FlexRetriever`` is a concept referring to a retriever "
 "that can be saved to the local disk. The subclasses provide the "
 "``save_to_local`` and ``load_from_local`` methods to save and load the "
 "retriever from the local disk, and the ``save_to_hub`` and "
@@ -479,21 +479,21 @@ msgid ""
 msgstr ""
 
 #: faa386424df74ae4a2e7fcfe24d66fa2
-#: flexrag.retriever.retriever_base.LocalRetriever:9 of
+#: flexrag.retriever.retriever_base.FlexRetriever:9 of
 msgid ""
 "For example, to load a retriever hosted on the HuggingFace Hub, you can "
 "run the following code:"
 msgstr ""
 
 #: acc4fe354e914516a0361bdc14f6622a
-#: flexrag.retriever.retriever_base.LocalRetriever:17 of
+#: flexrag.retriever.retriever_base.FlexRetriever:17 of
 msgid ""
 "To save a retriever to the HuggingFace Hub, you can run the following "
 "code:"
 msgstr ""
 
 #: 3564d6f561e1481d9c09326e71b77982
-#: flexrag.retriever.retriever_base.LocalRetriever.detach:1 of
+#: flexrag.retriever.retriever_base.FlexRetriever.detach:1 of
 msgid ""
 "Detach the retriever from the local database. After detaching, the "
 "retriever will be kept in memory and all modifications will not be "
@@ -501,91 +501,91 @@ msgid ""
 msgstr ""
 
 #: 13d0baaf2f234cb1a935799aad988dbf
-#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:1 of
+#: flexrag.retriever.retriever_base.FlexRetriever.load_from_hub:1 of
 msgid "Load a retriever from the HuggingFace Hub."
 msgstr ""
 
 #: 6bb46feb6c43464395ff0c46eb3d6839 a9f4fd4a62de4f92bb58c755d4f57564
-#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:3
-#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:3 of
+#: flexrag.retriever.retriever_base.FlexRetriever.load_from_hub:3
+#: flexrag.retriever.retriever_base.FlexRetriever.save_to_hub:3 of
 msgid "The repo id of the retriever on the HuggingFace Hub."
 msgstr ""
 
 #: 941ea393f11340008f0dbe0e390f5256
-#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:5 of
+#: flexrag.retriever.retriever_base.FlexRetriever.load_from_hub:5 of
 msgid "The revision of the retriever on the HuggingFace Hub. Default: None."
 msgstr ""
 
 #: 2d26b09b214f44b286410bb0dd4ec7b6 7a0b851852bb4d4fb0c9d4a1d988bcc2
-#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:7
-#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:5 of
+#: flexrag.retriever.retriever_base.FlexRetriever.load_from_hub:7
+#: flexrag.retriever.retriever_base.FlexRetriever.save_to_hub:5 of
 msgid "The token to access the HuggingFace Hub. Default: None."
 msgstr ""
 
 #: de188131df1d4892beda58d75eaf5533
-#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:9 of
+#: flexrag.retriever.retriever_base.FlexRetriever.load_from_hub:9 of
 msgid "The cache directory to store the retriever. Default: FLEXRAG_CACHE_DIR."
 msgstr ""
 
 #: b461743ffb0b408b9a4cf0e902c14c63
-#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:11 of
+#: flexrag.retriever.retriever_base.FlexRetriever.load_from_hub:11 of
 msgid "Additional arguments for the retriever."
 msgstr ""
 
 #: 8f49f6f59105491d930083ff80714f08 c3a70dc7e80b4809acba4f5c4d26a73b
-#: flexrag.retriever.retriever_base.LocalRetriever.load_from_hub:13
-#: flexrag.retriever.retriever_base.LocalRetriever.load_from_local:5 of
+#: flexrag.retriever.retriever_base.FlexRetriever.load_from_hub:13
+#: flexrag.retriever.retriever_base.FlexRetriever.load_from_local:5 of
 msgid "The loaded retriever."
 msgstr ""
 
 #: 3a8753b724df41179eefeb73701621d0
-#: flexrag.retriever.retriever_base.LocalRetriever.load_from_local:1 of
+#: flexrag.retriever.retriever_base.FlexRetriever.load_from_local:1 of
 msgid "Load a retriever from the local disk."
 msgstr ""
 
 #: 209651ade9d8485f99b1c6f6636972a3 43f7c3bbbe7e42a1b8ad0b185a5eddbc
 #: c70f6aa3d14b417dbe3934f07887a7f8
 #: flexrag.retriever.flex_retriever.FlexRetriever.save_to_local:3
-#: flexrag.retriever.retriever_base.LocalRetriever.load_from_local:3
-#: flexrag.retriever.retriever_base.LocalRetriever.save_to_local:3 of
+#: flexrag.retriever.retriever_base.FlexRetriever.load_from_local:3
+#: flexrag.retriever.retriever_base.FlexRetriever.save_to_local:3 of
 msgid "The path to the local database. Default: None."
 msgstr ""
 
 #: 4a9179eee3b94196867366f95a2d8a22
-#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:1 of
+#: flexrag.retriever.retriever_base.FlexRetriever.save_to_hub:1 of
 msgid "Save the retriever to the HuggingFace Hub."
 msgstr ""
 
 #: 8e0bd36d753b4dc58273dc4302e38671
-#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:7 of
+#: flexrag.retriever.retriever_base.FlexRetriever.save_to_hub:7 of
 msgid ""
 "The commit message for the retriever. Default: \"Update FlexRAG "
 "retriever\"."
 msgstr ""
 
 #: 210dffc178454a5b9c2f3ea356ee0e42
-#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:9 of
+#: flexrag.retriever.retriever_base.FlexRetriever.save_to_hub:9 of
 msgid "The markdown readme file for the retriever. Default: None."
 msgstr ""
 
 #: 762a1d6b5209443ab580ef0c906d3dd9
-#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:11 of
+#: flexrag.retriever.retriever_base.FlexRetriever.save_to_hub:11 of
 msgid "Whether to create a private repo. Default: False."
 msgstr ""
 
 #: b06198881b1a4928a1f8b5cdf574c247
-#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:13 of
+#: flexrag.retriever.retriever_base.FlexRetriever.save_to_hub:13 of
 msgid "Additional arguments for uploading the retriever."
 msgstr ""
 
 #: ae876c0aa1954e1cbc43bd57203ba576
-#: flexrag.retriever.retriever_base.LocalRetriever.save_to_hub:15 of
+#: flexrag.retriever.retriever_base.FlexRetriever.save_to_hub:15 of
 msgid "The repo url of the retriever."
 msgstr ""
 
 #: 2cd8e8d740c34d35a050318c25766923 7eb77f7f6eac459ab0ecc972aa91b2d9
 #: flexrag.retriever.flex_retriever.FlexRetriever.save_to_local:1
-#: flexrag.retriever.retriever_base.LocalRetriever.save_to_local:1 of
+#: flexrag.retriever.retriever_base.FlexRetriever.save_to_local:1 of
 msgid "Save the retriever to the local disk."
 msgstr ""
 
@@ -626,7 +626,7 @@ msgstr ""
 
 #: 0dc9a7e2add94d588e35c95128d251a0
 #: flexrag.retriever.flex_retriever.FlexRetriever:1 of
-msgid "Bases: :py:class:`~flexrag.retriever.retriever_base.LocalRetriever`"
+msgid "Bases: :py:class:`~flexrag.retriever.retriever_base.FlexRetriever`"
 msgstr ""
 
 #: 55ffe22c3edc446692cb0960c19557b8
@@ -1241,7 +1241,7 @@ msgstr ""
 #: ../../source/reference/retrievers.rst:167 d89da718e0d14de5bd5d45f1b780974e
 msgid ""
 "``WebRetriever`` is used to retrieve data from the web. Different from "
-"the ``EditableRetriever``, web retrievers can be used without building a "
+"the ``RetrieverBase``, web retrievers can be used without building a "
 "knowledge base, as they retrieve data using web search engines."
 msgstr ""
 

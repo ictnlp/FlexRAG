@@ -16,15 +16,15 @@ from flexrag.common.dataclasses import Context, RetrievedContext
 from .retriever_base import (
     DEFAULT_TOP_K,
     RETRIEVERS,
-    EditableRetriever,
-    EditableRetrieverConfig,
+    RetrieverBase,
+    RetrieverBaseConfig,
 )
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.elastic")
 
 
 @configure
-class ElasticRetrieverConfig(EditableRetrieverConfig):
+class ElasticRetrieverConfig(RetrieverBaseConfig):
     """Configuration class for ElasticRetriever.
 
     :param host: Host of the ElasticSearch server. Default: "http://localhost:9200".
@@ -53,7 +53,7 @@ class ElasticRetrieverConfig(EditableRetrieverConfig):
 
 
 @RETRIEVERS("elastic", config_class=ElasticRetrieverConfig)
-class ElasticRetriever(EditableRetriever):
+class ElasticRetriever(RetrieverBase):
     name = "ElasticSearch"
 
     def __init__(self, cfg: ElasticRetrieverConfig) -> None:
@@ -197,7 +197,7 @@ class ElasticRetriever(EditableRetriever):
             self.client.indices.delete(index=self.index_name)
         return
 
-    def __len__(self) -> int:
+    def count(self) -> int:
         if self.index_name in self.indices:
             return self.client.count(index=self.index_name)["count"]
         return 0
@@ -249,7 +249,7 @@ class ElasticRetriever(EditableRetriever):
             return list(mapping[self.index_name]["mappings"]["properties"].keys())
         return []
 
-    def __getitem__(self, context_id: str) -> Context:
+    def get(self, context_id: str) -> Context:
         try:
             res = self.client.get(index=self.index_name, id=context_id)
             return Context(

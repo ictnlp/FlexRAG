@@ -1,10 +1,14 @@
 import os
 import shutil
+import tempfile
 from collections import defaultdict
 from typing import Any, Generator, Iterable, Optional
 
+from huggingface_hub import HfApi
+
 from flexrag.common import (
     __VERSION__,
+    FLEXRAG_CACHE_DIR,
     LOGGER_MANAGER,
     ProgressDisplay,
     SimpleProgressLogger,
@@ -23,8 +27,8 @@ from .index import ContextIndexBase
 from .retriever_base import (
     DEFAULT_TOP_K,
     RETRIEVERS,
-    LocalRetriever,
-    LocalRetrieverConfig,
+    RetrieverBase,
+    RetrieverBaseConfig,
 )
 
 logger = LOGGER_MANAGER.get_logger("flexrag.retreviers.flex")
@@ -58,7 +62,7 @@ pip install flexrag
 You can use this retriever for information retrieval tasks. Here is an example:
 
 ```python
-from flexrag.retriever import LocalRetriever
+from flexrag.retriever import FlexRetriever
 
 {load_example}
 
@@ -81,13 +85,13 @@ def _build_retriever_card(
     if repo_id is not None:
         load_example = (
             "# Load the retriever from the HuggingFace Hub\n"
-            f'retriever = LocalRetriever.load_from_hub("{repo_id}")'
+            f'retriever = FlexRetriever.load_from_hub("{repo_id}")'
         )
     else:
         assert repo_path is not None, "repo_path must be provided when repo_id is None."
         load_example = (
             "# Load the retriever from a local path\n"
-            f'retriever = LocalRetriever.load_from_local("{repo_path}")'
+            f'retriever = FlexRetriever.load_from_local("{repo_path}")'
         )
     return RETRIEVER_CARD_TEMPLATE.format(
         retriever_type=retriever_type,
@@ -97,20 +101,17 @@ def _build_retriever_card(
 
 
 @configure
-class FlexRetrieverConfig(LocalRetrieverConfig):
+class FlexRetrieverConfig(RetrieverBaseConfig):
     """Configuration for FlexRetriever.
 
     :param batch_size: Number of contexts processed per batch when adding
         passages, updating indexes, serializing the database, or running search.
         Defaults to 32.
-    :param query_preprocess_pipeline: Text processing pipeline applied to
-        queries before search unless ``no_preprocess=True`` is passed at
-        runtime.
     """
 
 
 @RETRIEVERS("flex", config_class=FlexRetrieverConfig)
-class FlexRetriever(LocalRetriever):
+class FlexRetriever(RetrieverBase):
     """FlexRetriever is a retriever implemented by FlexRAG team.
     FlexRetriever supports multi-index and multi-field retrieval.
     """
@@ -140,6 +141,60 @@ class FlexRetriever(LocalRetriever):
             retriever is detached from disk.
         """
         return self._retriever_path
+
+    @classmethod
+    def load_from_hub(
+        cls,
+        repo_id: str,
+        revision: Optional[str] = None,
+        token: Optional[str] = None,
+        cache_dir: str | os.PathLike[str] = FLEXRAG_CACHE_DIR,
+        **kwargs,
+    ) -> "FlexRetriever":
+        """Load a FlexRetriever artifact from the HuggingFace Hub.
+
+        :param repo_id: HuggingFace Hub repository id.
+        :param revision: Optional repository revision.
+        :param token: Optional HuggingFace token.
+        :param cache_dir: Local cache directory for the downloaded artifact.
+        :param kwargs: Additional arguments passed to the constructor.
+        :return: Loaded FlexRetriever.
+        """
+        api = HfApi(token=token)
+        repo_info = api.repo_info(repo_id)
+        if repo_info is None:
+            raise ValueError(f"Retriever {repo_id} not found on the HuggingFace Hub.")
+        repo_id = repo_info.id
+        dir_name = os.path.join(
+            cache_dir,
+            f"{repo_id.split('/')[0]}--{repo_id.split('/')[1]}",
+        )
+        snapshot = api.snapshot_download(
+            repo_id=repo_id,
+            revision=revision,
+            token=token,
+            local_dir=dir_name,
+        )
+        if snapshot is None:
+            raise RuntimeError(f"Retriever {repo_id} download failed.")
+        return cls.load_from_local(snapshot, **kwargs)
+
+    @classmethod
+    def load_from_local(
+        cls,
+        retriever_path: str | os.PathLike[str],
+        **kwargs,
+    ) -> "FlexRetriever":
+        """Load a FlexRetriever artifact from local disk.
+
+        :param retriever_path: Local FlexRetriever artifact path.
+        :param kwargs: Additional arguments passed to the constructor.
+        :return: Loaded FlexRetriever.
+        """
+        retriever_path = os.fspath(retriever_path)
+        config_path = os.path.join(retriever_path, "config.yaml")
+        cfg = FlexRetrieverConfig.load(config_path)
+        return cls(cfg, retriever_path=retriever_path, **kwargs)
 
     @trace("retriever.flex_retriever.add_passages")
     def add_passages(
@@ -317,8 +372,15 @@ class FlexRetriever(LocalRetriever):
                 index.save_to_local(self._get_index_path(index_name))
         return
 
-    def __len__(self) -> int:
+    def count(self) -> int:
         return len(self.database)
+
+    def get(self, context_id: str) -> Context:
+        return Context(
+            context_id=context_id,
+            data=dict(self.database[context_id]),
+            source=self.retriever_path,
+        )
 
     @property
     def fields(self) -> list[str]:
@@ -444,6 +506,64 @@ class FlexRetriever(LocalRetriever):
             index.save_to_local(self._get_index_path(index_name))
         return
 
+    def save_to_hub(
+        self,
+        repo_id: str,
+        token: Optional[str] = os.environ.get("HF_TOKEN", None),
+        commit_message: str = "Update FlexRAG retriever",
+        retriever_card: Optional[str] = None,
+        private: bool = False,
+        **kwargs,
+    ) -> str:
+        """Save the FlexRetriever artifact to the HuggingFace Hub.
+
+        :param repo_id: HuggingFace Hub repository id.
+        :param token: Optional HuggingFace token.
+        :param commit_message: Commit message for the upload.
+        :param retriever_card: Optional README content for future callers.
+        :param private: Whether to create the repository as private.
+        :param kwargs: Additional arguments forwarded to ``upload_folder``.
+        :return: Repository URL returned by HuggingFace Hub.
+        """
+        if self.retriever_path is None:
+            with tempfile.TemporaryDirectory(prefix="flexrag-retriever") as tmp_dir:
+                logger.info(
+                    (
+                        "As the `retriever_path` is not set, "
+                        f"the retriever will be saved temporarily at {tmp_dir}."
+                    )
+                )
+                try:
+                    self.save_to_local(tmp_dir)
+                    return self.save_to_hub(
+                        token=token,
+                        repo_id=repo_id,
+                        commit_message=commit_message,
+                        retriever_card=retriever_card,
+                        private=private,
+                        **kwargs,
+                    )
+                finally:
+                    if self.retriever_path == tmp_dir:
+                        self.detach()
+
+        api = HfApi(token=token)
+        repo_url = api.create_repo(
+            repo_id=repo_id,
+            token=api.token,
+            private=private,
+            repo_type="model",
+            exist_ok=True,
+        )
+        assert self.retriever_path is not None, "`retriever_path` is not set."
+        api.upload_folder(
+            repo_id=repo_url.repo_id,
+            commit_message=commit_message,
+            folder_path=self.retriever_path,
+            **kwargs,
+        )
+        return repo_url
+
     def detach(self):
         """Detach the retriever from the local disk to memory.
         This function will not delete the database or the indexes."""
@@ -567,6 +687,3 @@ class FlexRetriever(LocalRetriever):
         id_path = os.path.join(retriever_path, "cls.id")
         with open(id_path, "w", encoding="utf-8") as f:
             f.write(self.__class__.__name__)
-
-    def __getitem__(self, context_id: str) -> dict:
-        return self.database[context_id]

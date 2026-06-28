@@ -1,12 +1,11 @@
 Retrievers
 ==========
-Retrievers are used to retrieve data from the local knowledge base or the web.
+Retrievers are used to manage and search collection-like knowledge bases.
 
 
 The Retriever Interface
 -----------------------
-``RetrieverBase`` is the base class for all retrievers,
-including the subclasses of ``EditableRetriever``.
+``RetrieverBase`` is the base class for all retrievers.
 
 
 .. autoclass:: flexrag.retriever.RetrieverBaseConfig
@@ -28,19 +27,9 @@ you can use the following configuration:
 
 .. code-block:: python
 
-    from flexrag.retriever import LocalRetriever
+    from flexrag.retriever import FlexRetriever
 
-    retriever = LocalRetriever.load_from_local('<path_to_retriever>')
-
-Editable Retriever
-------------------
-.. autoclass:: flexrag.retriever.EditableRetrieverConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.retriever.EditableRetriever
-    :members:
-    :show-inheritance:
+    retriever = FlexRetriever.load_from_local('<path_to_retriever>')
 
 .. ElasticSearch Retriever
 .. autoclass:: flexrag.retriever.ElasticRetrieverConfig
@@ -57,15 +46,6 @@ Editable Retriever
     :inherited-members:
 
 .. autoclass:: flexrag.retriever.TypesenseRetriever
-    :members:
-    :show-inheritance:
-
-.. LocalRetriever
-.. autoclass:: flexrag.retriever.LocalRetrieverConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.retriever.LocalRetriever
     :members:
     :show-inheritance:
 
