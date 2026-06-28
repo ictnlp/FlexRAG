@@ -1,6 +1,5 @@
 from .elastic_retriever import ElasticRetriever, ElasticRetrieverConfig
 from .flex_retriever import FlexRetriever, FlexRetrieverConfig
-from .hyde_retriever import HydeRetriever, HydeRetrieverConfig
 from .index import (
     RETRIEVER_INDEX,
     BM25Index,
@@ -33,8 +32,6 @@ __all__ = [
     "FlexRetriever",
     "FlexRetrieverConfig",
     "IndexFieldsConfig",
-    "HydeRetriever",
-    "HydeRetrieverConfig",
     "RETRIEVER_INDEX",
     "BM25Index",
     "BM25IndexConfig",

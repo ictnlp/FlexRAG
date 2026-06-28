@@ -274,7 +274,7 @@ class EditableRetriever(RetrieverBase):
     """The base class for all `editable` retrievers.
     In FlexRAG, the ``EditableRetriever`` is a concept referring to a retriever that includes the ``add_passages`` and ``clear`` methods,
     allowing you to build the retriever using your own knowledge base.
-    FlexRAG provides following editable retrievers: ``FlexRetriever``, ``ElasticRetriever``, ``TypesenseRetriever``, and ``HydeRetriever``.
+    FlexRAG provides following editable retrievers: ``FlexRetriever``, ``ElasticRetriever``, and ``TypesenseRetriever``.
     The subclasses should implement the ``add_passages``, ``clear``, and ``__len__`` methods.
     """
 
@@ -323,7 +323,7 @@ class LocalRetriever(EditableRetriever):
     The subclasses provide the ``save_to_local`` and ``load_from_local`` methods to save and load the retriever from the local disk,
     and the ``save_to_hub`` and ``load_from_hub`` methods to save and load the retriever from the HuggingFace Hub.
 
-    FlexRAG provides following local retrievers: ``FlexRetriever``, and ``HydeRetriever``.
+    FlexRAG provides following local retrievers: ``FlexRetriever``.
 
     For example, to load a retriever hosted on the HuggingFace Hub, you can run the following code:
 

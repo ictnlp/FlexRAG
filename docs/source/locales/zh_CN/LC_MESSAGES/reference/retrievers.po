@@ -193,39 +193,6 @@ msgstr ""
 msgid "Search queries asynchronously."
 msgstr ""
 
-#: ../../../docstring 0eb3c1cdfd084c7d91ed2830323665b3
-#: 8d49ba6c371b4f1cbc17785383ae2f26 b7c4a5eb053f45bd81c932487becfb0b
-#: c76e7fea6e214b86a1c73278522a4868 e79c26ee774a4e0b9580e881cc8f6544
-#: eb2e99db56c5420eb239157722a0b89a f56649fa63474e6fb36f4b8c7c416828
-#: flexrag.retriever.hyde_retriever.HydeRetriever.search:1
-#: flexrag.retriever.retriever_base.RetrieverBase.search:1
-#: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:1
-#: of
-msgid "Search a batch of queries."
-msgstr ""
-
-#: ../../../docstring 0c84eb2be98c48d89b0222ee6a6f6521
-#: 2106efd664bd4054802b586932df06a6 3a15d637518745ddaa04c31624119d40
-#: 57e4183cc0c74f3d9899a0b2c111f716 75842156ac4b433a91b7ae7ff10057c3
-#: dfe5e31f7cf04b198c98e698d871051c f16cd8db6f3a42999076a291a95e5a50
-#: flexrag.retriever.hyde_retriever.HydeRetriever.search:3
-#: flexrag.retriever.retriever_base.RetrieverBase.search:3
-#: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:3
-#: of
-msgid "Queries to search."
-msgstr ""
-
-#: ../../../docstring 00aaf85f77364e648888a1f6685c432d
-#: 00ca80efeb874cf7a758fb6b75a1b77e 05108d87690b42ce81ac0e2f08a06067
-#: 5259e73405a14eb9b79853a048874710 83101ce5bb2141e9bb9a951a235b29eb
-#: dbd5743d6b054878a1dde6c78d0ec591 ea81f2c6c5e74e0a9651608ad883e8f9
-#: flexrag.retriever.hyde_retriever.HydeRetriever.search:5
-#: flexrag.retriever.retriever_base.RetrieverBase.search:5
-#: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:5
-#: of
-msgid "Keyword arguments, contains other search arguments."
-msgstr ""
-
 #: ../../source/reference/retrievers.rst 1ee3c1332b234631910fef417caaa082
 #: 223152fb461c4d98986384757004fccf 224156b457704f56818cb87f9a5ad088
 #: 263136cd5992424ab87e728dd176f0a6 286329edc4cc4151b19364b4dce5ff39
@@ -254,17 +221,6 @@ msgstr ""
 #: f1027c1c06d04b4b97e6c5b2b48306bc f1ac50e952824291a72f2081e22fbb5e
 #: ffd78ecd871144178d928a6b1dc226ea
 msgid "Returns"
-msgstr ""
-
-#: ../../../docstring 1f7b881bffab4afbb6c4e93e97413815
-#: 3acbbda890d34070aae14a45e925cca6 4d74b6eac4394dd6a8dfeb63085251b8
-#: 6aca5c11341b460d90cc5c8ab31718b9 b01e18dcb67e4604bc0ba5135c809f22
-#: d799f4c92fda48d0b807c7382d46b5ce feaf166b767448a6a1c1a634199fb37a
-#: flexrag.retriever.hyde_retriever.HydeRetriever.search:7
-#: flexrag.retriever.retriever_base.RetrieverBase.search:7
-#: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:7
-#: of
-msgid "A batch of list that contains k RetrievedContext."
 msgstr ""
 
 #: ../../source/reference/retrievers.rst 007b0e91fef34fed82efaf149efdadea
@@ -324,10 +280,6 @@ msgstr ""
 msgid "The config for FlexRetriever."
 msgstr ""
 
-#: 06f8a329ad1d4f549ab91dbc1dc2164b of types.RetrieverConfig:9
-msgid "The config for HydeRetriever."
-msgstr ""
-
 #: 97ac5e1cec6d4aa3b41a308e08d6d079 of types.RetrieverConfig:11
 msgid "The config for TypesenseRetriever."
 msgstr ""
@@ -353,18 +305,6 @@ msgstr ""
 #: flexrag.retriever.retriever_base.EditableRetriever:1
 #: of
 msgid "Bases: :py:class:`~flexrag.retriever.retriever_base.RetrieverBase`"
-msgstr ""
-
-#: ac4c8252152e46e49a3e20124ad5bc88
-#: flexrag.retriever.retriever_base.EditableRetriever:1 of
-msgid ""
-"The base class for all `editable` retrievers. In FlexRAG, the "
-"``EditableRetriever`` is a concept referring to a retriever that includes"
-" the ``add_passages`` and ``clear`` methods, allowing you to build the "
-"retriever using your own knowledge base. FlexRAG provides following "
-"editable retrievers: ``FlexRetriever``, ``ElasticRetriever``, "
-"``TypesenseRetriever``, and ``HydeRetriever``. The subclasses should "
-"implement the ``add_passages``, ``clear``, and ``__len__`` methods."
 msgstr ""
 
 #: 008891a46d19435f8749d5f9dabb1212 85c64e37db0f421b85ae47893d703ca1
@@ -536,13 +476,6 @@ msgid ""
 "retriever from the local disk, and the ``save_to_hub`` and "
 "``load_from_hub`` methods to save and load the retriever from the "
 "HuggingFace Hub."
-msgstr ""
-
-#: 3d25d6bbf67a4932bd8cafce40ac7348
-#: flexrag.retriever.retriever_base.LocalRetriever:7 of
-msgid ""
-"FlexRAG provides following local retrievers: ``FlexRetriever``, and "
-"``HydeRetriever``."
 msgstr ""
 
 #: faa386424df74ae4a2e7fcfe24d66fa2
@@ -727,41 +660,6 @@ msgstr ""
 #: 5cf9c16b260344b9a17bb216f55f8149
 #: flexrag.retriever.flex_retriever.FlexRetriever.remove_index:5 of
 msgid "If the index name does not exist."
-msgstr ""
-
-#: ../../../docstring 71f07782b25444eea5d91e1f898fdf24
-#: flexrag.retriever.hyde_retriever.HydeRetrieverConfig:1 of
-msgid "Configuration class for HydeRetriever."
-msgstr ""
-
-#: ../../../docstring b4779f1629ef47e7a0e32f0c83d816f8
-#: flexrag.retriever.hyde_retriever.HydeRetrieverConfig:3 of
-msgid ""
-"Task for rewriting the query. Default: \"WEB_SEARCH\". Available options:"
-" \"WEB_SEARCH\", \"SCIFACT\", \"ARGUANA\", \"TREC_COVID\", \"FIQA\", "
-"\"DBPEDIA_ENTITY\", \"TREC_NEWS\", \"MR_TYDI\"."
-msgstr ""
-
-#: ../../../docstring 303ec235dd264997b0764e608096f29e
-#: flexrag.retriever.hyde_retriever.HydeRetrieverConfig:6 of
-msgid "Language for rewriting. Default: \"en\"."
-msgstr ""
-
-#: ../../../docstring e2350a935389466cbaa116938d01d4f9
-#: flexrag.retriever.hyde_retriever.HydeRetriever:1 of
-msgid "Bases: :py:class:`~flexrag.retriever.flex_retriever.FlexRetriever`"
-msgstr ""
-
-#: ../../../docstring 0e0fdfc99b74404884ae2466bca3dee2
-#: flexrag.retriever.hyde_retriever.HydeRetriever:1 of
-msgid "HydeRetriever is a retriever that rewrites the query before searching."
-msgstr ""
-
-#: ../../../docstring dacf056fb3424df1a2390178f0945594
-#: flexrag.retriever.hyde_retriever.HydeRetriever:3 of
-msgid ""
-"The original paper is available at https://aclanthology.org/2023.acl-"
-"long.99/."
 msgstr ""
 
 #: ../../source/reference/retrievers.rst:97 48c4aad47aaf49a281b15771f9dcbaff
@@ -1478,20 +1376,6 @@ msgstr ""
 #~ " configuration:"
 #~ msgstr ""
 
-#~ msgid ""
-#~ "The base class for all `editable` "
-#~ "retrievers. In FlexRAG, the "
-#~ "``EditableRetriever`` is a concept referring"
-#~ " to a retriever that includes the "
-#~ "``add_passages`` and ``clean`` methods, "
-#~ "allowing you to build the retriever "
-#~ "using your own knowledge base. FlexRAG"
-#~ " provides following editable retrievers: "
-#~ "``BM25SRetriever``, ``DenseRetriever``, "
-#~ "``ElasticRetriever``, ``TypesenseRetriever``, and "
-#~ "``HydeRetriever``."
-#~ msgstr ""
-
 #~ msgid "Clean the retriever database."
 #~ msgstr ""
 
@@ -1499,12 +1383,6 @@ msgstr ""
 #~ msgstr ""
 
 #~ msgid "Host of the Typesense server. Required."
-#~ msgstr ""
-
-#~ msgid ""
-#~ "FlexRAG provides following local retrievers:"
-#~ " ``BM25SRetriever``, ``DenseRetriever``, and "
-#~ "``HydeRetriever``."
 #~ msgstr ""
 
 #~ msgid "You can also override the configuration when loading the retriever:"

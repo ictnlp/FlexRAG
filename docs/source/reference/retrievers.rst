@@ -82,15 +82,6 @@ Editable Retriever
     :members:
     :show-inheritance:
 
-.. Hyde Retriever
-.. autoclass:: flexrag.retriever.HydeRetrieverConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.retriever.HydeRetriever
-    :members:
-    :show-inheritance:
-
 Retriever Index
 ---------------
 ``RetrieverIndex`` is used in ``FlexRetriever`` to store and retrieve dense embeddings.
