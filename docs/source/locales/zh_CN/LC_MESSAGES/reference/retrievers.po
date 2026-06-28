@@ -207,7 +207,6 @@ msgstr ""
 #: flexrag.retriever.RetrieverBase.fields:1
 #: flexrag.retriever.SimpleWebRetriever.fields:1
 #: flexrag.retriever.TypesenseRetriever.fields:1
-#: flexrag.retriever.WikipediaRetriever.fields:1
 #: flexrag.retriever.web_retrievers.WebRetrieverBase.fields:1 of
 msgid "The fields of the retrieved data."
 msgstr ""
@@ -218,7 +217,6 @@ msgstr ""
 #: eb2e99db56c5420eb239157722a0b89a f56649fa63474e6fb36f4b8c7c416828
 #: flexrag.retriever.hyde_retriever.HydeRetriever.search:1
 #: flexrag.retriever.retriever_base.RetrieverBase.search:1
-#: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetriever.search:1
 #: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:1
 #: of
 msgid "Search a batch of queries."
@@ -230,7 +228,6 @@ msgstr ""
 #: dfe5e31f7cf04b198c98e698d871051c f16cd8db6f3a42999076a291a95e5a50
 #: flexrag.retriever.hyde_retriever.HydeRetriever.search:3
 #: flexrag.retriever.retriever_base.RetrieverBase.search:3
-#: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetriever.search:3
 #: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:3
 #: of
 msgid "Queries to search."
@@ -242,7 +239,6 @@ msgstr ""
 #: dbd5743d6b054878a1dde6c78d0ec591 ea81f2c6c5e74e0a9651608ad883e8f9
 #: flexrag.retriever.hyde_retriever.HydeRetriever.search:5
 #: flexrag.retriever.retriever_base.RetrieverBase.search:5
-#: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetriever.search:5
 #: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:5
 #: of
 msgid "Keyword arguments, contains other search arguments."
@@ -284,7 +280,6 @@ msgstr ""
 #: d799f4c92fda48d0b807c7382d46b5ce feaf166b767448a6a1c1a634199fb37a
 #: flexrag.retriever.hyde_retriever.HydeRetriever.search:7
 #: flexrag.retriever.retriever_base.RetrieverBase.search:7
-#: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetriever.search:7
 #: flexrag.utils.timer._TimeMeter.__call__.<locals>.time_it.<locals>.wrapper:7
 #: of
 msgid "A batch of list that contains k RetrievedContext."
@@ -359,10 +354,6 @@ msgstr ""
 msgid "The config for SimpleWebRetriever."
 msgstr ""
 
-#: 1590279f52b74ac491eac50defa0640c of types.RetrieverConfig:15
-msgid "The config for WikipediaRetriever."
-msgstr ""
-
 #: ../../source/reference/retrievers.rst:24 bc7419bda15441e586c744d9d6efa91e
 msgid ""
 "RetrieverConfig is the general configuration for all registered "
@@ -382,7 +373,7 @@ msgstr ""
 
 #: 454d37a42b624d42b71d1b11f1c3e9ab ea80f61d8af94428be3c821670cf0832
 #: flexrag.retriever.retriever_base.EditableRetriever:1
-#: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetriever:1 of
+#: of
 msgid "Bases: :py:class:`~flexrag.retriever.retriever_base.RetrieverBase`"
 msgstr ""
 
@@ -1470,12 +1461,6 @@ msgid ""
 "is None."
 msgstr ""
 
-#: ../../source/reference/retrievers.rst:181 fd71cffd8c824d9087028721fc63a75b
-msgid ""
-"FlexRAG provides two simple web retrievers, ``SimpleWebRetriever`` and "
-"``WikipediaRetriever``."
-msgstr ""
-
 #: f17431d2f7814485926a4da333000857
 #: flexrag.retriever.web_retrievers.web_retriever.SimpleWebRetrieverConfig:1 of
 msgid "The configuration for the ``SimpleWebRetriever``."
@@ -1495,20 +1480,6 @@ msgid ""
 "engine and reads the content using the WebReader."
 msgstr ""
 
-#: 3177dbc2ee9d4599a11c6666d89d85a4
-#: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetrieverConfig:1
-#: of
-msgid "The configuration for the ``WikipediaRetriever``."
-msgstr ""
-
-#: 9ef034933e9f47b1b3aa7ca3634bdb02
-#: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetrieverConfig:3
-#: of
-msgid ""
-"The search URL for Wikipedia. Default is "
-"\"https://en.wikipedia.org/w/index.php?search=\"."
-msgstr ""
-
 #: 69164938163e46f6b1ec1e06e928e7c8 6b513648ccd742ad941815f6a2b17f93
 #: b54f22fea1f040afa4bebe0327898672 e03e31583613474e9b1b1e0b33753cd9
 #: e0dab729a37b46f79693072de1f5ca54
@@ -1516,16 +1487,8 @@ msgstr ""
 #: flexrag.retriever.web_retrievers.web_downloader.SimpleWebDownloaderConfig:3
 #: flexrag.retriever.web_retrievers.web_seeker.DuckDuckGoEngineConfig:3
 #: flexrag.retriever.web_retrievers.web_seeker.GoogleEngineConfig:14
-#: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetrieverConfig:6
 #: of
 msgid "The proxy to use. Default is None."
-msgstr ""
-
-#: a3f1b10001fd4cf185f270f63a32535a
-#: flexrag.retriever.web_retrievers.wikipedia_retriever.WikipediaRetriever:1 of
-msgid ""
-"WikipediaRetriever retrieves information from Wikipedia directly. Adapted"
-" from https://github.com/ysymyth/ReAct"
 msgstr ""
 
 #: ../../source/reference/retrievers.rst:201 0e4c4addb11e4e76b8cfaedbdcdce66d

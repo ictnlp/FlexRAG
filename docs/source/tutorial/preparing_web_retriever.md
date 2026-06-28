@@ -15,9 +15,8 @@ Since using computer programs to obtain internet information may be illegal in c
 
 ## Using FlexRAG's Predefined WebRetriever
 The easiest way to use the `WebRetriever` is to use the predefined `WebRetriever` provided by FlexRAG.
-FlexRAG provides two predefined `WebRetriever`s:
+FlexRAG provides the following predefined `WebRetriever`:
 - {class}`~flexrag.retriever.SimpleWebRetriever` which retrieves most relevant webpages using existing search engine and convert the HTML content into a LLM friendly format using the `WebReader`.
-- {class}`~flexrag.retriever.WikipediaRetriever` which retrieves information from Wikipedia directly. This retriever is adapted from the `ReACT` project.
 
 In this tutorial, we will show you how to use the {class}`~flexrag.retriever.SimpleWebRetriever` to retrieve information from the web.
 

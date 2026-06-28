@@ -77,16 +77,6 @@ msgstr ""
 "简单网络检索器 {class}`~flexrag.retriever.SimpleWebRetriever` "
 "：该检索器通过互联网搜索引擎来获取相关信息，并通过网页读取器 `WebReader` 来将 HTML 内容转化为对大模型友好的内容。"
 
-#: ../../source/tutorial/preparing_web_retriever.md:16
-#: c7d3ed426a334629a99c419662687572
-msgid ""
-"{class}`~flexrag.retriever.WikipediaRetriever` which retrieves "
-"information from Wikipedia directly. This retriever is adapted from the "
-"`ReACT` project."
-msgstr ""
-"维基百科检索器 {class}`~flexrag.retriever.WikipediaRetriever` "
-"：该检索器直接通过维基百科检索相应的实体，该检索器是从 `ReACT` 项目中获取的灵感。"
-
 #: ../../source/tutorial/preparing_web_retriever.md:18
 #: fdf0f0a6006f421ebdce92a78fcd502b
 msgid ""
@@ -297,4 +287,3 @@ msgstr ""
 #~ "由于现在的视觉大模型（VLM）在处理图像信息方面取得了长足进步，即使是网页截图这样复杂的图片也可以被妥善处理。因此 "
 #~ "FlexRAG 也提供给了一个独特的网页读取器用于将网页转换为截图。下面的代码将向您展示如何使用 "
 #~ "`ScreenshotWebReader` 将 *DuckDuckGo* 检索到的网页转换为截图。"
-

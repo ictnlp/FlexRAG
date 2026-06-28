@@ -167,21 +167,13 @@ Web Retriever
     :members:
     :inherited-members:
 
-FlexRAG provides two simple web retrievers, ``SimpleWebRetriever`` and ``WikipediaRetriever``.
+FlexRAG provides ``SimpleWebRetriever`` for web search based retrieval.
 
 .. autoclass:: flexrag.retriever.SimpleWebRetrieverConfig
     :members:
     :inherited-members:
 
 .. autoclass:: flexrag.retriever.SimpleWebRetriever
-    :members:
-    :show-inheritance:
-
-.. autoclass:: flexrag.retriever.WikipediaRetrieverConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.retriever.WikipediaRetriever
     :members:
     :show-inheritance:
 

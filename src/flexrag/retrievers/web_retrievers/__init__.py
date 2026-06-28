@@ -42,7 +42,6 @@ from .web_seeker import (
     WebSeekerBase,
     WebSeekerConfig,
 )
-from .wikipedia_retriever import WikipediaRetriever, WikipediaRetrieverConfig
 
 __all__ = [
     "WebResource",
@@ -81,6 +80,4 @@ __all__ = [
     "WebSeekerBase",
     "SearchEngineConfig",
     "WebSeekerConfig",
-    "WikipediaRetriever",
-    "WikipediaRetrieverConfig",
 ]
