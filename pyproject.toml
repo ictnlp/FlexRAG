@@ -63,8 +63,7 @@ dependencies = [
     "faiss-cpu",
     "PyStemmer",
     "bm25s",
-    "elasticsearch>=8.14.0",
-    "typesense",
+    "elasticsearch[async]>=8.14.0",
     "httpx",
     # chunking
     "regex",
@@ -93,6 +92,7 @@ dev = [
     "pre-commit",
 ]
 scann = ["scann>=1.4.0; python_version < '3.14' and platform_system == 'Linux'"]
+typesense = ["typesense>=2.0.0"]
 
 [tool.hatch.version]
 source = "vcs"

@@ -1,4 +1,5 @@
-from typing import Annotated, Generator, Iterable, Optional
+import asyncio
+from typing import Annotated, Iterable, Optional
 
 from flexrag.common import (
     LOGGER_MANAGER,
@@ -14,7 +15,7 @@ from flexrag.common.dataclasses import Context, RetrievedContext
 from .retriever_base import (
     DEFAULT_TOP_K,
     RETRIEVERS,
-    RetrieverBase,
+    RemoteRetrieverBase,
     RetrieverBaseConfig,
 )
 
@@ -49,7 +50,7 @@ class TypesenseRetrieverConfig(RetrieverBaseConfig):
 
 
 @RETRIEVERS("typesense", config_class=TypesenseRetrieverConfig)
-class TypesenseRetriever(RetrieverBase):
+class TypesenseRetriever(RemoteRetrieverBase):
     def __init__(self, cfg: TypesenseRetrieverConfig) -> None:
         super().__init__(cfg)
         self.cfg = extract_config(cfg, TypesenseRetrieverConfig)
@@ -57,10 +58,16 @@ class TypesenseRetriever(RetrieverBase):
         assert self.cfg.index_name is not None, "`index_name` must be provided"
 
         # load database
-        import typesense
+        try:
+            import typesense
+        except ImportError as exc:
+            raise ImportError(
+                "Please install Typesense support by running "
+                "`pip install 'flexrag[typesense]'`."
+            ) from exc
 
         self.typesense = typesense
-        self.client = typesense.Client(
+        self.client = typesense.AsyncClient(
             {
                 "nodes": [
                     {
@@ -77,59 +84,61 @@ class TypesenseRetriever(RetrieverBase):
         return
 
     @trace("retriever.typesense.add_passages")
-    def add_passages(
+    async def async_add_passages(
         self,
         passages: Iterable[Context],
         log_interval: int = 10000,
         display: ProgressDisplay = "auto",
     ) -> None:
-        def get_batch() -> Generator[list[dict[str, str]], None, None]:
-            batch = []
-            for passage in passages:
-                if len(batch) == self.cfg.batch_size:
-                    yield batch
-                    batch = []
-                data = passage.data.copy()
-                data[self.id_field_name] = passage.context_id
-                batch.append(data)
-            if batch:
-                yield batch
-            return
-
         # create collection if not exists
-        if self.index_name not in self.indices:
+        if self.index_name not in await self.async_indices():
             schema = {
                 "name": self.index_name,
                 "fields": [
                     {"name": ".*", "type": "auto", "index": True, "infix": True}
                 ],
             }
-            self.client.collections.create(schema)
+            await self.client.collections.create(schema)
 
         # import documents
+        batch = []
         with SimpleProgressLogger(
             logger, interval=log_interval, display=display
         ) as p_logger:
-            for batch in get_batch():
-                r = self.client.collections[self.index_name].documents.import_(batch)
+            for passage in passages:
+                if len(batch) == self.cfg.batch_size:
+                    r = await self.client.collections[
+                        self.index_name
+                    ].documents.import_(batch)
+                    assert all([i["success"] for i in r])
+                    p_logger.update(len(batch), desc="Adding passages")
+                    batch = []
+                data = passage.data.copy()
+                data[self.id_field_name] = passage.context_id
+                batch.append(data)
+            if batch:
+                r = await self.client.collections[
+                    self.index_name
+                ].documents.import_(batch)
                 assert all([i["success"] for i in r])
                 p_logger.update(len(batch), desc="Adding passages")
         logger.info("Finished adding passages.")
         return
 
     @trace("retriever.typesense.search")
-    def _search(
+    async def _async_search(
         self,
         query: list[str],
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         # prepare search parameters
         top_k = search_kwargs.pop("top_k", DEFAULT_TOP_K)
+        fields = await self.async_fields()
         search_params = [
             {
                 "collection": self.index_name,
                 "q": q,
-                "query_by": ",".join(self.fields),
+                "query_by": ",".join(fields),
                 "per_page": top_k,
                 **search_kwargs,
             }
@@ -138,7 +147,7 @@ class TypesenseRetriever(RetrieverBase):
 
         # search
         try:
-            responses = self.client.multi_search.perform(
+            responses = await self.client.multi_search.perform(
                 search_queries={"searches": search_params},
                 common_params={},
             )
@@ -152,57 +161,63 @@ class TypesenseRetriever(RetrieverBase):
         for q, response in zip(query, responses["results"]):
             retrieved.append([])
             for i in response["hits"]:
-                data = i["document"]
+                data = i["document"].copy()
                 context_id = data.pop(self.id_field_name)
                 retrieved[-1].append(
                     RetrievedContext(
                         context_id=context_id,
                         retriever="Typesense",
                         query=q,
-                        data=i["document"],
+                        data=data,
                         source=self.index_name,
                         score=i["text_match"],
                     )
                 )
         return retrieved
 
-    def get(self, context_id: str) -> Context:
+    async def async_get(self, context_id: str) -> Context:
         try:
-            res = (
+            res = await (
                 self.client.collections[self.index_name]
                 .documents[context_id]
                 .retrieve()
             )
-            c_id = res.pop(self.id_field_name)
+            data = res.copy()
+            c_id = data.pop(self.id_field_name)
             return Context(
                 context_id=c_id,
-                data=res,
+                data=data,
                 source=self.index_name,
             )
         except self.typesense.exceptions.ObjectNotFound:
             raise KeyError(context_id)
 
-    def clear(self) -> None:
-        if self.index_name in self.indices:
-            self.client.collections[self.index_name].delete()
+    async def async_clear(self) -> None:
+        if self.index_name in await self.async_indices():
+            await self.client.collections[self.index_name].delete()
         return
 
-    def count(self) -> int:
-        info = self.client.collections.retrieve()
+    async def async_count(self) -> int:
+        info = await self.client.collections.retrieve()
         info = [i for i in info if i["name"] == self.index_name]
         if len(info) > 0:
             return info[0]["num_documents"]
         return 0
 
-    @property
-    def indices(self) -> list[str]:
-        return [i["name"] for i in self.client.collections.retrieve()]
+    async def async_indices(self) -> list[str]:
+        return [i["name"] for i in await self.client.collections.retrieve()]
 
     @property
-    def fields(self) -> list[str]:
+    def indices(self) -> list[str]:
+        self._ensure_sync_bridge_allowed("indices")
+        return asyncio.run(self.async_indices())
+
+    async def async_fields(self) -> list[str]:
         return [
             i["name"]
-            for i in self.client.collections[self.index_name].retrieve()["fields"]
+            for i in (await self.client.collections[self.index_name].retrieve())[
+                "fields"
+            ]
             if i["name"] != ".*"
         ]
 

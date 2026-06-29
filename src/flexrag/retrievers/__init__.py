@@ -14,6 +14,7 @@ from .index import (
 )
 from .retriever_base import (
     RETRIEVERS,
+    RemoteRetrieverBase,
     RetrieverBase,
     RetrieverBaseConfig,
 )
@@ -38,6 +39,7 @@ __all__ = [
     "ScaNNIndex",
     "ScaNNIndexConfig",
     "RETRIEVERS",
+    "RemoteRetrieverBase",
     "RetrieverBase",
     "RetrieverBaseConfig",
     "TypesenseRetriever",

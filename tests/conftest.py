@@ -129,7 +129,7 @@ def mock_es_client(mocker):
         "indexes": {},
     }
 
-    def mocked_msearch(**kwargs):
+    async def mocked_msearch(**kwargs):
         searched_meta = [i for i in kwargs.get("body") if "index" in i]
         searched_data = [i for i in kwargs.get("body") if "index" not in i]
         responses = []
@@ -160,7 +160,7 @@ def mock_es_client(mocker):
             )
         return {"responses": responses}
 
-    def mocked_bulk(**kwargs):
+    async def mocked_bulk(**kwargs):
         inserted_meta = [i for i in kwargs.get("operations", []) if "index" in i]
         inserted_data = [i for i in kwargs.get("operations", []) if "index" not in i]
         items = []
@@ -184,7 +184,7 @@ def mock_es_client(mocker):
         returned_obj.body = {"errors": False, "took": 123456, "items": items}
         return returned_obj
 
-    def mocked_create(**kwargs):
+    async def mocked_create(**kwargs):
         if kwargs.get("index") in client_state["indexes"]:
             raise ValueError("Index already exists")
         client_state["indexes"][kwargs.get("index")] = []
@@ -196,7 +196,7 @@ def mock_es_client(mocker):
         }
         return create_obj
 
-    def mocked_delete(**kwargs):
+    async def mocked_delete(**kwargs):
         if kwargs.get("index") not in client_state["indexes"]:
             raise ValueError("Index does not exist")
         client_state["indexes"].pop(kwargs.get("index"))
@@ -204,7 +204,7 @@ def mock_es_client(mocker):
         delete_obj.body = {"acknowledged": True}
         return delete_obj
 
-    def mocked_count(**kwargs):
+    async def mocked_count(**kwargs):
         index_name = kwargs.get("index")
         if index_name not in client_state["indexes"]:
             raise ValueError("Index does not exist")
@@ -213,14 +213,41 @@ def mock_es_client(mocker):
         # count_obj.__getitem__ = lambda self, key: self.body[key]
         return {"count": len(client_state["indexes"][index_name])}
 
-    def mocked_exists(**kwargs):
+    async def mocked_exists(**kwargs):
         index_name = kwargs.get("index")
         exists_obj = mocker.MagicMock()
         exists_obj.body = index_name in client_state["indexes"]
         exists_obj.__bool__ = lambda self: self.body
         return exists_obj
 
-    def mocked_cat_indices(**kwargs):
+    async def mocked_get_mapping(**kwargs):
+        index_name = kwargs.get("index")
+        return {
+            index_name: {
+                "mappings": {
+                    "properties": {
+                        "title": {"type": "text"},
+                        "text": {"type": "text"},
+                        "section": {"type": "text"},
+                    }
+                }
+            }
+        }
+
+    async def mocked_get(**kwargs):
+        index_name = kwargs.get("index")
+        context_id = kwargs.get("id")
+        try:
+            data = client_state["indexes"][index_name][int(context_id)]
+        except (KeyError, IndexError, ValueError):
+            raise KeyError(context_id)
+        return {
+            "_index": index_name,
+            "_id": context_id,
+            "_source": data,
+        }
+
+    async def mocked_cat_indices(**kwargs):
         # Return a mocked list of indices
         body = [{"index": index} for index in client_state["indexes"].keys()]
         return body
@@ -240,11 +267,17 @@ def mock_es_client(mocker):
     # mock the Elasticsearch.indices.delete
     mock_client.indices.delete = mocked_delete
 
+    # mock the Elasticsearch.indices.get_mapping
+    mock_client.indices.get_mapping = mocked_get_mapping
+
     # mock the Elasticsearch.bulk
     mock_client.bulk = mocked_bulk
 
     # mock the Elasticsearch.count
     mock_client.count = mocked_count
+
+    # mock the Elasticsearch.get
+    mock_client.get = mocked_get
 
     # mock the Elasticsearch.msearch
     mock_client.msearch = mocked_msearch
@@ -252,10 +285,12 @@ def mock_es_client(mocker):
     # mock the Elasticsearch.cat
     mock_client.cat = mocker.MagicMock()
     mock_client.cat.indices = mocked_cat_indices
+    mock_client.close = mocker.AsyncMock()
 
     # substitute the original Elasticsearch client with the mock
     mocker.patch(
-        "flexrag.retrievers.elastic_retriever.Elasticsearch", return_value=mock_client
+        "flexrag.retrievers.elastic_retriever.AsyncElasticsearch",
+        return_value=mock_client,
     )
     return mock_client
 
@@ -268,14 +303,14 @@ def mock_ts_client(mocker):
         "collections": {},
     }
 
-    def mocked_collections_retrieve():
+    async def mocked_collections_retrieve():
         """Mock collections retrieve method."""
         return [
             {"name": name, "num_documents": len(docs)}
             for name, docs in client_state["collections"].items()
         ]
 
-    def mocked_collections_create(schema):
+    async def mocked_collections_create(schema):
         """Mock collections create method."""
         collection_name = schema["name"]
         if collection_name in client_state["collections"]:
@@ -296,12 +331,12 @@ def mock_ts_client(mocker):
         mock_collection = mocker.MagicMock()
         mock_collection.name = collection_name
 
-        def mocked_documents_import(documents):
+        async def mocked_documents_import(documents):
             """Mock documents import method."""
             client_state["collections"][collection_name].extend(documents)
             return [{"success": True} for _ in documents]
 
-        def mocked_collection_retrieve():
+        async def mocked_collection_retrieve():
             """Mock collection retrieve method."""
             return {
                 "name": collection_name,
@@ -314,21 +349,34 @@ def mock_ts_client(mocker):
                 ],
             }
 
-        def mocked_collection_delete():
+        async def mocked_collection_delete():
             """Mock collection delete method."""
             if collection_name in client_state["collections"]:
                 del client_state["collections"][collection_name]
             return {"acknowledged": True}
 
+        def mocked_documents_getitem(instance, context_id):
+            mock_document = mocker.MagicMock()
+
+            async def mocked_document_retrieve():
+                for document in client_state["collections"][collection_name]:
+                    if document.get("id") == context_id:
+                        return document.copy()
+                raise mock_typesense_module.exceptions.ObjectNotFound(context_id)
+
+            mock_document.retrieve = mocked_document_retrieve
+            return mock_document
+
         # Configure mock collection
         mock_collection.documents = mocker.MagicMock()
         mock_collection.documents.import_ = mocked_documents_import
+        mock_collection.documents.__getitem__ = mocked_documents_getitem
         mock_collection.retrieve = mocked_collection_retrieve
         mock_collection.delete = mocked_collection_delete
 
         return mock_collection
 
-    def mocked_multisearch_perform(search_queries, common_params=None):
+    async def mocked_multisearch_perform(search_queries, common_params=None):
         """Mock multi-search perform method."""
         searches = search_queries.get("searches", [])
         results = []
@@ -385,12 +433,14 @@ def mock_ts_client(mocker):
 
     # Mock exceptions
     mock_typesense_client_error = type("TypesenseClientError", (Exception,), {})
+    mock_typesense_object_not_found = type("ObjectNotFound", (Exception,), {})
 
     # Mock the entire typesense module to handle lazy import
     mock_typesense_module = mocker.MagicMock()
-    mock_typesense_module.Client = mocker.MagicMock(return_value=mock_client)
+    mock_typesense_module.AsyncClient = mocker.MagicMock(return_value=mock_client)
     mock_typesense_module.exceptions = mocker.MagicMock()
     mock_typesense_module.exceptions.TypesenseClientError = mock_typesense_client_error
+    mock_typesense_module.exceptions.ObjectNotFound = mock_typesense_object_not_found
 
     # Patch the module import itself
     mocker.patch.dict("sys.modules", {"typesense": mock_typesense_module})

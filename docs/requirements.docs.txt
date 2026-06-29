@@ -19,7 +19,7 @@ unidecode
 sacremoses
 pandas
 bm25s
-elasticsearch>=8.14.0
+elasticsearch[async]>=8.14.0
 -f https://download.pytorch.org/whl/cpu
 torch
 beautifulsoup4

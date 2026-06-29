@@ -1,3 +1,4 @@
+import asyncio
 import os
 import tempfile
 from pathlib import Path
@@ -442,6 +443,19 @@ class TestRetrievers:
             )
         )
         self.run_retriever(retriever)
+
+        data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
+        dataset = load_test_corpus_slice(data_path, 0, 20)
+        asyncio.run(retriever.async_add_passages(dataset))
+        assert asyncio.run(retriever.async_count()) == 20
+        ctxs = asyncio.run(
+            retriever.async_search(self.query, disable_cache=True, top_k=5)
+        )
+        assert len(ctxs) == 2
+        assert len(ctxs[0]) == 5
+        asyncio.run(retriever.async_clear())
+        assert asyncio.run(retriever.async_count()) == 0
+        asyncio.run(retriever.aclose())
         return
 
     def test_typesense_retriever(self, mock_ts_client):
@@ -454,4 +468,17 @@ class TestRetrievers:
             )
         )
         self.run_retriever(retriever)
+
+        data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
+        dataset = load_test_corpus_slice(data_path, 0, 20)
+        asyncio.run(retriever.async_add_passages(dataset))
+        assert asyncio.run(retriever.async_count()) == 20
+        ctxs = asyncio.run(
+            retriever.async_search(self.query, disable_cache=True, top_k=5)
+        )
+        assert len(ctxs) == 2
+        assert len(ctxs[0]) == 5
+        asyncio.run(retriever.async_clear())
+        assert asyncio.run(retriever.async_count()) == 0
+        asyncio.run(retriever.aclose())
         return

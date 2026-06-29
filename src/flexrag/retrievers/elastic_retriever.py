@@ -1,7 +1,8 @@
+import asyncio
 import logging
-from typing import Iterable, Optional
+from typing import Any, Iterable, Optional
 
-from elasticsearch import Elasticsearch, NotFoundError
+from elasticsearch import AsyncElasticsearch, NotFoundError
 
 from flexrag.common import (
     LOGGER_MANAGER,
@@ -16,7 +17,7 @@ from flexrag.common.dataclasses import Context, RetrievedContext
 from .retriever_base import (
     DEFAULT_TOP_K,
     RETRIEVERS,
-    RetrieverBase,
+    RemoteRetrieverBase,
     RetrieverBaseConfig,
 )
 
@@ -53,7 +54,7 @@ class ElasticRetrieverConfig(RetrieverBaseConfig):
 
 
 @RETRIEVERS("elastic", config_class=ElasticRetrieverConfig)
-class ElasticRetriever(RetrieverBase):
+class ElasticRetriever(RemoteRetrieverBase):
     name = "ElasticSearch"
 
     def __init__(self, cfg: ElasticRetrieverConfig) -> None:
@@ -70,7 +71,7 @@ class ElasticRetriever(RetrieverBase):
         self.custom_properties = cfg.custom_properties
 
         # prepare client
-        self.client = Elasticsearch(
+        self.client = AsyncElasticsearch(
             self.host,
             api_key=self.api_key,
             max_retries=cfg.retry_times,
@@ -88,39 +89,52 @@ class ElasticRetriever(RetrieverBase):
             es_logger.setLevel(logging.WARNING)
         return
 
+    @staticmethod
+    def _response_body(response: Any) -> Any:
+        return response.body if hasattr(response, "body") else response
+
+    @classmethod
+    def _response_bool(cls, response: Any) -> bool:
+        body = cls._response_body(response)
+        if isinstance(body, bool):
+            return body
+        return bool(response)
+
     @trace("retriever.elastic_search.add_passages")
-    def add_passages(
+    async def async_add_passages(
         self,
         passages: Iterable[Context],
         log_interval: int = 10000,
         display: ProgressDisplay = "auto",
-    ):
-        def generate_actions():
-            index_exists = self.client.indices.exists(index=self.index_name)
-            actions = []
-            for n, passage in enumerate(passages):
-                # build index if not exists
+    ) -> None:
+        index_exists = self._response_bool(
+            await self.client.indices.exists(index=self.index_name)
+        )
+        actions = []
+
+        with SimpleProgressLogger(
+            logger, interval=log_interval, display=display
+        ) as p_logger:
+            for passage in passages:
                 if not index_exists:
-                    if self.custom_properties is None:
-                        properties = {
+                    properties = (
+                        {
                             key: {"type": "text", "analyzer": "english"}
                             for key in passage.data.keys()
                         }
-                    else:
-                        properties = self.custom_properties
+                        if self.custom_properties is None
+                        else self.custom_properties
+                    )
                     index_body = {
                         "settings": {"number_of_shards": 1, "number_of_replicas": 1},
-                        "mappings": {
-                            "properties": properties,
-                        },
+                        "mappings": {"properties": properties},
                     }
-                    self.client.indices.create(
+                    await self.client.indices.create(
                         index=self.index_name,
                         body=index_body,
                     )
                     index_exists = True
 
-                # prepare action
                 action = {
                     "index": {
                         "_index": self.index_name,
@@ -130,24 +144,33 @@ class ElasticRetriever(RetrieverBase):
                 actions.append(action)
                 actions.append(passage.data)
                 if len(actions) == self.cfg.batch_size * 2:
-                    yield actions
+                    r = await self.client.bulk(
+                        operations=actions,
+                        index=self.index_name,
+                    )
+                    body = self._response_body(r)
+                    if body["errors"]:
+                        err_passage_ids = [
+                            item["index"]["_id"]
+                            for item in body["items"]
+                            if item["index"]["status"] != 201
+                        ]
+                        raise RuntimeError(
+                            f"Failed to index passages: {err_passage_ids}"
+                        )
+                    p_logger.update(len(actions) // 2, "Indexing")
                     actions = []
-            if actions:
-                yield actions
-            return
 
-        with SimpleProgressLogger(
-            logger, interval=log_interval, display=display
-        ) as p_logger:
-            for actions in generate_actions():
-                r = self.client.bulk(
+            if actions:
+                r = await self.client.bulk(
                     operations=actions,
                     index=self.index_name,
                 )
-                if r.body["errors"]:
+                body = self._response_body(r)
+                if body["errors"]:
                     err_passage_ids = [
                         item["index"]["_id"]
-                        for item in r.body["items"]
+                        for item in body["items"]
                         if item["index"]["status"] != 201
                     ]
                     raise RuntimeError(f"Failed to index passages: {err_passage_ids}")
@@ -156,7 +179,7 @@ class ElasticRetriever(RetrieverBase):
         return
 
     @trace("retriever.elastic_search.search")
-    def _search(
+    async def _async_search(
         self,
         query: list[str],
         search_method: str = "full_text",
@@ -174,6 +197,7 @@ class ElasticRetriever(RetrieverBase):
         # prepare search body
         body = []
         top_k = search_kwargs.pop("top_k", DEFAULT_TOP_K)
+        fields = await self.async_fields()
         for q in query:
             body.append({"index": self.index_name})
             body.append(
@@ -181,7 +205,7 @@ class ElasticRetriever(RetrieverBase):
                     "query": {
                         query_type: {
                             "query": q,
-                            "fields": self.fields,
+                            "fields": fields,
                         },
                     },
                     "size": top_k,
@@ -189,22 +213,29 @@ class ElasticRetriever(RetrieverBase):
             )
 
         # search and post-process
-        responses = self.client.msearch(body=body, **search_kwargs)["responses"]
+        response = await self.client.msearch(body=body, **search_kwargs)
+        responses = self._response_body(response)["responses"]
         return self._form_results(query, responses)
 
-    def clear(self) -> None:
-        if self.index_name in self.indices:
-            self.client.indices.delete(index=self.index_name)
+    async def async_clear(self) -> None:
+        if self.index_name in await self.async_indices():
+            await self.client.indices.delete(index=self.index_name)
         return
 
-    def count(self) -> int:
-        if self.index_name in self.indices:
-            return self.client.count(index=self.index_name)["count"]
+    async def async_count(self) -> int:
+        if self.index_name in await self.async_indices():
+            response = await self.client.count(index=self.index_name)
+            return self._response_body(response)["count"]
         return 0
+
+    async def async_indices(self) -> list[str]:
+        response = await self.client.cat.indices(format="json")
+        return [i["index"] for i in self._response_body(response)]
 
     @property
     def indices(self) -> list[str]:
-        return [i["index"] for i in self.client.cat.indices(format="json")]
+        self._ensure_sync_bridge_allowed("indices")
+        return asyncio.run(self.async_indices())
 
     def _form_results(
         self, query: list[str], responses: list[dict] | None
@@ -242,16 +273,17 @@ class ElasticRetriever(RetrieverBase):
             )
         return results
 
-    @property
-    def fields(self) -> list[str]:
-        if self.index_name in self.indices:
-            mapping = self.client.indices.get_mapping(index=self.index_name)
+    async def async_fields(self) -> list[str]:
+        if self.index_name in await self.async_indices():
+            response = await self.client.indices.get_mapping(index=self.index_name)
+            mapping = self._response_body(response)
             return list(mapping[self.index_name]["mappings"]["properties"].keys())
         return []
 
-    def get(self, context_id: str) -> Context:
+    async def async_get(self, context_id: str) -> Context:
         try:
-            res = self.client.get(index=self.index_name, id=context_id)
+            response = await self.client.get(index=self.index_name, id=context_id)
+            res = self._response_body(response)
             return Context(
                 context_id=res["_id"],
                 data=res["_source"],
@@ -259,3 +291,7 @@ class ElasticRetriever(RetrieverBase):
             )
         except NotFoundError:
             raise KeyError(context_id)
+
+    async def aclose(self) -> None:
+        await self._maybe_await(self.client.close())
+        return
