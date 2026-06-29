@@ -8,41 +8,37 @@ import numpy as np
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from PIL import Image
 
-from flexrag.common import Register
+from .configure import Register
 
 
 class SerializerBase(ABC):
-    """A simple interface for serializing and deserializing python objects."""
+    """A simple interface for serializing and deserializing Python objects."""
 
     @abstractmethod
     def serialize(self, obj: Any) -> bytes:
-        """Serialize the object into bytes.
+        """Serialize an object into bytes.
 
-        :param obj: The object to serialize.
-        :type obj: Any
-        :return: The serialized object.
-        :rtype: bytes
+        :param obj: Object to serialize.
+        :return: Serialized bytes.
         """
         return
 
     @abstractmethod
     def deserialize(self, data: bytes) -> Any:
-        """Deserialize the bytes into an object.
+        """Deserialize bytes into an object.
 
-        :param data: The serialized object.
-        :type data: bytes
-        :return: The deserialized object.
-        :rtype: Any
+        :param data: Serialized bytes.
+        :return: Deserialized object.
         """
         return
 
     @property
     def allowed_types(self) -> list[str] | None:
-        """Return the list of allowed types for serialization.
-        This property is used to test the serializer.
+        """Return the type names supported by this serializer.
 
-        :return: The list of allowed types. None means almost all types are allowed.
-        :rtype: list[str] | None
+        ``None`` means the serializer accepts most Python objects.
+
+        :return: Supported type names or ``None``.
         """
         return
 
@@ -52,10 +48,9 @@ SERIALIZERS = Register[SerializerBase]("serializer")
 
 @SERIALIZERS("pickle")
 class PickleSerializer(SerializerBase):
-    """A serializer that uses the pickle module.
+    """Serializer based on :mod:`pickle`.
 
-    PickleSerializer supports almost all python objects.
-    However, it is not safe for loading untrusted data.
+    Pickle supports most Python objects, but it is unsafe for untrusted data.
     """
 
     def serialize(self, obj: Any) -> bytes:
@@ -67,18 +62,7 @@ class PickleSerializer(SerializerBase):
 
 @SERIALIZERS("json")
 class JsonSerializer(SerializerBase):
-    """A serializer that uses the json module.
-
-    JsonSerializer supports basic types, including str, int, float, bool, list, and dict.
-
-    It also provides limited support for some additional types, including:
-
-        * omegaconf.DictConfig
-        * omegaconf.ListConfig
-        * numpy.integer
-        * numpy.floating
-        * dataclasses (using asdict)
-    """
+    """Serializer based on :mod:`json` with FlexRAG convenience extensions."""
 
     def __init__(self) -> None:
         class CustomEncoder(json.JSONEncoder):
@@ -100,7 +84,7 @@ class JsonSerializer(SerializerBase):
         obj: Any,
         to_bytes: bool = True,
         ensure_ascii: bool = True,
-        indent: int = None,
+        indent: int | None = None,
         **kwargs,
     ) -> bytes | str:
         if to_bytes:
@@ -128,35 +112,26 @@ def json_dump(
     obj: Any,
     to_bytes: bool = True,
     ensure_ascii: bool = True,
-    indent: int = None,
+    indent: int | None = None,
     **kwargs,
 ) -> bytes | str:
-    """A shortcut for serialize the object into JSON format.
-    This function extends the json.dumps function to support
-    additional types such as DictConfig and ListConfig.
+    """Serialize an object into JSON with FlexRAG convenience extensions.
 
-    :param obj: The object to serialize.
-    :type obj: Any
-    :param to_bytes: Whether to return bytes or str. Defaults to True.
-    :type to_bytes: bool, optional
-    :param ensure_ascii: Whether to ensure ASCII encoding. Defaults to True.
-    :type ensure_ascii: bool, optional
-    :param indent: The indentation level for pretty printing. Defaults to None.
-    :type indent: int, optional
-    :return: The serialized object in JSON format.
-    :rtype: bytes | str
+    :param obj: Object to serialize.
+    :param to_bytes: Whether to return UTF-8 encoded bytes. Defaults to
+        ``True``.
+    :param ensure_ascii: Whether non-ASCII characters should be escaped.
+        Defaults to ``True``.
+    :param indent: Optional indentation level for pretty printing.
+    :param kwargs: Extra keyword arguments forwarded to :func:`json.dumps`.
+    :return: JSON bytes or text.
     """
     return _JsonSerializer.serialize(obj, to_bytes, ensure_ascii, indent, **kwargs)
 
 
 @SERIALIZERS("msgpack")
 class MsgpackSerializer(SerializerBase):
-    """A serializer that uses the msgpack module.
-
-    MsgpackSerializer supports more types than JsonSerializer, including:
-    str, int, float, bool, list, set, dict, np.ndarray, np.generic, Image.Image,
-    omegaconf.DictConfig, and omegaconf.ListConfig.
-    """
+    """Serializer based on :mod:`msgpack` with additional type support."""
 
     def __init__(self) -> None:
         try:
@@ -174,27 +149,27 @@ class MsgpackSerializer(SerializerBase):
                     "__type__": "set",
                     "data": list(obj),
                 }
-            elif isinstance(obj, np.ndarray):
+            if isinstance(obj, np.ndarray):
                 return {
                     "__type__": "np_ndarray",
                     "dtype": obj.dtype.name,
                     "shape": obj.shape,
                     "data": obj.tobytes(),
                 }
-            elif isinstance(obj, np.generic):
+            if isinstance(obj, np.generic):
                 return {
                     "__type__": "np_generic",
                     "dtype": obj.dtype.name,
                     "data": obj.tobytes(),
                 }
-            elif isinstance(obj, Image.Image):
+            if isinstance(obj, Image.Image):
                 return {
                     "__type__": "pillow_image",
                     "mode": obj.mode,
                     "size": obj.size,
                     "data": obj.tobytes(),
                 }
-            elif isinstance(obj, (DictConfig, ListConfig)):
+            if isinstance(obj, (DictConfig, ListConfig)):
                 return {
                     "__type__": "omegaconf_config",
                     "data": OmegaConf.to_container(obj, resolve=True),
@@ -209,15 +184,15 @@ class MsgpackSerializer(SerializerBase):
                 return obj
             if obj["__type__"] == "set":
                 return set(obj["data"])
-            elif obj["__type__"] == "np_ndarray":
+            if obj["__type__"] == "np_ndarray":
                 return np.frombuffer(obj["data"], dtype=np.dtype(obj["dtype"])).reshape(
                     obj["shape"]
                 )
-            elif obj["__type__"] == "np_generic":
+            if obj["__type__"] == "np_generic":
                 return np.frombuffer(obj["data"], dtype=np.dtype(obj["dtype"])).item()
-            elif obj["__type__"] == "pillow_image":
+            if obj["__type__"] == "pillow_image":
                 return Image.frombytes(obj["mode"], obj["size"], obj["data"])
-            elif obj["__type__"] == "omegaconf_config":
+            if obj["__type__"] == "omegaconf_config":
                 return OmegaConf.create(obj["data"])
             return obj
 
@@ -241,3 +216,4 @@ class MsgpackSerializer(SerializerBase):
 
 
 SerializerConfig = SERIALIZERS.make_config(default="msgpack")
+

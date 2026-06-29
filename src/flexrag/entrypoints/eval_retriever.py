@@ -14,8 +14,8 @@ from flexrag.common import (
     extract_config,
     load_user_module,
 )
-from flexrag.common.database.serializer import json_dump
 from flexrag.common.dataclasses import Context, RetrievedContext
+from flexrag.common.serialization import json_dump
 from flexrag.datasets import MTEBDataset, MTEBDatasetConfig
 from flexrag.metrics import Evaluator, EvaluatorConfig
 from flexrag.retrievers import RETRIEVERS

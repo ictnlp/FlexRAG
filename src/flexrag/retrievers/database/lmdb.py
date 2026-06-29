@@ -6,15 +6,16 @@ from collections.abc import Sequence
 import lmdb
 import numpy as np
 
-from ..logging import LOGGER_MANAGER
-from .database_base import RetrieverDatabaseBase
-from .serializer import SERIALIZERS, SerializerConfig
+from flexrag.common import LOGGER_MANAGER
+from flexrag.common.serialization import SERIALIZERS, SerializerConfig
 
-logger = LOGGER_MANAGER.get_logger("flexrag.database.lmdb")
+from .base import RetrieverDatabaseBase
+
+logger = LOGGER_MANAGER.get_logger("flexrag.retrievers.database.lmdb")
 
 
 class LMDBRetrieverDatabase(RetrieverDatabaseBase):
-    """A RetrieverDatabase that uses LMDB as the backend storage format."""
+    """Retriever context database backed by LMDB."""
 
     def __init__(
         self,
@@ -30,12 +31,10 @@ class LMDBRetrieverDatabase(RetrieverDatabaseBase):
     ) -> None:
         super().__init__()
 
-        # prepare database path
         self.database_path = database_path
         if not os.path.exists(database_path):
             os.makedirs(database_path)
 
-        # open database
         db_kwargs = {
             "map_size": map_size,
             "readonly": readonly,
@@ -51,10 +50,7 @@ class LMDBRetrieverDatabase(RetrieverDatabaseBase):
         self.database = lmdb.open(database_path, **db_kwargs)
         atexit.register(self.database.close)
 
-        # prepare serializer
         self.serializer = SERIALIZERS.load(SerializerConfig(serializer))
-
-        # warmup database
         self._warmup(force=force_warmup)
         return
 
@@ -159,7 +155,6 @@ class LMDBRetrieverDatabase(RetrieverDatabaseBase):
     def fields(self) -> list[str]:
         if len(self) == 0:
             return []
-        # This may be incorrect if the schema is not consistent
         with self.database.begin() as txn:
             cursor = txn.cursor()
             for _, data in cursor:
@@ -171,3 +166,4 @@ class LMDBRetrieverDatabase(RetrieverDatabaseBase):
         self.database.close()
         atexit.unregister(self.database.close)
         return
+

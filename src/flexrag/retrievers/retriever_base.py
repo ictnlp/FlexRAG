@@ -130,6 +130,7 @@ class RetrieverBase(ABC):
         for key in _RUNTIME_ONLY_SEARCH_KWARGS:
             cache_search_kwargs.pop(key, None)
         retriever_name = f"{self.__class__.__module__}.{self.__class__.__qualname__}"
+        retriever_fingerprint = self._cache_fingerprint()
         keys = [
             make_runtime_cache_key(
                 {
@@ -137,6 +138,7 @@ class RetrieverBase(ABC):
                     "schema_version": _RETRIEVAL_CACHE_SCHEMA_VERSION,
                     "retriever": retriever_name,
                     "retriever_config": retriever_config,
+                    "retriever_fingerprint": retriever_fingerprint,
                     "query": q,
                     "search_kwargs": cache_search_kwargs,
                 }
@@ -195,6 +197,17 @@ class RetrieverBase(ABC):
         except Exception as e:
             warning_once(logger, "Runtime cache write failed; ignoring cache: %s", e)
         return cast(list[list[RetrievedContext]], results)
+
+    def _cache_fingerprint(self) -> dict[str, Any]:
+        """Return mutable runtime state that should participate in cache keys.
+
+        Stateless retrievers can keep the default empty fingerprint. Mutable
+        retrievers should override this to avoid sharing cache entries across
+        collections or collection generations.
+
+        :return: Cache fingerprint dictionary.
+        """
+        return {}
 
     @abstractmethod
     def _search(

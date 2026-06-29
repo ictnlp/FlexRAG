@@ -6,8 +6,8 @@ from typing import Optional
 
 from flexrag.assistants import AssistantBase, AssistantResponse
 from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
-from flexrag.common.database import json_dump
 from flexrag.common.dataclasses import Context
+from flexrag.common.serialization import json_dump
 from flexrag.datasets.core import ContextualQASample, MappingDataset
 from flexrag.metrics import Evaluator
 

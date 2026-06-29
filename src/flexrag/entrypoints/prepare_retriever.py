@@ -41,8 +41,11 @@ def main(cfg: Config):
     # load retriever
     match cfg.retriever_type:
         case "flex":
+            if cfg.retriever_path is None:
+                raise ValueError("retriever_path must be provided for FlexRetriever.")
             retriever = FlexRetriever(
-                cfg.flex_config, retriever_path=cfg.retriever_path
+                cfg.flex_config,
+                cfg.retriever_path,
             )
         case "elastic":
             retriever = ElasticRetriever(cfg.elastic_config)

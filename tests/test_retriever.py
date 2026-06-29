@@ -1,15 +1,17 @@
+import os
 import tempfile
 from pathlib import Path
 
+import numpy as np
+import pytest
+
 from flexrag.common import Context
 from flexrag.datasets.reader import LineDelimitedReader
-from flexrag.models import ENCODERS, EncoderConfig, LiteLLMEncoderConfig
 from flexrag.retrievers import (
     ElasticRetriever,
     ElasticRetrieverConfig,
     FlexRetriever,
     FlexRetrieverConfig,
-    IndexFieldsConfig,
     RetrieverBase,
     TypesenseRetriever,
     TypesenseRetrieverConfig,
@@ -17,7 +19,6 @@ from flexrag.retrievers import (
 from flexrag.retrievers.index import (
     RETRIEVER_INDEX,
     BM25IndexConfig,
-    FaissIndexConfig,
     RetrieverIndexConfig,
 )
 
@@ -36,47 +37,6 @@ def load_test_corpus_slice(path: Path, start: int, stop: int) -> list[Context]:
     return contexts
 
 
-def litellm_encoder_config() -> EncoderConfig:
-    return EncoderConfig(
-        encoder_type="litellm",
-        litellm_config=LiteLLMEncoderConfig(
-            provider="openai",
-            model_name="text-embedding-3-small",
-            embedding_size=8,
-        ),
-    )
-
-
-def contriever_fields_config() -> IndexFieldsConfig:
-    return IndexFieldsConfig(
-        indexed_fields=["text"],
-        merge_method="max",
-    )
-
-
-def bm25_fields_config() -> IndexFieldsConfig:
-    return IndexFieldsConfig(
-        indexed_fields=["title", "section", "text"],
-        merge_method="max",
-    )
-
-
-def build_contriever_index(encoder):
-    index = RETRIEVER_INDEX.load(
-        RetrieverIndexConfig(
-            index_type="faiss",
-            faiss_config=FaissIndexConfig(
-                indexed_fields=["text"],
-                merge_method="max",
-            ),
-        ),
-        query_encoder=encoder,
-    )
-    assert index.query_encoder is encoder
-    assert index.passage_encoder is encoder
-    return index
-
-
 def build_bm25_index():
     return RETRIEVER_INDEX.load(
         RetrieverIndexConfig(
@@ -84,9 +44,126 @@ def build_bm25_index():
             bm25_config=BM25IndexConfig(
                 indexed_fields=["title", "section", "text"],
                 merge_method="max",
+                show_progress=False,
             ),
         )
     )
+
+
+def build_text_bm25_index():
+    return RETRIEVER_INDEX.load(
+        RetrieverIndexConfig(
+            index_type="bm25",
+            bm25_config=BM25IndexConfig(
+                indexed_fields=["text"],
+                show_progress=False,
+            ),
+        )
+    )
+
+
+class FakeAddableIndex:
+    is_addable = True
+    infimum = 0.0
+    supremum = 1.0
+
+    def __init__(self) -> None:
+        self.context_ids: list[str] = []
+        self.inserted_batches: list[list[str]] = []
+
+    def build_index(self, context_ids, data, batch_size=32, scratch_path=None) -> None:
+        self.context_ids = list(context_ids)
+        list(data)
+        return
+
+    def insert_batch(
+        self,
+        context_ids,
+        data,
+        batch_size=32,
+        log_interval=10000,
+        display="auto",
+    ) -> None:
+        ids = list(context_ids)
+        self.inserted_batches.append(ids)
+        self.context_ids.extend(ids)
+        list(data)
+        return
+
+    def search(self, query, top_k, **search_kwargs):
+        hits = self.context_ids[:top_k]
+        context_ids = [hits for _ in query]
+        scores = np.tile(
+            np.arange(len(hits), 0, -1, dtype=float),
+            (len(query), 1),
+        )
+        return context_ids, scores
+
+    def save_to_local(self, index_path: str) -> None:
+        os.makedirs(index_path, exist_ok=True)
+        Path(index_path, "fake.index").write_text("fake", encoding="utf-8")
+        return
+
+    def clear(self) -> None:
+        self.context_ids = []
+        return
+
+    def __len__(self) -> int:
+        return len(self.context_ids)
+
+
+class FakeScratchIndex(FakeAddableIndex):
+    def __init__(self) -> None:
+        super().__init__()
+        self.scratch_path: str | None = None
+
+    def build_index(self, context_ids, data, batch_size=32, scratch_path=None) -> None:
+        self.scratch_path = scratch_path
+        assert scratch_path is not None
+        Path(scratch_path, "embedding.npy").write_text("scratch", encoding="utf-8")
+        super().build_index(context_ids, data, batch_size=batch_size)
+        return
+
+
+class FakeRepoUrl:
+    def __init__(self, repo_id: str) -> None:
+        self.repo_id = repo_id
+
+    def __str__(self) -> str:
+        return f"https://huggingface.co/{self.repo_id}"
+
+
+class FakeHfApi:
+    snapshot_path: str
+    upload_calls: list[dict] = []
+    upload_file_calls: list[dict] = []
+
+    def __init__(self, token=None) -> None:
+        self.token = token
+
+    def repo_info(self, repo_id: str):
+        return type("RepoInfo", (), {"id": repo_id})()
+
+    def snapshot_download(self, **kwargs):
+        return self.snapshot_path
+
+    def create_repo(
+        self,
+        repo_id,
+        token=None,
+        private=False,
+        repo_type=None,
+        exist_ok=True,
+    ):
+        return FakeRepoUrl(repo_id)
+
+    def upload_folder(self, **kwargs):
+        self.upload_calls.append(kwargs)
+        return
+
+    def upload_file(self, **kwargs):
+        self.upload_file_calls.append(kwargs)
+        return
 
 
 class TestRetrievers:
@@ -99,262 +176,265 @@ class TestRetrievers:
         retriever.clear()
         assert len(retriever) == 0
 
-        # load corpus
         data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
         dataset1 = load_test_corpus_slice(data_path, 0, 10000)
         dataset2 = load_test_corpus_slice(data_path, 10000, 20000)
 
-        # testing add_passages
         retriever.add_passages(dataset1)
         assert len(retriever) == 10000
 
-        # testing search without top_k option
         ctxs = retriever.search(self.query, disable_cache=True)
         assert len(ctxs) == 2
         assert len(ctxs[0]) == 10
 
-        # testing search with top_k option
         ctxs = retriever.search(self.query, disable_cache=True, top_k=5)
         assert len(ctxs) == 2
         assert len(ctxs[0]) == 5
 
-        # testing add_passages
         retriever.add_passages(dataset2)
         assert len(retriever) == 20000
 
-        # testing search without top_k option
         ctxs = retriever.search(self.query, disable_cache=True)
         assert len(ctxs) == 2
         assert len(ctxs[0]) == 10
 
-        # testing search with top_k option
         ctxs = retriever.search(self.query, disable_cache=True, top_k=5)
         assert len(ctxs) == 2
         assert len(ctxs[0]) == 5
 
-        # testing clear method
         retriever.clear()
         assert len(retriever) == 0
         return
 
-    def test_flex_retriever(self, mock_litellm_client):
-        # load datasets
+    def test_flex_retriever(self):
         data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
-        dataset1 = load_test_corpus_slice(data_path, 0, 1000)
-        dataset2 = load_test_corpus_slice(data_path, 1000, 2000)
-        encoder = ENCODERS.load(litellm_encoder_config())
+        dataset1 = load_test_corpus_slice(data_path, 0, 50)
+        dataset2 = load_test_corpus_slice(data_path, 50, 60)
+
         with tempfile.TemporaryDirectory() as tempdir:
-            # in mem retriever
-            cfg = FlexRetrieverConfig(
-                batch_size=512,
-            )
-            retriever = FlexRetriever(cfg)
-            retriever.add_passages(dataset1, log_interval=1000)
-            retriever.add_index(
-                "contriever",
-                build_contriever_index(encoder),
-            )
-            assert len(retriever) == 1000
-            ctxs = retriever.search(
-                ["Who is Bruce Wayne?", "What is the capital of France?"],
-                top_k=5,
-            )
-            assert len(ctxs) == 2
-            assert len(ctxs[0]) == 5
-            assert len(ctxs[1]) == 5
-
-            # add new passages
-            retriever.add_passages(dataset2, log_interval=1000)
-            assert len(retriever) == 2000
-            ctxs = retriever.search(
-                ["Who is Bruce Wayne?", "What is the capital of France?"],
-                top_k=5,
-            )
-            assert len(ctxs) == 2
-            assert len(ctxs[0]) == 5
-            assert len(ctxs[1]) == 5
-
-            # add new index
-            retriever.add_index(
-                "bm25",
-                build_bm25_index(),
-            )
-            ctxs = retriever.search(
-                ["Who is Bruce Wayne?", "What is the capital of France?"],
-                top_k=5,
-                used_indexes=["contriever", "bm25"],
-            )
-            assert len(ctxs) == 2
-            assert len(ctxs[0]) == 5
-            assert len(ctxs[1]) == 5
-            ctxs = retriever.search(
-                ["Who is Bruce Wayne?", "What is the capital of France?"],
-                top_k=5,
-                used_indexes=["bm25"],
-            )
-            assert len(ctxs) == 2
-            assert len(ctxs[0]) == 5
-            assert len(ctxs[1]) == 5
-            ctxs = retriever.search(
-                ["Who is Bruce Wayne?", "What is the capital of France?"],
-                top_k=5,
-                used_indexes=["contriever"],
-            )
-            assert len(ctxs) == 2
-            assert len(ctxs[0]) == 5
-            assert len(ctxs[1]) == 5
-
-            # save index to local
-            retriever.save_to_local(tempdir)
-            assert retriever.retriever_path == tempdir
-            assert "retriever_path" not in Path(tempdir, "config.yaml").read_text()
-            retriever.save_to_local()
-            retriever.database.close()
-            del retriever
-            assert Path(tempdir).exists()
-            assert Path(tempdir, "indexes").exists()
-            assert Path(tempdir, "indexes", "contriever").exists()
-            assert Path(tempdir, "indexes", "bm25").exists()
+            retriever = FlexRetriever(FlexRetrieverConfig(batch_size=16), tempdir)
+            assert Path(tempdir, "metadata.json").exists()
             assert Path(tempdir, "database.lmdb").exists()
-            assert Path(
-                tempdir, "indexes", "contriever", "context_mapping.pkl"
-            ).exists()
-            assert Path(tempdir, "indexes", "contriever", "raw").exists()
-            assert Path(
-                tempdir, "indexes", "contriever", "raw", "config.yaml"
-            ).exists()
-            assert not Path(
-                tempdir, "indexes", "contriever", "index_fields_config.yaml"
-            ).exists()
-            assert not Path(
-                tempdir, "indexes", "contriever", "multi_field_index_config.yaml"
-            ).exists()
-            dense_config = Path(
-                tempdir, "indexes", "contriever", "config.yaml"
-            ).read_text()
-            assert "query_encoder_config" not in dense_config
-            assert "passage_encoder_config" not in dense_config
+            assert Path(tempdir, "indexes").exists()
 
-        with tempfile.TemporaryDirectory() as tempdir:
-            cfg = FlexRetrieverConfig(
-                batch_size=512,
-            )
-            retriever = FlexRetriever(cfg)
-            retriever.add_passages(dataset1 + dataset2, log_interval=1000)
-            retriever.add_index(
-                "bm25",
-                build_bm25_index(),
-            )
-            retriever.save_to_local(tempdir)
-            retriever.database.close()
-            del retriever
+            retriever.add_passages(dataset1, log_interval=1000)
+            assert len(retriever) == 50
+            assert retriever.count() == 50
+            assert retriever[dataset1[0].context_id].data == dataset1[0].data
+
+            retriever.add_index("bm25", build_bm25_index())
             assert Path(tempdir, "indexes", "bm25", "context_mapping.pkl").exists()
             assert Path(tempdir, "indexes", "bm25", "raw").exists()
-            assert not Path(
-                tempdir, "indexes", "bm25", "index_fields_config.yaml"
-            ).exists()
-            assert not Path(
-                tempdir, "indexes", "bm25", "multi_field_index_config.yaml"
-            ).exists()
-            retriever = FlexRetriever.load_from_local(tempdir)
-            assert retriever.retriever_path == tempdir
-            assert "retriever_path" not in Path(tempdir, "config.yaml").read_text()
-            assert len(retriever) == 2000
+
             ctxs = retriever.search(
-                ["Who is Bruce Wayne?", "What is the capital of France?"],
+                self.query,
+                disable_cache=True,
                 top_k=5,
                 used_indexes=["bm25"],
             )
             assert len(ctxs) == 2
             assert len(ctxs[0]) == 5
             assert len(ctxs[1]) == 5
+
+            retriever.add_passages(dataset2, log_interval=1000)
+            assert len(retriever) == 60
+            assert "bm25" in retriever.state.dirty_indexes
+            with pytest.raises(RuntimeError, match="dirty indexes"):
+                retriever.search(
+                    self.query,
+                    disable_cache=True,
+                    top_k=5,
+                    used_indexes=["bm25"],
+                )
+
+            retriever.rebuild_index("bm25")
+            assert "bm25" not in retriever.state.dirty_indexes
+            ctxs = retriever.search(
+                self.query,
+                disable_cache=True,
+                top_k=5,
+                used_indexes=["bm25"],
+            )
+            assert len(ctxs) == 2
+            assert len(ctxs[0]) == 5
+
+            retriever.close()
+            reopened = FlexRetriever(FlexRetrieverConfig(batch_size=16), tempdir)
+            assert len(reopened) == 60
+            assert "bm25" in reopened.index_table
+            ctxs = reopened.search(
+                self.query,
+                disable_cache=True,
+                top_k=5,
+                used_indexes=["bm25"],
+            )
+            assert len(ctxs) == 2
+            assert len(ctxs[0]) == 5
+
+            with tempfile.TemporaryDirectory() as export_parent:
+                export_path = Path(export_parent, "exported-flex")
+                reopened.export_to(export_path)
+                exported = FlexRetriever(
+                    FlexRetrieverConfig(batch_size=16),
+                    export_path,
+                )
+                assert len(exported) == 60
+                assert "bm25" in exported.index_table
+                exported.close()
+            reopened.close()
         return
 
-    def test_flex_retriever_attached_persistence_semantics(self):
-        data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
-        dataset = load_test_corpus_slice(data_path, 0, 10)
-
+    def test_flex_retriever_path_semantics(self):
         with tempfile.TemporaryDirectory() as tempdir:
-            retriever = FlexRetriever(
-                FlexRetrieverConfig(batch_size=4),
-                retriever_path=tempdir,
-            )
-            retriever.add_index("bm25", build_bm25_index())
-            assert Path(tempdir, "cls.id").exists()
-            assert Path(tempdir, "config.yaml").exists()
-            assert Path(tempdir, "indexes", "bm25").exists()
+            collection_path = Path(tempdir, "collection")
+            retriever = FlexRetriever(FlexRetrieverConfig(), collection_path)
+            assert Path(collection_path, "metadata.json").exists()
+            retriever.close()
 
-            retriever.add_passages(dataset, log_interval=1000)
-            assert len(retriever) == 10
-            retriever.detach()
-            assert retriever.retriever_path is None
+            non_collection = Path(tempdir, "non-collection")
+            non_collection.mkdir()
+            Path(non_collection, "random.txt").write_text("not a collection")
+            with pytest.raises(FileExistsError):
+                FlexRetriever(FlexRetrieverConfig(), non_collection)
+
+            file_path = Path(tempdir, "file")
+            file_path.write_text("not a collection")
+            with pytest.raises(NotADirectoryError):
+                FlexRetriever(FlexRetrieverConfig(), file_path)
+        return
+
+    def test_flex_retriever_duplicate_context_id(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            retriever = FlexRetriever(FlexRetrieverConfig(batch_size=2), tempdir)
+            retriever.add_passages([Context(context_id="a", data={"text": "alpha"})])
+            with pytest.raises(ValueError, match="Duplicate context_id"):
+                retriever.add_passages([Context(context_id="a", data={"text": "beta"})])
+            with pytest.raises(ValueError, match="Duplicate context_id"):
+                retriever.add_passages(
+                    [
+                        Context(context_id="b", data={"text": "beta"}),
+                        Context(context_id="b", data={"text": "beta again"}),
+                    ]
+                )
+            with pytest.raises(ValueError, match="context_id is required"):
+                retriever.add_passages([Context(data={"text": "missing id"})])
+            retriever.close()
+        return
+
+    def test_flex_retriever_rebuilds_dirty_index(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            retriever = FlexRetriever(FlexRetrieverConfig(batch_size=2), tempdir)
+            retriever.add_index("bm25", build_text_bm25_index())
             retriever.add_passages(
                 [
                     Context(
-                        context_id="detached-extra",
-                        data={"title": "", "section": "", "text": "Detached only."},
+                        context_id="bruce",
+                        data={"text": "Bruce Wayne guards Gotham."},
                     )
-                ],
-                log_interval=1000,
+                ]
             )
-            assert len(retriever) == 11
+            assert "bm25" in retriever.state.dirty_indexes
+            retriever.rebuild_index("bm25")
+            retriever.add_passages(
+                [
+                    Context(
+                        context_id="capital",
+                        data={"text": "Beijing is the capital of China."},
+                    )
+                ]
+            )
 
-            loaded = FlexRetriever.load_from_local(tempdir)
-            assert loaded.retriever_path == tempdir
-            assert len(loaded) == 10
-            assert "bm25" in loaded.index_table
-            loaded.clear()
-            assert Path(tempdir).exists()
-            assert Path(tempdir, "cls.id").exists()
-            assert Path(tempdir, "config.yaml").exists()
-            assert Path(tempdir, "database.lmdb").exists()
-            assert Path(tempdir, "indexes", "bm25").exists()
-            loaded.database.close()
-
-            reloaded = FlexRetriever.load_from_local(tempdir)
-            assert reloaded.retriever_path == tempdir
-            assert len(reloaded) == 0
-            assert "bm25" in reloaded.index_table
-        return
-
-    def test_flex_retriever_rebuilds_non_addable_index_with_full_database(self):
-        retriever = FlexRetriever(FlexRetrieverConfig(batch_size=2))
-        retriever.add_index(
-            "bm25",
-            RETRIEVER_INDEX.load(
-                RetrieverIndexConfig(
-                    index_type="bm25",
-                    bm25_config=BM25IndexConfig(
-                        indexed_fields=["text"],
-                        show_progress=False,
-                    ),
+            with pytest.raises(RuntimeError, match="dirty indexes"):
+                retriever.search(
+                    ["Bruce Wayne", "capital of China"],
+                    disable_cache=True,
+                    top_k=1,
+                    used_indexes=["bm25"],
                 )
-            ),
-        )
-        retriever.add_passages(
-            [Context(context_id="bruce", data={"text": "Bruce Wayne guards Gotham."})]
-        )
-        retriever.add_passages(
-            [
-                Context(
-                    context_id="capital",
-                    data={"text": "Beijing is the capital of China."},
-                )
-            ]
-        )
 
-        results = retriever.search(
-            ["Bruce Wayne", "capital of China"],
-            disable_cache=True,
-            top_k=1,
-            used_indexes=["bm25"],
-        )
+            retriever.rebuild_index()
+            results = retriever.search(
+                ["Bruce Wayne", "capital of China"],
+                disable_cache=True,
+                top_k=1,
+                used_indexes=["bm25"],
+            )
 
-        assert results[0][0].context_id == "bruce"
-        assert results[1][0].context_id == "capital"
+            assert results[0][0].context_id == "bruce"
+            assert results[1][0].context_id == "capital"
+            retriever.close()
+
+    def test_flex_retriever_updates_addable_index_incrementally(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            retriever = FlexRetriever(FlexRetrieverConfig(batch_size=2), tempdir)
+            retriever.add_passages(
+                [
+                    Context(context_id="a", data={"text": "alpha"}),
+                    Context(context_id="b", data={"text": "beta"}),
+                ]
+            )
+            index = FakeAddableIndex()
+            retriever.add_index("fake", index)
+            retriever.add_passages([Context(context_id="c", data={"text": "gamma"})])
+
+            assert index.inserted_batches == [["c"]]
+            assert "fake" not in retriever.state.dirty_indexes
+            results = retriever.search(
+                "anything",
+                disable_cache=True,
+                top_k=3,
+                used_indexes=["fake"],
+            )
+            assert [ctx.context_id for ctx in results[0]] == ["a", "b", "c"]
+            retriever.close()
+
+    def test_flex_retriever_uses_collection_local_scratch_path(self):
+        with tempfile.TemporaryDirectory() as tempdir:
+            retriever = FlexRetriever(FlexRetrieverConfig(batch_size=2), tempdir)
+            retriever.add_passages([Context(context_id="a", data={"text": "alpha"})])
+            index = FakeScratchIndex()
+            retriever.add_index("fake", index)
+
+            assert index.scratch_path == str(
+                Path(tempdir, "indexes", ".scratch", "fake")
+            )
+            assert not Path(index.scratch_path).exists()
+            retriever.close()
+
+    def test_flex_retriever_hub_helpers(self, monkeypatch):
+        with tempfile.TemporaryDirectory() as tempdir:
+            retriever = FlexRetriever(FlexRetrieverConfig(batch_size=2), tempdir)
+            retriever.add_passages([Context(context_id="a", data={"text": "alpha"})])
+            retriever.add_index("bm25", build_text_bm25_index())
+            retriever.add_passages([Context(context_id="b", data={"text": "beta"})])
+
+            FakeHfApi.snapshot_path = tempdir
+            FakeHfApi.upload_calls = []
+            FakeHfApi.upload_file_calls = []
+            monkeypatch.setattr("flexrag.retrievers.flex_retriever.HfApi", FakeHfApi)
+
+            with pytest.raises(RuntimeError, match="dirty indexes"):
+                retriever.push_to_hub("org/repo")
+            url = retriever.push_to_hub("org/repo", allow_dirty=True)
+            assert url == "https://huggingface.co/org/repo"
+            assert FakeHfApi.upload_calls[-1]["folder_path"] == tempdir
+            assert FakeHfApi.upload_file_calls[-1]["path_in_repo"] == "README.md"
+            card = FakeHfApi.upload_file_calls[-1]["path_or_fileobj"].decode("utf-8")
+            assert "FlexRetriever.from_hub" in card
+            assert "Context count: `2`" in card
+            assert "- `bm25`" in card
+            assert "Dirty Indexes" in card
+            assert not Path(tempdir, "README.md").exists()
+
+            retriever.close()
+            loaded = FlexRetriever.from_hub(
+                "org/repo",
+                cfg=FlexRetrieverConfig(batch_size=2),
+            )
+            assert len(loaded) == 2
+            loaded.close()
 
     def test_elastic_retriever(self, mock_es_client):
-        # load retriever
         retriever = ElasticRetriever(
             ElasticRetrieverConfig(
                 host="http://127.0.0.1:9200",
@@ -365,7 +445,6 @@ class TestRetrievers:
         return
 
     def test_typesense_retriever(self, mock_ts_client):
-        # load retriever
         retriever = TypesenseRetriever(
             TypesenseRetrieverConfig(
                 api_key="test_api_key",

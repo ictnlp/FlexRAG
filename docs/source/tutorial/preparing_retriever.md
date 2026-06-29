@@ -16,12 +16,12 @@ In this tutorial, we will show you how to load the {class}`~flexrag.retriever.Fl
 ## Loading the predefined {class}`~flexrag.retriever.FlexRetriever` from HuggingFace Hub
 FlexRAG provides several predefined {class}`~flexrag.retriever.FlexRetriever`s that are built on various knowledge bases. These retrievers are available on the HuggingFace Hub and can be easily loaded for use in your applications. You can find the list of available retrievers in the [FlexRAG repository](https://huggingface.co/FlexRAG).
 
-You can load a predefined retriever by using the `load_from_hub` function from the {class}`~flexrag.retriever.FlexRetriever` class. For example, to load the retriever built on the *enwiki_2021_atlas* dataset, you can run the following code:
+You can load a predefined retriever by using the `from_hub` function from the {class}`~flexrag.retriever.FlexRetriever` class. For example, to load the retriever built on the *enwiki_2021_atlas* dataset, you can run the following code:
 
 ```python
-from flexrag.retriever import FlexRetriever
+from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
 
-retriever = FlexRetriever.load_from_hub(repo_id='FlexRAG/wiki2021_atlas_bm25s')
+retriever = FlexRetriever.from_hub(repo_id='FlexRAG/wiki2021_atlas_bm25s')
 passages = retriever.search('What is the capital of France?')
 ```
 
@@ -79,7 +79,7 @@ You can use the {class}`~flexrag.datasets.RAGCorpusDataset` class to load the kn
 
 ```python
 from flexrag.datasets import RAGCorpusDataset, RAGCorpusDatasetConfig
-from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
+from flexrag.retriever import FlexRetriever
 
 RETRIEVER_PATH = "<path_to_retriever>"  # path to save the retriever
 CORPUS_PATH = ["psgs_w100.tsv"]
@@ -93,12 +93,7 @@ def add_passages():
             id_field="id",
         )
     )
-    retriever = FlexRetriever(
-        FlexRetrieverConfig(
-            batch_size=4096,
-        ),
-        retriever_path=RETRIEVER_PATH,
-    )
+    retriever = FlexRetriever(FlexRetrieverConfig(batch_size=4096), RETRIEVER_PATH)
     retriever.add_passages(passages=corpus, log_interval=100000)
     return
 
@@ -126,28 +121,27 @@ Before using the retriever, you need to build the indexes for the knowledge base
 
 
 ```python
-from flexrag.retriever import FlexRetriever, IndexFieldsConfig
+from flexrag.retriever import FlexRetriever
 from flexrag.retriever.index import BM25IndexConfig, RETRIEVER_INDEX, RetrieverIndexConfig
 
 RETRIEVER_PATH = "<path_to_retriever>"  # path to the retriever
 
 
 def add_bm25_index():
-    retriever = FlexRetriever.load_from_local(RETRIEVER_PATH)
+    retriever = FlexRetriever(FlexRetrieverConfig(), RETRIEVER_PATH)
     index = RETRIEVER_INDEX.load(
         RetrieverIndexConfig(
             index_type="bm25",
-            bm25_config=BM25IndexConfig(),
+            bm25_config=BM25IndexConfig(
+                indexed_fields=["title", "text"],
+                # concatenate the `title` and `text` fields for indexing
+                merge_method="concat",
+            ),
         )
     )
     retriever.add_index(
         index_name="bm25",
         index=index,
-        fields_config=IndexFieldsConfig(
-            indexed_fields=["title", "text"],
-            # concatenate the `title` and `text` fields for indexing
-            merge_method="concat",
-        ),
     )
     return
 
@@ -161,7 +155,7 @@ You can also build a dense index by specifying `index_type=faiss`. A dense index
 
 ```python
 from flexrag.models import ENCODERS, EncoderConfig, HFEncoderConfig
-from flexrag.retriever import FlexRetriever, IndexFieldsConfig
+from flexrag.retriever import FlexRetriever
 from flexrag.retriever.index import (
     FaissIndexConfig,
     RETRIEVER_INDEX,
@@ -172,7 +166,7 @@ RETRIEVER_PATH = "<path_to_retriever>"  # path to the retriever
 
 
 def add_faiss_index():
-    retriever = FlexRetriever.load_from_local(RETRIEVER_PATH)
+    retriever = FlexRetriever(FlexRetrieverConfig(), RETRIEVER_PATH)
     encoder = ENCODERS.load(
         EncoderConfig(
             encoder_type="hf",  # specify using Hugging Face model
@@ -190,6 +184,8 @@ def add_faiss_index():
         RetrieverIndexConfig(
             index_type="faiss",  # specify the index type
             faiss_config=FaissIndexConfig(
+                indexed_fields=["title", "text"],
+                merge_method="concat",  # concatenate the `title` and `text` fields for indexing
                 # leave factory_str unset to use the built-in auto mode
                 # you can also provide a specific Faiss factory string such as
                 # "Flat" or "IVF1024,Flat"
@@ -202,10 +198,6 @@ def add_faiss_index():
     retriever.add_index(
         index_name="contriever",
         index=index,
-        fields_config=IndexFieldsConfig(
-            indexed_fields=["title", "text"],
-            merge_method="concat",  # concatenate the `title` and `text` fields for indexing
-        ),
     )
     return
 
@@ -244,7 +236,7 @@ After preparing the retriever, you can use it in your RAG application or other t
 from flexrag.retriever import FlexRetriever
 
 
-retriever = FlexRetriever.load_from_local("<path_to_retriever>")
+retriever = FlexRetriever(FlexRetrieverConfig(), "<path_to_retriever>")
 passages = retriever.search('What is the capital of France?', top_k=5)[0]
 print(passages)
 ```
@@ -257,8 +249,8 @@ To share your retriever with the community, you can upload it to the HuggingFace
 from flexrag.retrievers import FlexRetriever
 
 
-retriever = FlexRetriever.load_from_local("<path_to_retriever>")
-retriever.save_to_hub(repo_id="<your-repo-id>", token="<your-hf-token>")
+retriever = FlexRetriever(FlexRetrieverConfig(), "<path_to_retriever>")
+retriever.push_to_hub(repo_id="<your-repo-id>", token="<your-hf-token>")
 ```
 
 In this code, you need to specify the `repo_id` and `token` to upload the retriever to the HuggingFace Hub. You can find the `token` in your HuggingFace [account settings](https://huggingface.co/settings/tokens). After uploading the retriever, you can share the retriever with the community by sharing the link to the HuggingFace Hub.

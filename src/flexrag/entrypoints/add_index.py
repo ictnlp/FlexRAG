@@ -6,7 +6,7 @@ from hydra.core.config_store import ConfigStore
 
 from flexrag.common import configure, extract_config
 from flexrag.models import ENCODERS, EncoderConfig
-from flexrag.retrievers import FlexRetriever
+from flexrag.retrievers import FlexRetriever, FlexRetrieverConfig
 from flexrag.retrievers.index import (
     RETRIEVER_INDEX,
     DenseRawIndexBase,
@@ -47,11 +47,14 @@ def main(cfg: Config):
     cfg = extract_config(cfg, Config)
     assert cfg.index_name is not None, "index_name must be provided"
     assert cfg.retriever_path is not None, "retriever_path must be provided"
-    retriever: FlexRetriever = FlexRetriever.load_from_local(cfg.retriever_path)
+    retriever = FlexRetriever(FlexRetrieverConfig(), cfg.retriever_path)
 
     # remove index
     if cfg.rebuild:
-        retriever.remove_index(cfg.index_name)
+        try:
+            retriever.remove_index(cfg.index_name)
+        except KeyError:
+            pass
 
     # add index
     index_kwargs = {}

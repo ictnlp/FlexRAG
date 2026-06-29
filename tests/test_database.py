@@ -5,18 +5,14 @@ import numpy as np
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from PIL import Image
 
-from flexrag.common.database import (
-    LMDBRetrieverDatabase,
-    NaiveRetrieverDatabase,
-    RetrieverDatabaseBase,
-)
-from flexrag.common.database.serializer import (
+from flexrag.common.serialization import (
     JsonSerializer,
     MsgpackSerializer,
     PickleSerializer,
     SerializerBase,
 )
 from flexrag.datasets.reader import LineDelimitedReader
+from flexrag.retrievers.database import LMDBRetrieverDatabase, RetrieverDatabaseBase
 
 
 class TestDatabase:
@@ -192,13 +188,6 @@ class TestDatabase:
         with tempfile.TemporaryDirectory() as tmpdir:
             database = LMDBRetrieverDatabase(tmpdir)
             self.run_batched_operations(database)
-        return
-
-    def test_dict_database(self):
-        database = NaiveRetrieverDatabase()
-        self.run_basic_operations(database)
-        database = NaiveRetrieverDatabase()
-        self.run_batched_operations(database)
         return
 
 

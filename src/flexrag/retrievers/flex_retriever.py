@@ -1,28 +1,24 @@
 import os
 import shutil
-import tempfile
 from collections import defaultdict
-from typing import Any, Generator, Iterable, Optional
+from collections.abc import Iterable
+from typing import Any
 
+import numpy as np
 from huggingface_hub import HfApi
 
 from flexrag.common import (
     __VERSION__,
     FLEXRAG_CACHE_DIR,
-    LOGGER_MANAGER,
     ProgressDisplay,
     SimpleProgressLogger,
-    configure,
     trace,
 )
-from flexrag.common.configure import extract_config
-from flexrag.common.database import (
-    LMDBRetrieverDatabase,
-    NaiveRetrieverDatabase,
-    RetrieverDatabaseBase,
-)
+from flexrag.common.configure import configure, extract_config
 from flexrag.common.dataclasses import Context, RetrievedContext
 
+from ._index_state import METADATA_FILE, IndexState
+from .database import LMDBRetrieverDatabase
 from .index import ContextIndexBase
 from .retriever_base import (
     DEFAULT_TOP_K,
@@ -31,522 +27,179 @@ from .retriever_base import (
     RetrieverBaseConfig,
 )
 
-logger = LOGGER_MANAGER.get_logger("flexrag.retreviers.flex")
+
+def _format_markdown_list(items: Iterable[str]) -> str:
+    items = list(items)
+    if not items:
+        return "- None"
+    return "\n".join(f"- `{item}`" for item in items)
 
 
-RETRIEVER_CARD_TEMPLATE = """---
-language: en
+def _build_retriever_card(
+    *,
+    repo_id: str,
+    version: str,
+    context_count: int,
+    fields: list[str],
+    indexes: list[str],
+    dirty_indexes: list[str],
+) -> str:
+    dirty_note = ""
+    if dirty_indexes:
+        dirty_note = (
+            "\n## Dirty Indexes\n\n"
+            "This artifact was uploaded with dirty indexes. Rebuild them before "
+            "using those indexes for search if you need complete retrieval "
+            "coverage.\n\n"
+            f"{_format_markdown_list(dirty_indexes)}\n"
+        )
+
+    return f"""---
 library_name: FlexRAG
 tags:
 - FlexRAG
 - retrieval
 - search
-- lexical
 - RAG
 ---
 
 # FlexRAG Retriever
 
-This is a {retriever_type} created with the [`FlexRAG`](https://github.com/ictnlp/flexrag) library (version `{version}`).
+This repository contains a FlexRAG `FlexRetriever` collection.
 
-## Installation
+## Collection Summary
 
-You can install the `FlexRAG` library with `pip`:
+- FlexRAG version: `{version}`
+- Context count: `{context_count}`
 
-```bash
-pip install flexrag
-```
+## Fields
 
-## Loading a `FlexRAG` retriever
+{_format_markdown_list(fields)}
 
-You can use this retriever for information retrieval tasks. Here is an example:
+## Indexes
+
+{_format_markdown_list(indexes)}
+{dirty_note}
+## Loading
 
 ```python
-from flexrag.retriever import FlexRetriever
+from flexrag.retrievers import FlexRetriever, FlexRetrieverConfig
 
-{load_example}
-
-# You can retrieve now
+retriever = FlexRetriever.from_hub(
+    "{repo_id}",
+    cfg=FlexRetrieverConfig(),
+)
 results = retriever.search("Who is Bruce Wayne?")
 ```
-
-FlexRAG Related Links:
-* 📚[Documentation](https://flexrag.readthedocs.io/en/latest/)
-* 💻[GitHub Repository](https://github.com/ictnlp/flexrag)
 """
-
-
-def _build_retriever_card(
-    retriever_type: str,
-    version: str,
-    repo_path: Optional[str] = None,
-    repo_id: Optional[str] = None,
-) -> str:
-    if repo_id is not None:
-        load_example = (
-            "# Load the retriever from the HuggingFace Hub\n"
-            f'retriever = FlexRetriever.load_from_hub("{repo_id}")'
-        )
-    else:
-        assert repo_path is not None, "repo_path must be provided when repo_id is None."
-        load_example = (
-            "# Load the retriever from a local path\n"
-            f'retriever = FlexRetriever.load_from_local("{repo_path}")'
-        )
-    return RETRIEVER_CARD_TEMPLATE.format(
-        retriever_type=retriever_type,
-        version=version,
-        load_example=load_example,
-    )
 
 
 @configure
 class FlexRetrieverConfig(RetrieverBaseConfig):
-    """Configuration for FlexRetriever.
+    """Configuration for :class:`FlexRetriever`.
 
-    :param batch_size: Number of contexts processed per batch when adding
-        passages, updating indexes, serializing the database, or running search.
-        Defaults to 32.
+    The collection path is passed directly to :class:`FlexRetriever` and is
+    intentionally not stored in config or metadata.
+
+    :param batch_size: Batch size used by FlexRetriever itself when writing or
+        copying context payloads, and by the inherited search method when
+        splitting query batches. It does not override index build or insertion
+        batch sizes. Defaults to ``32``.
     """
 
 
 @RETRIEVERS("flex", config_class=FlexRetrieverConfig)
 class FlexRetriever(RetrieverBase):
-    """FlexRetriever is a retriever implemented by FlexRAG team.
-    FlexRetriever supports multi-index and multi-field retrieval.
-    """
+    """Local collection retriever with pluggable indexes.
 
-    cfg: FlexRetrieverConfig
+    ``FlexRetriever`` stores contexts in a local collection and lets users add
+    one or more named indexes over those contexts. It supports multi-field
+    indexing through the index configuration, hybrid search across multiple
+    indexes, incremental updates for addable indexes, dirty-index detection for
+    non-addable indexes, and local or Hugging Face Hub artifact exchange.
+    """
 
     def __init__(
         self,
         cfg: FlexRetrieverConfig,
-        retriever_path: Optional[str] = None,
+        path: str | os.PathLike[str],
     ) -> None:
+        cfg = extract_config(cfg, FlexRetrieverConfig)
+        if cfg.batch_size <= 0:
+            raise ValueError("batch_size must be positive.")
         super().__init__(cfg)
-        self.cfg = extract_config(cfg, FlexRetrieverConfig)
-        self._retriever_path = retriever_path
-        self.database = self._load_database()
-        self.index_table: dict[str, ContextIndexBase] = self._load_index()
-
-        # consistency check
-        self._check_consistency()
+        self.root_path = os.fspath(path)
+        self._prepare_collection()
+        self.state = IndexState.load(self.root_path)
+        self.database = LMDBRetrieverDatabase(self._database_path())
+        self.index_table = self._load_indexes()
+        self._check_consistency(allow_dirty=True)
         return
 
-    @property
-    def retriever_path(self) -> Optional[str]:
-        """Return the local artifact root attached to this retriever.
-
-        :return: The local retriever artifact path, or ``None`` when the
-            retriever is detached from disk.
-        """
-        return self._retriever_path
-
     @classmethod
-    def load_from_hub(
+    def from_hub(
         cls,
         repo_id: str,
-        revision: Optional[str] = None,
-        token: Optional[str] = None,
+        *,
+        revision: str | None = None,
+        token: str | None = None,
         cache_dir: str | os.PathLike[str] = FLEXRAG_CACHE_DIR,
+        cfg: FlexRetrieverConfig | None = None,
         **kwargs,
     ) -> "FlexRetriever":
-        """Load a FlexRetriever artifact from the HuggingFace Hub.
+        """Download a collection artifact from Hugging Face Hub and open it.
 
-        :param repo_id: HuggingFace Hub repository id.
-        :param revision: Optional repository revision.
-        :param token: Optional HuggingFace token.
-        :param cache_dir: Local cache directory for the downloaded artifact.
-        :param kwargs: Additional arguments passed to the constructor.
-        :return: Loaded FlexRetriever.
+        :param repo_id: Hub repository ID.
+        :param revision: Optional revision to download.
+        :param token: Optional Hugging Face token.
+        :param cache_dir: Local snapshot cache directory.
+        :param cfg: Optional FlexRetriever runtime configuration.
+        :param kwargs: Extra keyword arguments forwarded to
+            :meth:`huggingface_hub.HfApi.snapshot_download`.
+        :return: Opened retriever collection.
         """
         api = HfApi(token=token)
         repo_info = api.repo_info(repo_id)
         if repo_info is None:
-            raise ValueError(f"Retriever {repo_id} not found on the HuggingFace Hub.")
+            raise ValueError(f"Retriever {repo_id} not found on Hugging Face Hub.")
         repo_id = repo_info.id
-        dir_name = os.path.join(
-            cache_dir,
-            f"{repo_id.split('/')[0]}--{repo_id.split('/')[1]}",
-        )
+        local_dir = os.path.join(cache_dir, repo_id.replace("/", "--"))
         snapshot = api.snapshot_download(
             repo_id=repo_id,
             revision=revision,
             token=token,
-            local_dir=dir_name,
+            local_dir=local_dir,
+            **kwargs,
         )
         if snapshot is None:
             raise RuntimeError(f"Retriever {repo_id} download failed.")
-        return cls.load_from_local(snapshot, **kwargs)
+        return cls(cfg or FlexRetrieverConfig(), snapshot)
 
-    @classmethod
-    def load_from_local(
-        cls,
-        retriever_path: str | os.PathLike[str],
-        **kwargs,
-    ) -> "FlexRetriever":
-        """Load a FlexRetriever artifact from local disk.
-
-        :param retriever_path: Local FlexRetriever artifact path.
-        :param kwargs: Additional arguments passed to the constructor.
-        :return: Loaded FlexRetriever.
-        """
-        retriever_path = os.fspath(retriever_path)
-        config_path = os.path.join(retriever_path, "config.yaml")
-        cfg = FlexRetrieverConfig.load(config_path)
-        return cls(cfg, retriever_path=retriever_path, **kwargs)
-
-    @trace("retriever.flex_retriever.add_passages")
-    def add_passages(
-        self,
-        passages: Iterable[Context],
-        log_interval: int = 10000,
-        display: ProgressDisplay = "auto",
-    ):
-
-        def get_batch() -> Generator[tuple[list[dict], list[str]], None, None]:
-            batch = []
-            ids = []
-            for passage in passages:
-                if len(batch) == self.cfg.batch_size:
-                    yield batch, ids
-                    batch = []
-                    ids = []
-                data = passage.data.copy()
-                ids.append(passage.context_id)
-                batch.append(data)
-            if batch:
-                yield batch, ids
-            return
-
-        # add data to database
-        context_ids = []
-        with SimpleProgressLogger(
-            logger, interval=log_interval, display=display
-        ) as p_logger:
-            for batch, ids in get_batch():
-                self.database[ids] = batch
-                context_ids.extend(ids)
-                p_logger.update(step=len(batch), desc="Adding passages")
-
-        # update the indexes
-        self._update_index(
-            context_ids,
-            log_interval=log_interval,
-            display=display,
-        )
-        if self.retriever_path is not None:
-            self._save_metadata(self.retriever_path)
-        logger.info("Finished adding passages.")
-        return
-
-    @trace("retriever.flex_retriever.search")
-    def _search(
-        self,
-        query: list[str],
-        **search_kwargs,
-    ) -> list[list[RetrievedContext]]:
-        top_k = search_kwargs.pop("top_k", DEFAULT_TOP_K)
-        used_indexes = search_kwargs.pop("used_indexes", None)
-        merge_method = search_kwargs.pop("indexes_merge_method", "rrf")
-        merge_weights = search_kwargs.pop("indexes_merge_weights", None)
-        rrf_base = search_kwargs.pop("rrf_base", 60)
-        if used_indexes is None:
-            used_indexes = list(self.index_table.keys())
-        for index_name in used_indexes:
-            assert index_name in self.index_table, f"Index {index_name} not found."
-        assert len(used_indexes) > 0, "`used_indexes` is empty."
-
-        # retrieve indices using `used_indexes`
-        all_context_ids = []
-        all_scores = []
-        for index_name in used_indexes:
-            r = self.index_table[index_name].search(query, top_k, **search_kwargs)
-            all_context_ids.append(r[0])
-            all_scores.append(r[1])
-
-        # merge the indices and scores
-        merged_ids: list[list[str]] = []
-        merged_scores: list[list[float]] = []
-        if len(all_scores) == 1:  # only one index is activated
-            merged_scores = all_scores[0].tolist()
-            merged_ids = all_context_ids[0]
-        else:  # merge multiple indexes
-            match merge_method:
-                case "rrf":
-                    # prepare merge weights
-                    if merge_weights is not None:
-                        assert len(merge_weights) == len(used_indexes)
-                        merge_weights = [
-                            i / sum(merge_weights)
-                            for i in merge_weights
-                        ]
-                    else:
-                        merge_weights = [1.0 / len(all_scores)] * len(all_scores)
-                    # recompute the scores according to the rank
-                    for i in range(len(query)):
-                        scores_dict = defaultdict(float)
-                        for ctx_ids, scores, merge_weight in zip(
-                            all_context_ids, all_scores, merge_weights
-                        ):
-                            sort_ranks = scores[i].argsort()[::-1] + 1
-                            for ctx_id, rank in zip(ctx_ids[i], sort_ranks):
-                                scores_dict[ctx_id] += merge_weight / (
-                                    rank + rrf_base
-                                )
-                        sorted_items = sorted(scores_dict.items(), key=lambda x: -x[1])
-                        merged_ids.append([item[0] for item in sorted_items][:top_k])
-                        merged_scores.append([item[1] for item in sorted_items][:top_k])
-                case "linear":
-                    # prepare merge weights
-                    if merge_weights is not None:
-                        assert len(merge_weights) == len(used_indexes)
-                        merge_weights = [
-                            i / sum(merge_weights)
-                            for i in merge_weights
-                        ]
-                    else:
-                        merge_weights = [1.0 / len(all_scores)] * len(all_scores)
-                    # According to "An Analysis of Fusion Functions for Hybrid Retrieval",
-                    # we employ the TMM normalization method to normalize the scores.
-                    if any(
-                        self.index_table[index_name].infimum == float("-inf")
-                        for index_name in used_indexes
-                    ):
-                        use_infimum = False
-                    else:
-                        use_infimum = True
-                    for n in range(len(used_indexes)):
-                        index_name = used_indexes[n]
-                        if use_infimum:
-                            infimum = self.index_table[index_name].infimum
-                        else:
-                            infimum = all_scores[n].min(axis=1, keepdims=True)
-                        all_scores[n] = (all_scores[n] - infimum) / (
-                            all_scores[n].max(axis=1, keepdims=True) - infimum
-                        )
-                    # merge the scores
-                    for i in range(len(query)):
-                        scores_dict = defaultdict(float)
-                        for ctx_ids, scores, merge_weight in zip(
-                            all_context_ids, all_scores, merge_weights
-                        ):
-                            for ctx_id, score in zip(ctx_ids[i], scores[i]):
-                                scores_dict[ctx_id] += score * merge_weight
-                        sorted_items = sorted(scores_dict.items(), key=lambda x: -x[1])
-                        merged_ids.append([item[0] for item in sorted_items][:top_k])
-                        merged_scores.append([item[1] for item in sorted_items][:top_k])
-                case _:
-                    raise ValueError(f"Unknown merge method: {merge_method}")
-
-        # form the final results
-        results: list[list[RetrievedContext]] = []
-        for i, (q, score, context_id) in enumerate(
-            zip(query, merged_scores, merged_ids)
-        ):
-            results.append([])
-            ctxs = self.database[context_id]
-            for j, (s, ctx_id, ctx) in enumerate(zip(score, context_id, ctxs)):
-                results[-1].append(
-                    RetrievedContext(
-                        context_id=ctx_id,
-                        retriever="FlexRetriever",
-                        query=q,
-                        score=float(s),
-                        data=ctx,
-                    )
-                )
-        return results
-
-    def clear(self) -> None:
-        # clear the indexes
-        for index_name in self.index_table:
-            self.index_table[index_name].clear()
-
-        # clear the database
-        self.database.clear()
-
-        if self.retriever_path is not None:
-            self._save_metadata(self.retriever_path)
-            for index_name, index in self.index_table.items():
-                index.save_to_local(self._get_index_path(index_name))
-        return
-
-    def count(self) -> int:
-        return len(self.database)
-
-    def get(self, context_id: str) -> Context:
-        return Context(
-            context_id=context_id,
-            data=dict(self.database[context_id]),
-            source=self.retriever_path,
-        )
-
-    @property
-    def fields(self) -> list[str]:
-        return self.database.fields
-
-    @trace("retriever.flex_retriever.add_index")
-    def add_index(
-        self,
-        index_name: str,
-        index: ContextIndexBase,
-    ) -> None:
-        """Add an index to the retriever.
-
-        :param index_name: Name of the index.
-        :param index: Prepared context-level index.
-        :raises ValueError: If the index name already exists.
-        :return: None
-        """
-        # check if the index name is valid
-        if index_name in self.index_table:
-            raise ValueError(
-                f"Index {index_name} already exists. Please remove it first."
-            )
-
-        # prepare index path
-        if self.retriever_path is not None:
-            index_path = self._get_index_path(index_name)
-        else:
-            index_path = None
-
-        if len(self.database) > 0:
-            scratch_path = (
-                os.path.join(index_path, "raw") if index_path is not None else None
-            )
-            index.build_index(
-                self.database.ids,
-                self.database.values(),
-                scratch_path=scratch_path,
-            )
-            if index_path is not None:
-                index.save_to_local(index_path)
-        elif index_path is not None:
-            index.save_to_local(index_path)
-
-        # add index to the index table
-        self.index_table[index_name] = index
-        if self.retriever_path is not None:
-            self._save_metadata(self.retriever_path)
-        self._check_consistency()
-        logger.info(f"Finished adding index: {index_name}")
-        return
-
-    def remove_index(self, index_name: str) -> None:
-        """Remove an index from the retriever.
-
-        :param index_name: Name of the index.
-        :raises ValueError: If the index name does not exist.
-        :return: None
-        """
-        if index_name not in self.index_table:
-            raise ValueError(f"Index {index_name} does not exist.")
-
-        # remove the index
-        index = self.index_table.pop(index_name)
-        index.clear()
-        if self.retriever_path is not None:
-            index_path = self._get_index_path(index_name)
-            if os.path.exists(index_path):
-                shutil.rmtree(index_path)
-            self._save_metadata(self.retriever_path)
-
-        # update the configuration
-        return
-
-    def save_to_local(self, retriever_path: Optional[str] = None) -> None:
-        # check if the retriever is serializable
-        if retriever_path is None:
-            retriever_path = self.retriever_path
-        assert retriever_path is not None, "`retriever_path` is not set."
-        retriever_path = os.fspath(retriever_path)
-        self._retriever_path = retriever_path
-        self._save_metadata(retriever_path)
-        logger.info(f"Serializing retriever to {retriever_path}")
-
-        # save the database
-        def get_data() -> Generator[tuple[list[str], list[dict]], None, None]:
-            batch_ids = []
-            batch_data = []
-            for ctx_id, ctx in self.database.items():
-                # unify the schema
-                # FIXME: if the schema is not consistent, we need to handle it
-                ctx = {k: ctx.get(k, "") for k in self.fields}
-                batch_ids.append(ctx_id)
-                batch_data.append(ctx)
-                if len(batch_ids) == self.cfg.batch_size:
-                    yield batch_ids, batch_data
-                    batch_ids = []
-                    batch_data = []
-            if batch_ids:
-                yield batch_ids, batch_data
-            return
-
-        database_path = os.path.join(retriever_path, "database.lmdb")
-        current_database_path = (
-            self.database.database_path
-            if isinstance(self.database, LMDBRetrieverDatabase)
-            else None
-        )
-        if current_database_path is None or os.path.abspath(
-            current_database_path
-        ) != os.path.abspath(database_path):
-            if os.path.exists(database_path):
-                shutil.rmtree(database_path)
-            new_db = LMDBRetrieverDatabase(database_path)
-            for batch_ids, batch_data in get_data():
-                new_db[batch_ids] = batch_data
-            if isinstance(self.database, LMDBRetrieverDatabase):
-                self.database.close()
-            self.database = new_db
-
-        # save the index
-        for index_name, index in self.index_table.items():
-            index.save_to_local(self._get_index_path(index_name))
-        return
-
-    def save_to_hub(
+    def push_to_hub(
         self,
         repo_id: str,
-        token: Optional[str] = os.environ.get("HF_TOKEN", None),
+        *,
+        token: str | None = os.environ.get("HF_TOKEN"),
         commit_message: str = "Update FlexRAG retriever",
-        retriever_card: Optional[str] = None,
         private: bool = False,
+        allow_dirty: bool = False,
         **kwargs,
     ) -> str:
-        """Save the FlexRetriever artifact to the HuggingFace Hub.
+        """Upload this collection artifact to Hugging Face Hub.
 
-        :param repo_id: HuggingFace Hub repository id.
-        :param token: Optional HuggingFace token.
-        :param commit_message: Commit message for the upload.
-        :param retriever_card: Optional README content for future callers.
-        :param private: Whether to create the repository as private.
-        :param kwargs: Additional arguments forwarded to ``upload_folder``.
-        :return: Repository URL returned by HuggingFace Hub.
+        Dirty indexes are rejected by default because search semantics would be
+        incomplete after download.
+
+        :param repo_id: Hub repository ID to create or update.
+        :param token: Optional Hugging Face token.
+        :param commit_message: Hub commit message.
+        :param private: Whether to create a private repository.
+        :param allow_dirty: Whether to upload with dirty indexes.
+        :param kwargs: Extra keyword arguments forwarded to
+            :meth:`huggingface_hub.HfApi.upload_folder`.
+        :return: Hub repository URL.
         """
-        if self.retriever_path is None:
-            with tempfile.TemporaryDirectory(prefix="flexrag-retriever") as tmp_dir:
-                logger.info(
-                    (
-                        "As the `retriever_path` is not set, "
-                        f"the retriever will be saved temporarily at {tmp_dir}."
-                    )
-                )
-                try:
-                    self.save_to_local(tmp_dir)
-                    return self.save_to_hub(
-                        token=token,
-                        repo_id=repo_id,
-                        commit_message=commit_message,
-                        retriever_card=retriever_card,
-                        private=private,
-                        **kwargs,
-                    )
-                finally:
-                    if self.retriever_path == tmp_dir:
-                        self.detach()
-
+        self._assert_pushable(allow_dirty=allow_dirty)
         api = HfApi(token=token)
         repo_url = api.create_repo(
             repo_id=repo_id,
@@ -555,135 +208,494 @@ class FlexRetriever(RetrieverBase):
             repo_type="model",
             exist_ok=True,
         )
-        assert self.retriever_path is not None, "`retriever_path` is not set."
         api.upload_folder(
             repo_id=repo_url.repo_id,
             commit_message=commit_message,
-            folder_path=self.retriever_path,
+            folder_path=self.root_path,
             **kwargs,
         )
-        return repo_url
+        api.upload_file(
+            repo_id=repo_url.repo_id,
+            commit_message=commit_message,
+            path_in_repo="README.md",
+            path_or_fileobj=_build_retriever_card(
+                repo_id=repo_url.repo_id,
+                version=__VERSION__,
+                context_count=self.count(),
+                fields=self.fields,
+                indexes=sorted(self.index_table),
+                dirty_indexes=sorted(self.state.dirty_indexes),
+            ).encode("utf-8"),
+            repo_type="model",
+        )
+        return str(repo_url)
 
-    def detach(self):
-        """Detach the retriever from the local disk to memory.
-        This function will not delete the database or the indexes."""
-
-        def get_data() -> Generator[tuple[list[str], list[dict]], None, None]:
-            batch_ids = []
-            for ctx_id in self.database.ids:
-                batch_ids.append(ctx_id)
-                if len(batch_ids) == self.cfg.batch_size:
-                    yield batch_ids, self.database[batch_ids]
-                    batch_ids = []
-            if batch_ids:
-                yield batch_ids, self.database[batch_ids]
-            return
-
-        # detach the database
-        if isinstance(self.database, LMDBRetrieverDatabase):
-            old_db = self.database
-            new_db = NaiveRetrieverDatabase()
-            for batch_ids, batch_data in get_data():
-                new_db[batch_ids] = batch_data
-            self.database = new_db
-            old_db.close()
-
-        # update the runtime state
-        self._retriever_path = None
-        return
-
-    def _update_index(
+    @trace("retriever.flex_retriever.add_passages")
+    def add_passages(
         self,
-        context_ids: list[str],
+        passages: Iterable[Context],
+        *,
         log_interval: int = 10000,
         display: ProgressDisplay = "auto",
     ) -> None:
-        def get_data(ctx_ids: Iterable[str]) -> Generator[dict[str, Any], None, None]:
-            for ctx_id in ctx_ids:
-                yield self.database[ctx_id]
+        """Add contexts to the collection and update addable indexes.
 
-        # update index
+        Non-addable indexes are marked dirty after new passages are inserted.
+        Call :meth:`rebuild_index` before searching those indexes again.
+
+        :param passages: Contexts to add. Every context must provide a unique
+            ``context_id``.
+        :param log_interval: Number of inserted contexts between progress
+            updates.
+        :param display: Progress display mode.
+        :return: None.
+        """
+        new_ids: list[str] = []
+        new_data: list[dict[str, Any]] = []
+        for context in passages:
+            if context.context_id is None:
+                raise ValueError("context_id is required.")
+            if context.context_id in self.database or context.context_id in new_ids:
+                raise ValueError(f"Duplicate context_id: {context.context_id}")
+            new_ids.append(context.context_id)
+            new_data.append(dict(context.data))
+        if not new_ids:
+            return
+
+        with SimpleProgressLogger(
+            None,
+            interval=log_interval,
+            display=display,
+        ) as p_logger:
+            for start in range(0, len(new_ids), self.cfg.batch_size):
+                ids = new_ids[start : start + self.cfg.batch_size]
+                data = new_data[start : start + self.cfg.batch_size]
+                self.database[ids] = data
+                p_logger.update(step=len(ids), desc="Adding passages")
+
         for index_name, index in self.index_table.items():
-            # prepare index path
-            if self.retriever_path is not None:
-                index_path = self._get_index_path(index_name)
-            else:
-                index_path = None
             if index.is_addable:
-                index.insert_batch(
-                    context_ids,
-                    get_data(context_ids),
-                    log_interval=log_interval,
-                    display=display,
-                )
-                if index_path is not None:
-                    index.save_to_local(index_path)
+                try:
+                    index.insert_batch(
+                        new_ids,
+                        (self.database[context_id] for context_id in new_ids),
+                        log_interval=log_interval,
+                        display=display,
+                    )
+                    self._save_index(index_name, index)
+                    self.state.mark_clean(index_name)
+                except Exception:
+                    self.state.mark_dirty(index_name)
+                    self._save_state()
+                    raise
             else:
-                logger.warning(
-                    f"Index {index_name} is not addable. Rebuilding the index."
-                )
-                index.clear()
-                scratch_path = (
-                    os.path.join(index_path, "raw") if index_path is not None else None
-                )
-                index.build_index(
-                    self.database.ids,
-                    self.database.values(),
-                    scratch_path=scratch_path,
-                )
-                if index_path is not None:
-                    index.save_to_local(index_path)
+                self.state.mark_dirty(index_name)
+        self._save_state()
         return
 
-    def _load_database(self) -> RetrieverDatabaseBase:
-        if self.retriever_path is not None:
-            database_path = os.path.join(self.retriever_path, "database.lmdb")
-            database = LMDBRetrieverDatabase(database_path)
-        else:
-            database = NaiveRetrieverDatabase()
-        return database
+    @trace("retriever.flex_retriever.add_index")
+    def add_index(self, index_name: str, index: ContextIndexBase) -> None:
+        """Add a clean index built over the full collection.
 
-    def _load_index(self) -> dict[str, ContextIndexBase]:
-        # load indexes
+        :param index_name: Unique index name inside this collection.
+        :param index: Context index instance to build and store.
+        :return: None.
+        """
+        if index_name in self.index_table:
+            raise ValueError(f"Index already exists: {index_name}")
+        if len(self.database) > 0:
+            self._build_index(index_name, index)
+        self._save_index(index_name, index)
+        self.index_table[index_name] = index
+        self.state.add_index(index_name)
+        self._save_state()
+        return
+
+    @trace("retriever.flex_retriever.rebuild_index")
+    def rebuild_index(self, index_name: str | None = None) -> None:
+        """Rebuild one index or all indexes from the full database.
+
+        :param index_name: Optional index name. If omitted, all indexes are
+            rebuilt.
+        :return: None.
+        """
+        index_names = [index_name] if index_name is not None else list(self.index_table)
+        for name in index_names:
+            if name not in self.index_table:
+                raise KeyError(f"Index not found: {name}")
+            index = self.index_table[name]
+            self._build_index(name, index)
+            self._save_index(name, index)
+            self.state.mark_clean(name)
+        self._save_state()
+        return
+
+    def remove_index(self, index_name: str) -> None:
+        """Remove one index from the collection.
+
+        :param index_name: Index name.
+        :return: None.
+        """
+        if index_name not in self.index_table:
+            raise KeyError(f"Index not found: {index_name}")
+        index = self.index_table.pop(index_name)
+        index.clear()
+        index_path = self._index_path(index_name)
+        if os.path.exists(index_path):
+            shutil.rmtree(index_path)
+        self.state.remove_index(index_name)
+        self._save_state()
+        return
+
+    @trace("retriever.flex_retriever.search")
+    def _search(
+        self,
+        query: list[str],
+        *,
+        top_k: int = DEFAULT_TOP_K,
+        used_indexes: list[str] | None = None,
+        indexes_merge_method: str = "rrf",
+        indexes_merge_weights: list[float] | None = None,
+        rrf_base: int = 60,
+        **search_kwargs,
+    ) -> list[list[RetrievedContext]]:
+        if used_indexes is None:
+            used_indexes = list(self.index_table)
+        if not used_indexes:
+            raise ValueError("No indexes are available for search.")
+        dirty = sorted(set(used_indexes) & set(self.state.dirty_indexes))
+        if dirty:
+            raise RuntimeError(
+                "Cannot search dirty indexes. Rebuild first: " + ", ".join(dirty)
+            )
+        for index_name in used_indexes:
+            if index_name not in self.index_table:
+                raise KeyError(f"Index not found: {index_name}")
+
+        all_context_ids: list[list[list[str]]] = []
+        all_scores: list[np.ndarray] = []
+        for index_name in used_indexes:
+            context_ids, scores = self.index_table[index_name].search(
+                query,
+                top_k,
+                **search_kwargs,
+            )
+            all_context_ids.append(context_ids)
+            all_scores.append(scores)
+
+        merged_ids, merged_scores = self._merge_results(
+            used_indexes,
+            all_context_ids,
+            all_scores,
+            top_k,
+            indexes_merge_method,
+            indexes_merge_weights,
+            rrf_base,
+        )
+        return self._build_results(query, merged_ids, merged_scores)
+
+    def get(self, context_id: str) -> Context:
+        """Get one context by ID.
+
+        :param context_id: Context ID.
+        :return: Retrieved context payload.
+        """
+        return Context(
+            context_id=context_id,
+            data=dict(self.database[context_id]),
+            source=self.root_path,
+        )
+
+    def count(self) -> int:
+        """Return the number of contexts in the collection.
+
+        :return: Context count.
+        """
+        return len(self.database)
+
+    def clear(self) -> None:
+        """Clear contexts and all index contents.
+
+        The collection artifact remains on disk, but the database and active
+        indexes become empty and clean.
+
+        :return: None.
+        """
+        self.database.clear()
+        for index_name, index in self.index_table.items():
+            index.clear()
+            self._save_index(index_name, index)
+            self.state.mark_clean(index_name)
+        self._save_state()
+        return
+
+    def export_to(
+        self,
+        path: str | os.PathLike[str],
+        *,
+        overwrite: bool = False,
+    ) -> None:
+        """Export the current on-disk collection to another path.
+
+        The current object remains attached to its original path.
+
+        :param path: Target directory.
+        :param overwrite: Whether to remove an existing target directory.
+        :return: None.
+        """
+        root = os.fspath(path)
+        if os.path.exists(root):
+            if not overwrite and os.listdir(root):
+                raise FileExistsError(f"Export path is not empty: {root}")
+            if overwrite:
+                shutil.rmtree(root)
+        os.makedirs(root, exist_ok=True)
+
+        state = IndexState.create()
+        state.indexes = sorted(self.index_table)
+        state.dirty_indexes = sorted(self.state.dirty_indexes)
+        state.save(root)
+
+        target_db = LMDBRetrieverDatabase(self._database_path(root))
+        try:
+            self._copy_database(target_db)
+        finally:
+            target_db.close()
+
+        os.makedirs(os.path.join(root, "indexes"), exist_ok=True)
+        for index_name, index in self.index_table.items():
+            self._save_index_to_root(root, index_name, index)
+        return
+
+    @property
+    def fields(self) -> list[str]:
+        """Return stored context fields.
+
+        :return: Context field names.
+        """
+        return self.database.fields
+
+    def close(self) -> None:
+        """Close the underlying LMDB database.
+
+        :return: None.
+        """
+        self.database.close()
+        return
+
+    def _cache_fingerprint(self) -> dict[str, Any]:
+        return {
+            "path": os.path.abspath(self.root_path),
+            "updated_at": self.state.updated_at,
+        }
+
+    def _build_index(self, index_name: str, index: ContextIndexBase) -> None:
+        scratch_path = self._scratch_path(index_name)
+        if os.path.exists(scratch_path):
+            shutil.rmtree(scratch_path)
+        os.makedirs(scratch_path, exist_ok=True)
+        try:
+            index.build_index(
+                self.database.ids,
+                self.database.values(),
+                scratch_path=scratch_path,
+            )
+        finally:
+            if os.path.exists(scratch_path):
+                shutil.rmtree(scratch_path)
+        return
+
+    def _load_indexes(self) -> dict[str, ContextIndexBase]:
         indexes = {}
-        if self.retriever_path is None:
-            return indexes
-        index_root = os.path.join(self.retriever_path, "indexes")
-        if not os.path.exists(index_root):
-            return indexes
-        indexes_names = os.listdir(index_root)
-        for index_name in indexes_names:
-            index_path = self._get_index_path(index_name)
-            index = ContextIndexBase.load_from_local(index_path)
-            indexes[index_name] = index
+        for index_name in self.state.indexes:
+            index_path = self._index_path(index_name)
+            if os.path.exists(index_path):
+                indexes[index_name] = ContextIndexBase.load_from_local(index_path)
+            else:
+                self.state.mark_dirty(index_name)
+        self._cleanup_staging()
+        self._save_state()
         return indexes
 
-    def _check_consistency(self) -> None:
+    def _merge_results(
+        self,
+        used_indexes: list[str],
+        all_context_ids: list[list[list[str]]],
+        all_scores: list[np.ndarray],
+        top_k: int,
+        merge_method: str,
+        merge_weights: list[float] | None,
+        rrf_base: int,
+    ) -> tuple[list[list[str]], list[list[float]]]:
+        if len(all_scores) == 1:
+            return all_context_ids[0], all_scores[0].tolist()
+
+        if merge_weights is not None:
+            if len(merge_weights) != len(used_indexes):
+                raise ValueError("indexes_merge_weights length mismatch.")
+            total_weight = sum(merge_weights)
+            merge_weights = [weight / total_weight for weight in merge_weights]
+        else:
+            merge_weights = [1.0 / len(all_scores)] * len(all_scores)
+
+        merged_ids: list[list[str]] = []
+        merged_scores: list[list[float]] = []
+        match merge_method:
+            case "rrf":
+                for query_idx in range(len(all_context_ids[0])):
+                    scores_dict: dict[str, float] = defaultdict(float)
+                    for ctx_ids, scores, weight in zip(
+                        all_context_ids,
+                        all_scores,
+                        merge_weights,
+                    ):
+                        sort_ranks = scores[query_idx].argsort()[::-1] + 1
+                        for ctx_id, rank in zip(ctx_ids[query_idx], sort_ranks):
+                            scores_dict[ctx_id] += weight / (rank + rrf_base)
+                    sorted_items = sorted(scores_dict.items(), key=lambda item: -item[1])
+                    merged_ids.append([item[0] for item in sorted_items[:top_k]])
+                    merged_scores.append([item[1] for item in sorted_items[:top_k]])
+            case "linear":
+                normalized_scores = list(all_scores)
+                use_infimum = all(
+                    self.index_table[index_name].infimum != float("-inf")
+                    for index_name in used_indexes
+                )
+                for idx, index_name in enumerate(used_indexes):
+                    if use_infimum:
+                        infimum = self.index_table[index_name].infimum
+                    else:
+                        infimum = normalized_scores[idx].min(axis=1, keepdims=True)
+                    denominator = normalized_scores[idx].max(
+                        axis=1,
+                        keepdims=True,
+                    ) - infimum
+                    denominator[denominator == 0] = 1
+                    normalized_scores[idx] = (normalized_scores[idx] - infimum) / (
+                        denominator
+                    )
+                for query_idx in range(len(all_context_ids[0])):
+                    scores_dict = defaultdict(float)
+                    for ctx_ids, scores, weight in zip(
+                        all_context_ids,
+                        normalized_scores,
+                        merge_weights,
+                    ):
+                        for ctx_id, score in zip(ctx_ids[query_idx], scores[query_idx]):
+                            scores_dict[ctx_id] += float(score) * weight
+                    sorted_items = sorted(scores_dict.items(), key=lambda item: -item[1])
+                    merged_ids.append([item[0] for item in sorted_items[:top_k]])
+                    merged_scores.append([item[1] for item in sorted_items[:top_k]])
+            case _:
+                raise ValueError(f"Unknown merge method: {merge_method}")
+        return merged_ids, merged_scores
+
+    def _build_results(
+        self,
+        queries: list[str],
+        merged_ids: list[list[str]],
+        merged_scores: list[list[float]],
+    ) -> list[list[RetrievedContext]]:
+        results: list[list[RetrievedContext]] = []
+        for query, context_ids, scores in zip(queries, merged_ids, merged_scores):
+            data = self.database[context_ids] if context_ids else []
+            results.append(
+                [
+                    RetrievedContext(
+                        context_id=context_id,
+                        retriever="FlexRetriever",
+                        query=query,
+                        score=float(score),
+                        data=dict(context_data),
+                    )
+                    for context_id, score, context_data in zip(
+                        context_ids,
+                        scores,
+                        data,
+                    )
+                ]
+            )
+        return results
+
+    def _check_consistency(self, *, allow_dirty: bool = False) -> None:
         for index_name, index in self.index_table.items():
-            assert len(index) == len(self.database), "Index and database size mismatch"
+            if allow_dirty and index_name in self.state.dirty_indexes:
+                continue
+            if len(index) != len(self.database):
+                raise RuntimeError(
+                    f"Index/database size mismatch for {index_name}: "
+                    f"{len(index)} != {len(self.database)}"
+                )
         return
 
-    def _get_index_path(self, index_name: str) -> str:
-        assert self.retriever_path is not None, "`retriever_path` is not set."
-        return os.path.join(self.retriever_path, "indexes", index_name)
+    def _database_path(self, root: str | None = None) -> str:
+        return os.path.join(root or self.root_path, "database.lmdb")
 
-    def _save_metadata(self, retriever_path: str) -> None:
-        os.makedirs(retriever_path, exist_ok=True)
+    def _index_path(self, index_name: str, root: str | None = None) -> str:
+        return os.path.join(root or self.root_path, "indexes", index_name)
 
-        # save the retriever card
-        card_path = os.path.join(retriever_path, "README.md")
-        if not os.path.exists(card_path):
-            retriever_card = _build_retriever_card(
-                retriever_type=self.__class__.__name__,
-                version=__VERSION__,
-                repo_path=retriever_path,
+    def _scratch_path(self, index_name: str) -> str:
+        return os.path.join(self.root_path, "indexes", ".scratch", index_name)
+
+    def _save_index(self, index_name: str, index: ContextIndexBase) -> None:
+        self._save_index_to_root(self.root_path, index_name, index)
+        return
+
+    def _save_index_to_root(
+        self,
+        root: str,
+        index_name: str,
+        index: ContextIndexBase,
+    ) -> None:
+        staging_path = os.path.join(root, "indexes", ".staging", index_name)
+        final_path = os.path.join(root, "indexes", index_name)
+        if os.path.exists(staging_path):
+            shutil.rmtree(staging_path)
+        os.makedirs(os.path.dirname(staging_path), exist_ok=True)
+        index.save_to_local(staging_path)
+        if os.path.exists(final_path):
+            shutil.rmtree(final_path)
+        os.replace(staging_path, final_path)
+        return
+
+    def _save_state(self) -> None:
+        self.state.save(self.root_path)
+        return
+
+    def _cleanup_staging(self) -> None:
+        staging_root = os.path.join(self.root_path, "indexes", ".staging")
+        if os.path.exists(staging_root):
+            shutil.rmtree(staging_root)
+        return
+
+    def _prepare_collection(self) -> None:
+        if os.path.isfile(self.root_path):
+            raise NotADirectoryError(f"Collection path is a file: {self.root_path}")
+        metadata_path = os.path.join(self.root_path, METADATA_FILE)
+        if os.path.exists(metadata_path):
+            return
+        if os.path.isdir(self.root_path) and os.listdir(self.root_path):
+            raise FileExistsError(
+                f"Collection path is non-empty but has no {METADATA_FILE}: "
+                f"{self.root_path}"
             )
-            with open(card_path, "w", encoding="utf-8") as f:
-                f.write(retriever_card)
+        os.makedirs(self.root_path, exist_ok=True)
+        os.makedirs(os.path.join(self.root_path, "indexes"), exist_ok=True)
+        IndexState.create().save(self.root_path)
+        return
 
-        # save the configuration
-        cfg_path = os.path.join(retriever_path, "config.yaml")
-        self.cfg.dump(cfg_path)
-        id_path = os.path.join(retriever_path, "cls.id")
-        with open(id_path, "w", encoding="utf-8") as f:
-            f.write(self.__class__.__name__)
+    def _assert_pushable(self, *, allow_dirty: bool) -> None:
+        if self.state.dirty_indexes and not allow_dirty:
+            dirty_indexes = ", ".join(self.state.dirty_indexes)
+            raise RuntimeError(
+                "Cannot push collection with dirty indexes. "
+                f"Rebuild first or pass allow_dirty=True: {dirty_indexes}"
+            )
+        return
+
+    def _copy_database(self, target_db: LMDBRetrieverDatabase) -> None:
+        ids = list(self.database.ids)
+        for start in range(0, len(ids), self.cfg.batch_size):
+            batch_ids = ids[start : start + self.cfg.batch_size]
+            target_db[batch_ids] = self.database[batch_ids]
+        return

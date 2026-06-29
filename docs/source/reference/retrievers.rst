@@ -20,16 +20,14 @@ The Retriever Interface
     :members:
     :inherited-members:
 
-RetrieverConfig is the general configuration for all registered retrievers.
-You can load any retriever by specifying the retriever name in the configuration.
-For example, to load the pre-built ``FlexRetriever`` retriever,
-you can use the following configuration:
+RetrieverConfig is the legacy general configuration for registered retrievers.
+``FlexRetriever`` collections are opened from their collection path directly:
 
 .. code-block:: python
 
-    from flexrag.retriever import FlexRetriever
+    from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
 
-    retriever = FlexRetriever.load_from_local('<path_to_retriever>')
+    retriever = FlexRetriever(FlexRetrieverConfig(), '<path_to_retriever>')
 
 .. ElasticSearch Retriever
 .. autoclass:: flexrag.retriever.ElasticRetrieverConfig
@@ -87,12 +85,7 @@ For example, to load the ``BM25Index``, you can use the following configuration:
 
     from flexrag.retriever.index import RetrieverIndexConfig, RETRIEVER_INDEX, BM25IndexConfig
 
-    config = RetrieverIndexConfig(
-        index_type='bm25',
-        bm25_config=BM25IndexConfig(
-            index_path='<path_to_index>',
-        )
-    )
+    config = RetrieverIndexConfig(index_type='bm25', bm25_config=BM25IndexConfig())
     index = RETRIEVER_INDEX.load(config)
 
 .. Faiss Index

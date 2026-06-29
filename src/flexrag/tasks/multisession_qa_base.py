@@ -12,7 +12,7 @@ from flexrag.common import (
     SimpleProgressLogger,
     configure,
 )
-from flexrag.common.database import json_dump
+from flexrag.common.serialization import json_dump
 from flexrag.datasets.core import MappingDataset, MultiSessionQASample
 from flexrag.metrics import Evaluator
 

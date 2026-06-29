@@ -15,14 +15,15 @@ from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
 
 
 @dataclass
-class SimpleAssistantConfig(FlexRetrieverConfig, OpenAIGeneratorConfig):
-    retriever_path: Optional[str] = None
+class SimpleAssistantConfig(OpenAIGeneratorConfig):
+    collection_path: Optional[str] = None
 
 
 @ASSISTANTS("simple", config_class=SimpleAssistantConfig)
 class SimpleAssistant(AssistantBase):
     def __init__(self, config: SimpleAssistantConfig):
-        self.retriever = FlexRetriever(config, retriever_path=config.retriever_path)
+        assert config.collection_path is not None
+        self.retriever = FlexRetriever(FlexRetrieverConfig(), config.collection_path)
         self.generator = OpenAIGenerator(config)
         return
 
@@ -57,7 +58,7 @@ python -m flexrag.entrypoints.eval_assistant \
     assistant_type=simple \
     simple_config.model_name='gpt-4o-mini' \
     simple_config.api_key=${OPENAI_KEY} \
-    simple_config.retriever_path=${DB_PATH} \
+    simple_config.collection_path=${DB_PATH} \
     eval_config.metrics_type=[retrieval_success_rate,generation_f1,generation_em] \
     eval_config.retrieval_success_rate_config.eval_field=text \
     log_interval=10
