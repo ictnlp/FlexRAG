@@ -18,7 +18,6 @@ from .retriever_base import (
     RetrieverBase,
     RetrieverBaseConfig,
 )
-from .typesense_retriever import TypesenseRetriever, TypesenseRetrieverConfig
 
 RetrieverConfig = RETRIEVERS.make_config(config_name="RetrieverConfig", default=None)
 
@@ -42,7 +41,5 @@ __all__ = [
     "RemoteRetrieverBase",
     "RetrieverBase",
     "RetrieverBaseConfig",
-    "TypesenseRetriever",
-    "TypesenseRetrieverConfig",
     "RetrieverConfig",
 ]

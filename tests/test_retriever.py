@@ -14,8 +14,6 @@ from flexrag.retrievers import (
     FlexRetriever,
     FlexRetrieverConfig,
     RetrieverBase,
-    TypesenseRetriever,
-    TypesenseRetrieverConfig,
 )
 from flexrag.retrievers.index import (
     RETRIEVER_INDEX,
@@ -439,31 +437,6 @@ class TestRetrievers:
         retriever = ElasticRetriever(
             ElasticRetrieverConfig(
                 host="http://127.0.0.1:9200",
-                index_name="testing",
-            )
-        )
-        self.run_retriever(retriever)
-
-        data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
-        dataset = load_test_corpus_slice(data_path, 0, 20)
-        asyncio.run(retriever.async_add_passages(dataset))
-        assert asyncio.run(retriever.async_count()) == 20
-        ctxs = asyncio.run(
-            retriever.async_search(self.query, disable_cache=True, top_k=5)
-        )
-        assert len(ctxs) == 2
-        assert len(ctxs[0]) == 5
-        asyncio.run(retriever.async_clear())
-        assert asyncio.run(retriever.async_count()) == 0
-        asyncio.run(retriever.aclose())
-        return
-
-    def test_typesense_retriever(self, mock_ts_client):
-        retriever = TypesenseRetriever(
-            TypesenseRetrieverConfig(
-                api_key="test_api_key",
-                host="127.0.0.1",
-                port=8108,
                 index_name="testing",
             )
         )

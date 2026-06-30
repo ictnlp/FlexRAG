@@ -14,11 +14,9 @@ All experiments are conducted using the `ModularAssistant` in FlexRAG framework.
 | BM25s+BM25l   |  57.97   | 53.04 |   66.55   | 36.54 | 28.12 |   50.39   |    62.70    | 54.75 |   58.15   |  52.40  | 45.30 |   58.36   |
 | BM25s+Atire   |  57.88   | 52.75 |   68.48   | 38.79 | 30.00 |   54.74   |    65.92    | 58.01 |   61.99   |  54.20  | 46.92 |   61.74   |
 | ElasticSearch |  57.29   | 52.39 |   66.12   | 36.70 | 28.39 |   52.05   |    65.94    | 58.35 |   62.23   |  53.31  | 46.38 |   60.13   |
-| Typesense     |  19.41   | 17.80 |   26.38   | 20.57 | 14.88 |   15.87   |    44.69    | 38.49 |   20.48   |  28.22  | 23.72 |   20.91   |
 
 Observations:
 - BM25s+Lucene, BM25s+BM25+, and BM25s+Atire have similar performance on all datasets.
-- Typesense struggles to retrieve relevant documents when using natural language queries.
 - ElasticSearch has balanced performance across three datasets, and it offers a wide range of retrieval features.
 
 Conclusion:
@@ -120,4 +118,3 @@ Observations:
 - Without retrieval, models like Llama and Mistral have a relatively high response accuracy, and their performance continues to improve as the model size increases.
 - With retrieval, Qwen2-7B-Instruct shows the most significant improvement.
 - Qwen2.5 72B failed to follow the instruction to generate a brief answer and instead produced a longer response, resulting in a sharp decline in both F1 and EM scores. This may be related to the use of a quantized model.
-

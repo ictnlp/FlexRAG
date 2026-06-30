@@ -11,8 +11,6 @@ from flexrag.retrievers import (
     ElasticRetrieverConfig,
     FlexRetriever,
     FlexRetrieverConfig,
-    TypesenseRetriever,
-    TypesenseRetrieverConfig,
 )
 
 logger = LOGGER_MANAGER.get_logger("flexrag.prepare_index")
@@ -22,11 +20,10 @@ logger = LOGGER_MANAGER.get_logger("flexrag.prepare_index")
 @configure
 class Config(IterableCorpusConfig):
     # retriever configs
-    retriever_type: Annotated[str, Choices("flex", "elastic", "typesense")] = "flex"
+    retriever_type: Annotated[str, Choices("flex", "elastic")] = "flex"
     retriever_path: Optional[str] = None
     flex_config: FlexRetrieverConfig = field(default_factory=FlexRetrieverConfig)
     elastic_config: ElasticRetrieverConfig = field(default_factory=ElasticRetrieverConfig)
-    typesense_config: TypesenseRetrieverConfig = field(default_factory=TypesenseRetrieverConfig)
     reinit: bool = False
 # fmt: on
 
@@ -49,8 +46,6 @@ def main(cfg: Config):
             )
         case "elastic":
             retriever = ElasticRetriever(cfg.elastic_config)
-        case "typesense":
-            retriever = TypesenseRetriever(cfg.typesense_config)
         case _:
             raise ValueError(f"Unsupported retriever type: {cfg.retriever_type}")
 

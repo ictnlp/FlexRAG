@@ -38,15 +38,6 @@ RetrieverConfig is the legacy general configuration for registered retrievers.
     :members:
     :show-inheritance:
 
-.. Typesense Retriever
-.. autoclass:: flexrag.retriever.TypesenseRetrieverConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.retriever.TypesenseRetriever
-    :members:
-    :show-inheritance:
-
 .. FlexRetriever
 .. autoclass:: flexrag.retriever.FlexRetrieverConfig
     :members:

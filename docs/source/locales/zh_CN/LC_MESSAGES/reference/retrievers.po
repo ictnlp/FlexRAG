@@ -280,10 +280,6 @@ msgstr ""
 msgid "The config for FlexRetriever."
 msgstr ""
 
-#: 97ac5e1cec6d4aa3b41a308e08d6d079 of types.RetrieverConfig:11
-msgid "The config for TypesenseRetriever."
-msgstr ""
-
 #: ../../source/reference/retrievers.rst:24 bc7419bda15441e586c744d9d6efa91e
 msgid ""
 "RetrieverConfig is the general configuration for all registered "
@@ -356,11 +352,10 @@ msgid "None"
 msgstr ""
 
 #: 435aeca2a2de49c78d1c4ba83dee41db 5cb25f32dc3c40239b6880b09c34aed1
-#: a6e6feac5d0b40bba9226f4eb2f6c16c a95a47f9028d419cb631e629178480ca
+#: a6e6feac5d0b40bba9226f4eb2f6c16c
 #: flexrag.retriever.elastic_retriever.ElasticRetriever.clear:1
 #: flexrag.retriever.flex_retriever.FlexRetriever.clear:1
-#: flexrag.retriever.retriever_base.RetrieverBase.clear:1
-#: flexrag.retriever.typesense_retriever.TypesenseRetriever.clear:1 of
+#: flexrag.retriever.retriever_base.RetrieverBase.clear:1 of
 msgid "Clear the retriever database."
 msgstr ""
 
@@ -405,48 +400,9 @@ msgid "Delay time for retry. Default: 0.5."
 msgstr ""
 
 #: 71e60f3616784f7d8fe3cee1d655292c c556814521e3477bbf9318ae17e11c4a
-#: f098dae6112d467d9724d825024a5f1d
 #: flexrag.retriever.elastic_retriever.ElasticRetriever:1
-#: flexrag.retriever.retriever_base.FlexRetriever:1
-#: flexrag.retriever.typesense_retriever.TypesenseRetriever:1 of
+#: flexrag.retriever.retriever_base.FlexRetriever:1 of
 msgid "Bases: :py:class:`~flexrag.retriever.retriever_base.RetrieverBase`"
-msgstr ""
-
-#: 707c4ddfb3f14870ad59ef5f0ca42ea1
-#: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:1 of
-msgid "Configuration class for TypesenseRetriever."
-msgstr ""
-
-#: 998e3ec420ab40b9bf8555d825422b39
-#: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:3 of
-msgid "Host of the Typesense server. Default: \"localhost\"."
-msgstr ""
-
-#: 6763d83ecc2f46a682c50fd218227ef5
-#: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:5 of
-msgid "Port of the Typesense server. Default: 8108."
-msgstr ""
-
-#: f553b70b51014ff4921d59eac266716c
-#: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:7 of
-msgid ""
-"Protocol of the Typesense server. Default: \"http\". Available options: "
-"\"https\", \"http\"."
-msgstr ""
-
-#: 747162c6b58849c0884aa0fc51acc7d9
-#: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:10 of
-msgid "API key for the Typesense server. Required."
-msgstr ""
-
-#: e46fd8cb3f4749b5a8af9dac5c799be2
-#: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:12 of
-msgid "Name of the Typesense collection. Required."
-msgstr ""
-
-#: f60141dbe2fb44218de8afede6f6ba6f
-#: flexrag.retriever.typesense_retriever.TypesenseRetrieverConfig:14 of
-msgid "Timeout for the connection. Default: 200.0."
 msgstr ""
 
 #: a46bcde5db814e55b0af690e5a9ab98b
@@ -1380,9 +1336,6 @@ msgstr ""
 #~ msgstr ""
 
 #~ msgid "Search queries using local retriever."
-#~ msgstr ""
-
-#~ msgid "Host of the Typesense server. Required."
 #~ msgstr ""
 
 #~ msgid "You can also override the configuration when loading the retriever:"
