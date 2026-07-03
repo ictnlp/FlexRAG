@@ -21,6 +21,10 @@ from flexrag.retrievers.index import (
     RetrieverIndexConfig,
 )
 
+TEST_CORPUS_PATH = (
+    Path(__file__).resolve().parents[1] / "support" / "data" / "testcorp.jsonl"
+)
+
 
 def load_test_corpus_slice(path: Path, start: int, stop: int) -> list[Context]:
     contexts = []
@@ -175,7 +179,7 @@ class TestRetrievers:
         retriever.clear()
         assert len(retriever) == 0
 
-        data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
+        data_path = TEST_CORPUS_PATH
         dataset1 = load_test_corpus_slice(data_path, 0, 10000)
         dataset2 = load_test_corpus_slice(data_path, 10000, 20000)
 
@@ -206,7 +210,7 @@ class TestRetrievers:
         return
 
     def test_flex_retriever(self):
-        data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
+        data_path = TEST_CORPUS_PATH
         dataset1 = load_test_corpus_slice(data_path, 0, 50)
         dataset2 = load_test_corpus_slice(data_path, 50, 60)
 
@@ -442,7 +446,7 @@ class TestRetrievers:
         )
         self.run_retriever(retriever)
 
-        data_path = Path(__file__).parent / "testcorp" / "testcorp.jsonl"
+        data_path = TEST_CORPUS_PATH
         dataset = load_test_corpus_slice(data_path, 0, 20)
         asyncio.run(retriever.async_add_passages(dataset))
         assert asyncio.run(retriever.async_count()) == 20

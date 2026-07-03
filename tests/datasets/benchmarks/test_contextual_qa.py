@@ -29,6 +29,8 @@ from flexrag.datasets.benchmarks import (
 )
 from flexrag.datasets.core import ContextualQASample
 
+pytestmark = pytest.mark.integration
+
 
 class TestContextualQA:
     def valid_contextual_qa_sample(self, item, allow_empty_context: bool = False):

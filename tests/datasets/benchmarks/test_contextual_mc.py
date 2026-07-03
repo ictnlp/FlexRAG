@@ -11,6 +11,8 @@ from flexrag.datasets.benchmarks import (
 )
 from flexrag.datasets.core import ContextualMCSample
 
+pytestmark = pytest.mark.integration
+
 
 class TestContextualMC:
     def valid_contextual_mc_sample(self, item):

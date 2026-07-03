@@ -109,7 +109,10 @@ ignore_directives = ["autoclass", "automodule", "autofunction", "autosummary"]
 ignore = ["D001"]
 
 [tool.pytest.ini_options]
-markers = ["gpu: mark test as requiring GPU"]
+markers = [
+    "gpu: mark test as requiring GPU",
+    "integration: mark test as requiring real model/data/download/local external resource",
+]
 log_level = "DEBUG"
 asyncio_default_fixture_loop_scope = "function"
 

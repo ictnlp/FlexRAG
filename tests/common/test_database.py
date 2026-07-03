@@ -14,6 +14,10 @@ from flexrag.common.serialization import (
 from flexrag.datasets.reader import LineDelimitedReader
 from flexrag.retrievers.database import LMDBRetrieverDatabase, RetrieverDatabaseBase
 
+TEST_CORPUS_PATH = (
+    Path(__file__).resolve().parents[1] / "support" / "data" / "testcorp.jsonl"
+)
+
 
 class TestDatabase:
     def run_basic_operations(self, database: RetrieverDatabaseBase):
@@ -113,7 +117,7 @@ class TestDatabase:
         return
 
     def run_batched_operations(self, database: RetrieverDatabaseBase):
-        corpus_path = str(Path(__file__).parent / "testcorp" / "testcorp.jsonl")
+        corpus_path = str(TEST_CORPUS_PATH)
         dataset = list(LineDelimitedReader(corpus_path))
         dataset1 = dataset[:10000]
         dataset2 = dataset[10000:20000]

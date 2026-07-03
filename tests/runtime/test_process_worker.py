@@ -6,8 +6,14 @@ from pathlib import Path
 
 
 def test_process_worker_inherits_visible_devices_before_import():
-    repo_root = Path(__file__).resolve().parents[1]
-    script = repo_root / "tests" / "support" / "run_process_worker_env_probe.py"
+    repo_root = Path(__file__).resolve().parents[2]
+    script = (
+        repo_root
+        / "tests"
+        / "support"
+        / "process"
+        / "run_process_worker_env_probe.py"
+    )
 
     env = os.environ.copy()
     pythonpath = [str(repo_root / "src"), str(repo_root)]

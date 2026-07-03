@@ -4,7 +4,7 @@ import time
 import numpy as np
 import pytest
 
-from tests.support.process_test_support import (
+from tests.support.process.process_test_support import (
     FakeLocalTextEncoder,
     FakeLocalTextEncoderConfig,
 )

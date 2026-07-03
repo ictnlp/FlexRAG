@@ -5,7 +5,7 @@ import pytest
 
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.models.generators import GenerationConfig
-from tests.support.process_test_support import (
+from tests.support.process.process_test_support import (
     FakeLocalGenerator,
     FakeLocalGeneratorConfig,
 )

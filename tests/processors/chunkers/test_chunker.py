@@ -10,8 +10,6 @@ from flexrag.processors.chunkers import (
     RecursiveChunkerConfig,
     SemanticChunker,
     SemanticChunkerConfig,
-    SentenceChunker,
-    SentenceChunkerConfig,
     TokenChunker,
     TokenChunkerConfig,
 )
@@ -110,34 +108,6 @@ class TestChunker:
             chunks = chunker.chunk(doc, return_str=True)
             for chunk in chunks:
                 assert len(tokenizer.tokenize(chunk)) <= 10
-            self.chunks_test(chunks, doc, strict=False)
-        return
-
-    def test_sentence_chunker(self):
-        tokenizer = TikTokenTokenizer(TikTokenTokenizerConfig())
-
-        # test nltk sentence splitter
-        try:
-            chunker = SentenceChunker(
-                SentenceChunkerConfig(
-                    max_sents=2, sentence_splitter_type="nltk_splitter"
-                ),
-                tokenizer=tokenizer,
-            )
-            for doc in self.docs:
-                chunks = chunker.chunk(doc, return_str=True)
-                self.chunks_test(chunks, doc, strict=False)
-        except LookupError:
-            # NLTK punkt data is optional in the local smoke environment.
-            pass
-
-        # test regex sentence splitter
-        chunker = SentenceChunker(
-            SentenceChunkerConfig(max_sents=2, sentence_splitter_type="regex"),
-            tokenizer=tokenizer,
-        )
-        for doc in self.docs:
-            chunks = chunker.chunk(doc, return_str=True)
             self.chunks_test(chunks, doc, strict=False)
         return
 

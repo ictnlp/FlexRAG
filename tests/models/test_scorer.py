@@ -10,6 +10,8 @@ from flexrag.models.scorers import (
     HFLogitsScorerConfig,
 )
 
+pytestmark = pytest.mark.integration
+
 
 class TestScorer:
     pairs = [

@@ -20,6 +20,8 @@ from flexrag.models import (
 from flexrag.models.encoders import EncoderProtocol
 from flexrag.models.generators import GeneratorProtocol
 
+pytestmark = pytest.mark.integration
+
 logger = LOGGER_MANAGER.get_logger("tests.test_model")
 
 

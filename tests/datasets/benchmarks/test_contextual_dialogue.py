@@ -7,6 +7,8 @@ from flexrag.datasets.benchmarks import (
 )
 from flexrag.datasets.core import ContextualDialogueSample
 
+pytestmark = pytest.mark.integration
+
 
 class TestContextualDialogue:
     def valid_contextual_dialogue_sample(self, item):

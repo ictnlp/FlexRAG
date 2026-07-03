@@ -15,6 +15,8 @@ from flexrag.datasets.benchmarks import (
 )
 from flexrag.datasets.core import IRSample
 
+pytestmark = pytest.mark.integration
+
 
 class TestMSMARCODataset:
     def valid_ir_sample(self, item):

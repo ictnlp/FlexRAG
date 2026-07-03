@@ -1,17 +1,19 @@
 import time
+from typing import Any
 
 import numpy as np
 
-from flexrag.common import configure
+from flexrag.common import ContentPart, ProgressDisplay, configure
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.models.encoders import LocalEncoderBase
 from flexrag.models.generators import GenerationConfig, LocalGeneratorBase
 from flexrag.models.scorers import LocalPairScorerBase
-from flexrag.resources.runtime_adapters import (
-    ProcessEncoderAdapter,
-    ProcessGeneratorAdapter,
-    ProcessScorerAdapter,
+from flexrag.resources.invocations import (
+    BatchGeneratorInvocation,
+    EncoderInvocation,
+    ScorerInvocation,
 )
+from flexrag.resources.runtime_adapters import ProcessRuntimeAdapter
 
 
 @configure
@@ -30,13 +32,18 @@ class FakeLocalTextEncoderImpl(LocalEncoderBase):
         self._embedding_dim = config.embedding_dim
         return
 
-    def _encode_batch(self, inputs: list[str]) -> np.ndarray:
+    def _encode_batch(self, inputs: list[ContentPart]) -> np.ndarray:
         if self.delay_s > 0:
             time.sleep(self.delay_s)
-        if self.error_on is not None and any(self.error_on in text for text in inputs):
+        texts: list[str] = []
+        for item in inputs:
+            if item["type"] != "text":
+                raise TypeError("FakeLocalTextEncoderImpl only supports text inputs.")
+            texts.append(item["text"])
+        if self.error_on is not None and any(self.error_on in text for text in texts):
             raise ValueError(f"boom: {self.error_on}")
         embeddings = []
-        for text in inputs:
+        for text in texts:
             checksum = sum((i + 1) * ord(ch) for i, ch in enumerate(text)) % 997
             vector = [
                 float(len(text)),
@@ -51,7 +58,7 @@ class FakeLocalTextEncoderImpl(LocalEncoderBase):
         return self._embedding_dim
 
 
-class FakeLocalTextEncoder(ProcessEncoderAdapter):
+class FakeLocalTextEncoder(ProcessRuntimeAdapter):
     impl_cls = FakeLocalTextEncoderImpl
 
     def __init__(
@@ -63,11 +70,42 @@ class FakeLocalTextEncoder(ProcessEncoderAdapter):
     ) -> None:
         super().__init__(
             config,
-            input_format="text",
-            batch_size=batch_size,
             device_groups=device_groups,
         )
+        self._invocation = EncoderInvocation(
+            self,
+            batch_method="_encode_batch",
+            batch_size=batch_size,
+        )
         return
+
+    def encode(
+        self,
+        inputs: Any,
+        log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
+    ) -> np.ndarray:
+        return self._invocation.encode(
+            inputs,
+            log_interval=log_interval,
+            display=display,
+        )
+
+    async def async_encode(
+        self,
+        inputs: Any,
+        log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
+    ) -> np.ndarray:
+        return await self._invocation.async_encode(
+            inputs,
+            log_interval=log_interval,
+            display=display,
+        )
+
+    @property
+    def embedding_size(self) -> int | None:
+        return self._invocation.embedding_size
 
 
 @configure
@@ -102,7 +140,7 @@ class FakeLocalPairScorerImpl(LocalPairScorerBase):
         return np.array(scores, dtype=np.float32)
 
 
-class FakeLocalPairScorer(ProcessScorerAdapter):
+class FakeLocalPairScorer(ProcessRuntimeAdapter):
     impl_cls = FakeLocalPairScorerImpl
 
     def __init__(
@@ -112,8 +150,37 @@ class FakeLocalPairScorer(ProcessScorerAdapter):
         batch_size: int = 32,
         device_groups: list[list[int]] | None = None,
     ) -> None:
-        super().__init__(config, batch_size=batch_size, device_groups=device_groups)
+        super().__init__(config, device_groups=device_groups)
+        self._invocation = ScorerInvocation(
+            self,
+            score_method="_score_batch",
+            batch_size=batch_size,
+        )
         return
+
+    def score(
+        self,
+        pairs: Any,
+        log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
+    ) -> np.ndarray:
+        return self._invocation.score(
+            pairs,
+            log_interval=log_interval,
+            display=display,
+        )
+
+    async def async_score(
+        self,
+        pairs: Any,
+        log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
+    ) -> np.ndarray:
+        return await self._invocation.async_score(
+            pairs,
+            log_interval=log_interval,
+            display=display,
+        )
 
 
 @configure
@@ -184,7 +251,7 @@ class FakeLocalGeneratorImpl(LocalGeneratorBase):
         ]
 
 
-class FakeLocalGenerator(ProcessGeneratorAdapter):
+class FakeLocalGenerator(ProcessRuntimeAdapter):
     impl_cls = FakeLocalGeneratorImpl
 
     def __init__(
@@ -194,5 +261,67 @@ class FakeLocalGenerator(ProcessGeneratorAdapter):
         batch_size: int = 1,
         device_groups: list[list[int]] | None = None,
     ) -> None:
-        super().__init__(config, batch_size=batch_size, device_groups=device_groups)
+        super().__init__(config, device_groups=device_groups)
+        self._invocation = BatchGeneratorInvocation(
+            self,
+            generate_method="_generate_batch",
+            chat_method="_chat_batch",
+            batch_size=batch_size,
+        )
         return
+
+    def generate(
+        self,
+        prefixes: Any,
+        generation_config: GenerationConfig | None = None,
+        log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
+    ) -> list[list[str]]:
+        return self._invocation.generate(
+            prefixes,
+            generation_config=generation_config,
+            log_interval=log_interval,
+            display=display,
+        )
+
+    async def async_generate(
+        self,
+        prefixes: Any,
+        generation_config: GenerationConfig | None = None,
+        log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
+    ) -> list[list[str]]:
+        return await self._invocation.async_generate(
+            prefixes,
+            generation_config=generation_config,
+            log_interval=log_interval,
+            display=display,
+        )
+
+    def chat(
+        self,
+        messages: Any,
+        generation_config: GenerationConfig | None = None,
+        log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
+    ) -> list[list[ChatTurn]]:
+        return self._invocation.chat(
+            messages,
+            generation_config=generation_config,
+            log_interval=log_interval,
+            display=display,
+        )
+
+    async def async_chat(
+        self,
+        messages: Any,
+        generation_config: GenerationConfig | None = None,
+        log_interval: int = 1000,
+        display: ProgressDisplay = "auto",
+    ) -> list[list[ChatTurn]]:
+        return await self._invocation.async_chat(
+            messages,
+            generation_config=generation_config,
+            log_interval=log_interval,
+            display=display,
+        )

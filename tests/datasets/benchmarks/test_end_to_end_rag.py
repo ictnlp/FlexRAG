@@ -12,6 +12,8 @@ from flexrag.datasets.benchmarks import (
 )
 from flexrag.datasets.core import IRDialogueSample, IRQASample
 
+pytestmark = pytest.mark.integration
+
 
 class TestEndToEndRAG:
     def valid_ir_qa_sample(self, item):

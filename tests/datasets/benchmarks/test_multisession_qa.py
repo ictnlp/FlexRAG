@@ -12,6 +12,8 @@ from flexrag.datasets.benchmarks import (
 )
 from flexrag.datasets.core import MultiSessionQASample
 
+pytestmark = pytest.mark.integration
+
 
 class TestMultiSessionQADatasets:
     def valid_multisession_qa_sample(self, sample):

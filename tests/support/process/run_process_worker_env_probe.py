@@ -2,7 +2,7 @@ import asyncio
 import json
 
 from flexrag.resources.runtime.process_worker_pool import ProcessWorkerPoolClient
-from tests.support.process_worker_env_probe_support import (
+from tests.support.process.process_worker_env_probe_support import (
     ProcessWorkerEnvProbeConfig,
     ProcessWorkerEnvProbeImpl,
 )

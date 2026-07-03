@@ -31,6 +31,8 @@ from flexrag.datasets.benchmarks import (
 from flexrag.datasets.core import QASample
 from flexrag.tasks.deep_search.gisa import _GISAOfficialMetric
 
+pytestmark = pytest.mark.integration
+
 
 class TestOpenDomainQA:
     def valid_qa_sample(self, item):
