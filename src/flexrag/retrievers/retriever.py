@@ -38,8 +38,9 @@ class FlexRetriever:
     """Runtime coordinator for collection backends and optional context store.
 
     The retriever owns backend names and search orchestration. It does not own a
-    collection-level artifact manifest. When a context store is present, it is
-    the authoritative source for hydration, counting, and rebuild backfill.
+    collection-level artifact manifest or the lifecycle of injected backends and
+    context stores. When a context store is present, it is the authoritative
+    source for hydration, counting, and rebuild backfill.
     """
 
     def __init__(
@@ -571,22 +572,6 @@ class FlexRetriever:
     def list_backends(self) -> list[str]:
         """Return backend names in retriever order."""
         return list(self.backends)
-
-    def close(self) -> None:
-        """Close all backends and the context store."""
-        for backend in self.backends.values():
-            backend.close()
-        if self.context_store is not None:
-            self.context_store.close()
-        return
-
-    async def async_close(self) -> None:
-        """Asynchronously close all backends and the context store."""
-        for backend in self.backends.values():
-            await backend.async_close()
-        if self.context_store is not None:
-            await self.context_store.async_close()
-        return
 
     def _prepare_backend(self, name: str, backend: CollectionBackend) -> None:
         if backend.requires_context_store and self.context_store is None:

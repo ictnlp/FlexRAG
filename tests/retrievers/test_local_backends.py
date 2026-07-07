@@ -71,8 +71,11 @@ def test_bm25s_and_faiss_local_backend_round_trip(tmp_path: Path) -> None:
     assert retriever.search("alpha", top_k=1, used_backends=["faiss"])[0][
         0
     ].source == "memory"
-    retriever.close()
+    bm25s.close()
+    faiss.close()
+    store.close()
 
+    reopened_store = LMDBContextStore(LMDBContextStoreConfig(path=tmp_path / "store"))
     reopened = FlexRetriever.from_backends(
         {
             "bm25s": BM25SBackend(BM25SBackendConfig(path=tmp_path / "bm25s")),
@@ -81,7 +84,7 @@ def test_bm25s_and_faiss_local_backend_round_trip(tmp_path: Path) -> None:
                 query_encoder=TokenEncoder(),
             ),
         },
-        context_store=LMDBContextStore(LMDBContextStoreConfig(path=tmp_path / "store")),
+        context_store=reopened_store,
     )
     assert reopened.backends["bm25s"].view == text_view
     assert reopened.backends["faiss"].view == dense_view
@@ -100,4 +103,6 @@ def test_bm25s_and_faiss_local_backend_round_trip(tmp_path: Path) -> None:
     ].context_id == "doc-delta"
     reopened.clear()
     assert reopened.count() == 0
-    reopened.close()
+    for backend in reopened.backends.values():
+        backend.close()
+    reopened_store.close()

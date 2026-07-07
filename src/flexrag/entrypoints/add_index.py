@@ -57,7 +57,9 @@ def main(cfg: Config) -> None:
         if cfg.rebuild:
             retriever.rebuild(cfg.backend.backend_name)
     finally:
-        retriever.close()
+        backend.close()
+        if context_store is not None:
+            context_store.close()
     return
 
 

@@ -118,7 +118,7 @@ def test_sparse_external_context_store(
     assert all(
         INTERNAL_PAYLOAD not in doc for doc in user_docs(fake_elastic_client, "external")
     )
-    retriever.close()
+    store.close()
 
 
 def test_dense_native_payload_and_schema(

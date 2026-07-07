@@ -130,7 +130,8 @@ def test_add_contexts_updates_addable_and_rebuild_backends(tmp_path: Path) -> No
     assert retriever.search("q", top_k=1, used_backends=["rebuild"])[0][0].data == {
         "text": "text 0"
     }
-    retriever.close()
+    assert retriever.context_store is not None
+    retriever.context_store.close()
 
 
 def test_add_and_remove_backend(tmp_path: Path) -> None:
@@ -143,7 +144,8 @@ def test_add_and_remove_backend(tmp_path: Path) -> None:
         retriever.add_backend("extra", extra)
     assert retriever.remove_backend("extra", clear=True) is extra
     assert extra.clear_count == 1
-    retriever.close()
+    assert retriever.context_store is not None
+    retriever.context_store.close()
 
 
 @pytest.mark.asyncio
@@ -156,7 +158,8 @@ async def test_async_api_matches_sync_semantics(tmp_path: Path) -> None:
     assert (await retriever.async_search("q", top_k=1))[0][0].context_id == "doc-0"
     await retriever.async_clear()
     assert await retriever.async_count() == 0
-    await retriever.async_close()
+    assert retriever.context_store is not None
+    await retriever.context_store.async_close()
 
 
 @pytest.mark.asyncio
@@ -175,7 +178,7 @@ def test_rebuild_recovers_after_add_failure(tmp_path: Path) -> None:
     assert failing.count() == 0
     retriever.rebuild("failing")
     assert failing.count() == 3
-    retriever.close()
+    store.close()
 
 
 def test_count_uses_backend_counts_without_context_store() -> None:

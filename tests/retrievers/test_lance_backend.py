@@ -47,4 +47,4 @@ def test_lance_backend_dense_native_round_trip(tmp_path: Path) -> None:
     )
     assert retriever.count() == 2
     assert retriever.search("alpha", top_k=1)[0][0].context_id == "doc-alpha"
-    retriever.close()
+    backend.close()

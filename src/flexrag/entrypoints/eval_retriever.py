@@ -126,7 +126,10 @@ def main(config: Config) -> None:
                 )
             )
     finally:
-        retriever.close()
+        for backend in retriever.backends.values():
+            backend.close()
+        if retriever.context_store is not None:
+            retriever.context_store.close()
     return
 
 
