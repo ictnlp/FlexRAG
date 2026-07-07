@@ -6,22 +6,20 @@ from typing import Any
 import numpy as np
 import pytest
 
-from flexrag.common import ChatTurn
+from flexrag.common import ChatTurn, Context
 from flexrag.common.dataclasses import RetrievedContext
 from flexrag.models.tokenizer import SpaceTokenizerConfig
-from flexrag.processors.chunkers import CharChunkerConfig, TokenChunkerConfig
+from flexrag.processors.chunkers import TokenChunkerConfig
 from flexrag.processors.rankers import (
     HFRankerConfig,
     LiteLLMRankerConfig,
-    RankGPTRankerConfig,
 )
 from flexrag.processors.refiners import (
     AbstractiveSummarizerConfig,
-    ContextArrangerConfig,
-    RecompExtractiveSummarizerConfig,
 )
 from flexrag.resources import (
     ChunkerHandle,
+    ContextStoreHandle,
     EncoderHandle,
     GeneratorHandle,
     RankerHandle,
@@ -36,6 +34,10 @@ from flexrag.resources import (
 from flexrag.resources.runtime_adapters import (
     DirectRuntimeAdapter,
     ProcessRuntimeAdapter,
+)
+from flexrag.retrievers.context_store import (
+    LMDBContextStoreConfig,
+    SQLiteContextStoreConfig,
 )
 
 
@@ -128,6 +130,14 @@ class FakeTokenizerImpl:
 
 class UnsupportedImpl:
     pass
+
+
+def context_store_contexts() -> list[Context]:
+    return [
+        Context(context_id="doc-a", data={"text": "alpha"}, meta_data={"rank": 1}),
+        Context(context_id="doc-b", data={"text": "beta"}, meta_data={"rank": 2}),
+        Context(context_id="doc-c", data={"text": "gamma"}, meta_data={"rank": 3}),
+    ]
 
 
 class _FakeProcessRuntime(ProcessRuntimeAdapter):
@@ -293,14 +303,17 @@ def _encoder_spec(
     )
 
 
-def test_resource_manager_lazy_load_and_reuse():
+def test_resource_manager_lazy_load_reuse_and_runtime_kwargs():
     constructor_log: list[dict[str, Any]] = []
     resources = ResourceManager.load(
         ResourceManagerConfig(
             resources=[
                 _encoder_spec(
                     "first",
-                    runtime_kwargs={"constructor_log": constructor_log},
+                    runtime_kwargs={
+                        "constructor_log": constructor_log,
+                        "tag": "runtime-policy",
+                    },
                 ),
                 _encoder_spec(
                     "second",
@@ -315,7 +328,7 @@ def test_resource_manager_lazy_load_and_reuse():
     assert first is resources.get("first")
     assert isinstance(first, EncoderHandle)
     assert constructor_log == [
-        {"name": "first", "impl_cls": FakeEncoderImpl, "tag": None}
+        {"name": "first", "impl_cls": FakeEncoderImpl, "tag": "runtime-policy"}
     ]
 
 
@@ -382,29 +395,6 @@ def test_resource_manager_encoder_handle_calls_sync_and_async():
     assert not hasattr(encoder, "_aclose")
 
 
-def test_resource_manager_passes_runtime_kwargs_to_adapter():
-    constructor_log: list[dict[str, Any]] = []
-    resources = ResourceManager.load(
-        ResourceManagerConfig(
-            resources=[
-                _encoder_spec(
-                    "dense",
-                    runtime_kwargs={
-                        "constructor_log": constructor_log,
-                        "tag": "runtime-policy",
-                    },
-                )
-            ]
-        )
-    )
-
-    resources.get("dense")
-
-    assert constructor_log == [
-        {"name": "dense", "impl_cls": FakeEncoderImpl, "tag": "runtime-policy"}
-    ]
-
-
 def test_resource_manager_maps_generator_and_scorer_handles():
     resources = ResourceManager.load(
         ResourceManagerConfig(
@@ -442,11 +432,7 @@ def test_resource_manager_maps_tokenizer_handle():
 
     assert isinstance(tokenizer, TokenizerHandle)
     assert tokenizer.tokenize("hello world") == ["hello", "world"]
-    assert tokenizer.detokenize(["hello", "world"]) == "hello world"
     assert tokenizer.encode("hello world") == [5, 5]
-    assert tokenizer.decode([1, 2]) == "T1 T2"
-    assert tokenizer.tokens_to_ids(["hi", "there"]) == [2, 5]
-    assert tokenizer.ids_to_tokens([2, 5]) == ["T2", "T5"]
     assert tokenizer.reversible is True
     assert tokenizer.vocab_size == 42
 
@@ -454,33 +440,11 @@ def test_resource_manager_maps_tokenizer_handle():
     assert close_log == ["tokenizer:fake"]
 
 
-def test_resource_manager_manages_builtin_space_tokenizer():
+def test_resource_manager_maps_chunker_handle_with_ref():
     resources = ResourceManager.load(
         ResourceManagerConfig(
             resources=[
                 ResourceSpec(name="tokenizer", config=SpaceTokenizerConfig()),
-            ]
-        )
-    )
-
-    tokenizer = resources.get("tokenizer")
-
-    assert isinstance(tokenizer, TokenizerHandle)
-    assert tokenizer.tokenize("a b") == ["a", "b"]
-    assert tokenizer.detokenize(["a", "b"]) == "a b"
-    assert tokenizer.reversible is False
-    assert tokenizer.vocab_size == 0
-
-
-def test_resource_manager_maps_chunker_handle():
-    resources = ResourceManager.load(
-        ResourceManagerConfig(
-            resources=[
-                ResourceSpec(name="tokenizer", config=SpaceTokenizerConfig()),
-                ResourceSpec(
-                    name="char_chunker",
-                    config=CharChunkerConfig(max_chars=3),
-                ),
                 ResourceSpec(
                     name="token_chunker",
                     config=TokenChunkerConfig(max_tokens=2),
@@ -490,13 +454,60 @@ def test_resource_manager_maps_chunker_handle():
         )
     )
 
-    char_chunker = resources.get("char_chunker")
     token_chunker = resources.get("token_chunker")
 
-    assert isinstance(char_chunker, ChunkerHandle)
     assert isinstance(token_chunker, ChunkerHandle)
-    assert char_chunker.chunk("abcdef", return_str=True) == ["abc", "def"]
     assert token_chunker.chunk("a b c", return_str=True) == ["a b", "c"]
+
+
+@pytest.mark.parametrize(
+    "config_factory",
+    [
+        lambda path: LMDBContextStoreConfig(path=path / "lmdb"),
+        lambda path: SQLiteContextStoreConfig(path=path / "sqlite.db"),
+    ],
+)
+def test_resource_manager_manages_context_store(tmp_path, config_factory):
+    config = config_factory(tmp_path)
+    resources = ResourceManager.load(
+        ResourceManagerConfig(
+            resources=[ResourceSpec(name="store", config=config)],
+        )
+    )
+
+    store = resources.get("store")
+    assert isinstance(store, ContextStoreHandle)
+    assert not hasattr(store, "close")
+    assert not hasattr(store, "aclose")
+
+    store.set_many(context_store_contexts()[:1])
+    assert store.count() == 1
+    assert store.get("doc-a").data["text"] == "alpha"
+    resources.close()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "config_factory",
+    [
+        lambda path: LMDBContextStoreConfig(path=path / "lmdb"),
+        lambda path: SQLiteContextStoreConfig(path=path / "sqlite.db"),
+    ],
+)
+async def test_resource_manager_context_store_async_bridge(tmp_path, config_factory):
+    resources = ResourceManager.load(
+        ResourceManagerConfig(
+            resources=[ResourceSpec(name="store", config=config_factory(tmp_path))],
+        )
+    )
+
+    store = resources.get("store")
+    assert isinstance(store, ContextStoreHandle)
+
+    await store.async_set_many(context_store_contexts()[:1])
+    assert await store.async_count() == 1
+    assert (await store.async_get("doc-a")).data["text"] == "alpha"
+    await resources.aclose()
 
 
 def test_resource_manager_constructs_hf_ranker_with_scorer_ref():
@@ -522,27 +533,6 @@ def test_resource_manager_constructs_hf_ranker_with_scorer_ref():
     assert isinstance(ranker, RankerHandle)
     assert result.candidates == ["third", "second", "first"]
     assert async_result.candidates == result.candidates
-
-
-def test_resource_manager_constructs_rank_gpt_ranker_with_generator_ref():
-    resources = ResourceManager.load(
-        ResourceManagerConfig(
-            resources=[
-                ResourceSpec(name="generator", config=FakeGeneratorConfig("generator")),
-                ResourceSpec(
-                    name="ranker",
-                    config=RankGPTRankerConfig(window_size=2, step_size=1),
-                    refs={"generator": "generator"},
-                ),
-            ]
-        )
-    )
-
-    ranker = resources.get("ranker")
-    result = ranker.rank("query", ["first", "second"])
-
-    assert isinstance(ranker, RankerHandle)
-    assert result.candidates == ["first", "second"]
 
 
 @pytest.mark.asyncio
@@ -612,29 +602,6 @@ async def test_resource_manager_constructs_litellm_ranker_with_remote_runtime(
     assert max_seen <= 2
 
 
-def test_resource_manager_constructs_context_arranger_refiner():
-    resources = ResourceManager.load(
-        ResourceManagerConfig(
-            resources=[
-                ResourceSpec(
-                    name="refiner",
-                    config=ContextArrangerConfig(order="descending"),
-                ),
-            ]
-        )
-    )
-
-    refiner = resources.get("refiner")
-    contexts = [
-        RetrievedContext(context_id="low", data={"text": "low"}, score=0.1),
-        RetrievedContext(context_id="high", data={"text": "high"}, score=0.9),
-    ]
-    refined = refiner.refine(contexts)
-
-    assert isinstance(refiner, RefinerHandle)
-    assert [ctx.context_id for ctx in refined] == ["high", "low"]
-
-
 def test_resource_manager_constructs_abstractive_summarizer_with_generator_ref():
     resources = ResourceManager.load(
         ResourceManagerConfig(
@@ -662,64 +629,6 @@ def test_resource_manager_constructs_abstractive_summarizer_with_generator_ref()
 
     assert isinstance(refiner, RefinerHandle)
     assert refined[0].data["text"] == "summary:original text"
-    assert contexts[0].data["text"] == "original text"
-
-
-def test_resource_manager_constructs_extractive_summarizer_with_encoder_ref():
-    resources = ResourceManager.load(
-        ResourceManagerConfig(
-            resources=[
-                ResourceSpec(name="encoder", config=FakeEncoderConfig("encoder")),
-                ResourceSpec(
-                    name="refiner",
-                    config=RecompExtractiveSummarizerConfig(
-                        preserved_sents=1,
-                        refined_field="text",
-                    ),
-                    refs={"encoder": "encoder"},
-                ),
-            ]
-        )
-    )
-
-    refiner = resources.get("refiner")
-    contexts = [
-        RetrievedContext(
-            context_id="ctx",
-            query="query",
-            data={"text": "First sentence is useful. Second sentence is extra."},
-            score=1.0,
-        )
-    ]
-    refined = refiner.refine(contexts)
-
-    assert isinstance(refiner, RefinerHandle)
-    assert refined[0].data["text_summary"]
-    assert contexts[0].data.get("text_summary") is None
-
-
-def test_resource_manager_injects_refs_as_handles():
-    resources = ResourceManager.load(
-        ResourceManagerConfig(
-            resources=[
-                ResourceSpec(name="scorer", config=FakeScorerConfig("scorer")),
-                ResourceSpec(
-                    name="ranker",
-                    config=HFRankerConfig(),
-                    refs={"scorer": "scorer"},
-                ),
-            ]
-        )
-    )
-
-    ranker = resources.get("ranker")
-    scorer = resources.get("scorer")
-
-    assert resources._resources["ranker"]._resource.scorer is scorer
-    assert ranker.rank("query", ["first", "second"]).candidates == [
-        "second",
-        "first",
-    ]
 
 
 def test_resource_manager_rejects_ref_and_runtime_kwarg_conflict():

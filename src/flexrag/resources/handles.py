@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from collections.abc import AsyncIterator, Iterable
 from typing import TYPE_CHECKING, Any
 
 import numpy as np
 
 if TYPE_CHECKING:
     from flexrag.common import ChatTurn, ProgressDisplay
-    from flexrag.common.dataclasses import RetrievedContext
+    from flexrag.common.dataclasses import Context, RetrievedContext
     from flexrag.models.encoders.encoder_base import EncoderInputs
     from flexrag.models.generators.generator_base import (
         GenerationConfig,
@@ -238,6 +239,90 @@ class ChunkerHandle(RuntimeHandleBase):
         :return: Chunk objects or chunk strings.
         """
         return self._resource.chunk(text, return_str=return_str)
+
+
+class ContextStoreHandle(RuntimeHandleBase):
+    """Managed context-store runtime handle."""
+
+    required_methods = (
+        "set_many",
+        "async_set_many",
+        "get",
+        "async_get",
+        "get_many",
+        "async_get_many",
+        "iter_contexts",
+        "async_iter_contexts",
+        "async_ids",
+        "count",
+        "async_count",
+        "clear",
+        "async_clear",
+    )
+    required_attributes = ("ids",)
+
+    def set_many(self, contexts: Iterable[Context]) -> None:
+        """Store or replace multiple contexts."""
+        self._resource.set_many(contexts)
+        return
+
+    async def async_set_many(self, contexts: Iterable[Context]) -> None:
+        """Asynchronously store or replace multiple contexts."""
+        await self._resource.async_set_many(contexts)
+        return
+
+    def get(self, context_id: str) -> Context:
+        """Return a context by id."""
+        return self._resource.get(context_id)
+
+    async def async_get(self, context_id: str) -> Context:
+        """Asynchronously return a context by id."""
+        return await self._resource.async_get(context_id)
+
+    def get_many(self, context_ids: Iterable[str]) -> list[Context]:
+        """Return contexts for the requested ids."""
+        return self._resource.get_many(context_ids)
+
+    async def async_get_many(self, context_ids: Iterable[str]) -> list[Context]:
+        """Asynchronously return contexts for the requested ids."""
+        return await self._resource.async_get_many(context_ids)
+
+    def iter_contexts(self) -> Iterable[Context]:
+        """Iterate over all stored contexts."""
+        return self._resource.iter_contexts()
+
+    async def async_iter_contexts(self) -> AsyncIterator[Context]:
+        """Asynchronously iterate over all stored contexts."""
+        async for context in self._resource.async_iter_contexts():
+            yield context
+        return
+
+    @property
+    def ids(self) -> list[str]:
+        """Return all stored context ids."""
+        return self._resource.ids
+
+    async def async_ids(self) -> list[str]:
+        """Asynchronously return all stored context ids."""
+        return await self._resource.async_ids()
+
+    def count(self) -> int:
+        """Return the number of stored contexts."""
+        return self._resource.count()
+
+    async def async_count(self) -> int:
+        """Asynchronously return the number of stored contexts."""
+        return await self._resource.async_count()
+
+    def clear(self) -> None:
+        """Delete all stored contexts without deleting artifacts."""
+        self._resource.clear()
+        return
+
+    async def async_clear(self) -> None:
+        """Asynchronously delete all stored contexts."""
+        await self._resource.async_clear()
+        return
 
 
 class TokenizerHandle(RuntimeHandleBase):

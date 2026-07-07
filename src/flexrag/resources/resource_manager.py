@@ -6,6 +6,7 @@ from flexrag.common import configure
 
 from .handles import (
     ChunkerHandle,
+    ContextStoreHandle,
     EncoderHandle,
     GeneratorHandle,
     RankerHandle,
@@ -17,6 +18,7 @@ from .handles import (
 from .invocations import (
     BatchGeneratorInvocation,
     ChunkerInvocation,
+    ContextStoreInvocation,
     EncoderInvocation,
     RankerInvocation,
     RefinerInvocation,
@@ -38,6 +40,7 @@ _INTERFACE_HANDLE_TYPES: dict[str, type[RuntimeHandleBase]] = {
     "ranker": RankerHandle,
     "refiner": RefinerHandle,
     "chunker": ChunkerHandle,
+    "context_store": ContextStoreHandle,
     "tokenizer": TokenizerHandle,
 }
 
@@ -73,6 +76,7 @@ _COMPOSITIONS: dict[tuple[str, type[Any]], tuple[type[Any], dict[str, Any]]] = {
     ("ranker", RemoteRuntimeAdapter): (RankerInvocation, {}),
     ("refiner", DirectRuntimeAdapter): (RefinerInvocation, {}),
     ("chunker", DirectRuntimeAdapter): (ChunkerInvocation, {}),
+    ("context_store", DirectRuntimeAdapter): (ContextStoreInvocation, {}),
     ("tokenizer", DirectRuntimeAdapter): (TokenizerInvocation, {}),
 }
 

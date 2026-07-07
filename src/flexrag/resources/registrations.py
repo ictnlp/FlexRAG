@@ -70,6 +70,12 @@ from flexrag.processors.refiners import (
     RecompExtractiveSummarizer,
     RecompExtractiveSummarizerConfig,
 )
+from flexrag.retrievers.context_store import (
+    LMDBContextStore,
+    LMDBContextStoreConfig,
+    SQLiteContextStore,
+    SQLiteContextStoreConfig,
+)
 
 from .registry import Resources
 from .runtime_adapters import (
@@ -273,3 +279,17 @@ Resources.register(
     config_class=DenseXChunkerConfig,
     runtime_adapter_cls=DirectRuntimeAdapter,
 )(DenseXChunker)
+
+Resources.register(
+    "lmdb_context_store",
+    interface="context_store",
+    config_class=LMDBContextStoreConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(LMDBContextStore)
+
+Resources.register(
+    "sqlite_context_store",
+    interface="context_store",
+    config_class=SQLiteContextStoreConfig,
+    runtime_adapter_cls=DirectRuntimeAdapter,
+)(SQLiteContextStore)

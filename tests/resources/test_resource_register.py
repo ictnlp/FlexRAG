@@ -204,6 +204,12 @@ def test_builtin_resource_registrations_are_available():
         ProcessRuntimeAdapter,
         RemoteRuntimeAdapter,
     )
+    from flexrag.retrievers.context_store import (
+        LMDBContextStore,
+        LMDBContextStoreConfig,
+        SQLiteContextStore,
+        SQLiteContextStoreConfig,
+    )
 
     hf_generator = Resources.resolve_name("hf_generator")
     assert hf_generator.impl_cls is HFGenerator
@@ -301,6 +307,17 @@ def test_builtin_resource_registrations_are_available():
         assert chunker.interface == "chunker"
         assert chunker.config_class is config_class
         assert chunker.runtime_adapter_cls is DirectRuntimeAdapter
+
+    context_store_cases = [
+        ("lmdb_context_store", LMDBContextStore, LMDBContextStoreConfig),
+        ("sqlite_context_store", SQLiteContextStore, SQLiteContextStoreConfig),
+    ]
+    for short_name, impl_cls, config_class in context_store_cases:
+        context_store = Resources.resolve_name(short_name)
+        assert context_store.impl_cls is impl_cls
+        assert context_store.interface == "context_store"
+        assert context_store.config_class is config_class
+        assert context_store.runtime_adapter_cls is DirectRuntimeAdapter
 
 
 def test_builtin_resource_registrations_resolve_by_config_instance():
