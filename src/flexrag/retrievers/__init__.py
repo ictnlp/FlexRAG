@@ -1,45 +1,48 @@
-from .elastic_retriever import ElasticRetriever, ElasticRetrieverConfig
-from .flex_retriever import FlexRetriever, FlexRetrieverConfig
-from .index import (
-    RETRIEVER_INDEX,
-    BM25Index,
-    BM25IndexConfig,
-    ContextIndexBase,
-    FaissIndex,
-    FaissIndexConfig,
-    IndexFieldsConfig,
-    RetrieverIndexConfig,
-    ScaNNIndex,
-    ScaNNIndexConfig,
+from .backends.base import (
+    AsyncCollectionBackendBase,
+    CollectionBackend,
+    CollectionBackendBase,
+    Hit,
+    SyncCollectionBackendBase,
 )
-from .retriever_base import (
-    RETRIEVERS,
-    RemoteRetrieverBase,
-    RetrieverBase,
-    RetrieverBaseConfig,
+from .backends.bm25s import BM25SBackend, BM25SBackendConfig
+from .backends.elastic import ElasticBackend, ElasticBackendConfig
+from .backends.faiss import FaissBackend, FaissBackendConfig
+from .backends.lance import LanceBackend, LanceBackendConfig
+from .context_store import (
+    ContextStoreProtocol,
+    LMDBContextStore,
+    LMDBContextStoreConfig,
+    SQLiteContextStore,
+    SQLiteContextStoreConfig,
+    SyncContextStoreBase,
 )
-
-RetrieverConfig = RETRIEVERS.make_config(config_name="RetrieverConfig", default=None)
-
+from .merge import MergeMethod
+from .retriever import FlexRetriever, FlexRetrieverConfig
+from .view import RetrievalView
 
 __all__ = [
-    "ElasticRetriever",
-    "ElasticRetrieverConfig",
+    "BM25SBackend",
+    "BM25SBackendConfig",
+    "AsyncCollectionBackendBase",
+    "CollectionBackend",
+    "CollectionBackendBase",
+    "ContextStoreProtocol",
+    "ElasticBackend",
+    "ElasticBackendConfig",
+    "FaissBackend",
+    "FaissBackendConfig",
     "FlexRetriever",
     "FlexRetrieverConfig",
-    "IndexFieldsConfig",
-    "RETRIEVER_INDEX",
-    "BM25Index",
-    "BM25IndexConfig",
-    "ContextIndexBase",
-    "FaissIndex",
-    "FaissIndexConfig",
-    "RetrieverIndexConfig",
-    "ScaNNIndex",
-    "ScaNNIndexConfig",
-    "RETRIEVERS",
-    "RemoteRetrieverBase",
-    "RetrieverBase",
-    "RetrieverBaseConfig",
-    "RetrieverConfig",
+    "Hit",
+    "LanceBackend",
+    "LanceBackendConfig",
+    "LMDBContextStore",
+    "LMDBContextStoreConfig",
+    "MergeMethod",
+    "RetrievalView",
+    "SQLiteContextStore",
+    "SQLiteContextStoreConfig",
+    "SyncCollectionBackendBase",
+    "SyncContextStoreBase",
 ]

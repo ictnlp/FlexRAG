@@ -6,7 +6,7 @@ from flexrag.common.dataclasses import ChatMessages, RetrievedContext
 from flexrag.models.generators import GenerationConfig, GeneratorProtocol
 from flexrag.processors.rankers.ranker_base import RankerBase
 from flexrag.processors.refiners.refiner_base import RefinerProtocol
-from flexrag.retrievers.retriever_base import RetrieverBase
+from flexrag.retrievers import FlexRetriever
 
 from .assistant_base import ASSISTANTS, AssistantBase, AssistantResponse
 
@@ -48,7 +48,7 @@ class ModularAssistant(AssistantBase):
         self,
         cfg: ModularAssistantConfig,
         generator: GeneratorProtocol,
-        retriever: RetrieverBase | None = None,
+        retriever: FlexRetriever | None = None,
         reranker: RankerBase | None = None,
         refiners: list[RefinerProtocol] | None = None,
     ):
@@ -96,7 +96,7 @@ class ModularAssistant(AssistantBase):
             return [], []
         # searching for contexts
         search_histories = []
-        ctxs = self.retriever.search(query=[query])[0]
+        ctxs = self.retriever.search([query])[0]
         search_histories.append(SearchResult(query=f"search: {query}", contexts=ctxs))
 
         # reranking

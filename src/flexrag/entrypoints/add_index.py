@@ -1,41 +1,42 @@
+from __future__ import annotations
+
 from dataclasses import field
-from typing import Optional
 
 import hydra
 from hydra.core.config_store import ConfigStore
 
 from flexrag.common import configure, extract_config
-from flexrag.models import ENCODERS, EncoderConfig
 from flexrag.retrievers import FlexRetriever, FlexRetrieverConfig
-from flexrag.retrievers.index import (
-    RETRIEVER_INDEX,
-    DenseRawIndexBase,
-    RetrieverIndexConfig,
+
+from ._retriever_builder import (
+    CollectionBackendInitConfig,
+    ContextStoreInitConfig,
+    build_backend,
+    build_context_store,
 )
 
 
 @configure
-class Config(RetrieverIndexConfig):
-    """Configuration for the ``add_index`` entrypoint.
+class Config:
+    """Configuration for rebuilding one backend from an existing context store.
 
-    :param index_name: Name used to attach the created context index to the
-        target retriever. Must be provided by the caller.
-    :param retriever_path: Local FlexRetriever directory to update. Must be
-        provided by the caller.
-    :param query_encoder_config: Encoder configuration used for dense indexes
-        that require query encoding.
-    :param passage_encoder_config: Optional separate passage encoder
-        configuration for dense indexes. When omitted, dense indexes reuse the
-        query encoder.
-    :param rebuild: Whether to remove an existing index with ``index_name``
-        before creating the new one. Defaults to False.
+    The entrypoint keeps the historical module name but now operates on the new
+    backend abstraction. It does not persist a retriever-level manifest.
+
+    :param context_store: Existing context store used as rebuild source.
+    :param backend: Backend construction configuration.
+    :param retriever_config: FlexRetriever orchestration configuration.
+    :param rebuild: Whether to rebuild the backend immediately.
     """
 
-    index_name: Optional[str] = None
-    retriever_path: Optional[str] = None
-    query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)
-    passage_encoder_config: Optional[EncoderConfig] = None
-    rebuild: bool = False
+    context_store: ContextStoreInitConfig = field(
+        default_factory=ContextStoreInitConfig
+    )
+    backend: CollectionBackendInitConfig = field(
+        default_factory=CollectionBackendInitConfig
+    )
+    retriever_config: FlexRetrieverConfig = field(default_factory=FlexRetrieverConfig)
+    rebuild: bool = True
 
 
 cs = ConfigStore.instance()
@@ -43,33 +44,20 @@ cs.store(name="default", node=Config)
 
 
 @hydra.main(version_base="1.3", config_path=None, config_name="default")
-def main(cfg: Config):
+def main(cfg: Config) -> None:
     cfg = extract_config(cfg, Config)
-    assert cfg.index_name is not None, "index_name must be provided"
-    assert cfg.retriever_path is not None, "retriever_path must be provided"
-    retriever = FlexRetriever(FlexRetrieverConfig(), cfg.retriever_path)
-
-    # remove index
-    if cfg.rebuild:
-        try:
-            retriever.remove_index(cfg.index_name)
-        except KeyError:
-            pass
-
-    # add index
-    index_kwargs = {}
-    index_cls = RETRIEVER_INDEX[str(cfg.index_type)]["item"]
-    if issubclass(index_cls.raw_index_cls, DenseRawIndexBase):
-        query_encoder = ENCODERS.load(cfg.query_encoder_config)
-        if query_encoder is None:
-            raise ValueError("query_encoder_config must be configured for dense index.")
-        index_kwargs["query_encoder"] = query_encoder
-        if cfg.passage_encoder_config is not None:
-            passage_encoder = ENCODERS.load(cfg.passage_encoder_config)
-            if passage_encoder is not None:
-                index_kwargs["passage_encoder"] = passage_encoder
-    index = RETRIEVER_INDEX.load(cfg, **index_kwargs)
-    retriever.add_index(cfg.index_name, index)
+    context_store = build_context_store(cfg.context_store)
+    backend = build_backend(cfg.backend)
+    retriever = FlexRetriever.from_backends(
+        {cfg.backend.backend_name: backend},
+        context_store=context_store,
+        config=cfg.retriever_config,
+    )
+    try:
+        if cfg.rebuild:
+            retriever.rebuild(cfg.backend.backend_name)
+    finally:
+        retriever.close()
     return
 
 

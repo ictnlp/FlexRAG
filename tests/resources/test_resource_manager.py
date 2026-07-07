@@ -37,7 +37,6 @@ from flexrag.resources.runtime_adapters import (
     DirectRuntimeAdapter,
     ProcessRuntimeAdapter,
 )
-from flexrag.retrievers.index import RetrieverIndexConfig
 
 
 @dataclass
@@ -857,12 +856,9 @@ def test_resource_spec_rejects_mismatched_resource_and_config():
         )
 
 
-def test_resource_spec_rejects_unregistered_config_and_index_config():
+def test_resource_spec_rejects_unregistered_config():
     with pytest.raises(KeyError, match="not registered"):
         ResourceSpec(name="unknown", config=UnknownConfig())
-
-    with pytest.raises(KeyError, match="not registered"):
-        ResourceSpec(name="index", config=RetrieverIndexConfig())
 
 
 def test_resource_manager_rejects_interface_without_handle_mapping():

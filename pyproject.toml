@@ -75,6 +75,7 @@ dependencies = [
 ui = ["gradio>=6.1.0"]
 web = ["beautifulsoup4", "ddgs", "serpapi", "playwright"]
 doc-parsers = ["markitdown", "docling"]
+lance = ["lancedb>=0.34.0"]
 dev = [
     "ruff",
     "pytest",
@@ -91,7 +92,6 @@ dev = [
     "PySocks>=1.7.1",
     "pre-commit",
 ]
-scann = ["scann>=1.4.0; python_version < '3.14' and platform_system == 'Linux'"]
 
 [tool.hatch.version]
 source = "vcs"

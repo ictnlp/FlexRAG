@@ -1,173 +1,156 @@
+from __future__ import annotations
+
+from collections import Counter, defaultdict
+from typing import Any
+
 import pytest
+
+from flexrag.retrievers.backends.elastic import (
+    INTERNAL_CONTEXT_ID,
+    INTERNAL_META_CONTEXT_ID,
+    INTERNAL_TEXT,
+    INTERNAL_VECTOR,
+    INTERNAL_VIEW,
+)
+
+
+class FakeIndicesClient:
+    def __init__(self, parent: "FakeElasticClient") -> None:
+        self.parent = parent
+
+    async def exists(self, index: str) -> bool:
+        return index in self.parent.docs
+
+    async def create(self, index: str, body: dict[str, Any]) -> dict[str, Any]:
+        self.parent.docs.setdefault(index, {})
+        self.parent.created_mappings[index] = body
+        return {"acknowledged": True}
+
+    async def delete(self, index: str) -> dict[str, Any]:
+        self.parent.docs.pop(index, None)
+        self.parent.created_mappings.pop(index, None)
+        return {"acknowledged": True}
+
+
+class FakeElasticClient:
+    def __init__(self) -> None:
+        self.docs: dict[str, dict[str, dict[str, Any]]] = {}
+        self.created_mappings: dict[str, dict[str, Any]] = {}
+        self.msearch_bodies: list[list[dict[str, Any]]] = []
+        self.indices = FakeIndicesClient(self)
+
+    async def bulk(
+        self,
+        operations: list[dict[str, Any]],
+        index: str | None = None,
+    ) -> dict[str, Any]:
+        items = []
+        for meta, doc in zip(operations[0::2], operations[1::2]):
+            target = meta["index"].get("_index", index)
+            doc_id = meta["index"]["_id"]
+            self.docs.setdefault(target, {})[doc_id] = dict(doc)
+            items.append({"index": {"_id": doc_id, "status": 201}})
+        return {"errors": False, "items": items}
+
+    async def msearch(self, body: list[dict[str, Any]], **_: Any) -> dict[str, Any]:
+        self.msearch_bodies.append(body)
+        return {
+            "responses": [
+                {"status": 200, "hits": {"hits": self._search(header["index"], query)}}
+                for header, query in zip(body[0::2], body[1::2])
+            ]
+        }
+
+    async def search(self, index: str, body: dict[str, Any], **_: Any) -> dict[str, Any]:
+        response = {"hits": {"hits": self._search(index, body)}}
+        aggs = self._aggs(index, body)
+        if aggs:
+            response["aggregations"] = aggs
+        return response
+
+    async def close(self) -> None:
+        return
+
+    def _search(self, index: str, body: dict[str, Any]) -> list[dict[str, Any]]:
+        query_text = _query_text(body)
+        query_vector = body.get("knn", {}).get("query_vector")
+        view = _term(body, INTERNAL_VIEW)
+        context_id = _term(body, INTERNAL_CONTEXT_ID)
+        scored = []
+        for doc_id, doc in self.docs.get(index, {}).items():
+            if view is not None and doc.get(INTERNAL_VIEW) != view:
+                continue
+            if context_id is not None and doc.get(INTERNAL_CONTEXT_ID) != context_id:
+                continue
+            if context_id is not None:
+                score = 1.0
+            elif query_vector is not None:
+                if INTERNAL_VECTOR not in doc:
+                    continue
+                score = _dot(query_vector, doc[INTERNAL_VECTOR])
+            else:
+                score = _lexical_score(query_text, str(doc.get(INTERNAL_TEXT, "")))
+                if score <= 0:
+                    continue
+            scored.append((score, doc_id, doc))
+        scored.sort(key=lambda item: (-item[0], item[1]))
+        size = int(body.get("size", 10))
+        return [
+            {"_id": doc_id, "_source": doc, "_score": score}
+            for score, doc_id, doc in scored[:size]
+        ]
+
+    def _aggs(self, index: str, body: dict[str, Any]) -> dict[str, Any]:
+        composite = (body.get("aggs") or {}).get("contexts", {}).get("composite")
+        if not isinstance(composite, dict):
+            return {}
+        view = _term(body, INTERNAL_VIEW)
+        counts: dict[str, int] = defaultdict(int)
+        for doc in self.docs.get(index, {}).values():
+            context_id = doc.get(INTERNAL_CONTEXT_ID)
+            if context_id is None or context_id == INTERNAL_META_CONTEXT_ID:
+                continue
+            if view is not None and doc.get(INTERNAL_VIEW) != view:
+                continue
+            counts[str(context_id)] += 1
+        buckets = [
+            {"key": {"context_id": key}, "doc_count": count}
+            for key, count in sorted(counts.items())
+        ]
+        return {"contexts": {"buckets": buckets[: int(composite.get("size", 10))]}}
 
 
 @pytest.fixture
-def mock_es_client(mocker):
-    client_state = {
-        "indexes": {},
-    }
+def fake_elastic_client() -> FakeElasticClient:
+    return FakeElasticClient()
 
-    async def mocked_msearch(**kwargs):
-        searched_meta = [i for i in kwargs.get("body") if "index" in i]
-        searched_data = [i for i in kwargs.get("body") if "index" not in i]
-        responses = []
-        for meta, data in zip(searched_meta, searched_data):
-            top_k = data.get("size", 10)
-            responses.append(
-                {
-                    "took": 123,
-                    "timed_out": False,
-                    "_shards": {"total": 1, "successful": 1, "failed": 0, "skipped": 0},
-                    "hits": {
-                        "total": {"value": len(client_state["indexes"][meta["index"]])},
-                        "max_score": 1.0,
-                        "hits": [
-                            {
-                                "_index": meta["index"],
-                                "_id": str(i),
-                                "_score": 1.0,
-                                "_source": client_state["indexes"][meta["index"]][i],
-                            }
-                            for i in range(
-                                min(top_k, len(client_state["indexes"][meta["index"]]))
-                            )
-                        ],
-                    },
-                    "status": 200,
-                }
-            )
-        return {"responses": responses}
 
-    async def mocked_bulk(**kwargs):
-        inserted_meta = [i for i in kwargs.get("operations", []) if "index" in i]
-        inserted_data = [i for i in kwargs.get("operations", []) if "index" not in i]
-        items = []
-        for meta, data in zip(inserted_meta, inserted_data):
-            client_state["indexes"][meta["index"]["_index"]].append(data)
-            items.append(
-                {
-                    "index": {
-                        "_index": meta["index"]["_index"],
-                        "_id": data["_id"] if "_id" in data else None,
-                        "_version": 1,
-                        "status": 201,
-                        "result": "created",
-                        "_shards": {"total": 2, "successful": 1, "failed": 0},
-                        "_seq_no": 0,
-                        "_primary_term": 1,
-                    }
-                }
-            )
-        returned_obj = mocker.MagicMock()
-        returned_obj.body = {"errors": False, "took": 123456, "items": items}
-        return returned_obj
+def _query_text(body: dict[str, Any]) -> str:
+    for item in body.get("query", {}).get("bool", {}).get("must", []):
+        if "match" in item:
+            return str(next(iter(item["match"].values())))
+    return ""
 
-    async def mocked_create(**kwargs):
-        if kwargs.get("index") in client_state["indexes"]:
-            raise ValueError("Index already exists")
-        client_state["indexes"][kwargs.get("index")] = []
-        create_obj = mocker.MagicMock()
-        create_obj.body = {
-            "acknowledged": True,
-            "shards_acknowledged": True,
-            "index": "mocked_index",
-        }
-        return create_obj
 
-    async def mocked_delete(**kwargs):
-        if kwargs.get("index") not in client_state["indexes"]:
-            raise ValueError("Index does not exist")
-        client_state["indexes"].pop(kwargs.get("index"))
-        delete_obj = mocker.MagicMock()
-        delete_obj.body = {"acknowledged": True}
-        return delete_obj
+def _term(body: dict[str, Any], field: str) -> str | None:
+    query = body.get("query", {})
+    if "term" in query and field in query["term"]:
+        return str(query["term"][field])
+    filters = list(query.get("bool", {}).get("filter", []))
+    knn_filter = body.get("knn", {}).get("filter", [])
+    filters.extend(knn_filter if isinstance(knn_filter, list) else [knn_filter])
+    for item in filters:
+        term = item.get("term") if isinstance(item, dict) else None
+        if isinstance(term, dict) and field in term:
+            return str(term[field])
+    return None
 
-    async def mocked_count(**kwargs):
-        index_name = kwargs.get("index")
-        if index_name not in client_state["indexes"]:
-            raise ValueError("Index does not exist")
-        # count_obj = mocker.MagicMock()
-        # count_obj.body = {"count": len(client_state["indexes"][index_name])}
-        # count_obj.__getitem__ = lambda self, key: self.body[key]
-        return {"count": len(client_state["indexes"][index_name])}
 
-    async def mocked_exists(**kwargs):
-        index_name = kwargs.get("index")
-        exists_obj = mocker.MagicMock()
-        exists_obj.body = index_name in client_state["indexes"]
-        exists_obj.__bool__ = lambda self: self.body
-        return exists_obj
+def _lexical_score(query: str, text: str) -> float:
+    query_terms = query.lower().replace("-", " ").split()
+    text_terms = text.lower().replace("-", " ").split()
+    return float(sum((Counter(query_terms) & Counter(text_terms)).values()))
 
-    async def mocked_get_mapping(**kwargs):
-        index_name = kwargs.get("index")
-        return {
-            index_name: {
-                "mappings": {
-                    "properties": {
-                        "title": {"type": "text"},
-                        "text": {"type": "text"},
-                        "section": {"type": "text"},
-                    }
-                }
-            }
-        }
 
-    async def mocked_get(**kwargs):
-        index_name = kwargs.get("index")
-        context_id = kwargs.get("id")
-        try:
-            data = client_state["indexes"][index_name][int(context_id)]
-        except (KeyError, IndexError, ValueError):
-            raise KeyError(context_id)
-        return {
-            "_index": index_name,
-            "_id": context_id,
-            "_source": data,
-        }
-
-    async def mocked_cat_indices(**kwargs):
-        # Return a mocked list of indices
-        body = [{"index": index} for index in client_state["indexes"].keys()]
-        return body
-
-    # create mock client
-    mock_client = mocker.MagicMock()
-
-    # mock the Elasticsearch.indices
-    mock_client.indices = mocker.MagicMock()
-
-    # mock the Elasticsearch.indices.exists
-    mock_client.indices.exists = mocked_exists
-
-    # mock the Elasticsearch.indices.create
-    mock_client.indices.create = mocked_create
-
-    # mock the Elasticsearch.indices.delete
-    mock_client.indices.delete = mocked_delete
-
-    # mock the Elasticsearch.indices.get_mapping
-    mock_client.indices.get_mapping = mocked_get_mapping
-
-    # mock the Elasticsearch.bulk
-    mock_client.bulk = mocked_bulk
-
-    # mock the Elasticsearch.count
-    mock_client.count = mocked_count
-
-    # mock the Elasticsearch.get
-    mock_client.get = mocked_get
-
-    # mock the Elasticsearch.msearch
-    mock_client.msearch = mocked_msearch
-
-    # mock the Elasticsearch.cat
-    mock_client.cat = mocker.MagicMock()
-    mock_client.cat.indices = mocked_cat_indices
-    mock_client.close = mocker.AsyncMock()
-
-    # substitute the original Elasticsearch client with the mock
-    mocker.patch(
-        "flexrag.retrievers.elastic_retriever.AsyncElasticsearch",
-        return_value=mock_client,
-    )
-    return mock_client
+def _dot(query: list[float], vector: list[float]) -> float:
+    return sum(float(q) * float(v) for q, v in zip(query, vector))

@@ -1,107 +1,69 @@
 Retrievers
 ==========
-Retrievers are used to manage and search collection-like knowledge bases.
+Retrievers coordinate context stores and collection backends.
 
 
-The Retriever Interface
------------------------
-``RetrieverBase`` is the base class for all retrievers.
+Core API
+--------
 
-
-.. autoclass:: flexrag.retriever.RetrieverBaseConfig
+.. autoclass:: flexrag.retrievers.FlexRetrieverConfig
     :members:
-    :inherited-members:
 
-.. autoclass:: flexrag.retriever.RetrieverBase
+.. autoclass:: flexrag.retrievers.FlexRetriever
     :members:
-    :inherited-members:
 
-.. autoclass:: flexrag.retriever.RetrieverConfig
+.. autoclass:: flexrag.retrievers.RetrievalView
     :members:
-    :inherited-members:
 
-RetrieverConfig is the legacy general configuration for registered retrievers.
-``FlexRetriever`` collections are opened from their collection path directly:
-
-.. code-block:: python
-
-    from flexrag.retriever import FlexRetriever, FlexRetrieverConfig
-
-    retriever = FlexRetriever(FlexRetrieverConfig(), '<path_to_retriever>')
-
-.. ElasticSearch Retriever
-.. autoclass:: flexrag.retriever.ElasticRetrieverConfig
+.. autoclass:: flexrag.retrievers.Hit
     :members:
-    :inherited-members:
 
-.. autoclass:: flexrag.retriever.ElasticRetriever
+
+Context Stores
+--------------
+
+.. autoclass:: flexrag.retrievers.ContextStoreProtocol
     :members:
-    :show-inheritance:
 
-.. FlexRetriever
-.. autoclass:: flexrag.retriever.FlexRetrieverConfig
+.. autoclass:: flexrag.retrievers.LMDBContextStoreConfig
     :members:
-    :inherited-members:
 
-.. autoclass:: flexrag.retriever.IndexFieldsConfig
+.. autoclass:: flexrag.retrievers.LMDBContextStore
     :members:
-    :inherited-members:
 
-.. autoclass:: flexrag.retriever.FlexRetriever
+.. autoclass:: flexrag.retrievers.SQLiteContextStoreConfig
     :members:
-    :show-inheritance:
 
-Retriever Index
----------------
-``RetrieverIndex`` is used in ``FlexRetriever`` to store and retrieve dense embeddings.
-
-.. RetrieverIndex Interface
-.. autoclass:: flexrag.retriever.index.RetrieverIndexBase
+.. autoclass:: flexrag.retrievers.SQLiteContextStore
     :members:
-    :inherited-members:
 
-.. autoclass:: flexrag.retriever.index.RetrieverIndexBaseConfig
+
+Collection Backends
+-------------------
+
+.. autoclass:: flexrag.retrievers.CollectionBackend
     :members:
-    :inherited-members:
 
-.. autoclass:: flexrag.retriever.index.RetrieverIndexConfig
+.. autoclass:: flexrag.retrievers.BM25SBackendConfig
     :members:
-    :inherited-members:
 
-RetrieverConfig is the general configuration for all registered RetrieverIndexes.
-You can load any RetrieverIndex by specifying the ``index_type`` in the configuration.
-For example, to load the ``BM25Index``, you can use the following configuration:
-
-.. code-block:: python
-
-    from flexrag.retriever.index import RetrieverIndexConfig, RETRIEVER_INDEX, BM25IndexConfig
-
-    config = RetrieverIndexConfig(index_type='bm25', bm25_config=BM25IndexConfig())
-    index = RETRIEVER_INDEX.load(config)
-
-.. Faiss Index
-.. autoclass:: flexrag.retriever.index.FaissIndexConfig
+.. autoclass:: flexrag.retrievers.BM25SBackend
     :members:
-    :inherited-members:
 
-.. autoclass:: flexrag.retriever.index.FaissIndex
+.. autoclass:: flexrag.retrievers.FaissBackendConfig
     :members:
-    :show-inheritance:
 
-.. ScaNN Index
-.. autoclass:: flexrag.retriever.index.ScaNNIndexConfig
+.. autoclass:: flexrag.retrievers.FaissBackend
     :members:
-    :inherited-members:
 
-.. autoclass:: flexrag.retriever.index.ScaNNIndex
+.. autoclass:: flexrag.retrievers.ElasticBackendConfig
     :members:
-    :show-inheritance:
 
-.. BM25 Index
-.. autoclass:: flexrag.retriever.index.BM25IndexConfig
+.. autoclass:: flexrag.retrievers.ElasticBackend
     :members:
-    :inherited-members:
 
-.. autoclass:: flexrag.retriever.index.BM25Index
+.. autoclass:: flexrag.retrievers.LanceBackendConfig
     :members:
-    :show-inheritance:
+
+.. autoclass:: flexrag.retrievers.LanceBackend
+    :members:

@@ -14,7 +14,7 @@ from flexrag.common import (
 from flexrag.common.serialization import json_dump
 from flexrag.datasets.benchmarks import RetrievalDatasetBase
 from flexrag.metrics import Evaluator
-from flexrag.retrievers import RetrieverBase
+from flexrag.retrievers import FlexRetriever
 
 from .task_base import TaskBase
 
@@ -63,7 +63,7 @@ class RetrievalTask(TaskBase):
         self.evaluator = self.load_evaluator()
         return
 
-    def run(self, retriever: RetrieverBase):
+    def run(self, retriever: FlexRetriever):
         """Run the Retrieval task."""
         # initial check
         if self.config.reinit_retriever:
@@ -78,7 +78,7 @@ class RetrievalTask(TaskBase):
                     "Dataset corpus is not available. "
                     "Set the dataset to load its corpus before reinitializing the retriever."
                 )
-            retriever.add_passages(self.testset.corpus)
+            retriever.add_contexts(self.testset.corpus)
 
         # search and answer questions
         questions: list[str] = []
@@ -97,7 +97,7 @@ class RetrievalTask(TaskBase):
                 evaluation_qrels.append(sample_qrels)
                 questions.append(item.question)
                 goldens.append(item.contexts or [])
-                ctxs = retriever.search(query=item.question)[0]
+                ctxs = retriever.search(item.question)[0]
                 retrieved.append(ctxs)
                 f.write(
                     json_dump(
