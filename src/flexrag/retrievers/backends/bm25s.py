@@ -12,7 +12,7 @@ import bm25s
 from flexrag.common import Choices, configure
 from flexrag.common.dataclasses import Context
 
-from ..view import RetrievalView
+from ..view import RetrievalViewConfig
 from .base import Hit, SyncCollectionBackendBase
 
 
@@ -20,6 +20,10 @@ from .base import Hit, SyncCollectionBackendBase
 class BM25SBackendConfig:
     """Configuration for ``BM25SBackend``.
 
+    :param path: Directory for BM25S artifacts and state. Required at
+        construction time.
+    :param view: Retrieval view configuration. Required for new artifacts; may be
+        omitted when loading an artifact that already persists its view.
     :param method: BM25 scoring method passed to ``bm25s.BM25``.
     :param idf_method: Optional IDF method passed to ``bm25s.BM25``.
     :param backend: BM25S compute backend.
@@ -31,6 +35,8 @@ class BM25SBackendConfig:
     :param mmap: Whether to memory-map persisted BM25S artifacts on load.
     """
 
+    path: str | Path | None = None
+    view: RetrievalViewConfig | None = None
     method: Annotated[
         str,
         Choices("atire", "bm25l", "bm25+", "lucene", "robertson"),
@@ -60,20 +66,19 @@ class BM25SBackend(SyncCollectionBackendBase):
 
     def __init__(
         self,
-        view: RetrievalView | None,
-        path: str | os.PathLike[str],
-        config: BM25SBackendConfig | None = None,
+        config: BM25SBackendConfig,
     ) -> None:
         """Create or load a BM25S backend.
 
-        :param view: Retrieval view, or ``None`` to load it from state.
-        :param path: Directory for BM25S artifacts and state.
-        :param config: Optional BM25S configuration.
-        :raises ValueError: If no view can be provided or loaded.
+        :param config: BM25S backend configuration.
+        :raises ValueError: If path is missing or no view can be provided or
+            loaded.
         """
-        super().__init__(view)
-        self.config = config or BM25SBackendConfig()
-        self.path = Path(path)
+        if config.path is None:
+            raise ValueError("BM25SBackendConfig.path must be provided.")
+        super().__init__(config.view.to_view() if config.view is not None else None)
+        self.config = config
+        self.path = Path(config.path)
         self.path.mkdir(parents=True, exist_ok=True)
         self._stemmer = self._make_stemmer()
         self.index = self._make_index()

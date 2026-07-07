@@ -1,8 +1,9 @@
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import Any, Literal
+from dataclasses import dataclass, field
+from typing import Annotated, Any, Literal, cast
 
+from flexrag.common import Choices, configure
 from flexrag.common.dataclasses import Context
 
 ViewMergeMethod = Literal["max", "mean", "sum", "concat"]
@@ -137,4 +138,29 @@ class RetrievalView:
             name=data["name"],
             fields=data["fields"],
             merge_method=data["merge_method"],
+        )
+
+
+@configure
+class RetrievalViewConfig:
+    """Configuration for constructing a ``RetrievalView``.
+
+    :param name: Stable view name persisted by backend artifacts.
+    :param fields: Context data fields projected into backend rows.
+    :param merge_method: Row score aggregation method for multi-row contexts.
+    """
+
+    name: str = "text"
+    fields: list[str] = field(default_factory=lambda: ["text"])
+    merge_method: Annotated[str, Choices("max", "mean", "sum", "concat")] = "max"
+
+    def to_view(self) -> RetrievalView:
+        """Build the runtime retrieval view described by this configuration.
+
+        :returns: Runtime retrieval view.
+        """
+        return RetrievalView(
+            name=self.name,
+            fields=list(self.fields),
+            merge_method=cast(ViewMergeMethod, self.merge_method),
         )

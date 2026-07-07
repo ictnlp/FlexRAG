@@ -4,6 +4,7 @@ import json
 import os
 import warnings
 from collections import defaultdict
+from pathlib import Path
 from typing import Annotated, Any, Iterable
 
 from flexrag.common import Choices, configure
@@ -12,7 +13,7 @@ from flexrag.models.encoders.encoder_base import EncoderProtocol
 
 from ..context_store.payload import context_to_payload, payload_to_context
 from ..utils import _iter_batches
-from ..view import RetrievalView
+from ..view import RetrievalViewConfig
 from .base import AsyncCollectionBackendBase, Hit
 
 INTERNAL_CONTEXT_ID = "_context_id"
@@ -29,6 +30,9 @@ INTERNAL_METADATA_VERSION = 1
 class LanceBackendConfig:
     """Configuration for ``LanceBackend``.
 
+    :param uri: LanceDB connection URI. Required at construction time.
+    :param view: Retrieval view configuration. Required for new tables; may be
+        omitted when loading a table that already persists its view.
     :param table_name: LanceDB table name.
     :param retrieval_mode: Single retrieval mode, ``"sparse"`` or ``"dense"``.
     :param store_payload: Whether rows store native context payloads.
@@ -40,6 +44,8 @@ class LanceBackendConfig:
     :param connect_options: Runtime-only options passed to LanceDB connect.
     """
 
+    uri: str | Path | None = None
+    view: RetrievalViewConfig | None = None
     table_name: str = "contexts"
     retrieval_mode: Annotated[str, Choices("sparse", "dense")] = "dense"
     store_payload: bool = True
@@ -70,9 +76,7 @@ class LanceBackend(AsyncCollectionBackendBase):
 
     def __init__(
         self,
-        view: RetrievalView | None,
-        uri: str | os.PathLike[str],
-        config: LanceBackendConfig | None = None,
+        config: LanceBackendConfig,
         *,
         client: Any | None = None,
         query_encoder: EncoderProtocol | None = None,
@@ -80,18 +84,18 @@ class LanceBackend(AsyncCollectionBackendBase):
     ) -> None:
         """Create or attach to a LanceDB table.
 
-        :param view: Retrieval view, or ``None`` to load it from table metadata.
-        :param uri: LanceDB connection URI.
-        :param config: Optional Lance backend configuration.
+        :param config: Lance backend configuration.
         :param client: Optional async LanceDB-compatible connection.
         :param query_encoder: Runtime encoder required for dense mode queries.
         :param passage_encoder: Optional encoder for dense projected content.
         :raises ValueError: If dense mode lacks an encoder or persisted metadata
             conflicts with the provided view/config.
         """
-        super().__init__(view)
-        self.uri = os.fspath(uri)
-        self.config = config or LanceBackendConfig()
+        if config.uri is None:
+            raise ValueError("LanceBackendConfig.uri must be provided.")
+        super().__init__(config.view.to_view() if config.view is not None else None)
+        self.uri = os.fspath(config.uri)
+        self.config = config
         if self.config.retrieval_mode == "dense" and query_encoder is None:
             raise ValueError("LanceBackend dense mode requires query_encoder.")
         self.query_encoder = query_encoder

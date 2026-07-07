@@ -14,6 +14,7 @@ from flexrag.retrievers import (
     LMDBContextStore,
     LMDBContextStoreConfig,
     RetrievalView,
+    RetrievalViewConfig,
 )
 from flexrag.retrievers.backends.elastic import (
     INTERNAL_PAYLOAD,
@@ -24,6 +25,8 @@ from tests.support.fixtures.elastic import FakeElasticClient
 
 TEXT_VIEW = RetrievalView("text", ["title", "body"])
 DENSE_VIEW = RetrievalView("dense", ["tokens"])
+TEXT_VIEW_CONFIG = RetrievalViewConfig(name="text", fields=["title", "body"])
+DENSE_VIEW_CONFIG = RetrievalViewConfig(name="dense", fields=["tokens"])
 TOKENS = ("alpha", "beta", "gamma")
 
 
@@ -63,9 +66,13 @@ def user_docs(client: FakeElasticClient, index: str) -> list[dict[str, Any]]:
 
 
 def test_sparse_native_payload(fake_elastic_client: FakeElasticClient) -> None:
-    config = ElasticBackendConfig(index_name="sparse", retrieval_mode="sparse")
+    config = ElasticBackendConfig(
+        index_name="sparse",
+        view=TEXT_VIEW_CONFIG,
+        retrieval_mode="sparse",
+    )
     retriever = FlexRetriever.from_backends(
-        {"es": ElasticBackend(TEXT_VIEW, config, client=fake_elastic_client)}
+        {"es": ElasticBackend(config, client=fake_elastic_client)}
     )
     retriever.add_contexts(contexts())
     assert retriever.count() == 2
@@ -75,12 +82,18 @@ def test_sparse_native_payload(fake_elastic_client: FakeElasticClient) -> None:
         for doc in user_docs(fake_elastic_client, "sparse")
     )
 
-    restored = ElasticBackend(None, config, client=fake_elastic_client)
+    restored = ElasticBackend(
+        ElasticBackendConfig(index_name="sparse", retrieval_mode="sparse"),
+        client=fake_elastic_client,
+    )
     assert restored.view == TEXT_VIEW
     with pytest.raises(ValueError):
         ElasticBackend(
-            RetrievalView("other", ["body"]),
-            config,
+            ElasticBackendConfig(
+                index_name="sparse",
+                view=RetrievalViewConfig(name="other", fields=["body"]),
+                retrieval_mode="sparse",
+            ),
             client=fake_elastic_client,
         )
 
@@ -92,11 +105,12 @@ def test_sparse_external_context_store(
     store = LMDBContextStore(LMDBContextStoreConfig(path=tmp_path / "elastic-store"))
     config = ElasticBackendConfig(
         index_name="external",
+        view=TEXT_VIEW_CONFIG,
         retrieval_mode="sparse",
         store_payload=False,
     )
     retriever = FlexRetriever.from_backends(
-        {"es": ElasticBackend(TEXT_VIEW, config, client=fake_elastic_client)},
+        {"es": ElasticBackend(config, client=fake_elastic_client)},
         context_store=store,
     )
     retriever.add_contexts(contexts())
@@ -112,12 +126,12 @@ def test_dense_native_payload_and_schema(
 ) -> None:
     config = ElasticBackendConfig(
         index_name="dense",
+        view=DENSE_VIEW_CONFIG,
         retrieval_mode="dense",
         index_options={"type": "int8_hnsw"},
         search_options={"num_candidates": 5},
     )
     backend = ElasticBackend(
-        DENSE_VIEW,
         config,
         client=fake_elastic_client,
         query_encoder=TokenEncoder(),
@@ -137,15 +151,18 @@ def test_dense_native_payload_and_schema(
     assert knn["filter"]
 
     restored = ElasticBackend(
-        None,
-        config,
+        ElasticBackendConfig(
+            index_name="dense",
+            retrieval_mode="dense",
+            index_options={"type": "int8_hnsw"},
+            search_options={"num_candidates": 5},
+        ),
         client=fake_elastic_client,
         query_encoder=TokenEncoder(),
     )
     assert restored.view == DENSE_VIEW
     with pytest.raises(ValueError):
         ElasticBackend(
-            None,
             ElasticBackendConfig(index_name="dense", retrieval_mode="sparse"),
             client=fake_elastic_client,
         )

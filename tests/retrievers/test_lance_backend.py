@@ -13,7 +13,7 @@ from flexrag.retrievers import (
     FlexRetriever,
     LanceBackend,
     LanceBackendConfig,
-    RetrievalView,
+    RetrievalViewConfig,
 )
 
 
@@ -30,9 +30,12 @@ class TokenEncoder:
 
 def test_lance_backend_dense_native_round_trip(tmp_path: Path) -> None:
     backend = LanceBackend(
-        RetrievalView("dense", ["text"]),
-        tmp_path / "db",
-        LanceBackendConfig(table_name="contexts", retrieval_mode="dense"),
+        LanceBackendConfig(
+            uri=tmp_path / "db",
+            view=RetrievalViewConfig(name="dense", fields=["text"]),
+            table_name="contexts",
+            retrieval_mode="dense",
+        ),
         query_encoder=TokenEncoder(),
     )
     retriever = FlexRetriever.from_backends({"lance": backend})

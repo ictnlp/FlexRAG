@@ -24,24 +24,9 @@ from flexrag.retrievers import (
     LanceBackendConfig,
     LMDBContextStore,
     LMDBContextStoreConfig,
-    RetrievalView,
     SQLiteContextStore,
     SQLiteContextStoreConfig,
 )
-
-
-@configure
-class RetrievalViewInitConfig:
-    """Configuration for constructing a ``RetrievalView`` in entrypoints.
-
-    :param name: Persisted retrieval view name.
-    :param fields: Context data fields projected into backend rows.
-    :param merge_method: Row score aggregation method.
-    """
-
-    name: str = "text"
-    fields: list[str] = field(default_factory=lambda: ["text"])
-    merge_method: Annotated[str, Choices("max", "mean", "sum", "concat")] = "max"
 
 
 @configure
@@ -66,9 +51,10 @@ class CollectionBackendInitConfig:
 
     :param backend_name: Retriever-owned backend name.
     :param backend_type: Backend implementation to construct.
-    :param path: Local backend artifact path for BM25S or Faiss.
-    :param lance_uri: LanceDB URI when using Lance.
-    :param view_config: Retrieval view bound to the backend.
+    :param bm25s_config: BM25S backend configuration.
+    :param faiss_config: Faiss backend configuration.
+    :param elastic_config: Elasticsearch backend configuration.
+    :param lance_config: Lance backend configuration.
     :param query_encoder_config: Encoder used by dense backends.
     :param passage_encoder_config: Optional separate passage encoder.
     """
@@ -78,11 +64,6 @@ class CollectionBackendInitConfig:
         str,
         Choices("bm25s", "faiss", "elastic", "lance"),
     ] = "bm25s"
-    path: str | None = None
-    lance_uri: str | None = None
-    view_config: RetrievalViewInitConfig = field(
-        default_factory=RetrievalViewInitConfig
-    )
     bm25s_config: BM25SBackendConfig = field(default_factory=BM25SBackendConfig)
     faiss_config: FaissBackendConfig = field(default_factory=FaissBackendConfig)
     elastic_config: ElasticBackendConfig = field(
@@ -91,19 +72,6 @@ class CollectionBackendInitConfig:
     lance_config: LanceBackendConfig = field(default_factory=LanceBackendConfig)
     query_encoder_config: EncoderConfig = field(default_factory=EncoderConfig)
     passage_encoder_config: EncoderConfig | None = None
-
-
-def build_retrieval_view(config: RetrievalViewInitConfig) -> RetrievalView:
-    """Build a retrieval view from entrypoint configuration.
-
-    :param config: View construction configuration.
-    :return: Retrieval view instance.
-    """
-    return RetrievalView(
-        name=config.name,
-        fields=list(config.fields),
-        merge_method=config.merge_method,
-    )
 
 
 def build_context_store(
@@ -142,23 +110,17 @@ def build_backend(config: CollectionBackendInitConfig) -> CollectionBackend:
 
     :param config: Backend construction configuration.
     :return: Collection backend instance.
-    :raises ValueError: If required local paths or dense encoders are missing.
+    :raises ValueError: If backend config is incomplete or dense encoders are
+        missing.
     """
-    view = build_retrieval_view(config.view_config)
     if config.backend_type == "bm25s":
-        if config.path is None:
-            raise ValueError("backend.path must be provided for BM25SBackend.")
-        return BM25SBackend(view, config.path, config.bm25s_config)
+        return BM25SBackend(config.bm25s_config)
     if config.backend_type == "faiss":
-        if config.path is None:
-            raise ValueError("backend.path must be provided for FaissBackend.")
         query_encoder, passage_encoder = _build_dense_encoders(config)
         return FaissBackend(
-            view,
-            config.path,
+            config.faiss_config,
             query_encoder=query_encoder,
             passage_encoder=passage_encoder,
-            config=config.faiss_config,
         )
     if config.backend_type == "elastic":
         query_encoder = None
@@ -166,21 +128,16 @@ def build_backend(config: CollectionBackendInitConfig) -> CollectionBackend:
         if config.elastic_config.retrieval_mode == "dense":
             query_encoder, passage_encoder = _build_dense_encoders(config)
         return ElasticBackend(
-            view,
             config.elastic_config,
             query_encoder=query_encoder,
             passage_encoder=passage_encoder,
         )
     if config.backend_type == "lance":
-        if config.lance_uri is None:
-            raise ValueError("backend.lance_uri must be provided for LanceBackend.")
         query_encoder = None
         passage_encoder = None
         if config.lance_config.retrieval_mode == "dense":
             query_encoder, passage_encoder = _build_dense_encoders(config)
         return LanceBackend(
-            view,
-            config.lance_uri,
             config.lance_config,
             query_encoder=query_encoder,
             passage_encoder=passage_encoder,

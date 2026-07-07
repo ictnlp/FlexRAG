@@ -15,7 +15,7 @@ from flexrag.common import Choices, configure
 from flexrag.common.dataclasses import Context
 from flexrag.models.encoders.encoder_base import EncoderProtocol
 
-from ..view import RetrievalView
+from ..view import RetrievalViewConfig
 from .base import Hit, SyncCollectionBackendBase
 
 
@@ -23,6 +23,10 @@ from .base import Hit, SyncCollectionBackendBase
 class FaissBackendConfig:
     """Configuration for ``FaissBackend``.
 
+    :param path: Directory for Faiss index and state artifacts. Required at
+        construction time.
+    :param view: Retrieval view configuration. Required for new artifacts; may be
+        omitted when loading an artifact that already persists its view.
     :param distance_function: Distance metric, one of ``"IP"``, ``"L2"``, or
         ``"COS"``.
     :param factory_str: Optional Faiss factory string. ``None`` auto-selects.
@@ -32,6 +36,8 @@ class FaissBackendConfig:
     :param mmap: Whether to memory-map persisted Faiss index artifacts on load.
     """
 
+    path: str | Path | None = None
+    view: RetrievalViewConfig | None = None
     distance_function: Annotated[str, Choices("IP", "L2", "COS")] = "IP"
     factory_str: str | None = None
     index_train_num: int = -1
@@ -57,27 +63,27 @@ class FaissBackend(SyncCollectionBackendBase):
 
     def __init__(
         self,
-        view: RetrievalView | None,
-        path: str | os.PathLike[str],
+        config: FaissBackendConfig,
+        *,
         query_encoder: EncoderProtocol,
         passage_encoder: EncoderProtocol | None = None,
-        config: FaissBackendConfig | None = None,
     ) -> None:
         """Create or load a Faiss backend.
 
-        :param view: Retrieval view, or ``None`` to load it from state.
-        :param path: Directory for Faiss index and state artifacts.
+        :param config: Faiss backend configuration.
         :param query_encoder: Runtime encoder for query objects.
         :param passage_encoder: Optional encoder for projected context content.
-        :param config: Optional Faiss configuration.
-        :raises ValueError: If no view can be provided or loaded.
+        :raises ValueError: If path is missing or no view can be provided or
+            loaded.
         """
-        super().__init__(view)
-        self.path = Path(path)
+        if config.path is None:
+            raise ValueError("FaissBackendConfig.path must be provided.")
+        super().__init__(config.view.to_view() if config.view is not None else None)
+        self.config = config
+        self.path = Path(config.path)
         self.path.mkdir(parents=True, exist_ok=True)
         self.query_encoder = query_encoder
         self.passage_encoder = passage_encoder or query_encoder
-        self.config = config or FaissBackendConfig()
         self.index: faiss.Index | None = None
         self.row_context_ids: list[str] = []
         self.max_field_num = 1

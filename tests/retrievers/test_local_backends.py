@@ -8,11 +8,14 @@ import numpy as np
 from flexrag.common import Context
 from flexrag.retrievers import (
     BM25SBackend,
+    BM25SBackendConfig,
     FaissBackend,
+    FaissBackendConfig,
     FlexRetriever,
     LMDBContextStore,
     LMDBContextStoreConfig,
     RetrievalView,
+    RetrievalViewConfig,
 )
 
 
@@ -44,8 +47,15 @@ def test_bm25s_and_faiss_local_backend_round_trip(tmp_path: Path) -> None:
     store = LMDBContextStore(LMDBContextStoreConfig(path=tmp_path / "store"))
     text_view = RetrievalView("text", ["title", "text"])
     dense_view = RetrievalView("dense", ["text"])
-    bm25s = BM25SBackend(text_view, tmp_path / "bm25s")
-    faiss = FaissBackend(dense_view, tmp_path / "faiss", query_encoder=TokenEncoder())
+    text_view_config = RetrievalViewConfig(name="text", fields=["title", "text"])
+    dense_view_config = RetrievalViewConfig(name="dense", fields=["text"])
+    bm25s = BM25SBackend(
+        BM25SBackendConfig(path=tmp_path / "bm25s", view=text_view_config)
+    )
+    faiss = FaissBackend(
+        FaissBackendConfig(path=tmp_path / "faiss", view=dense_view_config),
+        query_encoder=TokenEncoder(),
+    )
     retriever = FlexRetriever.from_backends(
         {"bm25s": bm25s, "faiss": faiss},
         context_store=store,
@@ -65,10 +75,9 @@ def test_bm25s_and_faiss_local_backend_round_trip(tmp_path: Path) -> None:
 
     reopened = FlexRetriever.from_backends(
         {
-            "bm25s": BM25SBackend(None, tmp_path / "bm25s"),
+            "bm25s": BM25SBackend(BM25SBackendConfig(path=tmp_path / "bm25s")),
             "faiss": FaissBackend(
-                None,
-                tmp_path / "faiss",
+                FaissBackendConfig(path=tmp_path / "faiss"),
                 query_encoder=TokenEncoder(),
             ),
         },

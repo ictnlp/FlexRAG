@@ -19,7 +19,7 @@ from .context_store import (
 )
 from .merge import MergeMethod
 from .retriever import FlexRetriever, FlexRetrieverConfig
-from .view import RetrievalView
+from .view import RetrievalView, RetrievalViewConfig
 
 __all__ = [
     "BM25SBackend",
@@ -41,6 +41,7 @@ __all__ = [
     "LMDBContextStoreConfig",
     "MergeMethod",
     "RetrievalView",
+    "RetrievalViewConfig",
     "SQLiteContextStore",
     "SQLiteContextStoreConfig",
     "SyncCollectionBackendBase",

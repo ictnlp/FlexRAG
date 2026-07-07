@@ -11,7 +11,7 @@ from flexrag.models.encoders.encoder_base import EncoderProtocol
 
 from ..context_store.payload import context_to_payload, payload_to_context
 from ..utils import _iter_batches
-from ..view import RetrievalView
+from ..view import RetrievalViewConfig
 from .base import AsyncCollectionBackendBase, Hit
 
 INTERNAL_CONTEXT_ID = "_context_id"
@@ -31,6 +31,8 @@ class ElasticBackendConfig:
     """Configuration for ``ElasticBackend``.
 
     :param index_name: Elasticsearch index name.
+    :param view: Retrieval view configuration. Required for new indices; may be
+        omitted when loading an index that already persists its view.
     :param host: Elasticsearch HTTP endpoint used when no client is supplied.
     :param api_key: Optional runtime API key. It is not persisted in metadata.
     :param store_payload: Whether projection rows also store native payloads.
@@ -44,6 +46,7 @@ class ElasticBackendConfig:
     """
 
     index_name: str
+    view: RetrievalViewConfig | None = None
     host: str = "http://localhost:9200"
     api_key: str | None = None
     store_payload: bool = True
@@ -86,7 +89,6 @@ class ElasticBackend(AsyncCollectionBackendBase):
 
     def __init__(
         self,
-        view: RetrievalView | None,
         config: ElasticBackendConfig,
         *,
         client: Any | None = None,
@@ -95,7 +97,6 @@ class ElasticBackend(AsyncCollectionBackendBase):
     ) -> None:
         """Create or attach to an Elasticsearch index.
 
-        :param view: Retrieval view, or ``None`` to load it from index metadata.
         :param config: Elasticsearch backend configuration.
         :param client: Optional async Elasticsearch-compatible client.
         :param query_encoder: Runtime encoder required for dense mode queries.
@@ -103,7 +104,7 @@ class ElasticBackend(AsyncCollectionBackendBase):
         :raises ValueError: If dense mode lacks an encoder or persisted metadata
             conflicts with the provided view/config.
         """
-        super().__init__(view)
+        super().__init__(config.view.to_view() if config.view is not None else None)
         self.config = config
         if self.config.retrieval_mode == "dense" and query_encoder is None:
             raise ValueError("ElasticBackend dense mode requires query_encoder.")
