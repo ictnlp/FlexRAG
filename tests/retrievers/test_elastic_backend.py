@@ -86,16 +86,19 @@ def test_sparse_native_payload(fake_elastic_client: FakeElasticClient) -> None:
         ElasticBackendConfig(index_name="sparse", retrieval_mode="sparse"),
         client=fake_elastic_client,
     )
+    assert restored.view is None
+    assert restored.count() == 2
     assert restored.view == TEXT_VIEW
+    mismatched = ElasticBackend(
+        ElasticBackendConfig(
+            index_name="sparse",
+            view=RetrievalViewConfig(name="other", fields=["body"]),
+            retrieval_mode="sparse",
+        ),
+        client=fake_elastic_client,
+    )
     with pytest.raises(ValueError):
-        ElasticBackend(
-            ElasticBackendConfig(
-                index_name="sparse",
-                view=RetrievalViewConfig(name="other", fields=["body"]),
-                retrieval_mode="sparse",
-            ),
-            client=fake_elastic_client,
-        )
+        mismatched.count()
 
 
 def test_sparse_external_context_store(
@@ -160,9 +163,24 @@ def test_dense_native_payload_and_schema(
         client=fake_elastic_client,
         query_encoder=TokenEncoder(),
     )
+    assert restored.view is None
+    assert restored.search_hits(["alpha"], 1)[0][0].context_id == "doc-alpha"
     assert restored.view == DENSE_VIEW
+    mismatched = ElasticBackend(
+        ElasticBackendConfig(index_name="dense", retrieval_mode="sparse"),
+        client=fake_elastic_client,
+    )
     with pytest.raises(ValueError):
-        ElasticBackend(
-            ElasticBackendConfig(index_name="dense", retrieval_mode="sparse"),
-            client=fake_elastic_client,
-        )
+        mismatched.count()
+
+
+@pytest.mark.asyncio
+async def test_elastic_backend_can_construct_inside_event_loop(
+    fake_elastic_client: FakeElasticClient,
+) -> None:
+    backend = ElasticBackend(
+        ElasticBackendConfig(index_name="loop", retrieval_mode="sparse"),
+        client=fake_elastic_client,
+    )
+    assert backend.view is None
+    await backend.async_close()

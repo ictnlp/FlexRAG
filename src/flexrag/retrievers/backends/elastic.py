@@ -101,8 +101,8 @@ class ElasticBackend(AsyncCollectionBackendBase):
         :param client: Optional async Elasticsearch-compatible client.
         :param query_encoder: Runtime encoder required for dense mode queries.
         :param passage_encoder: Optional encoder for dense projected content.
-        :raises ValueError: If dense mode lacks an encoder or persisted metadata
-            conflicts with the provided view/config.
+        :raises ValueError: If dense mode lacks an encoder. Persisted metadata
+            conflicts are reported lazily during the first backend operation.
         """
         super().__init__(config.view.to_view() if config.view is not None else None)
         self.config = config
@@ -115,8 +115,7 @@ class ElasticBackend(AsyncCollectionBackendBase):
             api_key=config.api_key,
         )
         self.vector_dims: int | None = None
-        self._run_coroutine_sync(self._async_load_persisted_view_if_present())
-        self._require_view()
+        self._initialized = False
         return
 
     async def async_add_contexts(self, contexts: Iterable[Context]) -> None:
@@ -131,6 +130,7 @@ class ElasticBackend(AsyncCollectionBackendBase):
         items = list(contexts)
         if not items:
             return
+        await self._async_ensure_initialized()
         if self.config.retrieval_mode == "dense":
             await self._async_add_dense_contexts(items)
             return
@@ -237,10 +237,9 @@ class ElasticBackend(AsyncCollectionBackendBase):
         """
         if top_k <= 0:
             return [[] for _ in queries]
+        await self._async_ensure_initialized()
         if not await self._index_exists():
             return [[] for _ in queries]
-        if self.config.retrieval_mode == "dense" and self.vector_dims is None:
-            await self._async_load_persisted_view_if_present()
         if self.config.retrieval_mode == "dense":
             return await self._async_search_dense_hits(
                 queries,
@@ -304,6 +303,7 @@ class ElasticBackend(AsyncCollectionBackendBase):
 
     async def async_clear(self) -> None:
         """Delete the Elasticsearch index if it exists."""
+        await self._async_ensure_initialized()
         if await self._index_exists():
             await self.client.indices.delete(index=self.config.index_name)
         return
@@ -317,6 +317,7 @@ class ElasticBackend(AsyncCollectionBackendBase):
         """
         if context_id == INTERNAL_META_CONTEXT_ID:
             raise KeyError(context_id)
+        await self._async_ensure_initialized()
         response = await self.client.search(
             index=self.config.index_name,
             body={
@@ -339,6 +340,7 @@ class ElasticBackend(AsyncCollectionBackendBase):
 
         :returns: Unique ``context_id`` count.
         """
+        await self._async_ensure_initialized()
         if not await self._index_exists():
             return 0
         view = self._require_view()
@@ -382,6 +384,13 @@ class ElasticBackend(AsyncCollectionBackendBase):
     async def async_close(self) -> None:
         """Close the underlying async Elasticsearch client."""
         await self.client.close()
+        return
+
+    async def _async_ensure_initialized(self) -> None:
+        if self._initialized:
+            return
+        await self._async_load_persisted_view_if_present()
+        self._initialized = True
         return
 
     async def _ensure_index(self, vector_dims: int | None = None) -> None:

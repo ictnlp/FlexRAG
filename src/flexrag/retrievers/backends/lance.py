@@ -88,8 +88,8 @@ class LanceBackend(AsyncCollectionBackendBase):
         :param client: Optional async LanceDB-compatible connection.
         :param query_encoder: Runtime encoder required for dense mode queries.
         :param passage_encoder: Optional encoder for dense projected content.
-        :raises ValueError: If dense mode lacks an encoder or persisted metadata
-            conflicts with the provided view/config.
+        :raises ValueError: If dense mode lacks an encoder. Persisted metadata
+            conflicts are reported lazily during the first backend operation.
         """
         if config.uri is None:
             raise ValueError("LanceBackendConfig.uri must be provided.")
@@ -102,8 +102,7 @@ class LanceBackend(AsyncCollectionBackendBase):
         self.passage_encoder = passage_encoder or query_encoder
         self.client = client
         self.vector_dims: int | None = None
-        self._run_coroutine_sync(self._async_init())
-        self._require_view()
+        self._initialized = False
         return
 
     async def async_add_contexts(self, contexts: Iterable[Context]) -> None:
@@ -118,6 +117,7 @@ class LanceBackend(AsyncCollectionBackendBase):
         items = list(contexts)
         if not items:
             return
+        await self._async_ensure_initialized()
         rows, vector_dims = self._contexts_to_rows(items)
         if not rows:
             return
@@ -162,10 +162,10 @@ class LanceBackend(AsyncCollectionBackendBase):
         """
         if top_k <= 0:
             return [[] for _ in queries]
+        await self._async_ensure_initialized()
         table = await self._get_table()
         if table is None:
             return [[] for _ in queries]
-        await self._async_load_persisted_view_if_present()
         if self.config.retrieval_mode == "dense":
             return await self._async_search_dense_hits(
                 table,
@@ -182,6 +182,7 @@ class LanceBackend(AsyncCollectionBackendBase):
 
     async def async_clear(self) -> None:
         """Drop the Lance table for this backend if it exists."""
+        await self._async_ensure_initialized()
         if await self._table_exists():
             await self.client.drop_table(
                 self.config.table_name,
@@ -197,6 +198,7 @@ class LanceBackend(AsyncCollectionBackendBase):
         :returns: Stored context payload.
         :raises KeyError: If payload storage is disabled or the id is missing.
         """
+        await self._async_ensure_initialized()
         table = await self._get_table()
         if table is None:
             raise KeyError(context_id)
@@ -216,6 +218,7 @@ class LanceBackend(AsyncCollectionBackendBase):
 
         :returns: Unique ``context_id`` count.
         """
+        await self._async_ensure_initialized()
         table = await self._get_table()
         if table is None:
             return 0
@@ -227,10 +230,14 @@ class LanceBackend(AsyncCollectionBackendBase):
 
     async def async_close(self) -> None:
         """Close the underlying LanceDB client connection."""
+        if self.client is None:
+            return
         self.client.close()
         return
 
-    async def _async_init(self) -> None:
+    async def _async_ensure_initialized(self) -> None:
+        if self._initialized:
+            return
         if self.client is None:
             try:
                 import lancedb
@@ -243,6 +250,7 @@ class LanceBackend(AsyncCollectionBackendBase):
                 **(self.config.connect_options or {}),
             )
         await self._async_load_persisted_view_if_present()
+        self._initialized = True
         return
 
     async def _async_search_sparse_hits(
