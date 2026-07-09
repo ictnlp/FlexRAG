@@ -41,20 +41,32 @@ class EncoderProtocol(Protocol):
     limiting.
     """
 
-    def encode(self, inputs: EncoderInputs) -> np.ndarray:
+    def encode(
+        self,
+        inputs: EncoderInputs,
+        *,
+        batch_size: int | None = None,
+    ) -> np.ndarray:
         """Encode one input item or a batch of input items.
 
         :param inputs: A string, image content, content block, or a list of
             those values.
+        :param batch_size: Optional per-call batch size override.
         :return: One embedding row for each input item.
         """
         ...
 
-    async def async_encode(self, inputs: EncoderInputs) -> np.ndarray:
+    async def async_encode(
+        self,
+        inputs: EncoderInputs,
+        *,
+        batch_size: int | None = None,
+    ) -> np.ndarray:
         """Encode one input item or a batch of input items asynchronously.
 
         :param inputs: A string, image content, content block, or a list of
             those values.
+        :param batch_size: Optional per-call batch size override.
         :return: One embedding row for each input item.
         """
         ...
@@ -89,11 +101,17 @@ class LocalEncoderBase(ABC):
         self.batch_size = batch_size
         return
 
-    def encode(self, inputs: EncoderInputs) -> np.ndarray:
+    def encode(
+        self,
+        inputs: EncoderInputs,
+        *,
+        batch_size: int | None = None,
+    ) -> np.ndarray:
         """Encode one input item or a batch of input items.
 
         :param inputs: A string, image content, content block, or a list of
             those values.
+        :param batch_size: Optional per-call batch size override.
         :return: One embedding row for each input item.
         """
         normalized_inputs = _normalize_encoder_inputs(inputs)
@@ -103,9 +121,10 @@ class LocalEncoderBase(ABC):
                 return np.array([])
             return np.empty((0, embedding_size), dtype=np.float32)
 
+        resolved_batch_size = batch_size or self.batch_size
         results = [
-            self._encode_batch(normalized_inputs[i : i + self.batch_size])
-            for i in range(0, len(normalized_inputs), self.batch_size)
+            self._encode_batch(normalized_inputs[i : i + resolved_batch_size])
+            for i in range(0, len(normalized_inputs), resolved_batch_size)
         ]
         if len(results) == 1:
             return results[0]
@@ -121,14 +140,20 @@ class LocalEncoderBase(ABC):
         """
         return
 
-    async def async_encode(self, inputs: EncoderInputs) -> np.ndarray:
+    async def async_encode(
+        self,
+        inputs: EncoderInputs,
+        *,
+        batch_size: int | None = None,
+    ) -> np.ndarray:
         """Encode one input item or a batch of input items asynchronously.
 
         :param inputs: A string, image content, content block, or a list of
             those values.
+        :param batch_size: Optional per-call batch size override.
         :return: One embedding row for each input item.
         """
-        return await asyncio.to_thread(self.encode, inputs)
+        return await asyncio.to_thread(self.encode, inputs, batch_size=batch_size)
 
     @property
     @abstractmethod
@@ -142,9 +167,24 @@ class RemoteEncoderBase(ABC):
 
     Subclasses implement asynchronous canonical-batch ``_async_encode_batch``.
     The public async method normalizes convenient input shapes to content
-    blocks. The synchronous method runs the async method with ``asyncio.run``
-    and must not be called from an already running event loop.
+    blocks, splits direct-use calls according to ``batch_size``, and merges the
+    resulting arrays. The synchronous method runs the async method with
+    ``asyncio.run`` and must not be called from an already running event loop.
+    This base class does not provide process isolation, retry, rate limiting,
+    progress logging, or Python-level parallelism.
     """
+
+    def __init__(self, batch_size: int = 32) -> None:
+        """Initialize direct-use remote encoder request chunking.
+
+        :param batch_size: Maximum batch size used by the raw remote encoder's
+            public ``encode`` and ``async_encode`` methods.
+        :raises ValueError: If ``batch_size`` is not greater than zero.
+        """
+        if batch_size <= 0:
+            raise ValueError("batch_size must be greater than 0.")
+        self.batch_size = batch_size
+        return
 
     @staticmethod
     def _ensure_sync_bridge_allowed(method_name: str) -> None:
@@ -157,25 +197,51 @@ class RemoteEncoderBase(ABC):
             f"Use async_{method_name} instead."
         )
 
-    def encode(self, inputs: EncoderInputs) -> np.ndarray:
+    def encode(
+        self,
+        inputs: EncoderInputs,
+        *,
+        batch_size: int | None = None,
+    ) -> np.ndarray:
         """Encode one input item or a batch of input items synchronously.
 
         :param inputs: A string, image content, content block, or a list of
             those values.
+        :param batch_size: Optional per-call request chunk size override.
         :return: One embedding row for each input item.
         :raises RuntimeError: If called from a running event loop.
         """
         self._ensure_sync_bridge_allowed("encode")
-        return asyncio.run(self.async_encode(inputs))
+        return asyncio.run(self.async_encode(inputs, batch_size=batch_size))
 
-    async def async_encode(self, inputs: EncoderInputs) -> np.ndarray:
+    async def async_encode(
+        self,
+        inputs: EncoderInputs,
+        *,
+        batch_size: int | None = None,
+    ) -> np.ndarray:
         """Encode one input item or a batch of input items asynchronously.
 
         :param inputs: A string, image content, content block, or a list of
             those values.
+        :param batch_size: Optional per-call request chunk size override.
         :return: One embedding row for each input item.
         """
-        return await self._async_encode_batch(_normalize_encoder_inputs(inputs))
+        normalized_inputs = _normalize_encoder_inputs(inputs)
+        if not normalized_inputs:
+            embedding_size = self.embedding_size
+            if embedding_size is None:
+                return np.array([])
+            return np.empty((0, embedding_size), dtype=np.float32)
+
+        resolved_batch_size = batch_size or self.batch_size
+        results = [
+            await self._async_encode_batch(normalized_inputs[i : i + resolved_batch_size])
+            for i in range(0, len(normalized_inputs), resolved_batch_size)
+        ]
+        if len(results) == 1:
+            return results[0]
+        return np.concatenate(results, axis=0)
 
     @abstractmethod
     async def _async_encode_batch(self, inputs: list[ContentPart]) -> np.ndarray:

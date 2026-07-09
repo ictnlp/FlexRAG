@@ -34,6 +34,7 @@ class LiteLLMEncoderConfig:
     :type embedding_size: Optional[int]
     :param input_type: Provider-specific embedding input type. Defaults to None.
     :type input_type: Optional[str]
+    :param batch_size: Maximum direct-use embedding request chunk size. Defaults to 32.
     :param extra_kwargs: Additional provider-specific LiteLLM embedding kwargs.
         Explicit top-level config fields take precedence over conflicting keys here.
     :type extra_kwargs: dict[str, Any]
@@ -58,12 +59,14 @@ class LiteLLMEncoderConfig:
     proxy: Optional[str] = None
     embedding_size: Optional[int] = None
     input_type: Optional[str] = None
+    batch_size: int = 32
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
 @ENCODERS("litellm", config_class=LiteLLMEncoderConfig)
 class LiteLLMEncoder(RemoteEncoderBase):
     def __init__(self, config: LiteLLMEncoderConfig):
+        super().__init__(batch_size=config.batch_size)
         self._config = config
         self._embedding_size = config.embedding_size
         self._input_type = config.input_type

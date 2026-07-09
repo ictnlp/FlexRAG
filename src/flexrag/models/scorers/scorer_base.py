@@ -33,18 +33,30 @@ class PairScorerProtocol(Protocol):
     batching, progress logging, or process isolation.
     """
 
-    def score(self, pairs: PairScorerInput) -> np.ndarray:
+    def score(
+        self,
+        pairs: PairScorerInput,
+        *,
+        batch_size: int | None = None,
+    ) -> np.ndarray:
         """Score one query-candidate pair or a batch of pairs.
 
         :param pairs: Query-candidate pair or pairs to score.
+        :param batch_size: Optional per-call batch size override.
         :return: One score for each input pair.
         """
         ...
 
-    async def async_score(self, pairs: PairScorerInput) -> np.ndarray:
+    async def async_score(
+        self,
+        pairs: PairScorerInput,
+        *,
+        batch_size: int | None = None,
+    ) -> np.ndarray:
         """Score one query-candidate pair or a batch asynchronously.
 
         :param pairs: Query-candidate pair or pairs to score.
+        :param batch_size: Optional per-call batch size override.
         :return: One score for each input pair.
         """
         ...
@@ -73,18 +85,25 @@ class LocalPairScorerBase(ABC):
         self.batch_size = batch_size
         return
 
-    def score(self, pairs: PairScorerInput) -> np.ndarray:
+    def score(
+        self,
+        pairs: PairScorerInput,
+        *,
+        batch_size: int | None = None,
+    ) -> np.ndarray:
         """Score one query-candidate pair or a batch of pairs.
 
         :param pairs: Query-candidate pair or pairs to score.
+        :param batch_size: Optional per-call batch size override.
         :return: One score for each input pair.
         """
         normalized_pairs = _normalize_score_pairs(pairs)
         if not normalized_pairs:
             return np.array([])
+        resolved_batch_size = batch_size or self.batch_size
         results = [
-            self._score_batch(normalized_pairs[i : i + self.batch_size])
-            for i in range(0, len(normalized_pairs), self.batch_size)
+            self._score_batch(normalized_pairs[i : i + resolved_batch_size])
+            for i in range(0, len(normalized_pairs), resolved_batch_size)
         ]
         if len(results) == 1:
             return results[0]
@@ -99,13 +118,19 @@ class LocalPairScorerBase(ABC):
         """
         return
 
-    async def async_score(self, pairs: PairScorerInput) -> np.ndarray:
+    async def async_score(
+        self,
+        pairs: PairScorerInput,
+        *,
+        batch_size: int | None = None,
+    ) -> np.ndarray:
         """Score one query-candidate pair or a batch asynchronously.
 
         :param pairs: Query-candidate pair or pairs to score.
+        :param batch_size: Optional per-call batch size override.
         :return: One score for each input pair.
         """
-        return await asyncio.to_thread(self.score, pairs)
+        return await asyncio.to_thread(self.score, pairs, batch_size=batch_size)
 
 
 SCORERS = Register[PairScorerProtocol]("scorer")

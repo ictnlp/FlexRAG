@@ -109,11 +109,14 @@ class GeneratorProtocol(Protocol):
         self,
         messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
+        *,
+        batch_size: int | None = None,
     ) -> list[list[ChatTurn]]:
         """Generate chat responses for one conversation or a batch.
 
         :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
+        :param batch_size: Optional per-call batch size override.
         :return: One list of candidate assistant turns for each input
             conversation.
         """
@@ -123,11 +126,14 @@ class GeneratorProtocol(Protocol):
         self,
         messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
+        *,
+        batch_size: int | None = None,
     ) -> list[list[ChatTurn]]:
         """Generate chat responses asynchronously for one conversation or a batch.
 
         :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
+        :param batch_size: Optional per-call batch size override.
         :return: One list of candidate assistant turns for each input
             conversation.
         """
@@ -137,11 +143,14 @@ class GeneratorProtocol(Protocol):
         self,
         prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
+        *,
+        batch_size: int | None = None,
     ) -> list[list[str]]:
         """Generate text completions for one prefix or a batch.
 
         :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
+        :param batch_size: Optional per-call batch size override.
         :return: One list of candidate completions for each input prefix.
         """
         ...
@@ -150,11 +159,14 @@ class GeneratorProtocol(Protocol):
         self,
         prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
+        *,
+        batch_size: int | None = None,
     ) -> list[list[str]]:
         """Generate text completions asynchronously for one prefix or a batch.
 
         :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
+        :param batch_size: Optional per-call batch size override.
         :return: One list of candidate completions for each input prefix.
         """
         ...
@@ -187,20 +199,24 @@ class LocalGeneratorBase(ABC):
         self,
         messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
+        *,
+        batch_size: int | None = None,
     ) -> list[list[ChatTurn]]:
         """Generate chat responses for one conversation or a batch.
 
         :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
+        :param batch_size: Optional per-call batch size override.
         :return: One list of candidate assistant turns for each input
             conversation.
         """
         normalized_messages = _normalize_chat_messages(messages)
+        resolved_batch_size = batch_size or self.batch_size
         results: list[list[ChatTurn]] = []
-        for i in range(0, len(normalized_messages), self.batch_size):
+        for i in range(0, len(normalized_messages), resolved_batch_size):
             results.extend(
                 self._chat_batch(
-                    normalized_messages[i : i + self.batch_size],
+                    normalized_messages[i : i + resolved_batch_size],
                     generation_config=generation_config,
                 )
             )
@@ -225,11 +241,14 @@ class LocalGeneratorBase(ABC):
         self,
         messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
+        *,
+        batch_size: int | None = None,
     ) -> list[list[ChatTurn]]:
         """Generate chat responses asynchronously for one conversation or a batch.
 
         :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
+        :param batch_size: Optional per-call batch size override.
         :return: One list of candidate assistant turns for each input
             conversation.
         """
@@ -237,25 +256,30 @@ class LocalGeneratorBase(ABC):
             self.chat,
             messages,
             generation_config=generation_config,
+            batch_size=batch_size,
         )
 
     def generate(
         self,
         prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
+        *,
+        batch_size: int | None = None,
     ) -> list[list[str]]:
         """Generate text completions for one prefix or a batch.
 
         :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
+        :param batch_size: Optional per-call batch size override.
         :return: One list of candidate completions for each input prefix.
         """
         normalized_prefixes = _normalize_generation_prefixes(prefixes)
+        resolved_batch_size = batch_size or self.batch_size
         results: list[list[str]] = []
-        for i in range(0, len(normalized_prefixes), self.batch_size):
+        for i in range(0, len(normalized_prefixes), resolved_batch_size):
             results.extend(
                 self._generate_batch(
-                    normalized_prefixes[i : i + self.batch_size],
+                    normalized_prefixes[i : i + resolved_batch_size],
                     generation_config=generation_config,
                 )
             )
@@ -279,17 +303,21 @@ class LocalGeneratorBase(ABC):
         self,
         prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
+        *,
+        batch_size: int | None = None,
     ) -> list[list[str]]:
         """Generate text completions asynchronously for one prefix or a batch.
 
         :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
+        :param batch_size: Optional per-call batch size override.
         :return: One list of candidate completions for each input prefix.
         """
         return await asyncio.to_thread(
             self.generate,
             prefixes,
             generation_config=generation_config,
+            batch_size=batch_size,
         )
 
 
@@ -299,7 +327,8 @@ class RemoteGeneratorBase(ABC):
     Subclasses implement single-sample async core methods. The public async
     batch methods call those cores sequentially for direct use. The synchronous
     methods run the async batch methods with ``asyncio.run`` and must not be
-    called from an already running event loop.
+    called from an already running event loop. ``batch_size`` is accepted by
+    public methods for protocol compatibility and ignored.
     """
 
     @staticmethod
@@ -345,30 +374,38 @@ class RemoteGeneratorBase(ABC):
         self,
         messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
+        *,
+        batch_size: int | None = None,
     ) -> list[list[ChatTurn]]:
         """Generate chat responses synchronously for one conversation or a batch.
 
         :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
+        :param batch_size: Accepted for protocol compatibility and ignored.
         :return: One list of candidate assistant turns for each input
             conversation.
         :raises RuntimeError: If called from a running event loop.
         """
         self._ensure_sync_bridge_allowed("chat")
+        del batch_size
         return asyncio.run(self.async_chat(messages, generation_config))
 
     async def async_chat(
         self,
         messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
+        *,
+        batch_size: int | None = None,
     ) -> list[list[ChatTurn]]:
         """Generate chat responses asynchronously for one conversation or a batch.
 
         :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
+        :param batch_size: Accepted for protocol compatibility and ignored.
         :return: One list of candidate assistant turns for each input
             conversation.
         """
+        del batch_size
         normalized_messages = _normalize_chat_messages(messages)
         return [
             await self._async_chat_one(message, generation_config)
@@ -379,28 +416,36 @@ class RemoteGeneratorBase(ABC):
         self,
         prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
+        *,
+        batch_size: int | None = None,
     ) -> list[list[str]]:
         """Generate text completions synchronously for one prefix or a batch.
 
         :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
+        :param batch_size: Accepted for protocol compatibility and ignored.
         :return: One list of candidate completions for each input prefix.
         :raises RuntimeError: If called from a running event loop.
         """
         self._ensure_sync_bridge_allowed("generate")
+        del batch_size
         return asyncio.run(self.async_generate(prefixes, generation_config))
 
     async def async_generate(
         self,
         prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
+        *,
+        batch_size: int | None = None,
     ) -> list[list[str]]:
         """Generate text completions asynchronously for one prefix or a batch.
 
         :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
+        :param batch_size: Accepted for protocol compatibility and ignored.
         :return: One list of candidate completions for each input prefix.
         """
+        del batch_size
         normalized_prefixes = _normalize_generation_prefixes(prefixes)
         return [
             await self._async_generate_one(prefix, generation_config)
