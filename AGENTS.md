@@ -67,6 +67,7 @@
   - chunking/database changes: matching unit tests under `tests/`
 - If a change touches docs, configs, or entrypoints, consider whether a smoke test or doc build is needed.
 - GPU-only behavior should remain guarded by the existing `gpu` marker.
+- Avoid fossilization tests: do not add tests whose only purpose is to assert that an internal field, legacy option, helper class, or implementation detail no longer exists. Prefer smoke tests and behavior-level assertions through the public or intended interface. Add absence or negative-surface tests only when the absence itself is an explicit public contract, security boundary, lifecycle boundary, or compatibility guarantee, and keep the assertion narrowly tied to that contract.
 
 ## Pre-1.0 Compatibility Policy
 - Before the `1.0.0` release, backward compatibility is not a project constraint by itself.
