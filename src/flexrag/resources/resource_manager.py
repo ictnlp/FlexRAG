@@ -1,200 +1,190 @@
-import inspect
-from dataclasses import field
+from __future__ import annotations
+
+from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any
 
-from flexrag.common import configure
-
-from .handles import (
-    ChunkerHandle,
-    ContextStoreHandle,
-    EncoderHandle,
-    GeneratorHandle,
-    RankerHandle,
-    RefinerHandle,
-    RuntimeHandleBase,
-    ScorerHandle,
-    TokenizerHandle,
-)
-from .invocations import (
-    BatchGeneratorInvocation,
-    ChunkerInvocation,
-    ContextStoreInvocation,
-    EncoderInvocation,
-    RankerInvocation,
-    RefinerInvocation,
-    ScorerInvocation,
-    SingleSampleGeneratorInvocation,
-    TokenizerInvocation,
-)
-from .registry import ResourceEntry, Resources
-from .runtime_adapters import (
-    DirectRuntimeAdapter,
-    ProcessRuntimeAdapter,
-    RemoteRuntimeAdapter,
-)
-
-_INTERFACE_HANDLE_TYPES: dict[str, type[RuntimeHandleBase]] = {
-    "encoder": EncoderHandle,
-    "generator": GeneratorHandle,
-    "scorer": ScorerHandle,
-    "ranker": RankerHandle,
-    "refiner": RefinerHandle,
-    "chunker": ChunkerHandle,
-    "context_store": ContextStoreHandle,
-    "tokenizer": TokenizerHandle,
-}
-
-_COMPOSITIONS: dict[tuple[str, type[Any]], tuple[type[Any], dict[str, Any]]] = {
-    ("encoder", ProcessRuntimeAdapter): (
-        EncoderInvocation,
-        {"batch_method": "_encode_batch", "batch_size": 32},
-    ),
-    ("encoder", RemoteRuntimeAdapter): (
-        EncoderInvocation,
-        {"batch_method": "_async_encode_batch", "batch_size": 32},
-    ),
-    ("generator", ProcessRuntimeAdapter): (
-        BatchGeneratorInvocation,
-        {
-            "generate_method": "_generate_batch",
-            "chat_method": "_chat_batch",
-            "batch_size": 1,
-        },
-    ),
-    ("generator", RemoteRuntimeAdapter): (
-        SingleSampleGeneratorInvocation,
-        {
-            "generate_method": "_async_generate_one",
-            "chat_method": "_async_chat_one",
-        },
-    ),
-    ("scorer", ProcessRuntimeAdapter): (
-        ScorerInvocation,
-        {"score_method": "_score_batch", "batch_size": 32},
-    ),
-    ("ranker", DirectRuntimeAdapter): (RankerInvocation, {}),
-    ("ranker", RemoteRuntimeAdapter): (RankerInvocation, {}),
-    ("refiner", DirectRuntimeAdapter): (RefinerInvocation, {}),
-    ("chunker", DirectRuntimeAdapter): (ChunkerInvocation, {}),
-    ("context_store", DirectRuntimeAdapter): (ContextStoreInvocation, {}),
-    ("tokenizer", DirectRuntimeAdapter): (TokenizerInvocation, {}),
-}
+from .entry import ResourceEntry
+from .handles import HANDLE_TYPES, TypedHandle
+from .refs import ResourceRefDescriptor, ResourcesConfig, ResourceSpec
+from .registry import Resources, _ResourceRegister
+from .runtime import AsyncTarget, DirectTarget, ProcessTarget, RuntimeTarget
+from .runtime.placement import worker_env_updates_from_device_groups
 
 
-@configure
-class ResourceSpec:
-    """Declaration for one named runtime resource.
+@dataclass(frozen=True)
+class RuntimeSettings:
+    """Validated runtime settings for one managed resource.
 
-    :param name: Globally unique resource name.
-    :param config: Concrete resource configuration. The config class must be
-        registered in ``Resources``. When loading from serialized data, this may
-        be a dictionary and ``resource`` must name the registered resource used
-        to construct the concrete config.
-    :param resource: Serialized resource discriminator. Python callers may omit
-        this when ``config`` is already a concrete config instance; it will be
-        filled with the registered canonical short name.
-    :param runtime_kwargs: Runtime adapter constructor keyword arguments.
-    :param invocation_kwargs: Invocation constructor keyword arguments. Use this
-        for interface-call policy such as deployment batch size.
-    :param refs: Constructor dependencies expressed as resource-name
-        references. Each value must be the name of another resource managed by
-        the same manager. Defaults to an empty dict.
+    This is an internal normalized form of ``ResourceSpec.runtime_options``.
+    Common options are ``batch_size``, ``max_concurrency``, and ``rpm``.
+    Process-only options are worker count and per-worker environment updates.
+    Async-only options are retry and timeout settings.
     """
 
-    name: str
-    config: Any
-    resource: str | None = None
-    runtime_kwargs: dict[str, Any] = field(default_factory=dict)
-    invocation_kwargs: dict[str, Any] = field(default_factory=dict)
-    refs: dict[str, str] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        """Normalize serialized configs into concrete resource configs."""
-        if isinstance(self.config, dict):
-            if self.resource is None:
-                raise ValueError(
-                    "resource is required when config is loaded from a dictionary."
-                )
-            entry = Resources.resolve_name(self.resource)
-            self.config = entry.config_class(**self.config)
-            return
-
-        entry = Resources.resolve(self.config)
-        if self.resource is None:
-            self.resource = entry.short_names[0]
-            return
-        if Resources.resolve_name(self.resource) is not entry:
-            raise ValueError(
-                f"resource {self.resource!r} does not match config class "
-                f"{type(self.config)!r}."
-            )
-        return
-
-
-@configure
-class ResourceManagerConfig:
-    """Configuration for named runtime resources.
-
-    :param resources: Runtime resource declarations. Resource names must be
-        globally unique. Defaults to an empty list.
-    :param preload: Resource names to instantiate when
-        :meth:`ResourceManager.load` is called. Resources not listed here are
-        loaded lazily on first access. Defaults to an empty list.
-    """
-
-    resources: list[ResourceSpec] = field(default_factory=list)
-    preload: list[str] = field(default_factory=list)
+    batch_size: int
+    max_concurrency: int
+    rpm: float
+    worker_count: int = 1
+    worker_env_updates: tuple[dict[str, str], ...] | None = None
+    retry_times: int = 0
+    retry_min_delay: float = 1.0
+    retry_max_delay: float = 60.0
+    timeout: float = 0.0
 
 
 class ResourceManager:
-    """Load, cache, and close named runtime resources.
+    """Lazy resource graph manager.
 
-    ``ResourceManager`` owns the runtime resources declared by
-    :class:`ResourceManagerConfig`. Resources are resolved through the global
-    ``Resources`` metadata register, loaded lazily by default, exposed through
-    typed handles, cached by globally unique resource name, and closed in reverse
-    load order.
+    The manager resolves specs through a registry, constructs targets lazily on
+    first ``get()``, returns typed handles, caches loaded handles, and owns all
+    target lifecycle. Handles returned by the manager do not expose close
+    methods; closing the manager closes loaded targets in reverse load order.
     """
 
-    def __init__(self, cfg: ResourceManagerConfig):
-        """Initialize the manager without loading any resources.
+    def __init__(
+        self,
+        specs: list[ResourceSpec],
+        *,
+        registry: _ResourceRegister | None = None,
+    ) -> None:
+        """Create a manager for a fixed set of resource specs.
 
-        Use :meth:`load` when ``cfg.preload`` should be honored.
-
-        :param cfg: The named resource configuration.
+        :param specs: Resource declarations keyed by unique ``name``.
+        :param registry: Optional resource registry. The global formal registry
+            is used when omitted.
+        :raises ValueError: If resource names are duplicated.
         """
-        self.cfg = cfg
-        self._specs = self._build_specs(cfg.resources)
-        self._resources: dict[str, Any] = {}
-        self._invocations: dict[str, Any] = {}
-        self._handles: dict[str, RuntimeHandleBase] = {}
+        self._specs = self._build_specs(specs)
+        self._registry = Resources if registry is None else registry
+        self._targets: dict[str, RuntimeTarget] = {}
+        self._handles: dict[str, TypedHandle] = {}
         self._load_order: list[str] = []
         self._closed = False
         return
 
     @staticmethod
-    def _build_specs(resources: list[ResourceSpec]) -> dict[str, ResourceSpec]:
-        specs: dict[str, ResourceSpec] = {}
-        for spec in resources:
-            if spec.name in specs:
+    def _build_specs(specs: list[ResourceSpec]) -> dict[str, ResourceSpec]:
+        by_name = {}
+        for spec in specs:
+            if spec.name in by_name:
                 raise ValueError(f"Duplicate resource name: {spec.name}")
-            specs[spec.name] = spec
-        return specs
+            by_name[spec.name] = spec
+        return by_name
 
     @classmethod
-    def load(cls, cfg: ResourceManagerConfig) -> "ResourceManager":
-        """Create a manager and instantiate resources listed in ``cfg.preload``.
+    def load(
+        cls,
+        config: ResourcesConfig,
+        *,
+        registry: _ResourceRegister | None = None,
+    ) -> ResourceManager:
+        """Create a manager and eagerly load configured resources.
 
-        Resources not listed in ``cfg.preload`` remain unloaded until
-        :meth:`get` requests them.
+        :param config: Resource graph declaration.
+        :param registry: Optional resource registry. The global formal registry
+            is used when omitted.
+        Transitive refs of each preload root are loaded before the root itself
+        so close order still follows dependency ownership.
 
-        :param cfg: The named resource configuration.
-        :return: A resource manager bound to ``cfg``.
+        :returns: Resource manager with ``config.preload`` resource graphs loaded.
+        :raises KeyError: If a preload resource name is not declared.
+        :raises ValueError: If preloaded refs contain a cycle.
         """
-        manager = cls(cfg)
-        for ref in cfg.preload:
-            manager.get(ref)
+        manager = cls(config.resources, registry=registry)
+        loaded: set[str] = set()
+
+        def preload(resource_name: str, visiting: tuple[str, ...]) -> None:
+            if resource_name in loaded:
+                return
+            if resource_name in visiting:
+                cycle = " -> ".join((*visiting, resource_name))
+                raise ValueError(f"Resource preload refs contain a cycle: {cycle}")
+            spec = manager._get_spec(resource_name)
+            next_visiting = (*visiting, resource_name)
+            for ref_name in manager._validated_refs(spec).values():
+                preload(ref_name, next_visiting)
+            manager.get(resource_name)
+            loaded.add(resource_name)
+            return
+
+        try:
+            for resource_name in config.preload:
+                preload(resource_name, ())
+        except Exception:
+            manager.close()
+            raise
         return manager
+
+    def get(self, name: str) -> TypedHandle:
+        """Load or return a managed resource handle.
+
+        Loading is lazy. The selected runtime target is created, refs are
+        resolved according to runtime requirements, and the typed handle is
+        cached for subsequent calls.
+
+        :param name: Resource name declared in this manager.
+        :returns: Typed handle for the resource interface.
+        :raises KeyError: If the resource name or type is unknown.
+        :raises TypeError: If the resource interface has no handle mapping.
+        :raises ValueError: If runtime options are invalid.
+        :raises RuntimeError: If the manager has already been closed.
+        """
+        self._ensure_not_closed()
+        if name in self._handles:
+            return self._handles[name]
+        spec = self._get_spec(name)
+        entry = self._resolve_entry(spec)
+        runtime = spec.runtime or entry.default_runtime
+        runtime_settings = self._runtime_settings(spec, entry, runtime)
+        config = self._materialize_config(spec, entry)
+
+        if runtime == "direct":
+            target = DirectTarget(
+                entry.raw_cls,
+                config,
+                refs=self._resolve_direct_refs(spec),
+                batch_size=runtime_settings.batch_size,
+                max_concurrency=runtime_settings.max_concurrency,
+                rpm=runtime_settings.rpm,
+            )
+        elif runtime == "process":
+            target = ProcessTarget(
+                entry.raw_cls,
+                config,
+                refs=self._resolve_process_refs(spec),
+                manager=self,
+                worker_count=runtime_settings.worker_count,
+                worker_env_updates=runtime_settings.worker_env_updates,
+                batch_size=runtime_settings.batch_size,
+                max_concurrency=runtime_settings.max_concurrency,
+                rpm=runtime_settings.rpm,
+            )
+        elif runtime == "async":
+            target = AsyncTarget(
+                entry.raw_cls,
+                config,
+                refs=self._resolve_direct_refs(spec),
+                batch_size=runtime_settings.batch_size,
+                max_concurrency=runtime_settings.max_concurrency,
+                rpm=runtime_settings.rpm,
+                retry_times=runtime_settings.retry_times,
+                retry_min_delay=runtime_settings.retry_min_delay,
+                retry_max_delay=runtime_settings.retry_max_delay,
+                timeout=runtime_settings.timeout,
+            )
+        else:
+            raise ValueError(f"Unsupported runtime: {runtime}")
+
+        handle_cls = self._get_handle_cls(entry)
+        handle = handle_cls(
+            target,
+            batching=entry.batching,
+        )
+        self._targets[name] = target
+        self._handles[name] = handle
+        self._load_order.append(name)
+        return handle
 
     def _ensure_not_closed(self) -> None:
         if self._closed:
@@ -207,196 +197,301 @@ class ResourceManager:
         except KeyError as exc:
             raise KeyError(f"Resource not found: {name}") from exc
 
-    def _resolve_refs(self, spec: ResourceSpec) -> dict[str, Any]:
-        refs: dict[str, Any] = {}
+    def _resolve_entry(self, spec: ResourceSpec) -> ResourceEntry:
+        if spec.resource_name is None:
+            if isinstance(spec.config, dict):
+                raise ValueError(
+                    "resource_name is required when config is loaded from a "
+                    "dictionary."
+                )
+            return self._registry.resolve_config(spec.config)
+
+        entry = self._registry.resolve_name(spec.resource_name)
+        if not isinstance(spec.config, dict) and entry.config_class is not None:
+            config_entry = self._registry.resolve_config(spec.config)
+            if config_entry is not entry:
+                raise ValueError(
+                    f"resource_name {spec.resource_name!r} does not match config "
+                    f"class {type(spec.config)!r}."
+                )
+        return entry
+
+    @staticmethod
+    def _get_handle_cls(entry: ResourceEntry) -> type[TypedHandle]:
+        try:
+            return HANDLE_TYPES[entry.interface]
+        except KeyError as exc:
+            raise TypeError(
+                f"Resource interface is not supported: {entry.interface!r}."
+            ) from exc
+
+    @staticmethod
+    def _materialize_config(spec: ResourceSpec, entry: ResourceEntry) -> Any:
+        if entry.config_class is None:
+            return spec.config
+        if isinstance(spec.config, dict):
+            return entry.config_class(**spec.config)
+        return spec.config
+
+    def _runtime_settings(
+        self,
+        spec: ResourceSpec,
+        entry: ResourceEntry,
+        runtime: str,
+    ) -> RuntimeSettings:
+        options = spec.runtime_options
+        allowed = {"batch_size", "max_concurrency", "rpm"}
+        if runtime == "process":
+            allowed.update({"device_groups", "worker_count"})
+        elif runtime == "async":
+            allowed.update(
+                {
+                    "retry_max_delay",
+                    "retry_min_delay",
+                    "retry_times",
+                    "timeout",
+                }
+            )
+        elif runtime != "direct":
+            raise ValueError(f"Unsupported runtime: {runtime}")
+        unsupported = set(options) - allowed
+        if unsupported:
+            raise ValueError(
+                f"Unsupported {runtime} runtime_options: {sorted(unsupported)}"
+            )
+        default_batch_size = 32 if entry.batching else 1
+        batch_size = self._positive_int_option(
+            options,
+            "batch_size",
+            default_batch_size,
+        )
+        if not entry.batching and batch_size > 1:
+            raise ValueError(
+                f"Resource {entry.resource_name!r} does not support batched public "
+                "calls."
+            )
+        rpm = self._non_negative_float_option(options, "rpm", 0.0)
+        if runtime == "direct":
+            max_concurrency = self._positive_int_option(
+                options,
+                "max_concurrency",
+                1,
+            )
+            return RuntimeSettings(
+                batch_size=batch_size,
+                max_concurrency=max_concurrency,
+                rpm=rpm,
+            )
+        if runtime == "async":
+            max_concurrency = self._positive_int_option(
+                options,
+                "max_concurrency",
+                1,
+            )
+            retry_times = self._non_negative_int_option(
+                options,
+                "retry_times",
+                0,
+            )
+            retry_min_delay = self._non_negative_float_option(
+                options,
+                "retry_min_delay",
+                1.0,
+            )
+            retry_max_delay = self._non_negative_float_option(
+                options,
+                "retry_max_delay",
+                60.0,
+            )
+            if retry_max_delay < retry_min_delay:
+                raise ValueError(
+                    "retry_max_delay must be greater than or equal to retry_min_delay."
+                )
+            timeout = self._non_negative_float_option(options, "timeout", 0.0)
+            return RuntimeSettings(
+                batch_size=batch_size,
+                max_concurrency=max_concurrency,
+                rpm=rpm,
+                retry_times=retry_times,
+                retry_min_delay=retry_min_delay,
+                retry_max_delay=retry_max_delay,
+                timeout=timeout,
+            )
+
+        if "device_groups" in options and "worker_count" in options:
+            raise ValueError("worker_count and device_groups cannot be used together.")
+
+        worker_env_updates = None
+        if "device_groups" in options:
+            worker_env_updates = worker_env_updates_from_device_groups(
+                options["device_groups"]
+            )
+            worker_count = len(worker_env_updates)
+        else:
+            worker_count = self._positive_int_option(options, "worker_count", 1)
+        if worker_count > 1 and not entry.parallel_safe:
+            raise ValueError(
+                f"Resource {entry.resource_name!r} is not safe to run with "
+                "worker_count > 1."
+            )
+        max_concurrency = self._positive_int_option(
+            options,
+            "max_concurrency",
+            worker_count,
+        )
+        if max_concurrency > worker_count:
+            raise ValueError(
+                "process max_concurrency must be less than or equal to worker_count."
+            )
+        return RuntimeSettings(
+            batch_size=batch_size,
+            max_concurrency=max_concurrency,
+            rpm=rpm,
+            worker_count=worker_count,
+            worker_env_updates=worker_env_updates,
+        )
+
+    @staticmethod
+    def _positive_int_option(
+        options: Mapping[str, Any],
+        name: str,
+        default: int,
+    ) -> int:
+        value = options.get(name, default)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 1:
+            raise ValueError(f"{name} must be an integer greater than or equal to 1.")
+        return value
+
+    @staticmethod
+    def _non_negative_float_option(
+        options: Mapping[str, Any],
+        name: str,
+        default: float,
+    ) -> float:
+        value = options.get(name, default)
+        if isinstance(value, bool) or not isinstance(value, int | float) or value < 0:
+            raise ValueError(f"{name} must be a non-negative number.")
+        return float(value)
+
+    @staticmethod
+    def _non_negative_int_option(
+        options: Mapping[str, Any],
+        name: str,
+        default: int,
+    ) -> int:
+        value = options.get(name, default)
+        if not isinstance(value, int) or isinstance(value, bool) or value < 0:
+            raise ValueError(f"{name} must be a non-negative integer.")
+        return value
+
+    def _resolve_direct_refs(self, spec: ResourceSpec) -> dict[str, TypedHandle]:
+        return {
+            param_name: self.get(resource_name)
+            for param_name, resource_name in self._validated_refs(spec).items()
+        }
+
+    def _resolve_process_refs(
+        self,
+        spec: ResourceSpec,
+    ) -> dict[str, ResourceRefDescriptor]:
+        descriptors = {}
+        for param_name, resource_name in self._validated_refs(spec).items():
+            ref_spec = self._get_spec(resource_name)
+            entry = self._resolve_entry(ref_spec)
+            runtime = ref_spec.runtime or entry.default_runtime
+            runtime_settings = self._runtime_settings(ref_spec, entry, runtime)
+            descriptors[param_name] = ResourceRefDescriptor(
+                name=resource_name,
+                interface=entry.interface,
+                batch_size=runtime_settings.batch_size,
+                batching=entry.batching,
+            )
+        return descriptors
+
+    @staticmethod
+    def _validated_refs(spec: ResourceSpec) -> dict[str, str]:
+        refs: dict[str, str] = {}
         for param_name, resource_name in spec.refs.items():
             if not isinstance(resource_name, str):
                 raise TypeError(
                     f"Resource ref {param_name!r} for {spec.name!r} must be a "
                     "resource name string."
                 )
-            refs[param_name] = self.get(resource_name)
+            refs[param_name] = resource_name
         return refs
 
-    def _merge_constructor_kwargs(
-        self,
-        spec: ResourceSpec,
-        entry: ResourceEntry,
-    ) -> dict[str, Any]:
-        if spec.refs and not issubclass(entry.runtime_adapter_cls, DirectRuntimeAdapter):
-            raise ValueError(
-                f"Resource {spec.name!r} uses refs, but only direct runtime "
-                "resources can receive dependency refs."
-            )
-        conflicts = spec.refs.keys() & spec.runtime_kwargs.keys()
-        if conflicts:
-            conflict_names = ", ".join(sorted(conflicts))
-            raise ValueError(
-                f"Resource {spec.name!r} has duplicate constructor kwargs from "
-                f"refs and runtime_kwargs: {conflict_names}."
-            )
-        refs = self._resolve_refs(spec)
-        return {**refs, **spec.runtime_kwargs}
-
-    @staticmethod
-    def _get_handle_cls(interface: str) -> type[RuntimeHandleBase]:
-        try:
-            return _INTERFACE_HANDLE_TYPES[interface]
-        except KeyError as exc:
-            raise TypeError(
-                f"Resource interface is not supported by ResourceManager: "
-                f"{interface!r}."
-            ) from exc
-
-    @staticmethod
-    def _get_composition(
-        interface: str,
-        runtime_adapter_cls: type[Any],
-    ) -> tuple[type[Any], dict[str, Any]]:
-        try:
-            return _COMPOSITIONS[(interface, runtime_adapter_cls)]
-        except KeyError:
-            pass
-
-        for (candidate_interface, candidate_runtime_cls), composition in (
-            _COMPOSITIONS.items()
-        ):
-            if candidate_interface == interface and issubclass(
-                runtime_adapter_cls,
-                candidate_runtime_cls,
-            ):
-                return composition
-        raise TypeError(
-            "Resource runtime composition is not supported by "
-            f"ResourceManager: interface={interface!r}, "
-            f"runtime_adapter_cls={runtime_adapter_cls!r}."
-        )
-
-    def _load_resource(self, spec: ResourceSpec, entry: ResourceEntry) -> Any:
-        constructor_kwargs = self._merge_constructor_kwargs(spec, entry)
-        return entry.runtime_adapter_cls(
-            spec.config,
-            impl_cls=entry.impl_cls,
-            **constructor_kwargs,
-        )
-
-    def _build_invocation(
-        self,
-        spec: ResourceSpec,
-        entry: ResourceEntry,
-        resource: Any,
-    ) -> Any:
-        invocation_cls, defaults = self._get_composition(
-            entry.interface,
-            entry.runtime_adapter_cls,
-        )
-        invocation_kwargs = {**defaults, **spec.invocation_kwargs}
-        return invocation_cls(resource, **invocation_kwargs)
-
-    def get(self, name: str) -> Any:
-        """Get a named resource, loading and caching it on first access.
-
-        :param name: The globally unique resource name.
-        :raises RuntimeError: If the manager has already been closed.
-        :raises ValueError: If refs and runtime kwargs conflict.
-        :raises KeyError: If the resource name is not declared.
-        :raises KeyError: If the concrete resource config is not registered.
-        :raises TypeError: If the selected resource interface has no handle mapping.
-        :return: The loaded runtime handle.
-        """
-        self._ensure_not_closed()
-        if name not in self._resources:
-            spec = self._get_spec(name)
-            entry = Resources.resolve(spec.config)
-            handle_cls = self._get_handle_cls(entry.interface)
-            self._resources[name] = self._load_resource(spec, entry)
-            self._invocations[name] = self._build_invocation(
-                spec,
-                entry,
-                self._resources[name],
-            )
-            self._load_order.append(name)
-            self._handles[name] = handle_cls(self._invocations[name])
-        if name not in self._handles:
-            spec = self._get_spec(name)
-            entry = Resources.resolve(spec.config)
-            handle_cls = self._get_handle_cls(entry.interface)
-            if name not in self._invocations:
-                self._invocations[name] = self._build_invocation(
-                    spec,
-                    entry,
-                    self._resources[name],
-                )
-            self._handles[name] = handle_cls(self._invocations[name])
-        return self._handles[name]
-
-    async def _aclose_resource(self, resource) -> None:
-        aclose = getattr(resource, "aclose", None)
-        if callable(aclose):
-            result = aclose()
-            if inspect.isawaitable(result):
-                await result
-            return
-
-        close = getattr(resource, "close", None)
-        if callable(close):
-            result = close()
-            if inspect.isawaitable(result):
-                await result
-        return
-
-    async def aclose(self) -> None:
-        """Asynchronously close all loaded resources.
-
-        Resources are closed in reverse load order. For each resource, ``aclose`` is
-        preferred when available; otherwise ``close`` is used. Calling this method
-        multiple times is safe.
-        """
-        if self._closed:
-            return
-        self._closed = True
-        self._handles.clear()
-        self._invocations.clear()
-        while self._load_order:
-            key = self._load_order.pop()
-            resource = self._resources.pop(key, None)
-            if resource is not None:
-                await self._aclose_resource(resource)
-        return
-
     def close(self) -> None:
-        """Synchronously close all loaded resources.
+        """Synchronously close loaded targets and clear manager caches.
 
-        Resources are closed in reverse load order using their ``close`` method when
-        present. Calling this method multiple times is safe.
+        Targets are closed in reverse load order. The manager attempts to close
+        every loaded target even if one close call fails, clears cached handles
+        and targets afterwards, and then re-raises the first close error.
+        Calling this method multiple times is safe.
         """
         if self._closed:
             return
         self._closed = True
-        self._handles.clear()
-        self._invocations.clear()
+        first_error: Exception | None = None
         while self._load_order:
-            key = self._load_order.pop()
-            resource = self._resources.pop(key, None)
-            if resource is None:
+            name = self._load_order.pop()
+            target = self._targets.pop(name, None)
+            if target is None:
                 continue
-            close = getattr(resource, "close", None)
-            if callable(close):
-                close()
+            try:
+                target.close()
+            except Exception as exc:
+                if first_error is None:
+                    first_error = exc
+        self._handles.clear()
+        self._targets.clear()
+        if first_error is not None:
+            raise first_error
         return
 
-    def __enter__(self) -> "ResourceManager":
+    async def async_close(self) -> None:
+        """Asynchronously close loaded targets and clear manager caches.
+
+        Targets are closed in reverse load order. The manager attempts to close
+        every loaded target even if one close call fails, clears cached handles
+        and targets afterwards, and then re-raises the first close error.
+        Calling this method multiple times is safe.
+        """
+        if self._closed:
+            return
+        self._closed = True
+        first_error: Exception | None = None
+        while self._load_order:
+            name = self._load_order.pop()
+            target = self._targets.pop(name, None)
+            if target is None:
+                continue
+            try:
+                await target.async_close()
+            except Exception as exc:
+                if first_error is None:
+                    first_error = exc
+        self._handles.clear()
+        self._targets.clear()
+        if first_error is not None:
+            raise first_error
+        return
+
+    def __enter__(self) -> ResourceManager:
+        """Return this manager for synchronous context-manager use."""
         self._ensure_not_closed()
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:
+    def __exit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        """Close the manager when leaving a synchronous context."""
         self.close()
         return
 
-    async def __aenter__(self) -> "ResourceManager":
+    async def __aenter__(self) -> ResourceManager:
+        """Return this manager for asynchronous context-manager use."""
         self._ensure_not_closed()
         return self
 
-    async def __aexit__(self, exc_type, exc, tb) -> None:
-        await self.aclose()
+    async def __aexit__(self, exc_type: Any, exc: Any, tb: Any) -> None:
+        """Asynchronously close the manager when leaving a context."""
+        await self.async_close()
         return

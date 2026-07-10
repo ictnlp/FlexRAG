@@ -1,4 +1,4 @@
-"""Built-in resource metadata registrations."""
+from __future__ import annotations
 
 from flexrag.models.encoders import (
     HFClipEncoder,
@@ -70,6 +70,16 @@ from flexrag.processors.refiners import (
     RecompExtractiveSummarizer,
     RecompExtractiveSummarizerConfig,
 )
+from flexrag.retrievers.backends import (
+    BM25SBackend,
+    BM25SBackendConfig,
+    ElasticBackend,
+    ElasticBackendConfig,
+    FaissBackend,
+    FaissBackendConfig,
+    LanceBackend,
+    LanceBackendConfig,
+)
 from flexrag.retrievers.context_store import (
     LMDBContextStore,
     LMDBContextStoreConfig,
@@ -78,218 +88,219 @@ from flexrag.retrievers.context_store import (
 )
 
 from .registry import Resources
-from .runtime_adapters import (
-    DirectRuntimeAdapter,
-    ProcessRuntimeAdapter,
-    RemoteRuntimeAdapter,
-)
-
-Resources.register(
-    "hf_encoder",
-    interface="encoder",
-    config_class=HFEncoderConfig,
-    runtime_adapter_cls=ProcessRuntimeAdapter,
-)(HFEncoder)
-
-Resources.register(
-    "hf_clip_encoder",
-    interface="encoder",
-    config_class=HFClipEncoderConfig,
-    runtime_adapter_cls=ProcessRuntimeAdapter,
-)(HFClipEncoder)
-
-Resources.register(
-    "sentence_transformer_encoder",
-    interface="encoder",
-    config_class=SentenceTransformerEncoderConfig,
-    runtime_adapter_cls=ProcessRuntimeAdapter,
-)(SentenceTransformerEncoder)
 
 Resources.register(
     "litellm_encoder",
     interface="encoder",
     config_class=LiteLLMEncoderConfig,
-    runtime_adapter_cls=RemoteRuntimeAdapter,
+    default_runtime="async",
+    parallel_safe=True,
 )(LiteLLMEncoder)
-
 Resources.register(
-    "hf_generator",
-    interface="generator",
-    config_class=HFGeneratorConfig,
-    runtime_adapter_cls=ProcessRuntimeAdapter,
-)(HFGenerator)
-
+    "sentence_transformer_encoder",
+    interface="encoder",
+    config_class=SentenceTransformerEncoderConfig,
+    default_runtime="process",
+    parallel_safe=True,
+)(SentenceTransformerEncoder)
+Resources.register(
+    "hf_encoder",
+    interface="encoder",
+    config_class=HFEncoderConfig,
+    default_runtime="process",
+    parallel_safe=True,
+)(HFEncoder)
+Resources.register(
+    "hf_clip_encoder",
+    interface="encoder",
+    config_class=HFClipEncoderConfig,
+    default_runtime="process",
+    parallel_safe=True,
+)(HFClipEncoder)
 Resources.register(
     "litellm_generator",
     interface="generator",
     config_class=LiteLLMGeneratorConfig,
-    runtime_adapter_cls=RemoteRuntimeAdapter,
+    default_runtime="async",
+    parallel_safe=True,
+    batching=False,
 )(LiteLLMGenerator)
-
+Resources.register(
+    "hf_generator",
+    interface="generator",
+    config_class=HFGeneratorConfig,
+    default_runtime="process",
+    parallel_safe=True,
+)(HFGenerator)
 Resources.register(
     "hf_cross_encoder_scorer",
     interface="scorer",
     config_class=HFCrossEncoderScorerConfig,
-    runtime_adapter_cls=ProcessRuntimeAdapter,
+    default_runtime="process",
+    parallel_safe=True,
 )(HFCrossEncoderScorer)
-
-Resources.register(
-    "hf_colbert_scorer",
-    interface="scorer",
-    config_class=HFColBertScorerConfig,
-    runtime_adapter_cls=ProcessRuntimeAdapter,
-)(HFColBertScorer)
-
 Resources.register(
     "hf_logits_scorer",
     interface="scorer",
     config_class=HFLogitsScorerConfig,
-    runtime_adapter_cls=ProcessRuntimeAdapter,
+    default_runtime="process",
+    parallel_safe=True,
 )(HFLogitsScorer)
-
+Resources.register(
+    "hf_colbert_scorer",
+    interface="scorer",
+    config_class=HFColBertScorerConfig,
+    default_runtime="process",
+    parallel_safe=True,
+)(HFColBertScorer)
 Resources.register(
     "hf_ranker",
     interface="ranker",
     config_class=HFRankerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(HFRanker)
-
 Resources.register(
     "rank_gpt_ranker",
     interface="ranker",
     config_class=RankGPTRankerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(RankGPTRanker)
-
 Resources.register(
     "litellm_ranker",
     interface="ranker",
     config_class=LiteLLMRankerConfig,
-    runtime_adapter_cls=RemoteRuntimeAdapter,
+    default_runtime="async",
+    batching=False,
 )(LiteLLMRanker)
-
 Resources.register(
     "context_arranger",
     interface="refiner",
     config_class=ContextArrangerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(ContextArranger)
-
 Resources.register(
     "abstractive_summarizer",
     interface="refiner",
     config_class=AbstractiveSummarizerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(AbstractiveSummarizer)
-
 Resources.register(
     "extractive_summarizer",
     interface="refiner",
     config_class=RecompExtractiveSummarizerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(RecompExtractiveSummarizer)
-
 Resources.register(
     "space_tokenizer",
     interface="tokenizer",
     config_class=SpaceTokenizerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(SpaceTokenizer)
-
 Resources.register(
     "moses_tokenizer",
     interface="tokenizer",
     config_class=MosesTokenizerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(MosesTokenizer)
-
 Resources.register(
     "nltk_tokenizer",
     interface="tokenizer",
     config_class=NLTKTokenizerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(NLTKTokenizer)
-
 Resources.register(
     "jieba_tokenizer",
     interface="tokenizer",
     config_class=JiebaTokenizerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(JiebaTokenizer)
-
 Resources.register(
     "hf_tokenizer",
     interface="tokenizer",
     config_class=HuggingFaceTokenizerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(HuggingFaceTokenizer)
-
 Resources.register(
     "tiktoken_tokenizer",
     interface="tokenizer",
     config_class=TikTokenTokenizerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(TikTokenTokenizer)
-
 Resources.register(
     "char_chunker",
     interface="chunker",
     config_class=CharChunkerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(CharChunker)
-
 Resources.register(
     "token_chunker",
     interface="chunker",
     config_class=TokenChunkerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(TokenChunker)
-
 Resources.register(
     "recursive_chunker",
     interface="chunker",
     config_class=RecursiveChunkerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(RecursiveChunker)
-
 Resources.register(
     "sentence_chunker",
     interface="chunker",
     config_class=SentenceChunkerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(SentenceChunker)
-
 Resources.register(
     "semantic_chunker",
     interface="chunker",
     config_class=SemanticChunkerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(SemanticChunker)
-
 Resources.register(
     "lumber_chunker",
     interface="chunker",
     config_class=LumberChunkerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(LumberChunker)
-
 Resources.register(
     "densex_chunker",
     interface="chunker",
     config_class=DenseXChunkerConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(DenseXChunker)
-
+Resources.register(
+    "bm25s_backend",
+    interface="collection_backend",
+    config_class=BM25SBackendConfig,
+    default_runtime="process",
+)(BM25SBackend)
+Resources.register(
+    "faiss_backend",
+    interface="collection_backend",
+    config_class=FaissBackendConfig,
+    default_runtime="process",
+)(FaissBackend)
+Resources.register(
+    "elastic_backend",
+    interface="collection_backend",
+    config_class=ElasticBackendConfig,
+    default_runtime="async",
+)(ElasticBackend)
+Resources.register(
+    "lance_backend",
+    interface="collection_backend",
+    config_class=LanceBackendConfig,
+    default_runtime="async",
+)(LanceBackend)
 Resources.register(
     "lmdb_context_store",
     interface="context_store",
     config_class=LMDBContextStoreConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(LMDBContextStore)
-
 Resources.register(
     "sqlite_context_store",
     interface="context_store",
     config_class=SQLiteContextStoreConfig,
-    runtime_adapter_cls=DirectRuntimeAdapter,
+    batching=False,
 )(SQLiteContextStore)

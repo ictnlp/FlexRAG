@@ -1,158 +1,135 @@
-from dataclasses import dataclass
+from __future__ import annotations
+
 from typing import Any, TypeVar
 
-ConfigT = TypeVar("ConfigT")
+from .entry import ResourceEntry
 
+RawResourceT = TypeVar("RawResourceT", bound=type[Any])
 
-@dataclass(frozen=True)
-class ResourceEntry:
-    """Metadata for a registered resource implementation.
-
-    ``ResourceEntry`` is intentionally descriptive only. It records how a
-    concrete config maps to a raw implementation and its default runtime
-    adapter, but it does not instantiate either object.
-
-    :param short_names: Serialized discriminator names for this resource.
-    :param interface: Resource call interface used by resource managers to
-        select the returned handle.
-    :param config_class: Concrete configuration class for the raw resource.
-    :param impl_cls: Raw resource implementation class.
-    :param runtime_adapter_cls: Runtime adapter class used by resource managers.
-    """
-
-    short_names: tuple[str, ...]
-    interface: str
-    config_class: type[Any]
-    impl_cls: type[Any]
-    runtime_adapter_cls: type[Any]
+_VALID_RUNTIMES = {"direct", "process", "async"}
 
 
 class _ResourceRegister:
-    """Lightweight registry for resource metadata.
+    """Registry for resource metadata.
 
-    The register resolves concrete config classes or serialized short names to
-    :class:`ResourceEntry` objects. It deliberately does not load resources,
-    create runtime adapters, wrap handles, or manage lifecycle.
+    The register is the public extension point for declaring new resource
+    implementations. It resolves resources by their canonical name or by config
+    class, but it does not instantiate raw resources, targets, or handles.
     """
 
     def __init__(self) -> None:
-        """Initialize an empty resource metadata register."""
+        """Create an empty resource register."""
+        self._entries_by_name: dict[str, ResourceEntry] = {}
         self._entries_by_config_class: dict[type[Any], ResourceEntry] = {}
-        self._entries_by_short_name: dict[str, ResourceEntry] = {}
         return
-
-    @property
-    def entries(self) -> tuple[ResourceEntry, ...]:
-        """Return all registered entries in registration order.
-
-        :return: Registered resource entries.
-        """
-        return tuple(self._entries_by_config_class.values())
 
     @property
     def names(self) -> tuple[str, ...]:
-        """Return all registered serialized discriminator names.
+        """Return registered canonical resource names."""
+        return tuple(self._entries_by_name)
 
-        :return: Registered short names.
-        """
-        return tuple(self._entries_by_short_name)
-
-    def _validate_short_names(self, short_names: tuple[str, ...]) -> None:
-        if not short_names:
-            raise ValueError("At least one short name is required.")
-        seen: set[str] = set()
-        for name in short_names:
-            if not isinstance(name, str):
-                raise TypeError("Resource short names must be strings.")
-            if not name:
-                raise ValueError("Resource short names must not be empty.")
-            if name in seen:
-                raise ValueError(f"Duplicate short name in one registration: {name}")
-            seen.add(name)
-        return
+    @property
+    def entries(self) -> tuple[ResourceEntry, ...]:
+        """Return registered entries in registration order."""
+        return tuple(self._entries_by_name.values())
 
     def register(
         self,
-        *short_names: str,
+        resource_name: str,
+        *,
         interface: str,
-        config_class: type[ConfigT],
-        runtime_adapter_cls: type[Any],
+        config_class: type[Any] | None = None,
+        default_runtime: str = "direct",
+        parallel_safe: bool = False,
+        batching: bool = True,
     ):
-        """Register a resource implementation.
+        """Register a raw resource class.
 
-        :param short_names: One or more serialized discriminator names.
-        :param interface: Resource call interface used to select a handle.
-        :param config_class: Concrete configuration class for the resource.
-        :param runtime_adapter_cls: Runtime adapter class selected by default.
-        :raises ValueError: If names or config classes conflict.
+        :param resource_name: Canonical resource name used by ``ResourceSpec``.
+        :param interface: Interface name used to choose the typed handle.
+        :param config_class: Optional config class for dict materialization and
+            config-instance reverse lookup.
+        :param default_runtime: Runtime used when a spec omits ``runtime``.
+        :param parallel_safe: Whether process runtime may replicate the raw
+            resource across workers.
+        :param batching: Whether public handle calls may batch multiple samples.
+        :raises ValueError: If names, config classes, or runtime names conflict.
         :return: A decorator that records the implementation class unchanged.
         """
-        self._validate_short_names(short_names)
+        self._validate_registration(
+            resource_name,
+            interface=interface,
+            config_class=config_class,
+            default_runtime=default_runtime,
+        )
+
+        def register_raw(raw_cls: RawResourceT) -> RawResourceT:
+            if not isinstance(raw_cls, type):
+                raise TypeError("raw resource must be a class.")
+            entry = ResourceEntry(
+                resource_name=resource_name,
+                raw_cls=raw_cls,
+                interface=interface,
+                config_class=config_class,
+                default_runtime=default_runtime,
+                parallel_safe=parallel_safe,
+                batching=batching,
+            )
+            self._entries_by_name[resource_name] = entry
+            if config_class is not None:
+                self._entries_by_config_class[config_class] = entry
+            return raw_cls
+
+        return register_raw
+
+    def resolve_name(self, resource_name: str) -> ResourceEntry:
+        """Resolve a resource entry by canonical name."""
+        try:
+            return self._entries_by_name[resource_name]
+        except KeyError as exc:
+            raise KeyError(f"Resource name is not registered: {resource_name!r}") from exc
+
+    def resolve_config_class(self, config_class: type[Any]) -> ResourceEntry:
+        """Resolve a resource entry by config class."""
+        try:
+            return self._entries_by_config_class[config_class]
+        except KeyError as exc:
+            raise KeyError(
+                f"Resource config class is not registered: {config_class!r}"
+            ) from exc
+
+    def resolve_config(self, config: Any) -> ResourceEntry:
+        """Resolve a resource entry from a concrete config instance."""
+        return self.resolve_config_class(type(config))
+
+    def _validate_registration(
+        self,
+        resource_name: str,
+        *,
+        interface: str,
+        config_class: type[Any] | None,
+        default_runtime: str,
+    ) -> None:
+        if not isinstance(resource_name, str):
+            raise TypeError("resource_name must be a string.")
+        if not resource_name:
+            raise ValueError("resource_name must not be empty.")
+        if resource_name in self._entries_by_name:
+            raise ValueError(f"Resource name already registered: {resource_name}")
         if not isinstance(interface, str):
             raise TypeError("interface must be a string.")
         if not interface:
             raise ValueError("interface must not be empty.")
-        if not isinstance(config_class, type):
-            raise TypeError("config_class must be a class.")
-        if not isinstance(runtime_adapter_cls, type):
-            raise TypeError("runtime_adapter_cls must be a class.")
-        if config_class in self._entries_by_config_class:
+        if config_class is not None and not isinstance(config_class, type):
+            raise TypeError("config_class must be a class or None.")
+        if config_class is not None and config_class in self._entries_by_config_class:
             raise ValueError(f"Config class already registered: {config_class!r}")
-        for name in short_names:
-            if name in self._entries_by_short_name:
-                raise ValueError(f"Resource short name already registered: {name}")
+        if default_runtime not in _VALID_RUNTIMES:
+            raise ValueError(f"Unsupported default runtime: {default_runtime!r}")
+        return
 
-        def register_impl(impl_cls: type[Any]) -> type[Any]:
-            if not isinstance(impl_cls, type):
-                raise TypeError("Resource implementation must be a class.")
-            entry = ResourceEntry(
-                short_names=short_names,
-                interface=interface,
-                config_class=config_class,
-                impl_cls=impl_cls,
-                runtime_adapter_cls=runtime_adapter_cls,
-            )
-            self._entries_by_config_class[config_class] = entry
-            for name in short_names:
-                self._entries_by_short_name[name] = entry
-            return impl_cls
-
-        return register_impl
-
-    def resolve(self, config: Any) -> ResourceEntry:
-        """Resolve a resource entry from a concrete config instance.
-
-        :param config: Concrete resource configuration instance.
-        :raises KeyError: If the config class is not registered.
-        :return: Registered metadata entry.
-        """
-        return self.resolve_config_class(type(config))
-
-    def resolve_config_class(self, config_class: type[Any]) -> ResourceEntry:
-        """Resolve a resource entry from a concrete config class.
-
-        :param config_class: Concrete resource configuration class.
-        :raises KeyError: If the config class is not registered.
-        :return: Registered metadata entry.
-        """
-        try:
-            return self._entries_by_config_class[config_class]
-        except KeyError as exc:
-            raise KeyError(f"Resource config class is not registered: {config_class!r}") from exc
-
-    def resolve_name(self, short_name: str) -> ResourceEntry:
-        """Resolve a resource entry from a serialized short name.
-
-        :param short_name: Serialized discriminator name.
-        :raises KeyError: If the name is not registered.
-        :return: Registered metadata entry.
-        """
-        try:
-            return self._entries_by_short_name[short_name]
-        except KeyError as exc:
-            raise KeyError(f"Resource short name is not registered: {short_name!r}") from exc
 
 Resources = _ResourceRegister()
 
 
-__all__ = ["ResourceEntry", "Resources"]
+__all__ = ["ResourceEntry", "Resources", "_ResourceRegister"]
