@@ -15,7 +15,7 @@ from .handles import (
     TokenizerHandle,
     TypedHandle,
 )
-from .refs import ResourceRefDescriptor, ResourcesConfig, ResourceSpec
+from .refs import ResourceRefDescriptor, ResourcesConfig, ResourceSpec, RuntimeConfig
 from .registry import ResourceEntry, Resources, _ResourceRegister
 from .resource_manager import ResourceManager
 
@@ -35,6 +35,7 @@ __all__ = [
     "Resources",
     "ResourcesConfig",
     "RuntimeCallError",
+    "RuntimeConfig",
     "ScorerHandle",
     "TokenizerHandle",
     "TypedHandle",

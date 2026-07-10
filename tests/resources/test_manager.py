@@ -2,14 +2,19 @@ from __future__ import annotations
 
 import pytest
 
-from flexrag.resources import ResourceManager, ResourcesConfig, ResourceSpec
+from flexrag.resources import (
+    ResourceManager,
+    ResourcesConfig,
+    ResourceSpec,
+    RuntimeConfig,
+)
 from tests.resources.support.fakes import FakeEncoderConfig
 from tests.resources.support.registry import FAKE_RESOURCES
 
 
 def test_resource_manager_resolves_resource_from_concrete_config() -> None:
     resources = ResourceManager(
-        [ResourceSpec(name="encoder", config=FakeEncoderConfig())],
+        [ResourceSpec(name="encoder", resource_config=FakeEncoderConfig())],
         registry=FAKE_RESOURCES,
     )
     try:
@@ -25,7 +30,7 @@ def test_resource_manager_resolves_resource_from_concrete_config() -> None:
         ResourceSpec(
             name="encoder",
             resource_name="fake_scorer",
-            config=FakeEncoderConfig(),
+            resource_config=FakeEncoderConfig(),
         ),
     ],
 )
@@ -109,7 +114,7 @@ def test_resource_manager_load_closes_loaded_targets_after_preload_failure() -> 
                         ResourceSpec(
                             name="generator",
                             resource_name="fake_generator",
-                            runtime_options={"batch_size": 2},
+                            runtime_config=RuntimeConfig(batch_size=2),
                         ),
                     ],
                     preload=["encoder", "generator"],
@@ -160,10 +165,10 @@ def test_resources_config_round_trip_uses_new_schema() -> None:
 resources:
   - name: encoder
     resource_name: fake_encoder
-    runtime: direct
-    config:
+    resource_config:
       delay_seconds: 0.0
-    runtime_options:
+    runtime_config:
+      name: direct
       batch_size: 8
 preload:
   - encoder
@@ -174,4 +179,7 @@ preload:
 
     assert loaded == config
     assert loaded.resources[0].resource_name == "fake_encoder"
-    assert loaded.resources[0].runtime_options == {"batch_size": 8}
+    assert loaded.resources[0].runtime_config == RuntimeConfig(
+        name="direct",
+        batch_size=8,
+    )

@@ -28,6 +28,38 @@ class ResourceRefDescriptor:
 
 
 @configure
+class RuntimeConfig:
+    """Runtime selection and execution overrides for a resource.
+
+    ``None`` values leave the corresponding setting to the selected runtime
+    and resource entry defaults. Runtime-specific combinations are validated by
+    ``ResourceManager`` after the runtime name has been resolved.
+
+    :param name: Runtime target name. ``None`` uses the resource entry default.
+    :param batch_size: Optional public-call batch size override.
+    :param max_concurrency: Optional primitive-call concurrency limit.
+    :param rpm: Optional attempt-level requests-per-minute limit.
+    :param worker_count: Optional process worker count.
+    :param device_groups: Optional process worker accelerator placement.
+    :param retry_times: Optional async runtime retry count.
+    :param retry_min_delay: Optional minimum retry delay in seconds.
+    :param retry_max_delay: Optional maximum retry delay in seconds.
+    :param timeout: Optional async runtime per-attempt timeout in seconds.
+    """
+
+    name: str | None = None
+    batch_size: int | None = None
+    max_concurrency: int | None = None
+    rpm: float | None = None
+    worker_count: int | None = None
+    device_groups: list[list[str]] | None = None
+    retry_times: int | None = None
+    retry_min_delay: float | None = None
+    retry_max_delay: float | None = None
+    timeout: float | None = None
+
+
+@configure
 class ResourceSpec:
     """Declaration for one managed resource.
 
@@ -36,21 +68,19 @@ class ResourceSpec:
 
     :param name: Unique resource name within a manager.
     :param resource_name: Registry key identifying the resource entry. Concrete
-        config instances may omit this and rely on registry reverse lookup.
-    :param runtime: Runtime target name. ``None`` uses the registry default.
-    :param config: Raw resource config object or a dict materialized through the
-        entry config class.
+        resource config instances may omit this and rely on registry reverse
+        lookup.
+    :param resource_config: Raw resource config object or a dict materialized
+        through the entry config class.
+    :param runtime_config: Runtime selection and execution overrides.
     :param refs: Mapping from constructor parameter name to resource name.
-    :param runtime_options: Runtime deployment and scheduling options. These are
-        validated by ``ResourceManager`` according to the selected runtime.
     """
 
     name: str
     resource_name: str | None = None
-    runtime: str | None = None
-    config: Any = field(default_factory=dict)
+    resource_config: Any = field(default_factory=dict)
+    runtime_config: RuntimeConfig = field(default_factory=RuntimeConfig)
     refs: dict[str, str] = field(default_factory=dict)
-    runtime_options: dict[str, Any] = field(default_factory=dict)
 
 
 @configure

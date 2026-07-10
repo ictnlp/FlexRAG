@@ -1,12 +1,11 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any
 
 from .entry import ResourceEntry
 from .handles import HANDLE_TYPES, TypedHandle
-from .refs import ResourceRefDescriptor, ResourcesConfig, ResourceSpec
+from .refs import ResourceRefDescriptor, ResourcesConfig, ResourceSpec, RuntimeConfig
 from .registry import Resources, _ResourceRegister
 from .runtime import AsyncTarget, DirectTarget, ProcessTarget, RuntimeTarget
 from .runtime.placement import worker_env_updates_from_device_groups
@@ -16,7 +15,7 @@ from .runtime.placement import worker_env_updates_from_device_groups
 class RuntimeSettings:
     """Validated runtime settings for one managed resource.
 
-    This is an internal normalized form of ``ResourceSpec.runtime_options``.
+    This is an internal normalized form of ``ResourceSpec.runtime_config``.
     Common options are ``batch_size``, ``max_concurrency``, and ``rpm``.
     Process-only options are worker count and per-worker environment updates.
     Async-only options are retry and timeout settings.
@@ -135,8 +134,12 @@ class ResourceManager:
             return self._handles[name]
         spec = self._get_spec(name)
         entry = self._resolve_entry(spec)
-        runtime = spec.runtime or entry.default_runtime
-        runtime_settings = self._runtime_settings(spec, entry, runtime)
+        runtime = spec.runtime_config.name or entry.default_runtime
+        runtime_settings = self._runtime_settings(
+            spec.runtime_config,
+            entry,
+            runtime,
+        )
         config = self._materialize_config(spec, entry)
 
         if runtime == "direct":
@@ -199,20 +202,23 @@ class ResourceManager:
 
     def _resolve_entry(self, spec: ResourceSpec) -> ResourceEntry:
         if spec.resource_name is None:
-            if isinstance(spec.config, dict):
+            if isinstance(spec.resource_config, dict):
                 raise ValueError(
-                    "resource_name is required when config is loaded from a "
-                    "dictionary."
+                    "resource_name is required when resource_config is loaded "
+                    "from a dictionary."
                 )
-            return self._registry.resolve_config(spec.config)
+            return self._registry.resolve_config(spec.resource_config)
 
         entry = self._registry.resolve_name(spec.resource_name)
-        if not isinstance(spec.config, dict) and entry.config_class is not None:
-            config_entry = self._registry.resolve_config(spec.config)
+        if (
+            not isinstance(spec.resource_config, dict)
+            and entry.config_class is not None
+        ):
+            config_entry = self._registry.resolve_config(spec.resource_config)
             if config_entry is not entry:
                 raise ValueError(
                     f"resource_name {spec.resource_name!r} does not match config "
-                    f"class {type(spec.config)!r}."
+                    f"class {type(spec.resource_config)!r}."
                 )
         return entry
 
@@ -228,40 +234,42 @@ class ResourceManager:
     @staticmethod
     def _materialize_config(spec: ResourceSpec, entry: ResourceEntry) -> Any:
         if entry.config_class is None:
-            return spec.config
-        if isinstance(spec.config, dict):
-            return entry.config_class(**spec.config)
-        return spec.config
+            return spec.resource_config
+        if isinstance(spec.resource_config, dict):
+            return entry.config_class(**spec.resource_config)
+        return spec.resource_config
 
     def _runtime_settings(
         self,
-        spec: ResourceSpec,
+        config: RuntimeConfig,
         entry: ResourceEntry,
         runtime: str,
     ) -> RuntimeSettings:
-        options = spec.runtime_options
-        allowed = {"batch_size", "max_concurrency", "rpm"}
+        process_fields = {
+            "device_groups": config.device_groups,
+            "worker_count": config.worker_count,
+        }
+        async_fields = {
+            "retry_max_delay": config.retry_max_delay,
+            "retry_min_delay": config.retry_min_delay,
+            "retry_times": config.retry_times,
+            "timeout": config.timeout,
+        }
         if runtime == "process":
-            allowed.update({"device_groups", "worker_count"})
+            unsupported = self._configured_fields(async_fields)
         elif runtime == "async":
-            allowed.update(
-                {
-                    "retry_max_delay",
-                    "retry_min_delay",
-                    "retry_times",
-                    "timeout",
-                }
-            )
-        elif runtime != "direct":
+            unsupported = self._configured_fields(process_fields)
+        elif runtime == "direct":
+            unsupported = self._configured_fields({**process_fields, **async_fields})
+        else:
             raise ValueError(f"Unsupported runtime: {runtime}")
-        unsupported = set(options) - allowed
         if unsupported:
             raise ValueError(
-                f"Unsupported {runtime} runtime_options: {sorted(unsupported)}"
+                f"Unsupported {runtime} runtime_config fields: {unsupported}"
             )
         default_batch_size = 32 if entry.batching else 1
-        batch_size = self._positive_int_option(
-            options,
+        batch_size = self._positive_int_value(
+            config.batch_size,
             "batch_size",
             default_batch_size,
         )
@@ -270,10 +278,10 @@ class ResourceManager:
                 f"Resource {entry.resource_name!r} does not support batched public "
                 "calls."
             )
-        rpm = self._non_negative_float_option(options, "rpm", 0.0)
+        rpm = self._non_negative_float_value(config.rpm, "rpm", 0.0)
         if runtime == "direct":
-            max_concurrency = self._positive_int_option(
-                options,
+            max_concurrency = self._positive_int_value(
+                config.max_concurrency,
                 "max_concurrency",
                 1,
             )
@@ -283,23 +291,23 @@ class ResourceManager:
                 rpm=rpm,
             )
         if runtime == "async":
-            max_concurrency = self._positive_int_option(
-                options,
+            max_concurrency = self._positive_int_value(
+                config.max_concurrency,
                 "max_concurrency",
                 1,
             )
-            retry_times = self._non_negative_int_option(
-                options,
+            retry_times = self._non_negative_int_value(
+                config.retry_times,
                 "retry_times",
                 0,
             )
-            retry_min_delay = self._non_negative_float_option(
-                options,
+            retry_min_delay = self._non_negative_float_value(
+                config.retry_min_delay,
                 "retry_min_delay",
                 1.0,
             )
-            retry_max_delay = self._non_negative_float_option(
-                options,
+            retry_max_delay = self._non_negative_float_value(
+                config.retry_max_delay,
                 "retry_max_delay",
                 60.0,
             )
@@ -307,7 +315,11 @@ class ResourceManager:
                 raise ValueError(
                     "retry_max_delay must be greater than or equal to retry_min_delay."
                 )
-            timeout = self._non_negative_float_option(options, "timeout", 0.0)
+            timeout = self._non_negative_float_value(
+                config.timeout,
+                "timeout",
+                0.0,
+            )
             return RuntimeSettings(
                 batch_size=batch_size,
                 max_concurrency=max_concurrency,
@@ -318,24 +330,28 @@ class ResourceManager:
                 timeout=timeout,
             )
 
-        if "device_groups" in options and "worker_count" in options:
+        if config.device_groups is not None and config.worker_count is not None:
             raise ValueError("worker_count and device_groups cannot be used together.")
 
         worker_env_updates = None
-        if "device_groups" in options:
+        if config.device_groups is not None:
             worker_env_updates = worker_env_updates_from_device_groups(
-                options["device_groups"]
+                config.device_groups
             )
             worker_count = len(worker_env_updates)
         else:
-            worker_count = self._positive_int_option(options, "worker_count", 1)
+            worker_count = self._positive_int_value(
+                config.worker_count,
+                "worker_count",
+                1,
+            )
         if worker_count > 1 and not entry.parallel_safe:
             raise ValueError(
                 f"Resource {entry.resource_name!r} is not safe to run with "
                 "worker_count > 1."
             )
-        max_concurrency = self._positive_int_option(
-            options,
+        max_concurrency = self._positive_int_value(
+            config.max_concurrency,
             "max_concurrency",
             worker_count,
         )
@@ -352,34 +368,38 @@ class ResourceManager:
         )
 
     @staticmethod
-    def _positive_int_option(
-        options: Mapping[str, Any],
+    def _configured_fields(values: dict[str, Any]) -> list[str]:
+        return sorted(name for name, value in values.items() if value is not None)
+
+    @staticmethod
+    def _positive_int_value(
+        value: Any | None,
         name: str,
         default: int,
     ) -> int:
-        value = options.get(name, default)
+        value = default if value is None else value
         if not isinstance(value, int) or isinstance(value, bool) or value < 1:
             raise ValueError(f"{name} must be an integer greater than or equal to 1.")
         return value
 
     @staticmethod
-    def _non_negative_float_option(
-        options: Mapping[str, Any],
+    def _non_negative_float_value(
+        value: Any | None,
         name: str,
         default: float,
     ) -> float:
-        value = options.get(name, default)
+        value = default if value is None else value
         if isinstance(value, bool) or not isinstance(value, int | float) or value < 0:
             raise ValueError(f"{name} must be a non-negative number.")
         return float(value)
 
     @staticmethod
-    def _non_negative_int_option(
-        options: Mapping[str, Any],
+    def _non_negative_int_value(
+        value: Any | None,
         name: str,
         default: int,
     ) -> int:
-        value = options.get(name, default)
+        value = default if value is None else value
         if not isinstance(value, int) or isinstance(value, bool) or value < 0:
             raise ValueError(f"{name} must be a non-negative integer.")
         return value
@@ -398,8 +418,12 @@ class ResourceManager:
         for param_name, resource_name in self._validated_refs(spec).items():
             ref_spec = self._get_spec(resource_name)
             entry = self._resolve_entry(ref_spec)
-            runtime = ref_spec.runtime or entry.default_runtime
-            runtime_settings = self._runtime_settings(ref_spec, entry, runtime)
+            runtime = ref_spec.runtime_config.name or entry.default_runtime
+            runtime_settings = self._runtime_settings(
+                ref_spec.runtime_config,
+                entry,
+                runtime,
+            )
             descriptors[param_name] = ResourceRefDescriptor(
                 name=resource_name,
                 interface=entry.interface,

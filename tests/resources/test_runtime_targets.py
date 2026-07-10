@@ -6,7 +6,12 @@ import time
 import pytest
 
 from flexrag.common.dataclasses import Context
-from flexrag.resources import ResourceManager, ResourceSpec, RuntimeCallError
+from flexrag.resources import (
+    ResourceManager,
+    ResourceSpec,
+    RuntimeCallError,
+    RuntimeConfig,
+)
 from tests.resources.support.registry import FAKE_RESOURCES
 
 
@@ -30,14 +35,16 @@ def manager(
             ResourceSpec(
                 name="encoder",
                 resource_name="fake_encoder",
-                runtime=encoder_runtime,
-                config=encoder_config or {},
-                runtime_options=encoder_options or {},
+                resource_config=encoder_config or {},
+                runtime_config=RuntimeConfig(
+                    name=encoder_runtime,
+                    **(encoder_options or {}),
+                ),
             ),
             ResourceSpec(
                 name="backend",
                 resource_name="fake_collection_backend",
-                config=backend_config or {},
+                resource_config=backend_config or {},
                 refs={"encoder": "encoder"},
             ),
         ],
@@ -162,13 +169,13 @@ def test_async_target_prefers_async_twin_and_limits_retry_attempts() -> None:
             ResourceSpec(
                 name="encoder",
                 resource_name="fake_async_encoder",
-                config={"failures_before_success": 1},
-                runtime_options={
-                    "retry_times": 1,
-                    "retry_min_delay": 0,
-                    "retry_max_delay": 0,
-                    "rpm": 600,
-                },
+                resource_config={"failures_before_success": 1},
+                runtime_config=RuntimeConfig(
+                    retry_times=1,
+                    retry_min_delay=0,
+                    retry_max_delay=0,
+                    rpm=600,
+                ),
             )
         ],
         registry=FAKE_RESOURCES,
@@ -201,8 +208,8 @@ def test_async_target_propagates_retry_and_timeout_errors(
             ResourceSpec(
                 name="encoder",
                 resource_name="fake_async_encoder",
-                config=config,
-                runtime_options=options,
+                resource_config=config,
+                runtime_config=RuntimeConfig(**options),
             )
         ],
         registry=FAKE_RESOURCES,
@@ -241,8 +248,11 @@ async def test_batch_scheduler_concurrency_progress_and_empty_input(mocker) -> N
             ResourceSpec(
                 name="encoder",
                 resource_name="fake_encoder",
-                config={"delay_seconds": 0.2},
-                runtime_options={"batch_size": 1, "max_concurrency": 2},
+                resource_config={"delay_seconds": 0.2},
+                runtime_config=RuntimeConfig(
+                    batch_size=1,
+                    max_concurrency=2,
+                ),
             )
         ],
         registry=FAKE_RESOURCES,
@@ -279,38 +289,39 @@ async def test_batch_scheduler_concurrency_progress_and_empty_input(mocker) -> N
         ResourceSpec(
             name="encoder",
             resource_name="fake_encoder",
-            runtime_options={"batch_size": 0},
+            runtime_config=RuntimeConfig(batch_size=0),
         ),
         ResourceSpec(
             name="encoder",
             resource_name="fake_encoder",
-            runtime_options={"worker_count": 2},
+            runtime_config=RuntimeConfig(worker_count=2),
         ),
         ResourceSpec(
             name="encoder",
             resource_name="fake_encoder",
-            runtime="process",
-            runtime_options={"timeout": 1},
+            runtime_config=RuntimeConfig(name="process", timeout=1),
         ),
         ResourceSpec(
             name="encoder",
             resource_name="fake_async_encoder",
-            runtime_options={"device_groups": [["cuda:0"]]},
+            runtime_config=RuntimeConfig(device_groups=[["cuda:0"]]),
         ),
         ResourceSpec(
             name="backend",
             resource_name="fake_collection_backend",
-            runtime_options={"worker_count": 2},
+            runtime_config=RuntimeConfig(worker_count=2),
         ),
         ResourceSpec(
             name="encoder",
             resource_name="fake_encoder",
-            runtime="process",
-            runtime_options={"device_groups": [["cuda:0"], ["xpu:0"]]},
+            runtime_config=RuntimeConfig(
+                name="process",
+                device_groups=[["cuda:0"], ["xpu:0"]],
+            ),
         ),
     ],
 )
-def test_runtime_options_reject_representative_invalid_specs(
+def test_runtime_config_rejects_representative_invalid_specs(
     spec: ResourceSpec,
 ) -> None:
     resources = ResourceManager([spec], registry=FAKE_RESOURCES)

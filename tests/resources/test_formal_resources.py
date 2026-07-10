@@ -93,7 +93,7 @@ def test_litellm_encoder_and_generator_smoke(mock_litellm_client) -> None:
             ResourceSpec(
                 name="encoder",
                 resource_name="litellm_encoder",
-                config={
+                resource_config={
                     "provider": "openai",
                     "model_name": "text-embedding-3-small",
                     "embedding_size": 4,
@@ -102,7 +102,10 @@ def test_litellm_encoder_and_generator_smoke(mock_litellm_client) -> None:
             ResourceSpec(
                 name="generator",
                 resource_name="litellm_generator",
-                config={"provider": "openai", "model_name": "gpt-4o-mini"},
+                resource_config={
+                    "provider": "openai",
+                    "model_name": "gpt-4o-mini",
+                },
             ),
         ]
     )
@@ -131,7 +134,7 @@ async def test_sqlite_context_store_persists_and_bridges_async(tmp_path: Path) -
     spec = ResourceSpec(
         name="store",
         resource_name="sqlite_context_store",
-        config={"path": tmp_path / "store.db"},
+        resource_config={"path": tmp_path / "store.db"},
     )
     resources = ResourceManager([spec])
     try:
@@ -163,12 +166,15 @@ def test_bm25s_and_faiss_backend_smoke(tmp_path: Path, mock_litellm_client) -> N
             ResourceSpec(
                 name="bm25",
                 resource_name="bm25s_backend",
-                config={"path": tmp_path / "bm25", "view": view_config()},
+                resource_config={
+                    "path": tmp_path / "bm25",
+                    "view": view_config(),
+                },
             ),
             ResourceSpec(
                 name="encoder",
                 resource_name="litellm_encoder",
-                config={
+                resource_config={
                     "provider": "openai",
                     "model_name": "text-embedding-3-small",
                     "embedding_size": 4,
@@ -177,7 +183,7 @@ def test_bm25s_and_faiss_backend_smoke(tmp_path: Path, mock_litellm_client) -> N
             ResourceSpec(
                 name="faiss",
                 resource_name="faiss_backend",
-                config={
+                resource_config={
                     "path": tmp_path / "faiss",
                     "view": view_config(),
                     "distance_function": "IP",
@@ -209,24 +215,24 @@ def test_ranker_tokenizer_chunker_and_refiner_smoke() -> None:
             ResourceSpec(
                 name="generator",
                 resource_name="fake_generator",
-                config={"chat_response": "2 1"},
+                resource_config={"chat_response": "2 1"},
             ),
             ResourceSpec(
                 name="ranker",
                 resource_name="rank_gpt_ranker",
-                config={"window_size": 2, "step_size": 1},
+                resource_config={"window_size": 2, "step_size": 1},
                 refs={"generator": "generator"},
             ),
             ResourceSpec(name="tokenizer", resource_name="space_tokenizer"),
             ResourceSpec(
                 name="chunker",
                 resource_name="char_chunker",
-                config={"max_chars": 3, "overlap": 0},
+                resource_config={"max_chars": 3, "overlap": 0},
             ),
             ResourceSpec(
                 name="refiner",
                 resource_name="context_arranger",
-                config={"order": "descending"},
+                resource_config={"order": "descending"},
             ),
         ],
         registry=registry,
