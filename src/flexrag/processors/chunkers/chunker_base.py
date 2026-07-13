@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Protocol
 
 from flexrag.common import Register, data
 
@@ -24,25 +24,33 @@ class Chunk:
     meta_data: Optional[dict] = None
 
 
-class ChunkerBase(ABC):
-    """Chunker that splits text into chunks of fixed size.
-    This is an abstract class that defines the interface for all chunkers.
-    The subclasses should implement the `chunk` method to split the text.
+class ChunkerProtocol(Protocol):
+    """Protocol for directly usable text chunkers.
+
+    Raw chunkers and managed chunker handles both implement this structural
+    interface.
     """
 
+    def chunk(self, text: str) -> list[Chunk]:
+        """Split text into chunks.
+
+        :param text: Text to split.
+        :return: Chunks produced from the text.
+        """
+        ...
+
+
+class ChunkerBase(ABC):
+    """Abstract base class for text chunkers."""
+
     @abstractmethod
-    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
+    def chunk(self, text: str) -> list[Chunk]:
         """Chunk the given text into smaller chunks.
 
         :param text: The text to chunk.
-        :type text: str
-        :param return_str: If True, return the chunks as strings instead of Chunk objects.
-            Default is False.
-        :type return_str: bool
         :return: The chunks of the text.
-        :rtype: list[Chunk]
         """
         return
 
 
-CHUNKERS = Register[ChunkerBase]("chunker")
+CHUNKERS = Register[ChunkerProtocol]("chunker")

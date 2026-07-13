@@ -1,38 +1,20 @@
-from abc import ABC, abstractmethod
+from abc import abstractmethod
 from functools import partial
 
 from flexrag.common import Register, configure
 
+from .chunker_base import Chunk, ChunkerBase
 
-class SentenceSplitterBase(ABC):
-    """Sentence splitter that splits text into sentences.
-    This is an abstract class that defines the interface for all sentence splitters.
-    The subclasses should implement the `split` method to split the text.
-    """
+
+class SentenceSplitterBase(ChunkerBase):
+    """Abstract chunker that splits text into sentence-sized chunks."""
 
     @abstractmethod
-    def split(self, text: str) -> list[dict[str, str | tuple[int, int]]]:
-        """Split the given text into sentences.
+    def chunk(self, text: str) -> list[Chunk]:
+        """Split text into sentence chunks.
 
         :param text: The text to split.
-        :type text: str
-        :return: The splitted sentences with their spans.
-            Each item is a dictionary with two fields:
-
-            * ``text`` — the sentence string.
-            * ``char_span`` — a tuple ``(start, end)`` indicating the
-              character span of the sentence within the original text.
-
-            The span follows a half-open interval ``[start, end)``,
-            where ``start`` is inclusive and ``end`` marks the position
-            immediately after the last character of the span.
-
-            Example:
-                ``[{"text": "sentence1", "char_span": (0, 9)},`
-                `{"text": "sentence2", "char_span": (10, 20)}]``
-
-            If the character span is not available, ``char_span`` is set to ``(-1, -1)``.
-        :rtype: list[dict[str, str | tuple[int, int]]]
+        :return: Sentence chunks with half-open character spans when available.
         """
         return
 
@@ -65,20 +47,20 @@ class NLTKSentenceSplitter(SentenceSplitterBase):
         self.splitter = partial(nltk.sent_tokenize, language=cfg.language)
         return
 
-    def split(self, text: str) -> list[dict[str, str | tuple[int, int]]]:
+    def chunk(self, text: str) -> list[Chunk]:
         sents = [s for s in self.splitter(text)]
-        spans = []
+        chunks = []
         start = 0
         for sent in sents:
             try:
                 start = text.index(sent, start)
             except ValueError:
-                spans.append((-1, -1))
+                chunks.append(Chunk(text=sent))
                 continue
             end = start + len(sent)
-            spans.append((start, end))
+            chunks.append(Chunk(text=sent, start=start, end=end))
             start = end
-        return [{"text": sent, "char_span": span} for sent, span in zip(sents, spans)]
+        return chunks
 
 
 # \R only supported in regex module, not re module
@@ -127,29 +109,26 @@ class RegexSplitter(SentenceSplitterBase):
         self.pattern = regex.compile(cfg.pattern)
         return
 
-    def split(self, text: str) -> list[dict[str, str | tuple[int, int]]]:
+    def chunk(self, text: str) -> list[Chunk]:
         # Use regex split while keeping track of character spans.
         # Note: this assumes the pattern is a zero-width assertion (e.g. lookbehind),
         # which is the recommended usage in PREDEFINED_SPLIT_PATTERNS.
-        sents: list[str] = []
-        spans: list[tuple[int, int]] = []
+        chunks: list[Chunk] = []
 
         last_idx = 0
         for matched in self.pattern.finditer(text):
             start, end = matched.start(), matched.end()
             if start > last_idx:
                 sent = text[last_idx:start]
-                sents.append(sent)
-                spans.append((last_idx, start))
+                chunks.append(Chunk(text=sent, start=last_idx, end=start))
             last_idx = end
 
         # Tail after the last match
         if last_idx < len(text):
             sent = text[last_idx:]
-            sents.append(sent)
-            spans.append((last_idx, len(text)))
+            chunks.append(Chunk(text=sent, start=last_idx, end=len(text)))
 
-        return [{"text": sent, "char_span": span} for sent, span in zip(sents, spans)]
+        return chunks
 
 
 @configure
@@ -201,9 +180,9 @@ class SpacySentenceSplitter(SentenceSplitterBase):
         self.nlp.select_pipes(enable=required_pipes)
         return
 
-    def split(self, text: str) -> list[dict[str, str | tuple[int, int]]]:
+    def chunk(self, text: str) -> list[Chunk]:
         return [
-            {"text": sent.text, "char_span": (sent.start_char, sent.end_char)}
+            Chunk(text=sent.text, start=sent.start_char, end=sent.end_char)
             for sent in self.nlp(text).sents
         ]
 

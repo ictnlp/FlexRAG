@@ -74,6 +74,9 @@ def test_formal_resource_entries_are_registered() -> None:
         "char_chunker": ("chunker", "direct"),
         "token_chunker": ("chunker", "direct"),
         "recursive_chunker": ("chunker", "direct"),
+        "regex_sentence_splitter": ("chunker", "direct"),
+        "nltk_sentence_splitter": ("chunker", "direct"),
+        "spacy_sentence_splitter": ("chunker", "direct"),
         "sentence_chunker": ("chunker", "direct"),
         "semantic_chunker": ("chunker", "direct"),
         "lumber_chunker": ("chunker", "direct"),
@@ -281,8 +284,7 @@ def test_ranker_tokenizer_chunker_and_refiner_smoke() -> None:
             ResourceSpec(name="tokenizer", resource_name="space_tokenizer"),
             ResourceSpec(
                 name="chunker",
-                resource_name="char_chunker",
-                resource_config={"max_chars": 3, "overlap": 0},
+                resource_name="regex_sentence_splitter",
             ),
             ResourceSpec(
                 name="refiner",
@@ -300,9 +302,11 @@ def test_ranker_tokenizer_chunker_and_refiner_smoke() -> None:
             "first",
         ]
         assert resources.get("tokenizer").tokenize("alpha beta") == ["alpha", "beta"]
-        assert resources.get("chunker").chunk("abcdef", return_str=True) == [
-            "abc",
-            "def",
+        assert [
+            chunk.text for chunk in resources.get("chunker").chunk("First. Second.")
+        ] == [
+            "First.",
+            "Second.",
         ]
         refined = resources.get("refiner").refine(
             [

@@ -71,15 +71,13 @@ class DenseXChunker(ChunkerBase):
         self.pre_chunker = RecursiveChunker(cfg.pre_chunk_config, tokenizer=tokenizer)
         return
 
-    def chunk(self, text: str, return_str: bool = False) -> list[Chunk] | list[str]:
+    def chunk(self, text: str) -> list[Chunk]:
         """Chunk the given text into propositions.
 
         :param text: The text to chunk.
-        :param return_str: If True, return the chunks as strings instead of Chunk objects.
-            Default is False.
         :return: The propositions of the text.
         """
-        paragraphs = self.pre_chunker.chunk(text, return_str=True)
+        paragraphs = [chunk.text for chunk in self.pre_chunker.chunk(text)]
         if not paragraphs:
             return []
 
@@ -98,6 +96,4 @@ class DenseXChunker(ChunkerBase):
                 logger.error(f"Failed to parse output text as JSON: {output_text}")
                 continue
 
-        if return_str:
-            return prop_list
         return [Chunk(text=p) for p in prop_list]

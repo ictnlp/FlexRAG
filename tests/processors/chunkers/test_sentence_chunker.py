@@ -3,7 +3,14 @@ import re
 import pytest
 
 from flexrag.models.tokenizer import TikTokenTokenizer, TikTokenTokenizerConfig
-from flexrag.processors.chunkers import SentenceChunker, SentenceChunkerConfig
+from flexrag.processors.chunkers import (
+    NLTKSentenceSplitter,
+    NLTKSentenceSplitterConfig,
+    RegexSplitter,
+    RegexSplitterConfig,
+    SentenceChunker,
+    SentenceChunkerConfig,
+)
 
 pytestmark = pytest.mark.integration
 
@@ -39,25 +46,27 @@ class TestSentenceChunker:
 
         # test nltk sentence splitter
         try:
+            splitter = NLTKSentenceSplitter(NLTKSentenceSplitterConfig())
             chunker = SentenceChunker(
-                SentenceChunkerConfig(
-                    max_sents=2, sentence_splitter_type="nltk_splitter"
-                ),
+                SentenceChunkerConfig(max_sents=2),
                 tokenizer=tokenizer,
+                splitter=splitter,
             )
             for doc in self.docs:
-                chunks = chunker.chunk(doc, return_str=True)
+                chunks = [chunk.text for chunk in chunker.chunk(doc)]
                 self.chunks_test(chunks, doc, strict=False)
         except LookupError:
             # NLTK punkt data is optional in the local smoke environment.
             pass
 
         # test regex sentence splitter
+        splitter = RegexSplitter(RegexSplitterConfig())
         chunker = SentenceChunker(
-            SentenceChunkerConfig(max_sents=2, sentence_splitter_type="regex"),
+            SentenceChunkerConfig(max_sents=2),
             tokenizer=tokenizer,
+            splitter=splitter,
         )
         for doc in self.docs:
-            chunks = chunker.chunk(doc, return_str=True)
+            chunks = [chunk.text for chunk in chunker.chunk(doc)]
             self.chunks_test(chunks, doc, strict=False)
         return

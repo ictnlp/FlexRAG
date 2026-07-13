@@ -4,13 +4,11 @@ from typing import Optional
 from flexrag.common import LOGGER_MANAGER, configure
 from flexrag.models.tokenizer import TokenizerProtocol
 
-from .chunker_base import CHUNKERS, Chunk, ChunkerBase
+from .chunker_base import CHUNKERS, Chunk, ChunkerBase, ChunkerProtocol
 from .sentence_splitter import (
     PREDEFINED_SPLIT_PATTERNS,
-    SENTENCE_SPLITTERS,
     RegexSplitter,
     RegexSplitterConfig,
-    SentenceSplitterConfig,
 )
 
 logger = LOGGER_MANAGER.get_logger("flexrag.chunking.basic_chunkers")
@@ -54,7 +52,7 @@ class CharChunker(ChunkerBase):
         self.overlap = cfg.overlap
         return
 
-    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
+    def chunk(self, text: str) -> list[Chunk]:
         chunks = []
         for i in range(0, len(text), self.chunk_size - self.overlap):
             chunks.append(
@@ -64,8 +62,6 @@ class CharChunker(ChunkerBase):
                     end=min(len(text), i + self.chunk_size),
                 )
             )
-        if return_str:
-            return [chunk.text for chunk in chunks]
         return chunks
 
 
@@ -99,9 +95,7 @@ class TokenChunkerConfig:
 class TokenChunker(ChunkerBase):
     """TokenChunker splits text into chunks with fixed number of tokens."""
 
-    def __init__(
-        self, cfg: TokenChunkerConfig, tokenizer: TokenizerProtocol
-    ) -> None:
+    def __init__(self, cfg: TokenChunkerConfig, tokenizer: TokenizerProtocol) -> None:
         self.chunk_size = cfg.max_tokens
         self.overlap = cfg.overlap
         self.tokenizer = tokenizer
@@ -112,7 +106,7 @@ class TokenChunker(ChunkerBase):
             )
         return
 
-    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
+    def chunk(self, text: str) -> list[Chunk]:
         # employ encode and decode for faster processing
         if self.tokenizer.vocab_size > 0:
             encode_fn = self.tokenizer.encode
@@ -136,8 +130,6 @@ class TokenChunker(ChunkerBase):
                 tokens[i + self.chunk_size - self.overlap : i + self.chunk_size]
             )
             current_index += len(chunk_text) - len(overlap_text)
-        if return_str:
-            return [chunk.text for chunk in chunks]
         return chunks
 
 
@@ -210,14 +202,14 @@ class RecursiveChunker(ChunkerBase):
             )
         return
 
-    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
-        chunks = self._recursive_chunk(text, 0, (0, len(text)))
-        if return_str:
-            return [chunk.text for chunk in chunks]
-        return chunks
+    def chunk(self, text: str) -> list[Chunk]:
+        return self._recursive_chunk(text, 0, (0, len(text)))
 
     def _recursive_chunk(
-        self, text: str, level: int, span: tuple[int, int]
+        self,
+        text: str,
+        level: int,
+        span: tuple[Optional[int], Optional[int]],
     ) -> list[Chunk]:
         if self.tokenizer.vocab_size > 0:
             encode_fn = self.tokenizer.encode
@@ -236,14 +228,19 @@ class RecursiveChunker(ChunkerBase):
                     Chunk(
                         text=chunk_text,
                         start=current_index,
-                        end=current_index + len(chunk_text),
+                        end=(
+                            current_index + len(chunk_text)
+                            if current_index is not None
+                            else None
+                        ),
                         meta_data={"split_level": level},
                     )
                 )
-                current_index += len(chunk_text)
+                if current_index is not None:
+                    current_index += len(chunk_text)
             return chunks
         else:
-            sub_chunks = self.splitter[level].split(text)
+            sub_chunks = self.splitter[level].chunk(text)
             new_chunks = []
 
             # temporary storage for the current chunk
@@ -251,14 +248,18 @@ class RecursiveChunker(ChunkerBase):
             current_tokens = 0
 
             for sub_chunk in sub_chunks:
-                text_ = sub_chunk["text"]
-                local_span = sub_chunk["char_span"]
+                text_ = sub_chunk.text
+                local_span = (sub_chunk.start, sub_chunk.end)
 
                 # fix span to global
-                if span[0] != -1 and local_span[0] != -1:
+                if (
+                    span[0] is not None
+                    and local_span[0] is not None
+                    and local_span[1] is not None
+                ):
                     global_span = (span[0] + local_span[0], span[0] + local_span[1])
                 else:
-                    global_span = (-1, -1)
+                    global_span = (None, None)
 
                 tokens_count = len(encode_fn(text_))
 
@@ -271,8 +272,8 @@ class RecursiveChunker(ChunkerBase):
                     if current_sub_chunks:
                         # try to retrieve text from original text
                         if (
-                            current_sub_chunks[0][1][0] != -1
-                            and current_sub_chunks[-1][1][1] != -1
+                            current_sub_chunks[0][1][0] is not None
+                            and current_sub_chunks[-1][1][1] is not None
                         ):
                             chunk_text = text[
                                 current_sub_chunks[0][1][0] : current_sub_chunks[-1][1][
@@ -301,8 +302,8 @@ class RecursiveChunker(ChunkerBase):
                     # Flush current
                     if current_sub_chunks:
                         if (
-                            current_sub_chunks[0][1][0] != -1
-                            and current_sub_chunks[-1][1][1] != -1
+                            current_sub_chunks[0][1][0] is not None
+                            and current_sub_chunks[-1][1][1] is not None
                         ):
                             chunk_text = text[
                                 current_sub_chunks[0][1][0] : current_sub_chunks[-1][1][
@@ -331,8 +332,8 @@ class RecursiveChunker(ChunkerBase):
             # Final flush
             if current_sub_chunks:
                 if (
-                    current_sub_chunks[0][1][0] != -1
-                    and current_sub_chunks[-1][1][1] != -1
+                    current_sub_chunks[0][1][0] is not None
+                    and current_sub_chunks[-1][1][1] is not None
                 ):
                     chunk_text = text[
                         current_sub_chunks[0][1][0] : current_sub_chunks[-1][1][1]
@@ -352,7 +353,7 @@ class RecursiveChunker(ChunkerBase):
 
 
 @configure
-class SentenceChunkerConfig(SentenceSplitterConfig):
+class SentenceChunkerConfig:
     """Configuration for SentenceChunker.
 
     :param max_sents: The maximum number of sentences in each chunk. Default is None.
@@ -363,12 +364,22 @@ class SentenceChunkerConfig(SentenceSplitterConfig):
 
     .. code-block:: python
 
-        from flexrag.chunking import SentenceChunkerConfig, SentenceChunker
+        from flexrag.processors.chunkers import (
+            RegexSplitter,
+            RegexSplitterConfig,
+            SentenceChunker,
+            SentenceChunkerConfig,
+        )
         from flexrag.models.tokenizer import SpaceTokenizer
 
         tokenizer = SpaceTokenizer()
         cfg = SentenceChunkerConfig(max_sents=10)
-        chunker = SentenceChunker(cfg, tokenizer=tokenizer)
+        splitter = RegexSplitter(RegexSplitterConfig())
+        chunker = SentenceChunker(
+            cfg,
+            tokenizer=tokenizer,
+            splitter=splitter,
+        )
 
     Note that sentences longer than ``max_tokens`` will be further split into smaller
     chunks.
@@ -386,7 +397,11 @@ class SentenceChunker(ChunkerBase):
     """
 
     def __init__(
-        self, cfg: SentenceChunkerConfig, tokenizer: TokenizerProtocol
+        self,
+        cfg: SentenceChunkerConfig,
+        *,
+        tokenizer: TokenizerProtocol,
+        splitter: ChunkerProtocol,
     ) -> None:
         # set arguments
         assert not all(i is None for i in [cfg.max_sents, cfg.max_tokens]), (
@@ -396,45 +411,39 @@ class SentenceChunker(ChunkerBase):
         self.max_tokens = cfg.max_tokens if cfg.max_tokens else float("inf")
         self.overlap = cfg.overlap
         self.tokenizer = tokenizer
+        self.splitter = splitter
         if not self.tokenizer.reversible:
             logger.warning(
                 f"Tokenizer {type(tokenizer).__name__} is not reversible. "
                 "Some characters may be lost during detokenization."
             )
-
-        # load splitter
-        self.splitter = SENTENCE_SPLITTERS.load(cfg)
         return
 
-    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
+    def chunk(self, text: str) -> list[Chunk]:
         # split document into sentences
-        sentences_ = self.splitter.split(text)
+        sentences_ = self.splitter.chunk(text)
 
         # make sure all sentences lengths are less than max_tokens
         sentences = []
         for sent in sentences_:
             if (self.max_tokens == float("inf")) or (
-                len(self.tokenizer.tokenize(sent["text"])) <= self.max_tokens
+                len(self.tokenizer.tokenize(sent.text)) <= self.max_tokens
             ):
                 sentences.append(sent)
                 continue
 
             # split the long sentence
-            char_start, _ = sent["char_span"]
-            tokens = self.tokenizer.tokenize(sent["text"])
+            tokens = self.tokenizer.tokenize(sent.text)
             curr_pos = 0
             for i in range(0, len(tokens), self.max_tokens):
                 sub_text = self.tokenizer.detokenize(tokens[i : i + self.max_tokens])
-                span = (
-                    (char_start + curr_pos, char_start + curr_pos + len(sub_text))
-                    if char_start != -1
-                    else (-1, -1)
-                )
-                sentences.append({"text": sub_text, "char_span": span})
+                start = sent.start + curr_pos if sent.start is not None else None
+                end = start + len(sub_text) if start is not None else None
+                sentences.append(Chunk(text=sub_text, start=start, end=end))
                 curr_pos += len(sub_text)
 
         if self.max_tokens != float("inf"):
-            token_counts = [len(self.tokenizer.tokenize(s["text"])) for s in sentences]
+            token_counts = [len(self.tokenizer.tokenize(s.text)) for s in sentences]
         else:
             token_counts = [0] * len(sentences)
 
@@ -454,26 +463,23 @@ class SentenceChunker(ChunkerBase):
 
             if end_pointer == start_pointer:
                 end_pointer += 1
-            try:
-                char_start = sentences[start_pointer]["char_span"][0]
-                char_end = sentences[end_pointer - 1]["char_span"][1]
-                assert char_start != -1 and char_end != -1
+            char_start = sentences[start_pointer].start
+            char_end = sentences[end_pointer - 1].end
+            if char_start is not None and char_end is not None:
                 chunk_text = text[char_start:char_end]
-            except AssertionError:
+            else:
                 char_start, char_end = None, None
                 chunk_text = " ".join(
-                    s["text"] for s in sentences[start_pointer:end_pointer]
+                    s.text for s in sentences[start_pointer:end_pointer]
                 )
             chunks.append(
                 Chunk(
                     text=chunk_text,
-                    start=sentences[start_pointer]["char_span"][0],
-                    end=sentences[end_pointer - 1]["char_span"][1],
+                    start=char_start,
+                    end=char_end,
                 )
             )
             new_start = max(end_pointer - self.overlap, start_pointer + 1)
             start_pointer = new_start
             end_pointer = start_pointer
-        if return_str:
-            return [chunk.text for chunk in chunks]
         return chunks

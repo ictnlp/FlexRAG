@@ -8,6 +8,8 @@ from flexrag.processors.chunkers import (
     CharChunkerConfig,
     RecursiveChunker,
     RecursiveChunkerConfig,
+    RegexSplitter,
+    RegexSplitterConfig,
     SemanticChunker,
     SemanticChunkerConfig,
     TokenChunker,
@@ -28,6 +30,10 @@ class _FakeEncoder:
             ],
             dtype=np.float32,
         )
+
+
+def chunk_texts(chunker, text: str) -> list[str]:
+    return [chunk.text for chunk in chunker.chunk(text)]
 
 
 class TestChunker:
@@ -60,7 +66,7 @@ class TestChunker:
         # chunk without overlap
         chunker = CharChunker(CharChunkerConfig(max_chars=10, overlap=0))
         for doc in self.docs:
-            chunks = chunker.chunk(doc, return_str=True)
+            chunks = chunk_texts(chunker, doc)
             for chunk in chunks:
                 assert len(chunk) <= 10
             self.chunks_test(chunks, doc)
@@ -68,7 +74,7 @@ class TestChunker:
         # chunk with overlap
         chunker = CharChunker(CharChunkerConfig(max_chars=10, overlap=3))
         for doc in self.docs:
-            chunks = chunker.chunk(doc, return_str=True)
+            chunks = chunk_texts(chunker, doc)
             for chunk in chunks:
                 assert len(chunk) <= 10
         return
@@ -82,7 +88,7 @@ class TestChunker:
             tokenizer=tokenizer,
         )
         for doc in self.docs:
-            chunks = chunker.chunk(doc, return_str=True)
+            chunks = chunk_texts(chunker, doc)
             for chunk in chunks:
                 assert len(tokenizer.tokenize(chunk)) <= 5
             self.chunks_test(chunks, doc)
@@ -93,7 +99,7 @@ class TestChunker:
             tokenizer=tokenizer,
         )
         for doc in self.docs:
-            chunks = chunker.chunk(doc, return_str=True)
+            chunks = chunk_texts(chunker, doc)
             for chunk in chunks:
                 assert len(tokenizer.tokenize(chunk)) <= 5
         return
@@ -105,7 +111,7 @@ class TestChunker:
             tokenizer=tokenizer,
         )
         for doc in self.docs:
-            chunks = chunker.chunk(doc, return_str=True)
+            chunks = chunk_texts(chunker, doc)
             for chunk in chunks:
                 assert len(tokenizer.tokenize(chunk)) <= 10
             self.chunks_test(chunks, doc, strict=False)
@@ -114,22 +120,19 @@ class TestChunker:
     def test_sementic_chunker(self):
         encoder = _FakeEncoder()
         tokenizer = TikTokenTokenizer(TikTokenTokenizerConfig())
+        base_chunker = RegexSplitter(RegexSplitterConfig())
+        configs = [
+            SemanticChunkerConfig(threshold_percentile=50),
+            SemanticChunkerConfig(threshold=0.95),
+            SemanticChunkerConfig(target_max_tokens=30),
+        ]
         for doc in self.docs:
-            # chunk with threshold_percentile
-            cfg = SemanticChunkerConfig(threshold_percentile=50)
-            chunker = SemanticChunker(cfg, encoder=encoder, tokenizer=tokenizer)
-            chunks = chunker.chunk(doc, return_str=True)
-            self.chunks_test(chunks, doc, strict=False)
-
-            # chunk with threshold
-            cfg = SemanticChunkerConfig(threshold=0.95)
-            chunker = SemanticChunker(cfg, encoder=encoder, tokenizer=tokenizer)
-            chunks = chunker.chunk(doc, return_str=True)
-            self.chunks_test(chunks, doc, strict=False)
-
-            # chunk with max_tokens
-            cfg = SemanticChunkerConfig(max_tokens=30)
-            chunker = SemanticChunker(cfg, encoder=encoder, tokenizer=tokenizer)
-            chunks = chunker.chunk(doc, return_str=True)
-            self.chunks_test(chunks, doc, strict=False)
+            for cfg in configs:
+                chunker = SemanticChunker(
+                    cfg,
+                    encoder=encoder,
+                    base_chunker=base_chunker,
+                    tokenizer=tokenizer,
+                )
+                self.chunks_test(chunk_texts(chunker, doc), doc, strict=False)
         return

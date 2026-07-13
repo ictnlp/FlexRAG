@@ -72,13 +72,13 @@ class LumberChunker(ChunkerBase):
         self.gen_cfg = GenerationConfig(do_sample=False)
         return
 
-    def chunk(self, text: str, return_str: bool = False) -> list[Chunk] | list[str]:
+    def chunk(self, text: str) -> list[Chunk]:
         if self.pre_chunker.tokenizer.vocab_size > 0:
             encode_fn = self.pre_chunker.tokenizer.encode
         else:
             encode_fn = self.pre_chunker.tokenizer.tokenize
         # 1. Split text into paragraphs using RecursiveChunker
-        paragraphs = self.pre_chunker.chunk(text, return_str=True)
+        paragraphs = [chunk.text for chunk in self.pre_chunker.chunk(text)]
         if not paragraphs:
             return []
 
@@ -144,6 +144,4 @@ class LumberChunker(ChunkerBase):
             chunk_text = "\n\n".join(paragraphs[start_idx:])
             chunks.append(Chunk(text=chunk_text))
 
-        if return_str:
-            return [c.text for c in chunks]
         return chunks

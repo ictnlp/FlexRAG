@@ -1,4 +1,3 @@
-from dataclasses import field
 from typing import Annotated, Optional
 
 import numpy as np
@@ -7,8 +6,7 @@ from flexrag.common import LOGGER_MANAGER, Choices, configure
 from flexrag.models.encoders import EncoderProtocol
 from flexrag.models.tokenizer import TokenizerProtocol
 
-from .basic_chunkers import SentenceChunker, SentenceChunkerConfig
-from .chunker_base import CHUNKERS, Chunk, ChunkerBase
+from .chunker_base import CHUNKERS, Chunk, ChunkerBase, ChunkerProtocol
 
 logger = LOGGER_MANAGER.get_logger("flexrag.processors.chunkers.semantic_chunker")
 
@@ -17,66 +15,79 @@ logger = LOGGER_MANAGER.get_logger("flexrag.processors.chunkers.semantic_chunker
 class SemanticChunkerConfig:
     """Configuration for SemanticChunker.
 
-    :param max_tokens: The maximum number of tokens in each chunk. Default is None.
     :param threshold: The threshold for semantic similarity. Default is None.
-        If provided, the `threshold_percentile` and `max_tokens` will be ignored.
     :param threshold_percentile: The ratio of the threshold for semantic similarity. Default is None.
         Should be a value between 0 and 100. Higher values will result in more chunks. 5 is a good starting point.
-        If provided, the `max_tokens` will be ignored.
-    :param similarity_window: The window size for calculating semantic similarity. Default is None.
+    :param target_max_tokens: The best-effort target for the maximum number of
+        tokens in each chunk. A base chunk larger than this target cannot be
+        split by SemanticChunker. Default is None.
+    :param similarity_window: The window size for calculating semantic similarity. Default is 1.
     :param similarity_function: The similarity function to use. Default is "COS".
         Available choices are "L2" for the reciprocal of euclidean distance, "IP" for inner product, and "COS" for cosine similarity.
-    :param pre_chunk_config: The configuration for the pre-chunker used to split the text into sentences.
-        Default is SentenceChunkerConfig with max_sents=1, max_tokens=128, and overlap=0.
 
     The similarity higher than the threshold will be considered as coherent, and the chunks will be split at the points where the similarity is below the threshold.
-    Thus, at least one of `max_tokens`, `threshold`, or `threshold_percentile` should be provided.
+    Exactly one of ``threshold``, ``threshold_percentile``, or
+    ``target_max_tokens`` must be provided.
     If `threshold` is provided, the chunks will be split directly based on the threshold.
     If `threshold_percentile` is provided, the threshold will be calculated automatically based on the similarity distribution.
-    If `max_tokens` is provided, the threshold will be calculated to ensure the chunks are within the token limit.
+    If `target_max_tokens` is provided, the threshold will be calculated to
+    best fit the token target at the granularity provided by the base chunker.
 
     For example, to split the text into chunks with a maximum of 512 tokens, you can use the following configuration:
 
-        >>> from flexrag.chunking import SemanticChunker, SemanticChunkerConfig
+        >>> from flexrag.processors.chunkers import (
+        ...     RegexSplitter,
+        ...     RegexSplitterConfig,
+        ...     SemanticChunker,
+        ...     SemanticChunkerConfig,
+        ... )
         >>> from flexrag.models import HFEncoder, HFEncoderConfig
         >>> from flexrag.models.tokenizer import SpaceTokenizer
         >>> tokenizer = SpaceTokenizer()
         >>> encoder = HFEncoder(HFEncoderConfig(model_path="BAAI/bge-small-en-v1.5"))
-        >>> config = SemanticChunkerConfig(
-        ...     max_tokens=512,
+        >>> base_chunker = RegexSplitter(RegexSplitterConfig())
+        >>> config = SemanticChunkerConfig(target_max_tokens=512)
+        >>> chunker = SemanticChunker(
+        ...     config,
+        ...     encoder=encoder,
+        ...     base_chunker=base_chunker,
+        ...     tokenizer=tokenizer,
         ... )
-        >>> chunker = SemanticChunker(config, encoder=encoder, tokenizer=tokenizer)
 
     To split the text into chunks with a threshold_percentile of 5%, you can use the following configuration:
 
         >>> config = SemanticChunkerConfig(
         ...     threshold_percentile=5,
         ... )
-        >>> chunker = SemanticChunker(config, encoder=encoder, tokenizer=tokenizer)
+        >>> chunker = SemanticChunker(
+        ...     config,
+        ...     encoder=encoder,
+        ...     base_chunker=base_chunker,
+        ... )
 
     To split the text into chunks with a given threshold, you can use the following configuration:
 
         >>> config = SemanticChunkerConfig(
         ...     threshold=0.8,
         ... )
-        >>> chunker = SemanticChunker(config, encoder=encoder, tokenizer=tokenizer)
+        >>> chunker = SemanticChunker(
+        ...     config,
+        ...     encoder=encoder,
+        ...     base_chunker=base_chunker,
+        ... )
     """
 
-    max_tokens: Optional[int] = None
     threshold: Optional[float] = None
     threshold_percentile: Optional[float] = None
+    target_max_tokens: Optional[int] = None
     similarity_window: int = 1
     similarity_function: Annotated[str, Choices("L2", "IP", "COS")] = "COS"
-    pre_chunk_config: SentenceChunkerConfig = field(
-        default_factory=lambda: SentenceChunkerConfig(
-            max_sents=1, max_tokens=128, overlap=0
-        )
-    )
 
 
 @CHUNKERS("semantic_chunker", config_class=SemanticChunkerConfig)
 class SemanticChunker(ChunkerBase):
-    """SemanticChunker splits text into sentences and then groups them into chunks based on semantic similarity.
+    """Group base chunks into larger chunks based on semantic similarity.
+
     This chunker is inspired by the Greg Kamradt's wonderful notebook:
     https://github.com/FullStackRetrieval-com/RetrievalTutorials/blob/main/tutorials/LevelsOfTextSplitting/5_Levels_Of_Text_Splitting.ipynb
     """
@@ -84,55 +95,42 @@ class SemanticChunker(ChunkerBase):
     def __init__(
         self,
         cfg: SemanticChunkerConfig,
+        *,
         encoder: EncoderProtocol,
-        tokenizer: TokenizerProtocol,
+        base_chunker: ChunkerProtocol,
+        tokenizer: Optional[TokenizerProtocol] = None,
     ) -> None:
-        # set the basic configurations
-        self.max_tokens = cfg.max_tokens if cfg.max_tokens is not None else float("inf")
+        strategies = (
+            cfg.threshold,
+            cfg.threshold_percentile,
+            cfg.target_max_tokens,
+        )
+        if sum(strategy is not None for strategy in strategies) != 1:
+            raise ValueError(
+                "Exactly one of threshold, threshold_percentile, or "
+                "target_max_tokens must be provided."
+            )
+        if cfg.target_max_tokens is not None and tokenizer is None:
+            raise ValueError(
+                "tokenizer must be provided when target_max_tokens is set."
+            )
+
         self.threshold = cfg.threshold
-        self.similarity_window = cfg.similarity_window
         self.threshold_percentile = cfg.threshold_percentile
+        self.target_max_tokens = cfg.target_max_tokens
+        self.similarity_window = cfg.similarity_window
         self.similarity_function = cfg.similarity_function
-
-        # load the sentence splitter
-        if cfg.pre_chunk_config.max_tokens is not None:
-            if (
-                cfg.max_tokens is not None
-                and cfg.pre_chunk_config.max_tokens > cfg.max_tokens
-            ):
-                cfg.pre_chunk_config.max_tokens = cfg.max_tokens
-                logger.warning(
-                    f"pre_chunk_config.max_tokens is greater than max_tokens, "
-                    f"setting pre_chunk_config.max_tokens to {cfg.max_tokens}"
-                )
-        else:
-            if cfg.max_tokens is not None:
-                cfg.pre_chunk_config.max_tokens = cfg.max_tokens
-                logger.warning(
-                    f"pre_chunk_config.max_tokens is not set, "
-                    f"setting pre_chunk_config.max_tokens to {cfg.max_tokens}"
-                )
-        assert cfg.pre_chunk_config.overlap == 0, "pre_chunk_config.overlap must be 0"
-        self.prechunker = SentenceChunker(cfg.pre_chunk_config, tokenizer=tokenizer)
-
         self.encoder = encoder
-        return
+        self.base_chunker = base_chunker
+        self.tokenizer = tokenizer
 
-    def chunk(self, text: str, return_str: bool = False) -> list[Chunk]:
-        # prepare length function
-        if self.prechunker.tokenizer.vocab_size > 0:
-            length_fn = lambda x: len(self.prechunker.tokenizer.encode(x))
-        else:
-            length_fn = lambda x: len(self.prechunker.tokenizer.tokenize(x))
-
+    def chunk(self, text: str) -> list[Chunk]:
         # split the text into base chunks
-        base_chunks = self.prechunker.chunk(text)
+        base_chunks = self.base_chunker.chunk(text)
+        if len(base_chunks) <= 1:
+            return base_chunks
+
         sentences = [s.text for s in base_chunks]
-        if len(sentences) == 1:
-            chunks = base_chunks
-            if return_str:
-                return [chunk.text for chunk in chunks]
-            return chunks
 
         # combine the sentences to calculate the embeddings
         combined_sentences = []
@@ -171,35 +169,36 @@ class SemanticChunker(ChunkerBase):
         elif self.threshold_percentile is not None:
             threshold = np.percentile(similarity, self.threshold_percentile)
         else:
-            assert self.max_tokens is not None, (
-                "At least one of max_tokens, threshold, or threshold_percentile should be provided."
-            )
             threshold = None
 
         # group the sentences into chunks based on the threshold
         if threshold is not None:
             chunks = self._group_chunks(base_chunks, similarity, threshold, text)
         else:
-            # try to find the threshold that best fits the max_tokens
-            base_chunk_lens = [length_fn(s) for s in sentences]
+            # Try to find the threshold that best fits the token target.
+            assert self.tokenizer is not None
+            assert self.target_max_tokens is not None
+            base_chunk_lens = [
+                len(self.tokenizer.tokenize(sentence)) for sentence in sentences
+            ]
             thresholds = np.sort(similarity)
             left_pointer = 0
             right_threshold = len(thresholds) - 1
             while True:
                 mid_pointer = (left_pointer + right_threshold) // 2
                 threshold = thresholds[mid_pointer] + 1e-6
-                max_tokens = self._get_max_tokens(
+                largest_chunk_tokens = self._get_largest_chunk_tokens(
                     base_chunk_lens, similarity, threshold
                 )
                 if left_pointer >= right_threshold:
                     break
-                if max_tokens > self.max_tokens:
+                if largest_chunk_tokens > self.target_max_tokens:
                     left_pointer = mid_pointer + 1
                 else:
                     right_threshold = mid_pointer
 
-            # use the last threshold that fits the max_tokens
-            if max_tokens > self.max_tokens:
+            # Use the last threshold that fits the target.
+            if largest_chunk_tokens > self.target_max_tokens:
                 if mid_pointer + 1 < len(thresholds):
                     threshold = thresholds[mid_pointer + 1] + 1e-6
                 else:
@@ -208,11 +207,9 @@ class SemanticChunker(ChunkerBase):
             else:
                 threshold = thresholds[mid_pointer] + 1e-6
             chunks = self._group_chunks(base_chunks, similarity, threshold, text)
-        if return_str:
-            return [chunk.text for chunk in chunks]
         return chunks
 
-    def _get_max_tokens(
+    def _get_largest_chunk_tokens(
         self,
         base_chunk_lens: list[int],
         similarity: np.ndarray,

@@ -45,12 +45,18 @@ from flexrag.processors.chunkers import (
     DenseXChunkerConfig,
     LumberChunker,
     LumberChunkerConfig,
+    NLTKSentenceSplitter,
+    NLTKSentenceSplitterConfig,
     RecursiveChunker,
     RecursiveChunkerConfig,
+    RegexSplitter,
+    RegexSplitterConfig,
     SemanticChunker,
     SemanticChunkerConfig,
     SentenceChunker,
     SentenceChunkerConfig,
+    SpacySentenceSplitter,
+    SpacySentenceSplitterConfig,
     TokenChunker,
     TokenChunkerConfig,
 )
@@ -246,6 +252,24 @@ Resources.register(
     config_class=RecursiveChunkerConfig,
     batching=False,
 )(RecursiveChunker)
+Resources.register(
+    "regex_sentence_splitter",
+    interface="chunker",
+    config_class=RegexSplitterConfig,
+    batching=False,
+)(RegexSplitter)
+Resources.register(
+    "nltk_sentence_splitter",
+    interface="chunker",
+    config_class=NLTKSentenceSplitterConfig,
+    batching=False,
+)(NLTKSentenceSplitter)
+Resources.register(
+    "spacy_sentence_splitter",
+    interface="chunker",
+    config_class=SpacySentenceSplitterConfig,
+    batching=False,
+)(SpacySentenceSplitter)
 Resources.register(
     "sentence_chunker",
     interface="chunker",
