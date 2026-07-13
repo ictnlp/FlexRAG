@@ -50,17 +50,27 @@ def test_resource_manager_load_preloads_refs_before_roots() -> None:
                 ResourceSpec(
                     name="backend",
                     resource_name="fake_collection_backend",
-                    refs={"encoder": "encoder"},
+                    refs={"encoders": {"primary": "encoder"}},
                 ),
             ],
             preload=["backend"],
         ),
         registry=FAKE_RESOURCES,
     )
+    close_order: list[str] = []
+    for name, target in resources._targets.items():
+        close = target.close
+
+        def record_close(name=name, close=close):
+            close_order.append(name)
+            close()
+
+        target.close = record_close
     try:
         assert list(resources._handles) == ["encoder", "backend"]
     finally:
         resources.close()
+    assert close_order == ["backend", "encoder"]
 
 
 @pytest.mark.parametrize(
@@ -78,7 +88,7 @@ def test_resource_manager_load_preloads_refs_before_roots() -> None:
                     ResourceSpec(
                         name="second",
                         resource_name="fake_generator",
-                        refs={"other": "first"},
+                        refs={"others": {"first": "first"}},
                     ),
                 ],
                 preload=["first"],
@@ -170,6 +180,11 @@ resources:
     runtime_config:
       name: direct
       batch_size: 8
+  - name: composite
+    resource_name: fake_generator
+    refs:
+      encoders:
+        primary: encoder
 preload:
   - encoder
 """
@@ -183,3 +198,4 @@ preload:
         name="direct",
         batch_size=8,
     )
+    assert loaded.resources[1].refs == {"encoders": {"primary": "encoder"}}

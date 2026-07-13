@@ -33,22 +33,22 @@ class CollectionBackendHandle(TypedHandle):
         return self._target.getattr("view")
 
     def add_contexts(self, contexts: Iterable[Context]) -> None:
-        """Synchronously add contexts to the backend."""
+        """Synchronously add a materialized context snapshot to the backend."""
         self._target.call("add_contexts", list(contexts))
         return
 
     async def async_add_contexts(self, contexts: Iterable[Context]) -> None:
-        """Asynchronously add contexts to the backend."""
+        """Asynchronously add a materialized context snapshot."""
         await self._target.async_call("async_add_contexts", list(contexts))
         return
 
     def rebuild(self, contexts: Iterable[Context]) -> None:
-        """Synchronously rebuild the backend from contexts."""
+        """Synchronously rebuild from a materialized corpus snapshot."""
         self._target.call("rebuild", list(contexts))
         return
 
     async def async_rebuild(self, contexts: Iterable[Context]) -> None:
-        """Asynchronously rebuild the backend from contexts."""
+        """Asynchronously rebuild from a materialized corpus snapshot."""
         await self._target.async_call("async_rebuild", list(contexts))
         return
 

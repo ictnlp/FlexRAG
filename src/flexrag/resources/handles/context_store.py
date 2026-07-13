@@ -40,14 +40,21 @@ class ContextStoreHandle(TypedHandle):
         """Asynchronously read contexts by id in request order."""
         return await self._target.async_call("async_get_many", list(context_ids))
 
+    def get_all(self) -> list[Context]:
+        """Synchronously return a materialized context snapshot."""
+        return self._target.call("get_all")
+
+    async def async_get_all(self) -> list[Context]:
+        """Asynchronously return a materialized context snapshot."""
+        return await self._target.async_call("async_get_all")
+
     def iter_contexts(self) -> Iterable[Context]:
-        """Synchronously iterate all stored contexts."""
-        return self._target.call("iter_contexts")
+        """Synchronously iterate over a target-materialized snapshot."""
+        return iter(self.get_all())
 
     async def async_iter_contexts(self) -> AsyncIterator[Context]:
-        """Asynchronously iterate all stored contexts."""
-        contexts = await self._target.async_call("async_iter_contexts")
-        async for context in contexts:
+        """Asynchronously iterate over a target-materialized snapshot."""
+        for context in await self.async_get_all():
             yield context
         return
 

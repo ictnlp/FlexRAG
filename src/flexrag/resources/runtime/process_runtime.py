@@ -31,7 +31,10 @@ class ProcessWorkerClient:
         self,
         raw_cls: type[Any],
         config: Any,
-        refs: dict[str, ResourceRefDescriptor],
+        refs: dict[
+            str,
+            ResourceRefDescriptor | dict[str, ResourceRefDescriptor],
+        ],
         manager: ResourceManager,
         env_updates: dict[str, str] | None = None,
     ) -> None:
@@ -235,7 +238,10 @@ class ProcessWorkerPool:
         self,
         raw_cls: type[Any],
         config: Any,
-        refs: dict[str, ResourceRefDescriptor],
+        refs: dict[
+            str,
+            ResourceRefDescriptor | dict[str, ResourceRefDescriptor],
+        ],
         manager: ResourceManager,
         worker_count: int,
         *,
@@ -257,9 +263,7 @@ class ProcessWorkerPool:
             env_updates_by_worker = (None,) * worker_count
         else:
             if len(worker_env_updates) != worker_count:
-                raise ValueError(
-                    "worker_env_updates length must match worker_count."
-                )
+                raise ValueError("worker_env_updates length must match worker_count.")
             env_updates_by_worker = worker_env_updates
         self._workers = [
             ProcessWorkerClient(

@@ -111,10 +111,10 @@ def make_retriever(
     addable = RecordingBackend(addable=True)
     rebuild = RecordingBackend(addable=False)
     return (
-        FlexRetriever.from_backends(
-            {"addable": addable, "rebuild": rebuild},
+        FlexRetriever(
+            FlexRetrieverConfig(batch_size=2),
+            backends={"addable": addable, "rebuild": rebuild},
             context_store=store,
-            config=FlexRetrieverConfig(batch_size=2),
         ),
         addable,
         rebuild,
@@ -183,7 +183,10 @@ def test_rebuild_recovers_after_add_failure(tmp_path: Path) -> None:
 
 def test_count_uses_backend_counts_without_context_store() -> None:
     retriever = FlexRetriever.from_backends(
-        {"left": RecordingBackend(addable=True), "right": RecordingBackend(addable=True)}
+        {
+            "left": RecordingBackend(addable=True),
+            "right": RecordingBackend(addable=True),
+        }
     )
     retriever.backends["left"].context_ids = ["a", "b"]
     retriever.backends["right"].context_ids = ["c", "d"]
@@ -201,7 +204,9 @@ def test_non_addable_backend_without_store_fails_before_consuming_input() -> Non
         consumed = True
         yield from contexts(1)
 
-    retriever = FlexRetriever.from_backends({"rebuild": RecordingBackend(addable=False)})
+    retriever = FlexRetriever.from_backends(
+        {"rebuild": RecordingBackend(addable=False)}
+    )
     with pytest.raises(ValueError):
         retriever.add_contexts(generator())
     assert consumed is False

@@ -70,6 +70,7 @@ from flexrag.processors.refiners import (
     RecompExtractiveSummarizer,
     RecompExtractiveSummarizerConfig,
 )
+from flexrag.retrievers import FlexRetriever, FlexRetrieverConfig
 from flexrag.retrievers.backends import (
     BM25SBackend,
     BM25SBackendConfig,
@@ -157,6 +158,7 @@ Resources.register(
     "hf_ranker",
     interface="ranker",
     config_class=HFRankerConfig,
+    default_runtime="async",
     batching=False,
 )(HFRanker)
 Resources.register(
@@ -304,3 +306,10 @@ Resources.register(
     config_class=SQLiteContextStoreConfig,
     batching=False,
 )(SQLiteContextStore)
+Resources.register(
+    "flex_retriever",
+    interface="retriever",
+    config_class=FlexRetrieverConfig,
+    default_runtime="direct",
+    batching=False,
+)(FlexRetriever)

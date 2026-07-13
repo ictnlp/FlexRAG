@@ -45,7 +45,7 @@ def manager(
                 name="backend",
                 resource_name="fake_collection_backend",
                 resource_config=backend_config or {},
-                refs={"encoder": "encoder"},
+                refs={"encoders": {"primary": "encoder"}},
             ),
         ],
         registry=FAKE_RESOURCES,
@@ -78,6 +78,7 @@ def test_process_target_parent_proxy_and_dependency_errors() -> None:
     try:
         backend = resources.get("backend")
 
+        assert list(resources._handles) == ["encoder", "backend"]
         assert runtime_pid(backend) != os.getpid()
         backend.rebuild(contexts())
         assert backend.count() == 3
@@ -227,7 +228,12 @@ async def test_batch_scheduler_concurrency_progress_and_empty_input(mocker) -> N
 
     class ProgressRecorder:
         def __init__(self, *, total, interval, display):
-            self.record = {"total": total, "interval": interval, "display": display, "updates": []}
+            self.record = {
+                "total": total,
+                "interval": interval,
+                "display": display,
+                "updates": [],
+            }
             records.append(self.record)
 
         def __enter__(self):
@@ -247,7 +253,7 @@ async def test_batch_scheduler_concurrency_progress_and_empty_input(mocker) -> N
         [
             ResourceSpec(
                 name="encoder",
-                resource_name="fake_encoder",
+                resource_name="fake_async_encoder",
                 resource_config={"delay_seconds": 0.2},
                 runtime_config=RuntimeConfig(
                     batch_size=1,
@@ -290,6 +296,11 @@ async def test_batch_scheduler_concurrency_progress_and_empty_input(mocker) -> N
             name="encoder",
             resource_name="fake_encoder",
             runtime_config=RuntimeConfig(batch_size=0),
+        ),
+        ResourceSpec(
+            name="encoder",
+            resource_name="fake_encoder",
+            runtime_config=RuntimeConfig(max_concurrency=2),
         ),
         ResourceSpec(
             name="encoder",

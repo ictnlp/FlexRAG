@@ -65,6 +65,20 @@ class ContextStoreProtocol(Protocol):
         """
         ...
 
+    def get_all(self) -> list[Context]:
+        """Return a materialized snapshot of all stored contexts.
+
+        :returns: Complete stored contexts in iteration order.
+        """
+        ...
+
+    async def async_get_all(self) -> list[Context]:
+        """Asynchronously return a materialized context snapshot.
+
+        :returns: Complete stored contexts in iteration order.
+        """
+        ...
+
     def iter_contexts(self) -> Iterable[Context]:
         """Iterate over all stored contexts.
 
@@ -173,6 +187,20 @@ class SyncContextStoreBase(ABC):
         :raises KeyError: If any id is missing.
         """
         return await asyncio.to_thread(self.get_many, context_ids)
+
+    def get_all(self) -> list[Context]:
+        """Return a materialized snapshot through ``iter_contexts``.
+
+        :returns: Complete stored contexts in iteration order.
+        """
+        return list(self.iter_contexts())
+
+    async def async_get_all(self) -> list[Context]:
+        """Asynchronously materialize all contexts in a worker thread.
+
+        :returns: Complete stored contexts in iteration order.
+        """
+        return await asyncio.to_thread(self.get_all)
 
     @abstractmethod
     def iter_contexts(self) -> Iterable[Context]:

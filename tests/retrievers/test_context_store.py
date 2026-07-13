@@ -50,6 +50,11 @@ def test_context_store_sync_contract(
         "doc-b",
         "doc-c",
     ]
+    assert [ctx.context_id for ctx in store.get_all()] == [
+        "doc-a",
+        "doc-b",
+        "doc-c",
+    ]
     with pytest.raises(KeyError):
         store.get("missing")
     store.close()
@@ -85,6 +90,11 @@ async def test_context_store_async_bridge(
         ctx.context_id for ctx in await store.async_get_many(["doc-c", "doc-a"])
     ] == ["doc-c", "doc-a"]
     assert [ctx.context_id async for ctx in store.async_iter_contexts()] == [
+        "doc-a",
+        "doc-b",
+        "doc-c",
+    ]
+    assert [ctx.context_id for ctx in await store.async_get_all()] == [
         "doc-a",
         "doc-b",
         "doc-c",

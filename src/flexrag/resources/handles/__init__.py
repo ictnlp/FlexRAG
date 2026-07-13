@@ -8,6 +8,7 @@ from .encoder import EncoderHandle
 from .generator import GeneratorHandle
 from .ranker import RankerHandle
 from .refiner import RefinerHandle
+from .retriever import RetrieverHandle
 from .scorer import ScorerHandle
 from .tokenizer import TokenizerHandle
 
@@ -17,6 +18,7 @@ HANDLE_TYPES: dict[str, type[TypedHandle]] = {
     "scorer": ScorerHandle,
     "ranker": RankerHandle,
     "refiner": RefinerHandle,
+    "retriever": RetrieverHandle,
     "chunker": ChunkerHandle,
     "context_store": ContextStoreHandle,
     "collection_backend": CollectionBackendHandle,
@@ -32,6 +34,7 @@ __all__ = [
     "HANDLE_TYPES",
     "RankerHandle",
     "RefinerHandle",
+    "RetrieverHandle",
     "ScorerHandle",
     "TokenizerHandle",
     "TypedHandle",

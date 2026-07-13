@@ -9,6 +9,7 @@ from flexrag.models.generators import GenerationConfig
 from flexrag.resources import (
     ResourceManager,
     Resources,
+    ResourcesConfig,
     ResourceSpec,
     _ResourceRegister,
 )
@@ -54,7 +55,7 @@ def test_formal_resource_entries_are_registered() -> None:
         "hf_cross_encoder_scorer": ("scorer", "process"),
         "hf_logits_scorer": ("scorer", "process"),
         "hf_colbert_scorer": ("scorer", "process"),
-        "hf_ranker": ("ranker", "direct"),
+        "hf_ranker": ("ranker", "async"),
         "rank_gpt_ranker": ("ranker", "direct"),
         "litellm_ranker": ("ranker", "async"),
         "lmdb_context_store": ("context_store", "direct"),
@@ -63,6 +64,7 @@ def test_formal_resource_entries_are_registered() -> None:
         "faiss_backend": ("collection_backend", "process"),
         "elastic_backend": ("collection_backend", "async"),
         "lance_backend": ("collection_backend", "async"),
+        "flex_retriever": ("retriever", "direct"),
         "space_tokenizer": ("tokenizer", "direct"),
         "moses_tokenizer": ("tokenizer", "direct"),
         "nltk_tokenizer": ("tokenizer", "direct"),
@@ -147,6 +149,19 @@ async def test_sqlite_context_store_persists_and_bridges_async(tmp_path: Path) -
             "doc-b",
             "doc-c",
         ]
+        snapshot = store.iter_contexts()
+        store.clear()
+        assert [ctx.context_id for ctx in snapshot] == [
+            "doc-a",
+            "doc-b",
+            "doc-c",
+        ]
+        store.set_many(contexts())
+        assert [ctx.context_id for ctx in await store.async_get_all()] == [
+            "doc-a",
+            "doc-b",
+            "doc-c",
+        ]
     finally:
         await resources.async_close()
 
@@ -208,6 +223,46 @@ def test_bm25s_and_faiss_backend_smoke(tmp_path: Path, mock_litellm_client) -> N
         resources.close()
 
 
+def test_flex_retriever_resource_smoke(tmp_path: Path) -> None:
+    resources = ResourceManager.load(
+        ResourcesConfig(
+            resources=[
+                ResourceSpec(
+                    name="store",
+                    resource_name="sqlite_context_store",
+                    resource_config={"path": tmp_path / "store.db"},
+                ),
+                ResourceSpec(
+                    name="bm25",
+                    resource_name="bm25s_backend",
+                    resource_config={
+                        "path": tmp_path / "bm25",
+                        "view": view_config(),
+                    },
+                ),
+                ResourceSpec(
+                    name="retriever",
+                    resource_name="flex_retriever",
+                    refs={
+                        "backends": {"sparse": "bm25"},
+                        "context_store": "store",
+                    },
+                ),
+            ],
+            preload=["retriever"],
+        )
+    )
+    try:
+        assert list(resources._handles) == ["bm25", "store", "retriever"]
+        retriever = resources.get("retriever")
+        retriever.add_contexts(iter(contexts()))
+        assert retriever.count() == 3
+        assert retriever.list_backends() == ["sparse"]
+        assert retriever.search("alpha", top_k=1)[0][0].context_id == "doc-a"
+    finally:
+        resources.close()
+
+
 def test_ranker_tokenizer_chunker_and_refiner_smoke() -> None:
     registry = merged_registry()
     resources = ResourceManager(
@@ -238,16 +293,25 @@ def test_ranker_tokenizer_chunker_and_refiner_smoke() -> None:
         registry=registry,
     )
     try:
-        assert resources.get("ranker").rank("query", ["first", "second"]).candidates == [
+        assert resources.get("ranker").rank(
+            "query", ["first", "second"]
+        ).candidates == [
             "second",
             "first",
         ]
         assert resources.get("tokenizer").tokenize("alpha beta") == ["alpha", "beta"]
-        assert resources.get("chunker").chunk("abcdef", return_str=True) == ["abc", "def"]
+        assert resources.get("chunker").chunk("abcdef", return_str=True) == [
+            "abc",
+            "def",
+        ]
         refined = resources.get("refiner").refine(
             [
-                RetrievedContext(context_id="low", query="q", data={"text": "a"}, score=1.0),
-                RetrievedContext(context_id="high", query="q", data={"text": "b"}, score=2.0),
+                RetrievedContext(
+                    context_id="low", query="q", data={"text": "a"}, score=1.0
+                ),
+                RetrievedContext(
+                    context_id="high", query="q", data={"text": "b"}, score=2.0
+                ),
             ]
         )
         assert [context.context_id for context in refined] == ["high", "low"]

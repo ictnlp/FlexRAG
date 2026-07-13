@@ -32,7 +32,9 @@ def _texts(inputs: Any) -> list[str]:
     if isinstance(inputs, str):
         return [inputs]
     values = inputs if isinstance(inputs, list) else [inputs]
-    return [item.get("text", item) if isinstance(item, dict) else item for item in values]
+    return [
+        item.get("text", item) if isinstance(item, dict) else item for item in values
+    ]
 
 
 class FakeEncoder:
@@ -118,9 +120,14 @@ class FakeGenerator:
     def __init__(self, config: Any) -> None:
         self.chat_response = _get(config, "chat_response")
 
-    def chat(self, messages: list[ChatMessages], generation_config=None, *, batch_size=None):
+    def chat(
+        self, messages: list[ChatMessages], generation_config=None, *, batch_size=None
+    ):
         del generation_config, batch_size
-        return [[ChatTurn(role="assistant", content=self._content(message))] for message in messages]
+        return [
+            [ChatTurn(role="assistant", content=self._content(message))]
+            for message in messages
+        ]
 
     def _content(self, message: ChatMessages) -> str:
         if self.chat_response is not None:
@@ -128,16 +135,17 @@ class FakeGenerator:
         last_turn = message.history[-1] if message.history else None
         return "" if last_turn is None else f"chat:{last_turn.text_content}"
 
+
 class FakeCollectionBackend:
-    def __init__(self, config: Any, *, encoder: EncoderHandle) -> None:
-        self.encoder = encoder
+    def __init__(self, config: Any, *, encoders: dict[str, EncoderHandle]) -> None:
+        self.encoder = encoders["primary"]
         self.pid = os.getpid()
         self.rows: list[tuple[Context, np.ndarray]] = []
         if _get(config, "startup", False):
             self.startup = {
                 "pid": self.pid,
-                "embedding_size": encoder.embedding_size,
-                "vector": encoder.encode("startup")[0].tolist(),
+                "embedding_size": self.encoder.embedding_size,
+                "vector": self.encoder.encode("startup")[0].tolist(),
             }
 
     def rebuild(self, contexts: list[Context]) -> None:
@@ -147,7 +155,9 @@ class FakeCollectionBackend:
     def search_hits(self, queries: list[str], top_k: int, *, search_options=None):
         del search_options
         hits = [
-            Hit(context_id=ctx.context_id, score=float(idx), backend="fake", view="text")
+            Hit(
+                context_id=ctx.context_id, score=float(idx), backend="fake", view="text"
+            )
             for idx, (ctx, _) in enumerate(self.rows[:top_k])
         ]
         return [hits for _ in queries]

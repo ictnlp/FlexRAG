@@ -101,7 +101,8 @@ class ResourceManager:
                 raise ValueError(f"Resource preload refs contain a cycle: {cycle}")
             spec = manager._get_spec(resource_name)
             next_visiting = (*visiting, resource_name)
-            for ref_name in manager._validated_refs(spec).values():
+            refs = manager._validated_refs(spec)
+            for ref_name in manager._iter_ref_names(refs):
                 preload(ref_name, next_visiting)
             manager.get(resource_name)
             loaded.add(resource_name)
@@ -148,7 +149,6 @@ class ResourceManager:
                 config,
                 refs=self._resolve_direct_refs(spec),
                 batch_size=runtime_settings.batch_size,
-                max_concurrency=runtime_settings.max_concurrency,
                 rpm=runtime_settings.rpm,
             )
         elif runtime == "process":
@@ -255,12 +255,17 @@ class ResourceManager:
             "retry_times": config.retry_times,
             "timeout": config.timeout,
         }
+        direct_fields = {
+            **process_fields,
+            **async_fields,
+            "max_concurrency": config.max_concurrency,
+        }
         if runtime == "process":
             unsupported = self._configured_fields(async_fields)
         elif runtime == "async":
             unsupported = self._configured_fields(process_fields)
         elif runtime == "direct":
-            unsupported = self._configured_fields({**process_fields, **async_fields})
+            unsupported = self._configured_fields(direct_fields)
         else:
             raise ValueError(f"Unsupported runtime: {runtime}")
         if unsupported:
@@ -280,14 +285,9 @@ class ResourceManager:
             )
         rpm = self._non_negative_float_value(config.rpm, "rpm", 0.0)
         if runtime == "direct":
-            max_concurrency = self._positive_int_value(
-                config.max_concurrency,
-                "max_concurrency",
-                1,
-            )
             return RuntimeSettings(
                 batch_size=batch_size,
-                max_concurrency=max_concurrency,
+                max_concurrency=1,
                 rpm=rpm,
             )
         if runtime == "async":
@@ -404,45 +404,95 @@ class ResourceManager:
             raise ValueError(f"{name} must be a non-negative integer.")
         return value
 
-    def _resolve_direct_refs(self, spec: ResourceSpec) -> dict[str, TypedHandle]:
-        return {
-            param_name: self.get(resource_name)
-            for param_name, resource_name in self._validated_refs(spec).items()
-        }
+    def _resolve_direct_refs(
+        self,
+        spec: ResourceSpec,
+    ) -> dict[str, TypedHandle | dict[str, TypedHandle]]:
+        resolved: dict[str, TypedHandle | dict[str, TypedHandle]] = {}
+        for param_name, resource_ref in self._validated_refs(spec).items():
+            if isinstance(resource_ref, str):
+                resolved[param_name] = self.get(resource_ref)
+            else:
+                resolved[param_name] = {
+                    ref_name: self.get(resource_name)
+                    for ref_name, resource_name in resource_ref.items()
+                }
+        return resolved
 
     def _resolve_process_refs(
         self,
         spec: ResourceSpec,
-    ) -> dict[str, ResourceRefDescriptor]:
-        descriptors = {}
-        for param_name, resource_name in self._validated_refs(spec).items():
-            ref_spec = self._get_spec(resource_name)
-            entry = self._resolve_entry(ref_spec)
-            runtime = ref_spec.runtime_config.name or entry.default_runtime
-            runtime_settings = self._runtime_settings(
-                ref_spec.runtime_config,
-                entry,
-                runtime,
-            )
-            descriptors[param_name] = ResourceRefDescriptor(
-                name=resource_name,
-                interface=entry.interface,
-                batch_size=runtime_settings.batch_size,
-                batching=entry.batching,
-            )
+    ) -> dict[
+        str,
+        ResourceRefDescriptor | dict[str, ResourceRefDescriptor],
+    ]:
+        descriptors: dict[
+            str,
+            ResourceRefDescriptor | dict[str, ResourceRefDescriptor],
+        ] = {}
+        for param_name, resource_ref in self._validated_refs(spec).items():
+            if isinstance(resource_ref, str):
+                descriptors[param_name] = self._resource_ref_descriptor(resource_ref)
+            else:
+                descriptors[param_name] = {
+                    ref_name: self._resource_ref_descriptor(resource_name)
+                    for ref_name, resource_name in resource_ref.items()
+                }
         return descriptors
 
+    def _resource_ref_descriptor(self, resource_name: str) -> ResourceRefDescriptor:
+        self.get(resource_name)
+        ref_spec = self._get_spec(resource_name)
+        entry = self._resolve_entry(ref_spec)
+        runtime = ref_spec.runtime_config.name or entry.default_runtime
+        runtime_settings = self._runtime_settings(
+            ref_spec.runtime_config,
+            entry,
+            runtime,
+        )
+        return ResourceRefDescriptor(
+            name=resource_name,
+            interface=entry.interface,
+            batch_size=runtime_settings.batch_size,
+            batching=entry.batching,
+        )
+
     @staticmethod
-    def _validated_refs(spec: ResourceSpec) -> dict[str, str]:
-        refs: dict[str, str] = {}
-        for param_name, resource_name in spec.refs.items():
-            if not isinstance(resource_name, str):
+    def _validated_refs(
+        spec: ResourceSpec,
+    ) -> dict[str, str | dict[str, str]]:
+        refs: dict[str, str | dict[str, str]] = {}
+        for param_name, resource_ref in spec.refs.items():
+            if isinstance(resource_ref, str):
+                refs[param_name] = resource_ref
+                continue
+            if not isinstance(resource_ref, dict):
                 raise TypeError(
                     f"Resource ref {param_name!r} for {spec.name!r} must be a "
-                    "resource name string."
+                    "resource name string or a mapping of resource names."
                 )
-            refs[param_name] = resource_name
+            mapping: dict[str, str] = {}
+            for ref_name, resource_name in resource_ref.items():
+                if not isinstance(ref_name, str) or not isinstance(resource_name, str):
+                    raise TypeError(
+                        f"Mapped resource ref {param_name!r} for {spec.name!r} "
+                        "must contain string names and resource name strings."
+                    )
+                mapping[ref_name] = resource_name
+            refs[param_name] = mapping
         return refs
+
+    @staticmethod
+    def _iter_ref_names(
+        refs: dict[str, str | dict[str, str]],
+    ) -> list[str]:
+        names = []
+        for resource_ref in refs.values():
+            if isinstance(resource_ref, str):
+                names.append(resource_ref)
+            else:
+                names.extend(resource_ref.values())
+        return names
 
     def close(self) -> None:
         """Synchronously close loaded targets and clear manager caches.

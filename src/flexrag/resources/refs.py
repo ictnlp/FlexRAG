@@ -37,7 +37,8 @@ class RuntimeConfig:
 
     :param name: Runtime target name. ``None`` uses the resource entry default.
     :param batch_size: Optional public-call batch size override.
-    :param max_concurrency: Optional primitive-call concurrency limit.
+    :param max_concurrency: Optional async/process primitive-call concurrency
+        limit. Direct resources are always serialized.
     :param rpm: Optional attempt-level requests-per-minute limit.
     :param worker_count: Optional process worker count.
     :param device_groups: Optional process worker accelerator placement.
@@ -73,14 +74,15 @@ class ResourceSpec:
     :param resource_config: Raw resource config object or a dict materialized
         through the entry config class.
     :param runtime_config: Runtime selection and execution overrides.
-    :param refs: Mapping from constructor parameter name to resource name.
+    :param refs: Mapping from constructor parameter name to one resource name or
+        a named, one-level mapping of resource names.
     """
 
     name: str
     resource_name: str | None = None
     resource_config: Any = field(default_factory=dict)
     runtime_config: RuntimeConfig = field(default_factory=RuntimeConfig)
-    refs: dict[str, str] = field(default_factory=dict)
+    refs: dict[str, str | dict[str, str]] = field(default_factory=dict)
 
 
 @configure

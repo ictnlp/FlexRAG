@@ -13,16 +13,29 @@ from .parent_proxy import ParentProxyTarget
 
 def materialize_worker_refs(
     conn: Any,
-    refs: dict[str, ResourceRefDescriptor],
-) -> dict[str, TypedHandle]:
+    refs: dict[
+        str,
+        ResourceRefDescriptor | dict[str, ResourceRefDescriptor],
+    ],
+) -> dict[str, TypedHandle | dict[str, TypedHandle]]:
     """Build worker-side dependency handles around parent proxy targets."""
-    materialized = {}
-    for param_name, descriptor in refs.items():
+    materialized: dict[str, TypedHandle | dict[str, TypedHandle]] = {}
+
+    def materialize(descriptor: ResourceRefDescriptor) -> TypedHandle:
         handle_cls = HANDLE_TYPES[descriptor.interface]
-        materialized[param_name] = handle_cls(
+        return handle_cls(
             ParentProxyTarget(descriptor, conn),
             batching=descriptor.batching,
         )
+
+    for param_name, resource_ref in refs.items():
+        if isinstance(resource_ref, ResourceRefDescriptor):
+            materialized[param_name] = materialize(resource_ref)
+        else:
+            materialized[param_name] = {
+                ref_name: materialize(descriptor)
+                for ref_name, descriptor in resource_ref.items()
+            }
     return materialized
 
 
@@ -30,7 +43,10 @@ def worker_main(
     conn: Any,
     raw_cls_path: str,
     config: Any,
-    refs: dict[str, ResourceRefDescriptor],
+    refs: dict[
+        str,
+        ResourceRefDescriptor | dict[str, ResourceRefDescriptor],
+    ],
 ) -> None:
     """Run one process worker that owns a single raw resource instance."""
     try:

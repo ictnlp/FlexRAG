@@ -45,20 +45,20 @@ class FlexRetriever:
 
     def __init__(
         self,
+        config: FlexRetrieverConfig,
         *,
         backends: Mapping[str, CollectionBackend],
-        config: FlexRetrieverConfig | None = None,
         context_store: ContextStoreProtocol | None = None,
     ) -> None:
         """Create a retriever from preconstructed backends.
 
+        :param config: Retriever orchestration configuration.
         :param backends: Mapping from stable backend name to backend instance.
-        :param config: Optional orchestration configuration.
         :param context_store: Optional complete context store.
         :raises ValueError: If a backend requires a context store and none is
             provided, or if backend names are invalid.
         """
-        self.config = config or FlexRetrieverConfig()
+        self.config = config
         self.backends = self._normalize_backends(backends)
         self.context_store = context_store
         if self.context_store is None and any(
@@ -88,8 +88,8 @@ class FlexRetriever:
         :returns: Initialized retriever.
         """
         return cls(
+            config or FlexRetrieverConfig(),
             backends=backends,
-            config=config,
             context_store=context_store,
         )
 
@@ -199,13 +199,11 @@ class FlexRetriever:
         self,
         name: str,
         *,
-        close: bool = False,
         clear: bool = False,
     ) -> CollectionBackend:
         """Detach a backend from the retriever.
 
         :param name: Backend name to detach.
-        :param close: Whether to close the backend after detaching it.
         :param clear: Whether to clear backend artifacts after detaching it.
         :returns: Detached backend instance.
         :raises KeyError: If the backend name is unknown.
@@ -213,21 +211,17 @@ class FlexRetriever:
         backend = self.backends.pop(name)
         if clear:
             backend.clear()
-        if close:
-            backend.close()
         return backend
 
     async def async_remove_backend(
         self,
         name: str,
         *,
-        close: bool = False,
         clear: bool = False,
     ) -> CollectionBackend:
         """Asynchronously detach a backend from the retriever.
 
         :param name: Backend name to detach.
-        :param close: Whether to close the backend after detaching it.
         :param clear: Whether to clear backend artifacts after detaching it.
         :returns: Detached backend instance.
         :raises KeyError: If the backend name is unknown.
@@ -235,8 +229,6 @@ class FlexRetriever:
         backend = self.backends.pop(name)
         if clear:
             await backend.async_clear()
-        if close:
-            await backend.async_close()
         return backend
 
     def rebuild(self, backend_name: str | None = None) -> None:
@@ -591,7 +583,9 @@ class FlexRetriever:
 
     def _split_backends_by_addability(
         self,
-    ) -> tuple[list[tuple[str, CollectionBackend]], list[tuple[str, CollectionBackend]]]:
+    ) -> tuple[
+        list[tuple[str, CollectionBackend]], list[tuple[str, CollectionBackend]]
+    ]:
         addable_backends = []
         rebuild_backends = []
         for name, backend in self.backends.items():
@@ -622,7 +616,7 @@ class FlexRetriever:
             raise ValueError(
                 f"Backend {name!r} cannot be rebuilt without context_store."
             )
-        await backend.async_rebuild(self.context_store.iter_contexts())
+        await backend.async_rebuild(await self.context_store.async_get_all())
         return
 
     def _search_backend(

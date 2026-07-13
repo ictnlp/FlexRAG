@@ -26,7 +26,6 @@ class DirectTarget(RuntimeTargetBase):
         refs: dict[str, Any] | None = None,
         *,
         batch_size: int = 1,
-        max_concurrency: int = 1,
         rpm: float = 0,
     ) -> None:
         """Create a direct target around one in-process raw resource.
@@ -35,14 +34,13 @@ class DirectTarget(RuntimeTargetBase):
         :param config: Config object passed as the first constructor argument.
         :param refs: Constructor refs materialized as typed handles.
         :param batch_size: Public-call batch size exposed to handles.
-        :param max_concurrency: Maximum primitive calls to run concurrently.
         :param rpm: Attempt-level request-per-minute limit. ``0`` disables
             rate limiting.
         """
         self._raw = raw_cls(config, **(refs or {}))
         super().__init__(
             batch_size=batch_size,
-            max_concurrency=max_concurrency,
+            max_concurrency=1,
             call_policy=NoRetryPolicy(RateLimiter(rpm=rpm)),
         )
         return

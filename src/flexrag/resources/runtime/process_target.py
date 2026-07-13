@@ -27,7 +27,10 @@ class ProcessTarget(RuntimeTargetBase):
         self,
         raw_cls: type[Any],
         config: Any,
-        refs: dict[str, ResourceRefDescriptor],
+        refs: dict[
+            str,
+            ResourceRefDescriptor | dict[str, ResourceRefDescriptor],
+        ],
         manager: ResourceManager,
         *,
         worker_count: int = 1,
