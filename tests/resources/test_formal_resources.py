@@ -266,7 +266,8 @@ def test_flex_retriever_resource_smoke(tmp_path: Path) -> None:
         resources.close()
 
 
-def test_ranker_tokenizer_chunker_and_refiner_smoke() -> None:
+@pytest.mark.asyncio
+async def test_ranker_tokenizer_chunker_and_refiner_smoke() -> None:
     registry = merged_registry()
     resources = ResourceManager(
         [
@@ -308,16 +309,18 @@ def test_ranker_tokenizer_chunker_and_refiner_smoke() -> None:
             "First.",
             "Second.",
         ]
-        refined = resources.get("refiner").refine(
-            [
-                RetrievedContext(
-                    context_id="low", query="q", data={"text": "a"}, score=1.0
-                ),
-                RetrievedContext(
-                    context_id="high", query="q", data={"text": "b"}, score=2.0
-                ),
-            ]
-        )
+        contexts_to_refine = [
+            RetrievedContext(
+                context_id="low", query="q", data={"text": "a"}, score=1.0
+            ),
+            RetrievedContext(
+                context_id="high", query="q", data={"text": "b"}, score=2.0
+            ),
+        ]
+        refiner = resources.get("refiner")
+        refined = refiner.refine(contexts_to_refine)
+        async_refined = await refiner.async_refine(contexts_to_refine)
         assert [context.context_id for context in refined] == ["high", "low"]
+        assert async_refined == refined
     finally:
         resources.close()

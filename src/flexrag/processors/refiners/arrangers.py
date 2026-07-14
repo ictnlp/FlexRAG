@@ -4,7 +4,7 @@ from typing import Annotated
 from flexrag.common import Choices, configure, trace
 from flexrag.common.dataclasses import RetrievedContext
 
-from .refiner_base import REFINERS, RefinerBase
+from .refiner_base import REFINERS
 
 
 @configure
@@ -22,7 +22,7 @@ class ContextArrangerConfig:
 
 
 @REFINERS("context_arranger", config_class=ContextArrangerConfig)
-class ContextArranger(RefinerBase):
+class ContextArranger:
     """The ``ContextArranger`` arranges the contexts based on the given order.
 
     As the `lost-in-the-middle` problem encountered by the LLMs, the order of the contexts may affect the performance.
@@ -35,6 +35,27 @@ class ContextArranger(RefinerBase):
 
     @trace("repack")
     def refine(self, contexts: list[RetrievedContext]) -> list[RetrievedContext]:
+        """Arrange retrieved contexts in the configured order.
+
+        :param contexts: Retrieved contexts to arrange.
+        :return: Arranged contexts.
+        """
+        return self._arrange(contexts)
+
+    @trace("repack")
+    async def async_refine(
+        self, contexts: list[RetrievedContext]
+    ) -> list[RetrievedContext]:
+        """Arrange retrieved contexts through the asynchronous interface.
+
+        This CPU-only operation runs synchronously without thread offloading.
+
+        :param contexts: Retrieved contexts to arrange.
+        :return: Arranged contexts.
+        """
+        return self._arrange(contexts)
+
+    def _arrange(self, contexts: list[RetrievedContext]) -> list[RetrievedContext]:
         match self.order:
             case "ascending":
                 contexts = sorted(contexts, key=lambda x: x.score)

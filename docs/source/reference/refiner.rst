@@ -5,10 +5,10 @@ It can be used to rearrange the contexts, summarize them, or extract the most re
 
 The Context Refiner Interface
 -----------------------------
-The `RefinerBase` is the base class for all refiners.
-It provides the basic interface for refining the contexts retrieved by the retriever.
+The `RefinerProtocol` defines the synchronous and asynchronous interfaces for
+refining contexts retrieved by the retriever.
 
-.. autoclass:: flexrag.context_refine.RefinerBase
+.. autoclass:: flexrag.processors.refiners.RefinerProtocol
     :members:
     :inherited-members:
 
@@ -16,26 +16,26 @@ Refiners
 --------
 FlexRAG provides several refiners that can be used to refine the contexts retrieved by the retriever.
 
-.. autoclass:: flexrag.context_refine.ContextArrangerConfig
+.. autoclass:: flexrag.processors.refiners.ContextArrangerConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.context_refine.ContextArranger
+.. autoclass:: flexrag.processors.refiners.ContextArranger
     :members:
     :show-inheritance:
 
-.. autoclass:: flexrag.context_refine.AbstractiveSummarizerConfig
+.. autoclass:: flexrag.processors.refiners.AbstractiveSummarizerConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.context_refine.AbstractiveSummarizer
+.. autoclass:: flexrag.processors.refiners.AbstractiveSummarizer
     :members:
     :show-inheritance:
 
-.. autoclass:: flexrag.context_refine.RecompExtractiveSummarizerConfig
+.. autoclass:: flexrag.processors.refiners.RecompExtractiveSummarizerConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.context_refine.RecompExtractiveSummarizer
+.. autoclass:: flexrag.processors.refiners.RecompExtractiveSummarizer
     :members:
     :show-inheritance:

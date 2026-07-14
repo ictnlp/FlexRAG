@@ -1,7 +1,7 @@
 import re
 from copy import deepcopy
 from string import Template
-from typing import Optional
+from typing import Any, Optional
 
 import numpy as np
 
@@ -10,7 +10,7 @@ from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.models.encoders import EncoderProtocol
 from flexrag.models.generators import GeneratorProtocol
 
-from .refiner_base import REFINERS, RefinerBase
+from .refiner_base import REFINERS
 
 
 @configure
@@ -73,12 +73,10 @@ class AbstractiveSummarizerConfig:
 
 
 @REFINERS("abstractive_summarizer", config_class=AbstractiveSummarizerConfig)
-class AbstractiveSummarizer(RefinerBase):
+class AbstractiveSummarizer:
     """The ``AbstractiveSummarizer`` summarizes the contexts using a generator."""
 
-    def __init__(
-        self, cfg: AbstractiveSummarizerConfig, generator: GeneratorProtocol
-    ):
+    def __init__(self, cfg: AbstractiveSummarizerConfig, generator: GeneratorProtocol):
         self.model = generator
         if cfg.template is not None:
             self.template = Template(cfg.template)
@@ -93,7 +91,47 @@ class AbstractiveSummarizer(RefinerBase):
 
     @trace("refiner.abstractive_summarize")
     def refine(self, contexts: list[RetrievedContext]) -> list[RetrievedContext]:
-        # prepare input texts
+        """Summarize retrieved contexts with the injected generator.
+
+        :param contexts: Retrieved contexts to summarize.
+        :return: Summarized contexts.
+        """
+        args, input_texts = self._prepare_inputs(contexts)
+        if self.chat_prompt is not None:
+            summaries = [
+                result[0] for result in self.model.chat(self._make_prompts(input_texts))
+            ]
+        else:
+            summaries = [result[0] for result in self.model.generate(input_texts)]
+        return self._update_contexts(contexts, args, summaries)
+
+    @trace("refiner.abstractive_summarize")
+    async def async_refine(
+        self, contexts: list[RetrievedContext]
+    ) -> list[RetrievedContext]:
+        """Summarize retrieved contexts asynchronously.
+
+        :param contexts: Retrieved contexts to summarize.
+        :return: Summarized contexts.
+        """
+        args, input_texts = self._prepare_inputs(contexts)
+        if self.chat_prompt is not None:
+            summaries = [
+                result[0]
+                for result in await self.model.async_chat(
+                    self._make_prompts(input_texts)
+                )
+            ]
+        else:
+            summaries = [
+                result[0] for result in await self.model.async_generate(input_texts)
+            ]
+        return self._update_contexts(contexts, args, summaries)
+
+    def _prepare_inputs(
+        self, contexts: list[RetrievedContext]
+    ) -> tuple[list[dict[str, Any]], list[str]]:
+        """Prepare template arguments and generator input texts."""
         if self.concatenate:
             assert all(contexts[0].query == context.query for context in contexts), (
                 "All queries should be the same."
@@ -118,19 +156,25 @@ class AbstractiveSummarizer(RefinerBase):
             input_texts = [self.template.safe_substitute(**arg) for arg in args]
         else:
             input_texts = [arg["content"] for arg in args]
+        return args, input_texts
 
-        # generate summaries
-        if self.chat_prompt is not None:
-            input_prompts = []
-            for text in input_texts:
-                prompt = deepcopy(self.chat_prompt)
-                prompt.append(ChatTurn(role="user", content=text))
-                input_prompts.append(prompt)
-            summaries = [i[0] for i in self.model.chat(input_prompts)]
-        else:
-            summaries = [i[0] for i in self.model.generate(input_texts)]
+    def _make_prompts(self, input_texts: list[str]) -> list[ChatMessages]:
+        """Build independent chat prompts for prepared input texts."""
+        assert self.chat_prompt is not None
+        input_prompts = []
+        for text in input_texts:
+            prompt = deepcopy(self.chat_prompt)
+            prompt.append(ChatTurn(role="user", content=text))
+            input_prompts.append(prompt)
+        return input_prompts
 
-        # update contexts
+    def _update_contexts(
+        self,
+        contexts: list[RetrievedContext],
+        args: list[dict[str, Any]],
+        summaries: list[Any],
+    ) -> list[RetrievedContext]:
+        """Copy contexts and write generated summaries to their data."""
         new_contexts = []
         for context, summary in zip(contexts, summaries):
             context = deepcopy(context)
@@ -172,7 +216,7 @@ class RecompExtractiveSummarizerConfig:
 
 
 @REFINERS("extractive_summarizer", config_class=RecompExtractiveSummarizerConfig)
-class RecompExtractiveSummarizer(RefinerBase):
+class RecompExtractiveSummarizer:
     """The ``ExtractiveSummarizer`` summarizes the contexts using an encoder."""
 
     def __init__(
@@ -188,6 +232,38 @@ class RecompExtractiveSummarizer(RefinerBase):
 
     @trace("refiner.extractive_summarize")
     def refine(self, contexts: list[RetrievedContext]) -> list[RetrievedContext]:
+        """Extract the most relevant sentences from retrieved contexts.
+
+        :param contexts: Retrieved contexts to summarize.
+        :return: Extractively summarized contexts.
+        """
+        contents, queries, sent_lists, flat_sents = self._prepare_inputs(contexts)
+        query_emb = self.model.encode(queries)
+        sents_emb = self.model.encode(flat_sents)
+        return self._update_contexts(
+            contexts, contents, sent_lists, query_emb @ sents_emb.T
+        )
+
+    @trace("refiner.extractive_summarize")
+    async def async_refine(
+        self, contexts: list[RetrievedContext]
+    ) -> list[RetrievedContext]:
+        """Extract the most relevant sentences asynchronously.
+
+        :param contexts: Retrieved contexts to summarize.
+        :return: Extractively summarized contexts.
+        """
+        contents, queries, sent_lists, flat_sents = self._prepare_inputs(contexts)
+        query_emb = await self.model.async_encode(queries)
+        sents_emb = await self.model.async_encode(flat_sents)
+        return self._update_contexts(
+            contexts, contents, sent_lists, query_emb @ sents_emb.T
+        )
+
+    def _prepare_inputs(
+        self, contexts: list[RetrievedContext]
+    ) -> tuple[list[str], list[str | None], list[list[str]], list[str]]:
+        """Prepare context texts, queries, and sentence batches for encoding."""
         if self.concatenate:
             assert all(contexts[0].query == context.query for context in contexts), (
                 "All queries should be the same."
@@ -205,14 +281,17 @@ class RecompExtractiveSummarizer(RefinerBase):
             [i.strip() for i in re.split(r"(?<=[.!?])\s+", t) if len(i.strip()) > 5]
             for t in contents
         ]
-
-        # encode the sentences & query
         flat_sents = sum(sent_lists, [])
-        query_emb = self.model.encode(queries)
-        sents_emb = self.model.encode(flat_sents)
-        all_scores = query_emb @ sents_emb.T
+        return contents, queries, sent_lists, flat_sents
 
-        # select topk sents
+    def _update_contexts(
+        self,
+        contexts: list[RetrievedContext],
+        contents: list[str],
+        sent_lists: list[list[str]],
+        all_scores: np.ndarray,
+    ) -> list[RetrievedContext]:
+        """Copy contexts and write the selected sentences to their data."""
         new_ctxs = []
         for n, (sents, scores) in enumerate(zip(sent_lists, all_scores)):
             scores = scores[
