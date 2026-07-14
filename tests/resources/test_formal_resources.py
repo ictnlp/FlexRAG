@@ -82,8 +82,8 @@ def test_formal_resource_entries_are_registered() -> None:
         "lumber_chunker": ("chunker", "direct"),
         "densex_chunker": ("chunker", "direct"),
         "context_arranger": ("refiner", "direct"),
-        "abstractive_summarizer": ("refiner", "direct"),
-        "extractive_summarizer": ("refiner", "direct"),
+        "abstractive_summarizer": ("refiner", "async"),
+        "extractive_summarizer": ("refiner", "async"),
     }
     for resource_name, (interface, runtime) in expected.items():
         entry = Resources.resolve_name(resource_name)

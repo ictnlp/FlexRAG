@@ -190,12 +190,14 @@ Resources.register(
     "abstractive_summarizer",
     interface="refiner",
     config_class=AbstractiveSummarizerConfig,
+    default_runtime="async",
     batching=False,
 )(AbstractiveSummarizer)
 Resources.register(
     "extractive_summarizer",
     interface="refiner",
     config_class=RecompExtractiveSummarizerConfig,
+    default_runtime="async",
     batching=False,
 )(RecompExtractiveSummarizer)
 Resources.register(
