@@ -58,19 +58,32 @@ class LongMemEvalDataset(MappingDataset[MultiSessionQASample]):
             qid = item["question_id"]
             # parse sessions
             sessions = []
-            for session in item["haystack_sessions"]:
-                sessions.append(ChatMessages.from_list(session, strict_mode=False))
+            for session, session_id, session_date in zip(
+                item["haystack_sessions"],
+                item["haystack_session_ids"],
+                item["haystack_dates"],
+                strict=True,
+            ):
+                sessions.append(
+                    ChatMessages.from_list(
+                        session,
+                        strict_mode=False,
+                        metadata={
+                            "session_id": session_id,
+                            "date": session_date,
+                        },
+                    )
+                )
             # parse metadata
             metadata = {
                 "abstention": qid.endswith("_abs"),
                 "question_type": item["question_type"],
                 "question_date": item["question_date"],
                 "answer_session_ids": item["answer_session_ids"],
-                "haystack_dates": item["haystack_dates"],
-                "haystack_session_ids": item["haystack_session_ids"],
             }
             self._query_data[qid] = MultiSessionQASample(
                 question_id=qid,
+                sessions_id=qid,
                 question=item["question"],
                 answers=[str(item["answer"])],
                 sessions=sessions,

@@ -56,8 +56,9 @@ class AssistantBase(ABC):
     def add_histories(self, histories: list[ChatMessages]) -> None:
         """Add conversation histories to the assistant. This method can be
         overridden by subclasses to maintain conversation state across multiple
-        interactions. This interface is usually used for evaluating the memory
-        ability of the assistant.
+        interactions. Each history may carry session-level identifiers, dates,
+        or provenance in ``ChatMessages.metadata``. This interface is
+        usually used for evaluating the memory ability of the assistant.
 
         :param histories: A list of conversation histories to add.
         :type histories: list[ChatMessages]

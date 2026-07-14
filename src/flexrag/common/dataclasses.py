@@ -449,7 +449,9 @@ class ChatMessages(MutableSequence[ChatTurn]):
     """
     ChatMessages represents the full message history in a single chat session.
     Internally it stores an ordered list of `ChatTurn` objects and enforces a
-    valid alternation of roles (system / user / assistant).
+    valid alternation of roles (system / user / assistant). Session-level
+    attributes such as identifiers, dates, and provenance can be stored in
+    ``metadata`` without including them in model message payloads.
 
     This class implements `MutableSequence[ChatTurn]`, so you can work with it
     much like a regular Python list (indexing, appending, inserting, deleting),
@@ -511,6 +513,7 @@ class ChatMessages(MutableSequence[ChatTurn]):
         list[ChatTurn],
         AfterValidator(_validate_chat_messages),
     ] = field(default_factory=list)
+    metadata: dict[str, Any] = field(default_factory=dict)
 
     def __getitem__(self, index: int) -> ChatTurn:
         """Returns the chat turn at the specified index."""
@@ -543,33 +546,50 @@ class ChatMessages(MutableSequence[ChatTurn]):
         """Convert the chat messages to a list of dictionaries.
 
         :param pure_text: If True, binary content (images, PDFs, etc.) is excluded.
+            Session metadata is never included in the returned model payload.
         :type pure_text: bool
         :return: A list of dictionaries, one per chat turn.
         :rtype: list[dict[str, Any]]
         """
         return [turn.to_dict(pure_text) for turn in self.history]
 
+    def to_dict(self, pure_text: bool = False) -> dict[str, Any]:
+        """Convert the complete chat session to a dictionary.
+
+        :param pure_text: Whether to encode binary message content as text.
+        :return: The history, session metadata, and validation mode.
+        """
+        return {
+            "history": self.to_list(pure_text=pure_text),
+            "metadata": dict(self.metadata),
+            "strict_mode": self.strict_mode,
+        }
+
     def to_json(self, path: str | PathLike):
-        """Saves the chat messages to a JSON file.
+        """Save the complete chat session to a JSON file.
 
         :param path: The path to save the JSON file.
         :type path: str | PathLike
         """
-        data = [turn.to_dict(pure_text=True) for turn in self.history]
         with open(path, "w", encoding="utf-8") as f:
-            json.dump(data, f, indent=4, ensure_ascii=False)
+            json.dump(self.to_dict(pure_text=True), f, indent=4, ensure_ascii=False)
         return
 
     @classmethod
     def from_list(
-        cls, messages: Sequence[ChatTurn | dict[str, Any]], strict_mode: bool = True
+        cls,
+        messages: Sequence[ChatTurn | dict[str, Any]],
+        strict_mode: bool = True,
+        metadata: dict[str, Any] | None = None,
     ) -> ChatMessages:
         """Creates a ChatMessages instance from a sequence of dictionaries.
+
         :param messages: A sequence of dictionaries representing chat turns.
         :type messages: Sequence[ChatTurn | dict[str, Any]]
         :param strict_mode: Whether to enforce strict role validation. Default: True.
             If True, only "user", "assistant", and "system" are allowed as roles.
         :type strict_mode: bool
+        :param metadata: Session-level metadata. Default: None.
         :return: An instance of ChatMessages.
         :rtype: ChatMessages
         """
@@ -579,11 +599,33 @@ class ChatMessages(MutableSequence[ChatTurn]):
                 turns.append(ChatTurn.from_dict(turn, strict_mode=strict_mode))
             else:
                 turns.append(turn)
-        return cls(history=turns, strict_mode=strict_mode)
+        return cls(
+            history=turns,
+            strict_mode=strict_mode,
+            metadata=dict(metadata or {}),
+        )
 
     @classmethod
-    def from_json(cls, path: str | PathLike, strict_mode: bool = True) -> ChatMessages:
-        """Loads the chat messages from a JSON file.
+    def from_dict(cls, data: dict[str, Any]) -> ChatMessages:
+        """Create a chat session from its dictionary representation.
+
+        :param data: A mapping containing ``history``, ``metadata``, and
+            ``strict_mode``.
+        :return: The restored chat session.
+        :raises TypeError: If *data* is not a mapping.
+        :raises KeyError: If a required field is missing.
+        """
+        if not isinstance(data, dict):
+            raise TypeError("ChatMessages data must be a dictionary.")
+        return cls.from_list(
+            data["history"],
+            strict_mode=data["strict_mode"],
+            metadata=data["metadata"],
+        )
+
+    @classmethod
+    def from_json(cls, path: str | PathLike) -> ChatMessages:
+        """Load a complete chat session from a JSON file.
 
         :param path: The path to the JSON file.
         :type path: str | PathLike
@@ -592,7 +634,7 @@ class ChatMessages(MutableSequence[ChatTurn]):
         """
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
-        return cls.from_list(data, strict_mode=strict_mode)
+        return cls.from_dict(data)
 
     @property
     def system(self) -> Optional[str]:
@@ -621,7 +663,11 @@ class ChatMessages(MutableSequence[ChatTurn]):
 
     def copy(self) -> ChatMessages:
         """Creates a copy of the ChatMessages instance."""
-        return ChatMessages(history=self.history.copy(), strict_mode=self.strict_mode)
+        return ChatMessages(
+            history=self.history.copy(),
+            strict_mode=self.strict_mode,
+            metadata=self.metadata.copy(),
+        )
 
     def pretty_print(self) -> None:
         turn_num = 0

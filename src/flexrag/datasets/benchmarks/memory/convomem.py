@@ -124,7 +124,7 @@ class ConvoMemDataset(MappingDataset[MultiSessionQASample]):
                     sessions_id = f"{self._subset}_{evidence_num}_{global_sessions_id}"
                     global_sessions_id += 1
                     sessions = []
-                    per_session_meta = []
+                    session_annotations = {}
                     for session in group["conversations"]:
                         session_data = []
                         for turn in session["messages"]:
@@ -135,15 +135,18 @@ class ConvoMemDataset(MappingDataset[MultiSessionQASample]):
                                 }
                             )
                         sessions.append(
-                            ChatMessages.from_list(session_data, strict_mode=False)
+                            ChatMessages.from_list(
+                                session_data,
+                                strict_mode=False,
+                                metadata={
+                                    "session_id": session["id"],
+                                    "generator": session["model_name"],
+                                },
+                            )
                         )
-                        per_session_meta.append(
-                            {
-                                "session_id": session["id"],
-                                "contains_evidence": session["containsEvidence"],
-                                "generator": session["model_name"],
-                            }
-                        )
+                        session_annotations[session["id"]] = {
+                            "contains_evidence": session["containsEvidence"]
+                        }
                     # construct QA samples
                     for item in group["evidenceItems"]:
                         question = item["question"]
@@ -153,7 +156,10 @@ class ConvoMemDataset(MappingDataset[MultiSessionQASample]):
                             golden_conv_ids.append(session["id"])
                         metadata = {
                             "evidence_num": evidence_num,
-                            "session_infos": per_session_meta,
+                            "session_annotations": {
+                                session_id: dict(annotation)
+                                for session_id, annotation in session_annotations.items()
+                            },
                             "message_evidences": item["message_evidences"],
                             "category": item["category"],
                             "subset": self._subset,

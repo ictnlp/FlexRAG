@@ -18,6 +18,7 @@ pytestmark = pytest.mark.integration
 class TestMultiSessionQADatasets:
     def valid_multisession_qa_sample(self, sample):
         assert isinstance(sample, MultiSessionQASample)
+        assert all(isinstance(session.metadata, dict) for session in sample.sessions)
         return
 
     @pytest.mark.parametrize(
@@ -35,6 +36,11 @@ class TestMultiSessionQADatasets:
         dataset = ConvoMemDataset(ConvoMemDatasetConfig(subset=subset))
         for item in dataset:
             self.valid_multisession_qa_sample(item)
+            assert all(
+                {"session_id", "generator"} <= session.metadata.keys()
+                for session in item.sessions
+            )
+            assert "session_annotations" in item.meta_data
         print(f"ConvoMem-{subset} dataset length: {len(dataset)}")
         print(f"ConvoMem-{subset} dataset test passed.")
         return
@@ -55,6 +61,11 @@ class TestMultiSessionQADatasets:
         dataset = LongMemEvalDataset(LongMemEvalDatasetConfig(split=split))
         for item in dataset:
             self.valid_multisession_qa_sample(item)
+            assert item.sessions_id == item.question_id
+            assert all(
+                {"session_id", "date"} <= session.metadata.keys()
+                for session in item.sessions
+            )
         print(f"LongMemEval-{split} dataset length: {len(dataset)}")
         print(f"LongMemEval-{split} dataset test passed.")
         return
@@ -63,6 +74,8 @@ class TestMultiSessionQADatasets:
         dataset = LoCoMoDataset(LoCoMoDatasetConfig())
         for item in dataset:
             self.valid_multisession_qa_sample(item)
+            assert all("session_id" in session.metadata for session in item.sessions)
+            assert "session_annotations" in item.meta_data
         print(f"LoCoMo dataset length: {len(dataset)}")
         print("LoCoMo dataset test passed.")
         return

@@ -103,8 +103,9 @@ class TestChatTurn:
 
 
 class TestChatMessages:
-    def test_tool_aware_sequence(self):
+    def test_tool_aware_sequence(self, tmp_path):
         messages = ChatMessages(
+            metadata={"session_id": "weather-session", "date": "2026-07-14"},
             history=[
                 ChatTurn(role="user", content="Check the weather."),
                 ChatTurn(
@@ -125,9 +126,21 @@ class TestChatMessages:
                     content='{"temperature": 24}',
                 ),
                 ChatTurn(role="assistant", content="It is 24 degrees in Beijing."),
-            ]
+            ],
         )
         assert len(messages) == 4
+        assert messages.metadata["session_id"] == "weather-session"
+        assert all(turn["metadata"] == {} for turn in messages.to_list(pure_text=True))
+
+        copied = messages.copy()
+        copied.metadata["session_id"] = "copied-session"
+        assert messages.metadata["session_id"] == "weather-session"
+
+        path = tmp_path / "messages.json"
+        messages.to_json(path)
+        loaded = ChatMessages.from_json(path)
+        assert loaded == messages
+        assert loaded.metadata == messages.metadata
 
     def test_invalid_tool_sequence_without_tool_call(self):
         with pytest.raises(ValueError):

@@ -1,5 +1,6 @@
 import json
 import re
+from copy import deepcopy
 from pathlib import Path
 from typing import Optional
 
@@ -63,7 +64,6 @@ class LoCoMoDataset(MappingDataset[MultiSessionQASample]):
             messages = []
             metadatas = {}
             for conv_key in conv_keys:
-                conv_id = conv_key.split("_")[1]
                 # parse raw conversation turns
                 message = []
                 for turn in group["conversation"][conv_key]:
@@ -75,7 +75,11 @@ class LoCoMoDataset(MappingDataset[MultiSessionQASample]):
                             "strict_mode": False,
                         }
                     )
-                message = ChatMessages.from_list(message, strict_mode=False)
+                message = ChatMessages.from_list(
+                    message,
+                    strict_mode=False,
+                    metadata={"session_id": conv_key},
+                )
                 metadatas[conv_key] = {}
                 # parse ovservation
                 if f"{conv_key}_observation" in group["observation"]:
@@ -107,8 +111,10 @@ class LoCoMoDataset(MappingDataset[MultiSessionQASample]):
     def get_item(self, index: int) -> MultiSessionQASample:
         qid = list(self._qa_data.keys())[index]
         group_id = qid.split("_")[1]
-        metadata = self._meta_data[group_id]
-        metadata["evidence"] = self._qa_data[qid].get("evidence", [])
+        metadata = {
+            "session_annotations": deepcopy(self._meta_data[group_id]),
+        }
+        metadata["evidence"] = deepcopy(self._qa_data[qid].get("evidence", []))
         metadata["category"] = self._qa_data[qid].get("category", 1)
         if metadata["category"] == 5:
             response = "Not Answerable"
