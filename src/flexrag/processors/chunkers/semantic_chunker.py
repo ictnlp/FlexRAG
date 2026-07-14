@@ -6,7 +6,7 @@ from flexrag.common import LOGGER_MANAGER, Choices, configure
 from flexrag.models.encoders import EncoderProtocol
 from flexrag.models.tokenizer import TokenizerProtocol
 
-from .chunker_base import CHUNKERS, Chunk, ChunkerBase, ChunkerProtocol
+from .chunker_base import CHUNKERS, Chunk, ChunkerProtocol
 
 logger = LOGGER_MANAGER.get_logger("flexrag.processors.chunkers.semantic_chunker")
 
@@ -85,7 +85,7 @@ class SemanticChunkerConfig:
 
 
 @CHUNKERS("semantic_chunker", config_class=SemanticChunkerConfig)
-class SemanticChunker(ChunkerBase):
+class SemanticChunker:
     """Group base chunks into larger chunks based on semantic similarity.
 
     This chunker is inspired by the Greg Kamradt's wonderful notebook:

@@ -4,9 +4,9 @@ from typing import Any, Optional
 from flexrag.common import LOGGER_MANAGER, configure, data
 from flexrag.common.dataclasses import ChatMessages, RetrievedContext
 from flexrag.models.generators import GenerationConfig, GeneratorProtocol
-from flexrag.processors.rankers.ranker_base import RankerBase
+from flexrag.processors.rankers.ranker_base import RankerProtocol
 from flexrag.processors.refiners.refiner_base import RefinerProtocol
-from flexrag.retrievers import FlexRetriever
+from flexrag.retrievers import RetrieverProtocol
 
 from .assistant_base import ASSISTANTS, AssistantBase, AssistantResponse
 
@@ -48,8 +48,8 @@ class ModularAssistant(AssistantBase):
         self,
         cfg: ModularAssistantConfig,
         generator: GeneratorProtocol,
-        retriever: FlexRetriever | None = None,
-        reranker: RankerBase | None = None,
+        retriever: RetrieverProtocol | None = None,
+        reranker: RankerProtocol | None = None,
         refiners: list[RefinerProtocol] | None = None,
     ):
         # set basic args

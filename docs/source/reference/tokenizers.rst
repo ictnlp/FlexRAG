@@ -5,11 +5,10 @@ It provides a simple and consistent interface for tokenizing a text into tokens 
 
 The Tokenizer Interface
 -----------------------
-``TokenizerBase`` is the base class for all tokenizers.
+``TokenizerProtocol`` defines the structural interface shared by all tokenizers.
 
-.. autoclass:: flexrag.models.tokenizer.TokenizerBase
+.. autoclass:: flexrag.models.tokenizer.TokenizerProtocol
     :members:
-    :inherited-members:
 
 
 Tokenizers

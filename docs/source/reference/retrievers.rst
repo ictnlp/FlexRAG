@@ -6,6 +6,9 @@ Retrievers coordinate context stores and collection backends.
 Core API
 --------
 
+.. autoclass:: flexrag.retrievers.RetrieverProtocol
+    :members:
+
 .. autoclass:: flexrag.retrievers.FlexRetrieverConfig
     :members:
 

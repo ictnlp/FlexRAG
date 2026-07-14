@@ -8,7 +8,7 @@ from .basic_chunkers import (
     TokenChunker,
     TokenChunkerConfig,
 )
-from .chunker_base import CHUNKERS, Chunk, ChunkerBase, ChunkerProtocol
+from .chunker_base import CHUNKERS, Chunk, ChunkerProtocol
 from .densex_chunker import DenseXChunker, DenseXChunkerConfig
 from .lumber_chunker import LumberChunker, LumberChunkerConfig
 from .semantic_chunker import SemanticChunker, SemanticChunkerConfig
@@ -19,7 +19,6 @@ from .sentence_splitter import (
     NLTKSentenceSplitterConfig,
     RegexSplitter,
     RegexSplitterConfig,
-    SentenceSplitterBase,
     SentenceSplitterConfig,
     SpacySentenceSplitter,
     SpacySentenceSplitterConfig,
@@ -31,7 +30,6 @@ ChunkerConfig = CHUNKERS.make_config(
 
 
 __all__ = [
-    "ChunkerBase",
     "ChunkerProtocol",
     "Chunk",
     "CHUNKERS",
@@ -50,7 +48,6 @@ __all__ = [
     "LumberChunkerConfig",
     "DenseXChunker",
     "DenseXChunkerConfig",
-    "SentenceSplitterBase",
     "SentenceSplitterConfig",
     "SENTENCE_SPLITTERS",
     "PREDEFINED_SPLIT_PATTERNS",

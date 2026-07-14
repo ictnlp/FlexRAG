@@ -1,6 +1,6 @@
 import asyncio
 from abc import ABC, abstractmethod
-from typing import Optional
+from typing import Optional, Protocol
 
 import numpy as np
 
@@ -42,6 +42,36 @@ class RankingResult:
     query: str
     candidates: list[RetrievedContext | str]
     scores: Optional[list[float]] = None
+
+
+class RankerProtocol(Protocol):
+    """Structural interface shared by raw rankers and managed ranker handles."""
+
+    def rank(
+        self,
+        query: str,
+        candidates: list[RetrievedContext | str],
+    ) -> RankingResult:
+        """Rank candidates based on a query.
+
+        :param query: Query string.
+        :param candidates: Candidate strings or retrieved contexts.
+        :return: Ranked candidates and optional scores.
+        """
+        ...
+
+    async def async_rank(
+        self,
+        query: str,
+        candidates: list[RetrievedContext | str],
+    ) -> RankingResult:
+        """Rank candidates asynchronously based on a query.
+
+        :param query: Query string.
+        :param candidates: Candidate strings or retrieved contexts.
+        :return: Ranked candidates and optional scores.
+        """
+        ...
 
 
 def _extract_ranking_texts(
@@ -204,4 +234,4 @@ class RemoteRankerBase(RankerBase):
         return asyncio.run(self.async_rank(query, candidates))
 
 
-RANKERS = Register[RankerBase]("ranker")
+RANKERS = Register[RankerProtocol]("ranker")

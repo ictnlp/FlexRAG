@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from functools import partial
 from itertools import chain
 from typing import Optional, Protocol
@@ -64,134 +63,22 @@ class TokenizerProtocol(Protocol):
 
     @property
     def reversible(self) -> bool:
-        """Return whether tokenization is strictly reversible."""
+        """Return whether tokenization is strictly reversible.
+
+        :return: Whether tokenization can be reversed without information loss.
+        """
         ...
 
     @property
     def vocab_size(self) -> int:
-        """Return the tokenizer vocabulary size."""
+        """Return the tokenizer vocabulary size.
+
+        :return: Vocabulary size, or ``0`` when token-id conversion is unsupported.
+        """
         ...
 
 
-class TokenizerBase(ABC):
-    """A tokenizer is a component that converts raw natural language text into discrete tokens
-    (such as words, subwords, or symbols) for subsequent modeling and processing.
-    These tokenizers are useful in the `text_processing` module and the `chunking` module.
-
-    TokenizerBase is an abstract class that defines the interface for all tokenizers.
-
-    The subclasses should implement the following methods:
-
-        >>> def tokenize(self, text: str) -> list[str]:
-        >>>     # Tokenize the given text into tokens
-        >>>     ...
-
-        >>> def detokenize(self, tokens: list[str]) -> str:
-        >>>     # Detokenize the tokens back to text
-        >>>     ...
-
-        >>> def encode(self, text: str) -> list[int]:
-        >>>     # Encode the given text into token ids
-        >>>     ...
-
-        >>> def decode(self, tokens: list[int]) -> str:
-        >>>     # Decode the token ids back to text
-        >>>     ...
-
-        >>> @property
-        >>> def reversible(self) -> bool:
-        >>>     # Return True if the tokenizer can decode the tokens back to the original text strictly
-        >>>     ...
-
-        >>> @property
-        >>> def vocab_size(self) -> int:
-        >>>     # Return the size of the tokenizer vocabulary
-        >>>     ...
-
-    The `reversible` property should return True if the tokenizer can decode the tokens back to the original text.
-    """
-
-    @abstractmethod
-    def tokenize(self, text: str) -> list[str]:
-        """Tokenize the given text into tokens.
-
-        :param text: The text to tokenize.
-        :type text: str
-        :return: The tokens of the text.
-        :rtype: list[str]
-        """
-        return
-
-    @abstractmethod
-    def detokenize(self, tokens: list[str]) -> str:
-        """Detokenize the tokens back to text.
-
-        :param tokens: The tokens to detokenize.
-        :type tokens: list[str]
-        :return: The detokenized text.
-        :rtype: str
-        """
-        return
-
-    @abstractmethod
-    def encode(self, text: str) -> list[int]:
-        """Encode the given text into token ids.
-
-        :param text: The text to tokenize.
-        :type text: str
-        :return: The tokens of the text.
-        :rtype: list[int]
-        """
-        return
-
-    @abstractmethod
-    def decode(self, tokens: list[int]) -> str:
-        """Decode the token ids back to text.
-
-        :param tokens: The tokens to decode.
-        :type tokens: list[int]
-        :return: The decoded text.
-        :rtype: str
-        """
-        return
-
-    @abstractmethod
-    def tokens_to_ids(self, tokens: list[str]) -> list[int]:
-        """Convert tokens to token ids.
-
-        :param tokens: The tokens to convert.
-        :type tokens: list[str]
-        :return: The token ids.
-        :rtype: list[int]
-        """
-        return
-
-    @abstractmethod
-    def ids_to_tokens(self, token_ids: list[int]) -> list[str]:
-        """Convert token ids to tokens.
-
-        :param token_ids: The token ids to convert.
-        :type token_ids: list[int]
-        :return: The tokens.
-        :rtype: list[str]
-        """
-        return
-
-    @property
-    @abstractmethod
-    def reversible(self) -> bool:
-        """Return True if the tokenizer can decode the tokens back to the original text strictly."""
-        return
-
-    @property
-    def vocab_size(self) -> int:
-        """Return the size of the tokenizer vocabulary. If the tokenizer
-        does not support `encode` and `decode` methods, it should return 0.
-        """
-        return 0
-
-
-TOKENIZERS = Register[TokenizerBase]("tokenizer")
+TOKENIZERS = Register[TokenizerProtocol]("tokenizer")
 
 
 @configure
@@ -200,7 +87,7 @@ class SpaceTokenizerConfig:
 
 
 @TOKENIZERS("space", config_class=SpaceTokenizerConfig)
-class SpaceTokenizer(TokenizerBase):
+class SpaceTokenizer:
     """A simple tokenizer that splits text by spaces."""
 
     def __init__(self, cfg: SpaceTokenizerConfig | None = None) -> None:
@@ -233,6 +120,11 @@ class SpaceTokenizer(TokenizerBase):
         """SpaceTokenizer is not reversible as it may lose spaces."""
         return False
 
+    @property
+    def vocab_size(self) -> int:
+        """Return ``0`` because token-id conversion is unsupported."""
+        return 0
+
 
 @configure
 class MosesTokenizerConfig:
@@ -246,7 +138,7 @@ class MosesTokenizerConfig:
 
 
 @TOKENIZERS("moses", config_class=MosesTokenizerConfig)
-class MosesTokenizer(TokenizerBase):
+class MosesTokenizer:
     """A wrapper for SacreMoses tokenizers."""
 
     def __init__(self, cfg: MosesTokenizerConfig) -> None:
@@ -283,6 +175,11 @@ class MosesTokenizer(TokenizerBase):
         """MosesTokenizer is not reversible as it may lose sapces and punctuations."""
         return False
 
+    @property
+    def vocab_size(self) -> int:
+        """Return ``0`` because token-id conversion is unsupported."""
+        return 0
+
 
 @configure
 class NLTKTokenizerConfig:
@@ -296,7 +193,7 @@ class NLTKTokenizerConfig:
 
 
 @TOKENIZERS("nltk", config_class=NLTKTokenizerConfig)
-class NLTKTokenizer(TokenizerBase):
+class NLTKTokenizer:
     """A wrapper for NLTK tokenizers."""
 
     def __init__(self, cfg: NLTKTokenizerConfig) -> None:
@@ -333,6 +230,11 @@ class NLTKTokenizer(TokenizerBase):
         """NLTKTokenizer is not reversible as it may lose spaces."""
         return False
 
+    @property
+    def vocab_size(self) -> int:
+        """Return ``0`` because token-id conversion is unsupported."""
+        return 0
+
 
 @configure
 class JiebaTokenizerConfig:
@@ -349,7 +251,7 @@ class JiebaTokenizerConfig:
 
 
 @TOKENIZERS("jieba", config_class=JiebaTokenizerConfig)
-class JiebaTokenizer(TokenizerBase):
+class JiebaTokenizer:
     """A wrapper for Jieba tokenizers.
     Jieba keeps all characters including spaces and punctuations during tokenization,
     making it reversible.
@@ -389,6 +291,11 @@ class JiebaTokenizer(TokenizerBase):
         """JiebaTokenizer is reversible."""
         return True
 
+    @property
+    def vocab_size(self) -> int:
+        """Return ``0`` because token-id conversion is unsupported."""
+        return 0
+
 
 @configure
 class HuggingFaceTokenizerConfig:
@@ -402,7 +309,7 @@ class HuggingFaceTokenizerConfig:
 
 
 @TOKENIZERS("hf", config_class=HuggingFaceTokenizerConfig)
-class HuggingFaceTokenizer(TokenizerBase):
+class HuggingFaceTokenizer:
     """A wrapper for HuggingFace tokenizers."""
 
     def __init__(self, cfg: HuggingFaceTokenizerConfig) -> None:
@@ -457,7 +364,7 @@ class TikTokenTokenizerConfig:
 
 
 @TOKENIZERS("tiktoken", config_class=TikTokenTokenizerConfig)
-class TikTokenTokenizer(TokenizerBase):
+class TikTokenTokenizer:
     """A wrapper for TikToken tokenizers."""
 
     def __init__(self, cfg: TikTokenTokenizerConfig) -> None:

@@ -18,7 +18,7 @@ from .context_store import (
     SyncContextStoreBase,
 )
 from .merge import MergeMethod
-from .retriever import FlexRetriever, FlexRetrieverConfig
+from .retriever import FlexRetriever, FlexRetrieverConfig, RetrieverProtocol
 from .view import RetrievalView, RetrievalViewConfig
 
 __all__ = [
@@ -34,6 +34,7 @@ __all__ = [
     "FaissBackendConfig",
     "FlexRetriever",
     "FlexRetrieverConfig",
+    "RetrieverProtocol",
     "Hit",
     "LanceBackend",
     "LanceBackendConfig",

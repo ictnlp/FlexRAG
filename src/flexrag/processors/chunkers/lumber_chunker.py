@@ -6,7 +6,7 @@ from flexrag.models.generators import GenerationConfig, GeneratorProtocol
 from flexrag.models.tokenizer import TokenizerProtocol
 
 from .basic_chunkers import RecursiveChunker, RecursiveChunkerConfig
-from .chunker_base import CHUNKERS, Chunk, ChunkerBase
+from .chunker_base import CHUNKERS, Chunk
 
 logger = LOGGER_MANAGER.get_logger("flexrag.processors.chunkers.lumber_chunker")
 
@@ -44,7 +44,7 @@ class LumberChunkerConfig:
 
 
 @CHUNKERS("lumber", config_class=LumberChunkerConfig)
-class LumberChunker(ChunkerBase):
+class LumberChunker:
     """`LumberChunker <https://arxiv.org/abs/2406.17526>`_ is a chunker
     that uses an LLM to identify content shifts between paragraphs.
     It sends groups of paragraphs to the LLM and asks it to find the

@@ -1,4 +1,4 @@
-from abc import abstractmethod
+from abc import ABC, abstractmethod
 from collections import Counter
 
 from flexrag.common import configure, trace
@@ -20,7 +20,9 @@ class MatchingMetricsConfig:
     simplify: bool = True
 
 
-class MatchingMetrics:
+class MatchingMetrics(ABC):
+    """Base class for normalized string-matching metrics."""
+
     name: str
 
     def __init__(self, cfg: MatchingMetricsConfig) -> None:
@@ -32,7 +34,13 @@ class MatchingMetrics:
 
     @abstractmethod
     def compute_item(self, golds: list[str], response: str) -> float:
-        return
+        """Compute the score for one response and its accepted answers.
+
+        :param golds: Accepted golden responses.
+        :param response: Predicted response.
+        :return: Matching score for the item.
+        """
+        raise NotImplementedError
 
     @trace("metrics.matching_score")
     def __call__(

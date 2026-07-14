@@ -6,7 +6,7 @@ from flexrag.common.serialization import (
     JsonSerializer,
     MsgpackSerializer,
     PickleSerializer,
-    SerializerBase,
+    SerializerProtocol,
 )
 
 
@@ -149,7 +149,7 @@ class TestSerialization:
         else:
             raise ValueError(f"Unsupported data type: {type(a)}")
 
-    def run_test(self, serializer: SerializerBase):
+    def run_test(self, serializer: SerializerProtocol):
 
         def run_specific_type(data_units: list):
             for data_unit in data_units:

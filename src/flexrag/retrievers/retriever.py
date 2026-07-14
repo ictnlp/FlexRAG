@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Iterable, Mapping
-from typing import Annotated, Any
+from typing import Annotated, Any, Protocol
 
 from flexrag.common import Choices, configure
 from flexrag.common.dataclasses import Context, RetrievedContext
@@ -32,6 +32,186 @@ class FlexRetrieverConfig:
     default_top_k: int = 10
     default_merge_method: Annotated[str, Choices("rrf", "linear")] = "rrf"
     rrf_base: int = 60
+
+
+class RetrieverProtocol(Protocol):
+    """Structural contract shared by raw and managed retrievers.
+
+    The protocol describes operations over a fixed retriever resource graph.
+    Raw-only construction, dependency access, and backend topology mutation are
+    intentionally excluded.
+    """
+
+    def add_contexts(self, contexts: Iterable[Context]) -> None:
+        """Add contexts to the store and configured backends.
+
+        :param contexts: Context objects to store and index.
+        """
+        ...
+
+    async def async_add_contexts(self, contexts: Iterable[Context]) -> None:
+        """Asynchronously add contexts to the retriever.
+
+        :param contexts: Context objects to store and index.
+        """
+        ...
+
+    def rebuild(self, backend_name: str | None = None) -> None:
+        """Rebuild one or all configured backends.
+
+        :param backend_name: Optional backend name. ``None`` rebuilds all.
+        """
+        ...
+
+    async def async_rebuild(self, backend_name: str | None = None) -> None:
+        """Asynchronously rebuild one or all configured backends.
+
+        :param backend_name: Optional backend name. ``None`` rebuilds all.
+        """
+        ...
+
+    def search_hits(
+        self,
+        queries: Any | Iterable[Any],
+        *,
+        top_k: int | None = None,
+        used_backends: list[str] | None = None,
+        candidate_k: int | None = None,
+        merge_method: MergeMethod | None = None,
+        backend_weights: Mapping[str, float] | None = None,
+        backend_search_options: Mapping[str, dict[str, Any]] | None = None,
+    ) -> list[list[Hit]]:
+        """Search configured backends and return lightweight hits.
+
+        :param queries: One query object or an iterable of query objects.
+        :param top_k: Maximum hits per query.
+        :param used_backends: Optional backend name subset.
+        :param candidate_k: Per-backend candidate count before merging.
+        :param merge_method: Optional merge method override.
+        :param backend_weights: Optional merge weights by backend name.
+        :param backend_search_options: Backend-specific search options.
+        :returns: One hit list per normalized query.
+        """
+        ...
+
+    async def async_search_hits(
+        self,
+        queries: Any | Iterable[Any],
+        *,
+        top_k: int | None = None,
+        used_backends: list[str] | None = None,
+        candidate_k: int | None = None,
+        merge_method: MergeMethod | None = None,
+        backend_weights: Mapping[str, float] | None = None,
+        backend_search_options: Mapping[str, dict[str, Any]] | None = None,
+    ) -> list[list[Hit]]:
+        """Asynchronously search configured backends for hits.
+
+        :param queries: One query object or an iterable of query objects.
+        :param top_k: Maximum hits per query.
+        :param used_backends: Optional backend name subset.
+        :param candidate_k: Per-backend candidate count before merging.
+        :param merge_method: Optional merge method override.
+        :param backend_weights: Optional merge weights by backend name.
+        :param backend_search_options: Backend-specific search options.
+        :returns: One hit list per normalized query.
+        """
+        ...
+
+    def search(
+        self,
+        queries: Any | Iterable[Any],
+        *,
+        top_k: int | None = None,
+        used_backends: list[str] | None = None,
+        candidate_k: int | None = None,
+        merge_method: MergeMethod | None = None,
+        backend_weights: Mapping[str, float] | None = None,
+        backend_search_options: Mapping[str, dict[str, Any]] | None = None,
+    ) -> list[list[RetrievedContext]]:
+        """Search and hydrate retrieved contexts.
+
+        :param queries: One query object or an iterable of query objects.
+        :param top_k: Maximum results per query.
+        :param used_backends: Optional backend name subset.
+        :param candidate_k: Per-backend candidate count before merging.
+        :param merge_method: Optional merge method override.
+        :param backend_weights: Optional merge weights by backend name.
+        :param backend_search_options: Backend-specific search options.
+        :returns: One retrieved-context list per normalized query.
+        """
+        ...
+
+    async def async_search(
+        self,
+        queries: Any | Iterable[Any],
+        *,
+        top_k: int | None = None,
+        used_backends: list[str] | None = None,
+        candidate_k: int | None = None,
+        merge_method: MergeMethod | None = None,
+        backend_weights: Mapping[str, float] | None = None,
+        backend_search_options: Mapping[str, dict[str, Any]] | None = None,
+    ) -> list[list[RetrievedContext]]:
+        """Asynchronously search and hydrate retrieved contexts.
+
+        :param queries: One query object or an iterable of query objects.
+        :param top_k: Maximum results per query.
+        :param used_backends: Optional backend name subset.
+        :param candidate_k: Per-backend candidate count before merging.
+        :param merge_method: Optional merge method override.
+        :param backend_weights: Optional merge weights by backend name.
+        :param backend_search_options: Backend-specific search options.
+        :returns: One retrieved-context list per normalized query.
+        """
+        ...
+
+    def get(self, context_id: str) -> Context:
+        """Return one complete context by id.
+
+        :param context_id: Context identifier to fetch.
+        :returns: Complete context.
+        :raises KeyError: If the context cannot be hydrated.
+        """
+        ...
+
+    async def async_get(self, context_id: str) -> Context:
+        """Asynchronously return one complete context by id.
+
+        :param context_id: Context identifier to fetch.
+        :returns: Complete context.
+        :raises KeyError: If the context cannot be hydrated.
+        """
+        ...
+
+    def clear(self) -> None:
+        """Clear the context store and all configured backend data."""
+        ...
+
+    async def async_clear(self) -> None:
+        """Asynchronously clear all retriever-managed data."""
+        ...
+
+    def count(self) -> int:
+        """Return the authoritative unique context count.
+
+        :returns: Number of contexts known to the retriever.
+        """
+        ...
+
+    async def async_count(self) -> int:
+        """Asynchronously return the authoritative context count.
+
+        :returns: Number of contexts known to the retriever.
+        """
+        ...
+
+    def list_backends(self) -> list[str]:
+        """Return configured backend names in retriever order.
+
+        :returns: Stable backend names.
+        """
+        ...
 
 
 class FlexRetriever:

@@ -14,7 +14,7 @@ from flexrag.common import (
 from flexrag.common.serialization import json_dump
 from flexrag.datasets.benchmarks import RetrievalDatasetBase
 from flexrag.metrics import Evaluator
-from flexrag.retrievers import FlexRetriever
+from flexrag.retrievers import RetrieverProtocol
 
 from .task_base import TaskBase
 
@@ -63,11 +63,11 @@ class RetrievalTask(TaskBase):
         self.evaluator = self.load_evaluator()
         return
 
-    def run(self, retriever: FlexRetriever):
+    def run(self, retriever: RetrieverProtocol):
         """Run the Retrieval task."""
         # initial check
         if self.config.reinit_retriever:
-            if len(retriever) > 0:
+            if retriever.count() > 0:
                 self.logger.warning(
                     "Retriever is not empty. "
                     "It will be reinitialized for the retrieval task."

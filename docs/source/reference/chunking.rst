@@ -5,96 +5,91 @@ This module provides a set of classes for chunking a long text into smaller chun
 
 The Chunker Interface
 ---------------------
-`ChunkerBase` is the base class for all chunkers.
-It provides a simple interface for chunking a text into smaller chunks.
-The chunking process is controlled by a configuration object that is passed to the chunker's constructor.
+``ChunkerProtocol`` defines the structural interface shared by all chunkers.
+The chunking process is controlled by a configuration object that is passed to
+the chunker's constructor.
 
-.. autoclass:: flexrag.chunking.ChunkerBase
+.. autoclass:: flexrag.processors.chunkers.ChunkerProtocol
     :members:
-    :inherited-members:
 
 
 Chunkers
 --------
 
-.. autoclass:: flexrag.chunking.CharChunkerConfig
+.. autoclass:: flexrag.processors.chunkers.CharChunkerConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.chunking.CharChunker
+.. autoclass:: flexrag.processors.chunkers.CharChunker
     :members:
     :show-inheritance:
 
-.. autoclass:: flexrag.chunking.TokenChunkerConfig
-    :members:
-    :inherited-members:
-    :show-inheritance:
-
-.. autoclass:: flexrag.chunking.TokenChunker
-    :members:
-    :show-inheritance:
-
-.. autoclass:: flexrag.chunking.RecursiveChunkerConfig
+.. autoclass:: flexrag.processors.chunkers.TokenChunkerConfig
     :members:
     :inherited-members:
     :show-inheritance:
 
-.. autoclass:: flexrag.chunking.RecursiveChunker
+.. autoclass:: flexrag.processors.chunkers.TokenChunker
     :members:
     :show-inheritance:
 
-.. autoclass:: flexrag.chunking.SentenceChunkerConfig
-    :members:
-    :inherited-members:
-    :show-inheritance:
-
-.. autoclass:: flexrag.chunking.SentenceChunker
-    :members:
-    :show-inheritance:
-
-.. autoclass:: flexrag.chunking.SemanticChunkerConfig
+.. autoclass:: flexrag.processors.chunkers.RecursiveChunkerConfig
     :members:
     :inherited-members:
     :show-inheritance:
 
-.. autoclass:: flexrag.chunking.SemanticChunker
+.. autoclass:: flexrag.processors.chunkers.RecursiveChunker
+    :members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.processors.chunkers.SentenceChunkerConfig
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.processors.chunkers.SentenceChunker
+    :members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.processors.chunkers.SemanticChunkerConfig
+    :members:
+    :inherited-members:
+    :show-inheritance:
+
+.. autoclass:: flexrag.processors.chunkers.SemanticChunker
     :members:
     :show-inheritance:
 
 
 Sentence Splitters
 ------------------
-This submodule provides a set of useful tools for splitting a text into sentences.
+This submodule provides sentence-oriented implementations of ``ChunkerProtocol``.
 
-.. autoclass:: flexrag.chunking.sentence_splitter.SentenceSplitterBase
+.. autoclass:: flexrag.processors.chunkers.NLTKSentenceSplitterConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.chunking.sentence_splitter.NLTKSentenceSplitterConfig
-    :members:
-    :inherited-members:
-
-.. autoclass:: flexrag.chunking.sentence_splitter.NLTKSentenceSplitter
+.. autoclass:: flexrag.processors.chunkers.NLTKSentenceSplitter
     :members:
     :show-inheritance:
 
-.. autoclass:: flexrag.chunking.sentence_splitter.RegexSplitterConfig
+.. autoclass:: flexrag.processors.chunkers.RegexSplitterConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.chunking.sentence_splitter.RegexSplitter
+.. autoclass:: flexrag.processors.chunkers.RegexSplitter
     :members:
     :show-inheritance:
 
-.. autoclass:: flexrag.chunking.sentence_splitter.SpacySentenceSplitterConfig
+.. autoclass:: flexrag.processors.chunkers.SpacySentenceSplitterConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.chunking.sentence_splitter.SpacySentenceSplitter
+.. autoclass:: flexrag.processors.chunkers.SpacySentenceSplitter
     :members:
     :show-inheritance:
 
-.. autoattribute:: flexrag.chunking.sentence_splitter.PREDEFINED_SPLIT_PATTERNS
+.. autoattribute:: flexrag.processors.chunkers.PREDEFINED_SPLIT_PATTERNS
 
     A dictionary of predefined sentence splitting patterns.
     The keys are the names of the patterns, and the values are the corresponding regular expressions.
@@ -105,10 +100,10 @@ General Configuration
 ---------------------
 The configuration provides a general interface for loading and configurate the chunker or the sentence splitter.
 
-.. autoclass:: flexrag.chunking.ChunkerConfig
+.. autoclass:: flexrag.processors.chunkers.ChunkerConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.chunking.sentence_splitter.SentenceSplitterConfig
+.. autoclass:: flexrag.processors.chunkers.SentenceSplitterConfig
     :members:
     :inherited-members:

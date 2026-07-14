@@ -1,8 +1,7 @@
 import json
 import pickle
-from abc import ABC, abstractmethod
 from dataclasses import asdict, is_dataclass
-from typing import Any
+from typing import Any, Literal, Protocol, overload
 
 import numpy as np
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -11,26 +10,24 @@ from PIL import Image
 from .configure import Register
 
 
-class SerializerBase(ABC):
-    """A simple interface for serializing and deserializing Python objects."""
+class SerializerProtocol(Protocol):
+    """Structural interface for serializers registered with FlexRAG."""
 
-    @abstractmethod
     def serialize(self, obj: Any) -> bytes:
         """Serialize an object into bytes.
 
         :param obj: Object to serialize.
         :return: Serialized bytes.
         """
-        return
+        ...
 
-    @abstractmethod
     def deserialize(self, data: bytes) -> Any:
         """Deserialize bytes into an object.
 
         :param data: Serialized bytes.
         :return: Deserialized object.
         """
-        return
+        ...
 
     @property
     def allowed_types(self) -> list[str] | None:
@@ -40,14 +37,14 @@ class SerializerBase(ABC):
 
         :return: Supported type names or ``None``.
         """
-        return
+        ...
 
 
-SERIALIZERS = Register[SerializerBase]("serializer")
+SERIALIZERS = Register[SerializerProtocol]("serializer")
 
 
 @SERIALIZERS("pickle")
-class PickleSerializer(SerializerBase):
+class PickleSerializer:
     """Serializer based on :mod:`pickle`.
 
     Pickle supports most Python objects, but it is unsafe for untrusted data.
@@ -59,9 +56,14 @@ class PickleSerializer(SerializerBase):
     def deserialize(self, data: bytes) -> Any:
         return pickle.loads(data)
 
+    @property
+    def allowed_types(self) -> list[str] | None:
+        """Return ``None`` because pickle supports most Python objects."""
+        return None
+
 
 @SERIALIZERS("json")
-class JsonSerializer(SerializerBase):
+class JsonSerializer:
     """Serializer based on :mod:`json` with FlexRAG convenience extensions."""
 
     def __init__(self) -> None:
@@ -78,6 +80,39 @@ class JsonSerializer(SerializerBase):
                 return super().default(obj)
 
         self.encoder = CustomEncoder
+
+    @overload
+    def serialize(self, obj: Any) -> bytes: ...
+
+    @overload
+    def serialize(
+        self,
+        obj: Any,
+        to_bytes: Literal[True],
+        ensure_ascii: bool = True,
+        indent: int | None = None,
+        **kwargs,
+    ) -> bytes: ...
+
+    @overload
+    def serialize(
+        self,
+        obj: Any,
+        to_bytes: Literal[False],
+        ensure_ascii: bool = True,
+        indent: int | None = None,
+        **kwargs,
+    ) -> str: ...
+
+    @overload
+    def serialize(
+        self,
+        obj: Any,
+        to_bytes: bool,
+        ensure_ascii: bool = True,
+        indent: int | None = None,
+        **kwargs,
+    ) -> bytes | str: ...
 
     def serialize(
         self,
@@ -130,7 +165,7 @@ def json_dump(
 
 
 @SERIALIZERS("msgpack")
-class MsgpackSerializer(SerializerBase):
+class MsgpackSerializer:
     """Serializer based on :mod:`msgpack` with additional type support."""
 
     def __init__(self) -> None:
@@ -216,4 +251,3 @@ class MsgpackSerializer(SerializerBase):
 
 
 SerializerConfig = SERIALIZERS.make_config(default="msgpack")
-

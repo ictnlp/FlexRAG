@@ -1,4 +1,3 @@
-from abc import ABC, abstractmethod
 from typing import Optional, Protocol
 
 from flexrag.common import Register, data
@@ -38,19 +37,6 @@ class ChunkerProtocol(Protocol):
         :return: Chunks produced from the text.
         """
         ...
-
-
-class ChunkerBase(ABC):
-    """Abstract base class for text chunkers."""
-
-    @abstractmethod
-    def chunk(self, text: str) -> list[Chunk]:
-        """Chunk the given text into smaller chunks.
-
-        :param text: The text to chunk.
-        :return: The chunks of the text.
-        """
-        return
 
 
 CHUNKERS = Register[ChunkerProtocol]("chunker")

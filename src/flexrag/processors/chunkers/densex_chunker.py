@@ -6,7 +6,7 @@ from flexrag.models.generators import GenerationConfig, GeneratorProtocol
 from flexrag.models.tokenizer import TokenizerProtocol
 
 from .basic_chunkers import RecursiveChunker, RecursiveChunkerConfig
-from .chunker_base import CHUNKERS, Chunk, ChunkerBase
+from .chunker_base import CHUNKERS, Chunk
 
 logger = LOGGER_MANAGER.get_logger("flexrag.processors.chunkers.densex_chunker")
 
@@ -25,7 +25,7 @@ class DenseXChunkerConfig:
 
 
 @CHUNKERS("densex", config_class=DenseXChunkerConfig)
-class DenseXChunker(ChunkerBase):
+class DenseXChunker:
     """`DenseXChunker <https://arxiv.org/abs/2312.06648>`_ uses a propositionizer
     model to split text into propositions.
 

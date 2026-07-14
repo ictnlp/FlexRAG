@@ -5,6 +5,7 @@ from .ranker_base import (
     RANKERS,
     RankerBase,
     RankerBaseConfig,
+    RankerProtocol,
     RankingResult,
     RemoteRankerBase,
 )
@@ -20,6 +21,7 @@ __all__ = [
     "LiteLLMRankerConfig",
     "RankerBase",
     "RankerBaseConfig",
+    "RankerProtocol",
     "RankingResult",
     "RemoteRankerBase",
     "RANKERS",

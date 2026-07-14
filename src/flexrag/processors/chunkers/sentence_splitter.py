@@ -1,25 +1,10 @@
-from abc import abstractmethod
 from functools import partial
 
 from flexrag.common import Register, configure
 
-from .chunker_base import Chunk, ChunkerBase
+from .chunker_base import Chunk, ChunkerProtocol
 
-
-class SentenceSplitterBase(ChunkerBase):
-    """Abstract chunker that splits text into sentence-sized chunks."""
-
-    @abstractmethod
-    def chunk(self, text: str) -> list[Chunk]:
-        """Split text into sentence chunks.
-
-        :param text: The text to split.
-        :return: Sentence chunks with half-open character spans when available.
-        """
-        return
-
-
-SENTENCE_SPLITTERS = Register[SentenceSplitterBase]("sentence_splitter")
+SENTENCE_SPLITTERS = Register[ChunkerProtocol]("sentence_splitter")
 
 
 @configure
@@ -34,7 +19,7 @@ class NLTKSentenceSplitterConfig:
 
 
 @SENTENCE_SPLITTERS("nltk_splitter", config_class=NLTKSentenceSplitterConfig)
-class NLTKSentenceSplitter(SentenceSplitterBase):
+class NLTKSentenceSplitter:
     """NLTKSentenceSplitter splits text into sentences using NLTK's PunktSentenceTokenizer.
     For more information, see https://www.nltk.org/api/nltk.tokenize.punkt.html#module-nltk.tokenize.punkt.
     """
@@ -97,7 +82,7 @@ class RegexSplitterConfig:
 
 
 @SENTENCE_SPLITTERS("regex", config_class=RegexSplitterConfig)
-class RegexSplitter(SentenceSplitterBase):
+class RegexSplitter:
     """RegexSentenceSplitter splits text into sentences using a regular expression pattern.
 
     Note that this splitter uses the `regex` module, which might be slightly different from the built-in `re` module.
@@ -143,7 +128,7 @@ class SpacySentenceSplitterConfig:
 
 
 @SENTENCE_SPLITTERS("spacy", config_class=SpacySentenceSplitterConfig)
-class SpacySentenceSplitter(SentenceSplitterBase):
+class SpacySentenceSplitter:
     """SpacySentenceSplitter splits text into sentences using spaCy's sentence splitter."""
 
     def __init__(self, cfg: SpacySentenceSplitterConfig) -> None:

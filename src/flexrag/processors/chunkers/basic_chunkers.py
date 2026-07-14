@@ -4,7 +4,7 @@ from typing import Optional
 from flexrag.common import LOGGER_MANAGER, configure
 from flexrag.models.tokenizer import TokenizerProtocol
 
-from .chunker_base import CHUNKERS, Chunk, ChunkerBase, ChunkerProtocol
+from .chunker_base import CHUNKERS, Chunk, ChunkerProtocol
 from .sentence_splitter import (
     PREDEFINED_SPLIT_PATTERNS,
     RegexSplitter,
@@ -38,7 +38,7 @@ class CharChunkerConfig:
 
 
 @CHUNKERS("char_chunker", config_class=CharChunkerConfig)
-class CharChunker(ChunkerBase):
+class CharChunker:
     """CharChunker splits text into chunks with fixed length of characters."""
 
     def __init__(self, cfg: CharChunkerConfig) -> None:
@@ -92,7 +92,7 @@ class TokenChunkerConfig:
 
 
 @CHUNKERS("token_chunker", config_class=TokenChunkerConfig)
-class TokenChunker(ChunkerBase):
+class TokenChunker:
     """TokenChunker splits text into chunks with fixed number of tokens."""
 
     def __init__(self, cfg: TokenChunkerConfig, tokenizer: TokenizerProtocol) -> None:
@@ -175,7 +175,7 @@ class RecursiveChunkerConfig:
 
 
 @CHUNKERS("recursive_chunker", config_class=RecursiveChunkerConfig)
-class RecursiveChunker(ChunkerBase):
+class RecursiveChunker:
     """RecursiveChunker splits text into chunks recursively using the specified separators.
 
     The order of the separators matters.
@@ -391,7 +391,7 @@ class SentenceChunkerConfig:
 
 
 @CHUNKERS("sentence_chunker", config_class=SentenceChunkerConfig)
-class SentenceChunker(ChunkerBase):
+class SentenceChunker:
     """SentenceChunker first splits text into sentences using the specified sentence
     splitter, then merges the sentences into chunks based on the specified constraints.
     """

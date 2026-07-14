@@ -3,110 +3,53 @@ Rankers
 
 The ranker is the component that determines the order of the results returned by the retriever. FlexRAG provides several rankers that can be used to sort the results based on various criteria.
 
-.. autoclass:: flexrag.ranker.RankerBaseConfig
+``RankerProtocol`` is the public structural interface accepted by ranker users.
+``RankerBase`` remains available for implementations that reuse its configuration
+and asynchronous fallback behavior.
+
+.. autoclass:: flexrag.processors.rankers.RankerProtocol
+    :members:
+
+.. autoclass:: flexrag.processors.rankers.RankerBaseConfig
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.ranker.RankerBase
+.. autoclass:: flexrag.processors.rankers.RankerBase
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.ranker.RankingResult
+.. autoclass:: flexrag.processors.rankers.RankingResult
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.ranker.RankerConfig
+.. autoclass:: flexrag.processors.rankers.RankerConfig
     :members:
     :inherited-members:
 
 
-Local Ranker
-------------
-.. HF Cross Encoder Ranker
-.. autoclass:: flexrag.ranker.HFCrossEncoderRankerConfig
+Ranker Implementations
+----------------------
+
+.. autoclass:: flexrag.processors.rankers.HFRankerConfig
     :members:
     :inherited-members:
-    :show-inheritance:
 
-.. autoclass:: flexrag.ranker.HFCrossEncoderRanker
+.. autoclass:: flexrag.processors.rankers.HFRanker
     :members:
     :show-inheritance:
 
-
-.. HF Cross Seq2Seq Ranker
-.. autoclass:: flexrag.ranker.HFSeq2SeqRankerConfig
+.. autoclass:: flexrag.processors.rankers.RankGPTRankerConfig
     :members:
     :inherited-members:
-    :show-inheritance:
 
-.. autoclass:: flexrag.ranker.HFSeq2SeqRanker
+.. autoclass:: flexrag.processors.rankers.RankGPTRanker
     :members:
     :show-inheritance:
 
-
-.. HF Cross ColBERT Ranker
-.. autoclass:: flexrag.ranker.HFColBertRankerConfig
+.. autoclass:: flexrag.processors.rankers.LiteLLMRankerConfig
     :members:
     :inherited-members:
-    :show-inheritance:
 
-.. autoclass:: flexrag.ranker.HFColBertRanker
-    :members:
-    :show-inheritance:
-
-
-.. RankGPT Ranker
-.. autoclass:: flexrag.ranker.RankGPTRankerConfig
-    :members:
-    :inherited-members:
-    :show-inheritance:
-
-.. autoclass:: flexrag.ranker.RankGPTRanker
-    :members:
-    :show-inheritance:
-
-
-Oneline Ranker
---------------
-.. Cohere Ranker
-.. autoclass:: flexrag.ranker.CohereRankerConfig
-    :members:
-    :inherited-members:
-    :show-inheritance:
-
-.. autoclass:: flexrag.ranker.CohereRanker
-    :members:
-    :show-inheritance:
-
-
-.. Jina Ranker
-.. autoclass:: flexrag.ranker.JinaRankerConfig
-    :members:
-    :inherited-members:
-    :show-inheritance:
-
-.. autoclass:: flexrag.ranker.JinaRanker
-    :members:
-    :show-inheritance:
-
-
-.. Mixedbread Ranker
-.. autoclass:: flexrag.ranker.MixedbreadRankerConfig
-    :members:
-    :inherited-members:
-    :show-inheritance:
-
-.. autoclass:: flexrag.ranker.MixedbreadRanker
-    :members:
-    :show-inheritance:
-
-
-.. Voyage Ranker
-.. autoclass:: flexrag.ranker.VoyageRankerConfig
-    :members:
-    :inherited-members:
-    :show-inheritance:
-
-.. autoclass:: flexrag.ranker.VoyageRanker
+.. autoclass:: flexrag.processors.rankers.LiteLLMRanker
     :members:
     :show-inheritance:
