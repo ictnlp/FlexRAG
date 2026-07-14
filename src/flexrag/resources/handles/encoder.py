@@ -24,7 +24,7 @@ class EncoderHandle(TypedHandle):
         inputs: EncoderInputs,
         log_interval: int = 1000,
         display: str = "auto",
-    ) -> np.ndarray | list[list[float]]:
+    ) -> np.ndarray:
         """Synchronously encode inputs.
 
         :param inputs: Encoder inputs accepted by the formal encoder API.
@@ -62,7 +62,7 @@ class EncoderHandle(TypedHandle):
         inputs: EncoderInputs,
         log_interval: int = 1000,
         display: str = "auto",
-    ) -> np.ndarray | list[list[float]]:
+    ) -> np.ndarray:
         """Asynchronously encode inputs.
 
         :param inputs: Encoder inputs accepted by the formal encoder API.

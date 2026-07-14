@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
-
+from flexrag.common import ChatTurn
 from flexrag.models.generators.generator_base import (
     GenerationConfig,
     GeneratorMessages,
@@ -108,7 +107,7 @@ class GeneratorHandle(TypedHandle):
         generation_config: GenerationConfig | None = None,
         log_interval: int = 1000,
         display: str = "auto",
-    ) -> list[list[Any]]:
+    ) -> list[list[ChatTurn]]:
         """Synchronously generate chat responses.
 
         :param messages: Chat messages accepted by the formal generator API.
@@ -134,7 +133,7 @@ class GeneratorHandle(TypedHandle):
             )
             for batch in self._batches(normalized)
         ]
-        results: list[list[list[Any]]] = self._target.batch_call(
+        results: list[list[list[ChatTurn]]] = self._target.batch_call(
             calls,
             log_interval=log_interval,
             display=display,
@@ -148,7 +147,7 @@ class GeneratorHandle(TypedHandle):
         generation_config: GenerationConfig | None = None,
         log_interval: int = 1000,
         display: str = "auto",
-    ) -> list[list[Any]]:
+    ) -> list[list[ChatTurn]]:
         """Asynchronously generate chat responses.
 
         :param messages: Chat messages accepted by the formal generator API.
@@ -174,7 +173,7 @@ class GeneratorHandle(TypedHandle):
             )
             for batch in self._batches(normalized)
         ]
-        results = await self._target.async_batch_call(
+        results: list[list[list[ChatTurn]]] = await self._target.async_batch_call(
             calls,
             log_interval=log_interval,
             display=display,

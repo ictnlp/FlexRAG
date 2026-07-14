@@ -26,37 +26,20 @@ def _normalize_score_pairs(pairs: PairScorerInput) -> list[tuple[str, str]]:
 
 
 class PairScorerProtocol(Protocol):
-    """Protocol for directly usable raw pair scorers.
+    """Protocol for scorers that assign scores to pairs of texts."""
 
-    Raw pair scorers expose a common canonical-batch interface for direct use.
-    Implementations do not provide runtime policies such as deployment
-    batching, progress logging, or process isolation.
-    """
-
-    def score(
-        self,
-        pairs: PairScorerInput,
-        *,
-        batch_size: int | None = None,
-    ) -> np.ndarray:
+    def score(self, pairs: PairScorerInput) -> np.ndarray:
         """Score one query-candidate pair or a batch of pairs.
 
         :param pairs: Query-candidate pair or pairs to score.
-        :param batch_size: Optional per-call batch size override.
         :return: One score for each input pair.
         """
         ...
 
-    async def async_score(
-        self,
-        pairs: PairScorerInput,
-        *,
-        batch_size: int | None = None,
-    ) -> np.ndarray:
+    async def async_score(self, pairs: PairScorerInput) -> np.ndarray:
         """Score one query-candidate pair or a batch asynchronously.
 
         :param pairs: Query-candidate pair or pairs to score.
-        :param batch_size: Optional per-call batch size override.
         :return: One score for each input pair.
         """
         ...

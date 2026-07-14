@@ -18,7 +18,7 @@ from flexrag.models import (
     SentenceTransformerEncoderConfig,
 )
 from flexrag.models.encoders import EncoderProtocol
-from flexrag.models.generators import GeneratorProtocol
+from flexrag.models.generators import LocalGeneratorBase
 
 pytestmark = pytest.mark.integration
 
@@ -93,7 +93,7 @@ class TestGenerator:
             assert isinstance(r[0].text_content, str)
         return
 
-    async def valid_chat_function(self, generator: GeneratorProtocol):
+    async def valid_chat_function(self, generator: LocalGeneratorBase):
         # test chat & async_chat with sampling
         r1 = generator.chat(self.prompts, self.sampled_cfg, batch_size=2)
         self.valid_chat_sampled(r1)
@@ -111,7 +111,7 @@ class TestGenerator:
         self.valid_chat_stopped(r2)
         return
 
-    async def valid_generate_function(self, generator: GeneratorProtocol):
+    async def valid_generate_function(self, generator: LocalGeneratorBase):
         # test generate & async_generate with sampling
         r1 = generator.generate(self.prefixes, self.sampled_cfg, batch_size=2)
         self.valid_sampled(r1)
@@ -133,7 +133,7 @@ class TestGenerator:
         self.valid_stopped(r2)
         return
 
-    async def run_generator(self, generator: GeneratorProtocol):
+    async def run_generator(self, generator: LocalGeneratorBase):
         try:
             await self.valid_chat_function(generator)
             await self.valid_generate_function(generator)

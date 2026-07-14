@@ -32,48 +32,32 @@ def _normalize_encoder_inputs(inputs: EncoderInputs) -> list[ContentPart]:
 
 
 class EncoderProtocol(Protocol):
-    """Protocol for directly usable raw encoders.
+    """Protocol for encoders that map inputs to vector representations."""
 
-    Raw encoders expose a common public interface for direct use. The public
-    methods normalize convenient input shapes to content blocks before
-    dispatch. Implementations do not provide runtime policies such as
-    deployment batching, progress logging, process isolation, retry, or rate
-    limiting.
-    """
-
-    def encode(
-        self,
-        inputs: EncoderInputs,
-        *,
-        batch_size: int | None = None,
-    ) -> np.ndarray:
+    def encode(self, inputs: EncoderInputs) -> np.ndarray:
         """Encode one input item or a batch of input items.
 
         :param inputs: A string, image content, content block, or a list of
             those values.
-        :param batch_size: Optional per-call batch size override.
         :return: One embedding row for each input item.
         """
         ...
 
-    async def async_encode(
-        self,
-        inputs: EncoderInputs,
-        *,
-        batch_size: int | None = None,
-    ) -> np.ndarray:
+    async def async_encode(self, inputs: EncoderInputs) -> np.ndarray:
         """Encode one input item or a batch of input items asynchronously.
 
         :param inputs: A string, image content, content block, or a list of
             those values.
-        :param batch_size: Optional per-call batch size override.
         :return: One embedding row for each input item.
         """
         ...
 
     @property
     def embedding_size(self) -> int | None:
-        """Return the embedding dimension when it is known."""
+        """Return the embedding dimension when it is known.
+
+        :return: Embedding dimension, or ``None`` when unavailable.
+        """
         ...
 
 
@@ -236,7 +220,9 @@ class RemoteEncoderBase(ABC):
 
         resolved_batch_size = batch_size or self.batch_size
         results = [
-            await self._async_encode_batch(normalized_inputs[i : i + resolved_batch_size])
+            await self._async_encode_batch(
+                normalized_inputs[i : i + resolved_batch_size]
+            )
             for i in range(0, len(normalized_inputs), resolved_batch_size)
         ]
         if len(results) == 1:

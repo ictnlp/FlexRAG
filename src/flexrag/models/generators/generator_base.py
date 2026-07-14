@@ -98,25 +98,17 @@ class GenerationConfig:
 
 
 class GeneratorProtocol(Protocol):
-    """Protocol for directly usable raw generators.
-
-    Raw generators expose a common canonical-batch interface for direct use.
-    Implementations do not provide runtime policies such as deployment
-    batching, progress logging, process isolation, retry, or rate limiting.
-    """
+    """Protocol for generators that produce text completions or chat responses."""
 
     def chat(
         self,
         messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
-        *,
-        batch_size: int | None = None,
     ) -> list[list[ChatTurn]]:
         """Generate chat responses for one conversation or a batch.
 
         :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
-        :param batch_size: Optional per-call batch size override.
         :return: One list of candidate assistant turns for each input
             conversation.
         """
@@ -126,14 +118,11 @@ class GeneratorProtocol(Protocol):
         self,
         messages: GeneratorMessages,
         generation_config: GenerationConfig | None = None,
-        *,
-        batch_size: int | None = None,
     ) -> list[list[ChatTurn]]:
         """Generate chat responses asynchronously for one conversation or a batch.
 
         :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
-        :param batch_size: Optional per-call batch size override.
         :return: One list of candidate assistant turns for each input
             conversation.
         """
@@ -143,14 +132,11 @@ class GeneratorProtocol(Protocol):
         self,
         prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
-        *,
-        batch_size: int | None = None,
     ) -> list[list[str]]:
         """Generate text completions for one prefix or a batch.
 
         :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
-        :param batch_size: Optional per-call batch size override.
         :return: One list of candidate completions for each input prefix.
         """
         ...
@@ -159,14 +145,11 @@ class GeneratorProtocol(Protocol):
         self,
         prefixes: GeneratorPrefixes,
         generation_config: GenerationConfig | None = None,
-        *,
-        batch_size: int | None = None,
     ) -> list[list[str]]:
         """Generate text completions asynchronously for one prefix or a batch.
 
         :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
-        :param batch_size: Optional per-call batch size override.
         :return: One list of candidate completions for each input prefix.
         """
         ...
@@ -327,8 +310,8 @@ class RemoteGeneratorBase(ABC):
     Subclasses implement single-sample async core methods. The public async
     batch methods call those cores sequentially for direct use. The synchronous
     methods run the async batch methods with ``asyncio.run`` and must not be
-    called from an already running event loop. ``batch_size`` is accepted by
-    public methods for protocol compatibility and ignored.
+    called from an already running event loop. ``batch_size`` is accepted for
+    direct-use signature consistency and ignored.
     """
 
     @staticmethod
@@ -381,7 +364,7 @@ class RemoteGeneratorBase(ABC):
 
         :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
-        :param batch_size: Accepted for protocol compatibility and ignored.
+        :param batch_size: Accepted for direct-use signature consistency and ignored.
         :return: One list of candidate assistant turns for each input
             conversation.
         :raises RuntimeError: If called from a running event loop.
@@ -401,7 +384,7 @@ class RemoteGeneratorBase(ABC):
 
         :param messages: Chat messages or message dictionaries to process.
         :param generation_config: Optional generation options for this call.
-        :param batch_size: Accepted for protocol compatibility and ignored.
+        :param batch_size: Accepted for direct-use signature consistency and ignored.
         :return: One list of candidate assistant turns for each input
             conversation.
         """
@@ -423,7 +406,7 @@ class RemoteGeneratorBase(ABC):
 
         :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
-        :param batch_size: Accepted for protocol compatibility and ignored.
+        :param batch_size: Accepted for direct-use signature consistency and ignored.
         :return: One list of candidate completions for each input prefix.
         :raises RuntimeError: If called from a running event loop.
         """
@@ -442,7 +425,7 @@ class RemoteGeneratorBase(ABC):
 
         :param prefixes: Text prefix or prefixes to continue.
         :param generation_config: Optional generation options for this call.
-        :param batch_size: Accepted for protocol compatibility and ignored.
+        :param batch_size: Accepted for direct-use signature consistency and ignored.
         :return: One list of candidate completions for each input prefix.
         """
         del batch_size
