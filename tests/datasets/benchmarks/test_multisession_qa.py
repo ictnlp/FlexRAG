@@ -40,7 +40,7 @@ class TestMultiSessionQADatasets:
                 {"session_id", "generator"} <= session.metadata.keys()
                 for session in item.sessions
             )
-            assert "session_annotations" in item.meta_data
+            assert "session_annotations" in item.metadata
         print(f"ConvoMem-{subset} dataset length: {len(dataset)}")
         print(f"ConvoMem-{subset} dataset test passed.")
         return
@@ -75,7 +75,7 @@ class TestMultiSessionQADatasets:
         for item in dataset:
             self.valid_multisession_qa_sample(item)
             assert all("session_id" in session.metadata for session in item.sessions)
-            assert "session_annotations" in item.meta_data
+            assert "session_annotations" in item.metadata
         print(f"LoCoMo dataset length: {len(dataset)}")
         print("LoCoMo dataset test passed.")
         return

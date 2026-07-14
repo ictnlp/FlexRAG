@@ -15,7 +15,7 @@ def context_to_payload(context: Context) -> dict[str, Any]:
         "context_id": context.context_id,
         "data": context.data,
         "source": context.source,
-        "meta_data": context.meta_data,
+        "metadata": context.metadata,
     }
 
 
@@ -29,5 +29,5 @@ def payload_to_context(payload: dict[str, Any]) -> Context:
         context_id=payload["context_id"],
         data=payload["data"],
         source=payload["source"],
-        meta_data=payload["meta_data"],
+        metadata=payload["metadata"],
     )

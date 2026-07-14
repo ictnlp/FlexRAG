@@ -85,7 +85,7 @@ class GAIADataset(MappingDataset[QASample]):
             question_id=item["task_id"],
             question=item["Question"],
             answers=[item["Final answer"]],
-            meta_data={
+            metadata={
                 "level": item["Level"],
                 "annotator_metadata": item["Annotator Metadata"],
                 "file_name": item["file_name"],

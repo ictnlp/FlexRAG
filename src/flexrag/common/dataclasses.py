@@ -98,13 +98,13 @@ class Context:
     :param context_id: The unique identifier of the context. Default: None.
     :param data: The context data. Default: {}.
     :param source: The source of the context. Default: None.
-    :param meta_data: The metadata of the context. Default: {}.
+    :param metadata: The metadata of the context. Default: {}.
     """
 
     context_id: Optional[str] = None
     data: dict = field(default_factory=dict)
     source: Optional[str] = None
-    meta_data: dict = field(default_factory=dict)
+    metadata: dict = field(default_factory=dict)
 
 
 @data

@@ -72,7 +72,7 @@ class WideSearchDataset(MappingDataset[QASample]):
         self._gold_dir = data_path / "widesearch_gold"
         self._queries_data: dict[str, str] = {}
         self._answers_data: dict[str, list[str]] = {}
-        self._meta_data: dict[str, dict] = {}
+        self._metadata: dict[str, dict] = {}
         for item in self._raw_data:
             qid = item["instance_id"]
             gold_path = self._gold_dir / f"{qid}.csv"
@@ -81,7 +81,7 @@ class WideSearchDataset(MappingDataset[QASample]):
             gold_markdown, gold_rows = _csv_to_markdown_table(gold_path)
             self._queries_data[qid] = item["query"]
             self._answers_data[qid] = [f"```markdown\n{gold_markdown}\n```"]
-            self._meta_data[qid] = {
+            self._metadata[qid] = {
                 "evaluation": json.loads(item["evaluation"]),
                 "language": item["language"],
                 "gold_rows": gold_rows,
@@ -99,5 +99,5 @@ class WideSearchDataset(MappingDataset[QASample]):
             question=self._queries_data[qid],
             question_id=qid,
             answers=self._answers_data[qid],
-            meta_data=self._meta_data[qid],
+            metadata=self._metadata[qid],
         )

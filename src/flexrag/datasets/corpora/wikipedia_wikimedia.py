@@ -73,7 +73,7 @@ class WikipediaWikimediaCorpus(_InMemoryMappingCorpus):
                     "text": item.get("text", ""),
                 },
                 source="wikimedia/wikipedia",
-                meta_data={"url": item.get("url", "")},
+                metadata={"url": item.get("url", "")},
             )
         return
 
@@ -168,7 +168,7 @@ class WikipediaStructuredWikimediaCorpus:
                         context_id=str(item["identifier"]),
                         data={"title": item["name"], "text": "\n\n".join(texts)},
                         source="wikimedia/structured-wikipedia",
-                        meta_data={"url": item["url"]},
+                        metadata={"url": item["url"]},
                     )
                 continue
             for section_idx, section in enumerate(item["sections"]):
@@ -183,7 +183,7 @@ class WikipediaStructuredWikimediaCorpus:
                         "text": text,
                     },
                     source="wikimedia/structured-wikipedia",
-                    meta_data={"url": item["url"]},
+                    metadata={"url": item["url"]},
                 )
         return
 

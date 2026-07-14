@@ -109,7 +109,7 @@ class TwoWikiMultihopQADataset(MappingDataset[ContextualQASample]):
                     question=item["question"],
                     answers=answers,
                     contexts=contexts,
-                    meta_data={
+                    metadata={
                         "type": item.get("type"),
                         "supporting_facts": supporting_facts,
                         "supporting_sentences": supporting_sentences,

@@ -588,12 +588,10 @@ class WideSearchTask(OpenQATask):
                 "passed to WideSearchTask because the metric uses LLM-based "
                 "column/key alignment and field judging."
             )
-        return Evaluator(
-            {"official_score": _WideSearchOfficialMetric(self.llm_judger)}
-        )
+        return Evaluator({"official_score": _WideSearchOfficialMetric(self.llm_judger)})
 
     def evaluate(self, assistant: AssistantBase, sample: QASample) -> AssistantResponse:
-        language = (sample.meta_data or {}).get("language", "en")
+        language = (sample.metadata or {}).get("language", "en")
         template = _ZH_TEMPLATE if language == "zh" else _EN_TEMPLATE
         prompt = template.format(question=sample.question)
         return assistant.answer([{"role": "user", "content": prompt}])

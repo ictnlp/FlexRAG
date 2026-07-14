@@ -82,7 +82,7 @@ class ContextualMCTask(TaskBase):
                         {
                             "question": item.question,
                             "golden": item.answers,
-                            "metadata_test": item.meta_data,
+                            "metadata_test": item.metadata,
                             "response": response,
                         },
                         to_bytes=False,

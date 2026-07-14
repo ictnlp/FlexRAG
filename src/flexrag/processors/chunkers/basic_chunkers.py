@@ -233,7 +233,7 @@ class RecursiveChunker:
                             if current_index is not None
                             else None
                         ),
-                        meta_data={"split_level": level},
+                        metadata={"split_level": level},
                     )
                 )
                 if current_index is not None:
@@ -288,7 +288,7 @@ class RecursiveChunker:
                                 text=chunk_text,
                                 start=current_sub_chunks[0][2][0],
                                 end=current_sub_chunks[-1][2][1],
-                                meta_data={"split_level": level},
+                                metadata={"split_level": level},
                             )
                         )
                         current_sub_chunks = []
@@ -318,7 +318,7 @@ class RecursiveChunker:
                                 text=chunk_text,
                                 start=current_sub_chunks[0][2][0],
                                 end=current_sub_chunks[-1][2][1],
-                                meta_data={"split_level": level},
+                                metadata={"split_level": level},
                             )
                         )
                         current_sub_chunks = []
@@ -346,7 +346,7 @@ class RecursiveChunker:
                         text=chunk_text,
                         start=current_sub_chunks[0][2][0],
                         end=current_sub_chunks[-1][2][1],
-                        meta_data={"split_level": level},
+                        metadata={"split_level": level},
                     )
                 )
             return new_chunks

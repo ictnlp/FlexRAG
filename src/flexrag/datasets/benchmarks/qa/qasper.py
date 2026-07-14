@@ -100,7 +100,7 @@ class QasperDataset(MappingDataset[ContextualQASample]):
                         question=qa["question"],
                         answers=_normalize_answers(qa.get("answers", [])),
                         contexts=contexts,
-                        meta_data={
+                        metadata={
                             **paper_meta,
                             "question_writer": qa.get("question_writer"),
                             "paper_read": qa.get("paper_read"),
@@ -132,7 +132,7 @@ class QasperDataset(MappingDataset[ContextualQASample]):
                             context_id=f"{paper_id}:sec{sec_idx}:para{para_idx}",
                             data={"text": paragraph},
                             source="qasper",
-                            meta_data={
+                            metadata={
                                 "paper_id": paper_id,
                                 "kind": "paragraph",
                                 "section_name": section_name,
@@ -153,7 +153,7 @@ class QasperDataset(MappingDataset[ContextualQASample]):
                         context_id=f"{paper_id}:fig{fig_idx}",
                         data={"text": caption},
                         source="qasper",
-                        meta_data={
+                        metadata={
                             "paper_id": paper_id,
                             "kind": "figure_or_table",
                             "figure_idx": fig_idx,
@@ -168,7 +168,7 @@ class QasperDataset(MappingDataset[ContextualQASample]):
                     context_id=paper_id,
                     data={"text": "\n".join(texts)},
                     source="qasper",
-                    meta_data={
+                    metadata={
                         "paper_id": paper_id,
                         "kind": "paper",
                     },

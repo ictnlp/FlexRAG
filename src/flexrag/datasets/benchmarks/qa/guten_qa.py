@@ -151,18 +151,16 @@ class GutenQADataset(MappingDataset[ContextualQASample]):
         self._queries_data = {}
         self._answers_data = {}
         self._book_ids_data = {}
-        self._meta_data = {}
+        self._metadata = {}
         qa_pairs = pd.read_parquet(qa_path)
         for idx, row in qa_pairs.iterrows():
             query_id = str(idx)
             self._queries_data[query_id] = row["Question"]
             self._answers_data[query_id] = [row["Answer"]]
             self._book_ids_data[query_id] = row["Book ID"]
-            self._meta_data[query_id] = {
-                "Chunk Must Contain": row["Chunk Must Contain"]
-            }
+            self._metadata[query_id] = {"Chunk Must Contain": row["Chunk Must Contain"]}
             if self._context_mode == "lumber_chunk":
-                self._meta_data[query_id]["golden_context_id"] = (
+                self._metadata[query_id]["golden_context_id"] = (
                     f"{row['Book ID']}_{row['Chunk ID']}"
                 )
         self._qids = list(self._queries_data.keys())
@@ -178,5 +176,5 @@ class GutenQADataset(MappingDataset[ContextualQASample]):
             answers=self._answers_data[qid],
             contexts=self._context_data[self._book_ids_data[qid]],
             question_id=qid,
-            meta_data=self._meta_data[qid],
+            metadata=self._metadata[qid],
         )

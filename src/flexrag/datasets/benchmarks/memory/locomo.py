@@ -51,7 +51,7 @@ class LoCoMoDataset(MappingDataset[MultiSessionQASample]):
         raw_data = json.loads(data_path.read_text(encoding="utf-8"))
         self._qa_data = {}
         self._conv_data = {}
-        self._meta_data = {}
+        self._metadata = {}
         for group in raw_data:
             # parse conversation
             group_id = group["sample_id"]
@@ -98,7 +98,7 @@ class LoCoMoDataset(MappingDataset[MultiSessionQASample]):
                     ]
                 messages.append(message)
             self._conv_data[group_id] = messages
-            self._meta_data[group_id] = metadatas
+            self._metadata[group_id] = metadatas
             # parse qa pairs
             for i, qa in enumerate(group["qa"]):
                 qid = f"locomo_{group_id}_{i}"
@@ -112,7 +112,7 @@ class LoCoMoDataset(MappingDataset[MultiSessionQASample]):
         qid = list(self._qa_data.keys())[index]
         group_id = qid.split("_")[1]
         metadata = {
-            "session_annotations": deepcopy(self._meta_data[group_id]),
+            "session_annotations": deepcopy(self._metadata[group_id]),
         }
         metadata["evidence"] = deepcopy(self._qa_data[qid].get("evidence", []))
         metadata["category"] = self._qa_data[qid].get("category", 1)
@@ -129,5 +129,5 @@ class LoCoMoDataset(MappingDataset[MultiSessionQASample]):
             sessions=self._conv_data[group_id],
             question=self._qa_data[qid]["question"],
             answers=[response],
-            meta_data=metadata,
+            metadata=metadata,
         )

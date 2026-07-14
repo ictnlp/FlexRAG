@@ -87,7 +87,7 @@ class LongMemEvalDataset(MappingDataset[MultiSessionQASample]):
                 question=item["question"],
                 answers=[str(item["answer"])],
                 sessions=sessions,
-                meta_data=metadata,
+                metadata=metadata,
             )
         return
 

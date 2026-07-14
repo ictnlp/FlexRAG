@@ -59,7 +59,7 @@ class DeepSearchQADataset(MappingDataset[QASample]):
         return QASample(
             question=item["problem"],
             answers=[item["answer"]],
-            meta_data={
+            metadata={
                 "problem_category": item["problem_category"],
                 "answer_type": item["answer_type"],
             },

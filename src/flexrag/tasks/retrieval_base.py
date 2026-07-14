@@ -105,7 +105,7 @@ class RetrievalTask(TaskBase):
                             "question": item.question,
                             "golden_contexts": item.contexts,
                             "qrels": item.qrels,
-                            "metadata": item.meta_data,
+                            "metadata": item.metadata,
                             "contexts": ctxs,
                         },
                         to_bytes=False,

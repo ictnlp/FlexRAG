@@ -176,9 +176,9 @@ class UDAQATask(OpenQATask):
         )
 
     def evaluate(self, assistant: AssistantBase, sample: QASample) -> AssistantResponse:
-        meta_data = sample.meta_data or {}
-        file_path = meta_data["source_file_path"]
-        file_format = meta_data["source_file_format"]
+        metadata = sample.metadata or {}
+        file_path = metadata["source_file_path"]
+        file_format = metadata["source_file_format"]
         prompt = self.instruction.format(question=sample.question)
         if file_format == "pdf":
             file_block = {"type": "pdf", "file_path": file_path}
@@ -186,8 +186,8 @@ class UDAQATask(OpenQATask):
             file_block = {
                 "type": "file",
                 "file_path": file_path,
-                "mime_type": meta_data["source_mime_type"],
-                "file_name": meta_data["source_file_name"],
+                "mime_type": metadata["source_mime_type"],
+                "file_name": metadata["source_file_name"],
             }
         return assistant.answer(
             [

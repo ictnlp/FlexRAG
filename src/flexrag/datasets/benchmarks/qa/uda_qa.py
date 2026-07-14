@@ -195,7 +195,7 @@ class UDAQADataset(MappingDataset[QASample]):
         source_path, source_format, source_mime_type = self._resolve_source_file(
             item["doc_name"]
         )
-        meta_data = {
+        metadata = {
             "subset": self._subset,
             "doc_name": item["doc_name"],
             "source_file_path": source_path.as_posix(),
@@ -204,15 +204,15 @@ class UDAQADataset(MappingDataset[QASample]):
             "source_mime_type": source_mime_type,
         }
         if "doc_url" in item:
-            meta_data["doc_url"] = item["doc_url"]
+            metadata["doc_url"] = item["doc_url"]
         if "answer_type" in item:
-            meta_data["answer_type"] = item["answer_type"]
+            metadata["answer_type"] = item["answer_type"]
         if "answer_scale" in item:
-            meta_data["answer_scale"] = item["answer_scale"]
+            metadata["answer_scale"] = item["answer_scale"]
 
         return QASample(
             question_id=str(item["q_uid"]),
             question=item["question"],
             answers=answers,
-            meta_data=meta_data,
+            metadata=metadata,
         )

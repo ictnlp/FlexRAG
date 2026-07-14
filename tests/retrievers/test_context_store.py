@@ -17,9 +17,9 @@ from flexrag.retrievers import (
 
 def contexts() -> list[Context]:
     return [
-        Context(context_id="doc-a", data={"text": "alpha"}, meta_data={"rank": 1}),
-        Context(context_id="doc-b", data={"text": "beta"}, meta_data={"rank": 2}),
-        Context(context_id="doc-c", data={"text": "gamma"}, meta_data={"rank": 3}),
+        Context(context_id="doc-a", data={"text": "alpha"}, metadata={"rank": 1}),
+        Context(context_id="doc-b", data={"text": "beta"}, metadata={"rank": 2}),
+        Context(context_id="doc-c", data={"text": "gamma"}, metadata={"rank": 3}),
     ]
 
 
@@ -61,7 +61,7 @@ def test_context_store_sync_contract(
 
     reopened = store_factory(tmp_path)
     assert reopened.count() == 3
-    assert reopened.get("doc-a").meta_data["rank"] == 1
+    assert reopened.get("doc-a").metadata["rank"] == 1
     reopened.clear()
     assert reopened.count() == 0
     reopened.close()

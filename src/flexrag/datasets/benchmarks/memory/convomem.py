@@ -175,7 +175,7 @@ class ConvoMemDataset(MappingDataset[MultiSessionQASample]):
                                 answers=[answer],
                                 sessions=sessions,
                                 sessions_id=sessions_id,
-                                meta_data=metadata,
+                                metadata=metadata,
                             )
                         )
         return

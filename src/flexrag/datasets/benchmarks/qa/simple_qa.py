@@ -46,11 +46,11 @@ class SimpleQADataset(MappingDataset[QASample]):
         reader = LineDelimitedReader(data_path)
         self._answers_data = {}
         self._queries_data = {}
-        self._meta_data = {}
+        self._metadata = {}
         for idx, row in enumerate(reader):
             self._queries_data[str(idx)] = row["problem"]
             self._answers_data[str(idx)] = [row["answer"]]
-            self._meta_data[str(idx)] = eval(row["metadata"])
+            self._metadata[str(idx)] = eval(row["metadata"])
         self._qids = list(self._queries_data.keys())
         return
 
@@ -62,5 +62,5 @@ class SimpleQADataset(MappingDataset[QASample]):
         return QASample(
             question=self._queries_data[qid],
             answers=self._answers_data[qid],
-            meta_data=self._meta_data[qid],
+            metadata=self._metadata[qid],
         )

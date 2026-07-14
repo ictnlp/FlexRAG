@@ -173,7 +173,7 @@ class LongBenchTask(ContextualQATask):
                     )
                 )
             case subset if subset in {"lsht", "trec"}:
-                all_classes = [item.meta_data["all_classes"] for item in self.testset]
+                all_classes = [item.metadata["all_classes"] for item in self.testset]
 
                 # Classification subsets are evaluated with accuracy
                 def classification_score(

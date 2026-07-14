@@ -47,7 +47,7 @@ class LongBenchV2Dataset(MappingDataset[ContextualMCSample]):
         self._queries_data: dict[str, str] = {}
         self._answers_data: dict[str, list[int]] = {}
         self._choices_data: dict[str, list[str]] = {}
-        self._meta_data: dict[str, dict[str, str]] = {}
+        self._metadata: dict[str, dict[str, str]] = {}
         data_path = data_dir / "data.json"
         data = json.load(open(data_path, "r", encoding="utf-8"))
         all_keys = ("choice_A", "choice_B", "choice_C", "choice_D")
@@ -59,10 +59,10 @@ class LongBenchV2Dataset(MappingDataset[ContextualMCSample]):
                 context_id=qid,
                 data={"text": item["context"]},
                 source=f"LongBench-v2",
-                meta_data={"length": item["length"]},
+                metadata={"length": item["length"]},
             )
             self._choices_data[qid] = [item[key] for key in all_keys]
-            self._meta_data[qid] = {
+            self._metadata[qid] = {
                 "domain": item.get("domain", "unknown"),
                 "sub_domain": item.get("sub_domain", "unknown"),
                 "difficulty": item.get("difficulty", "unknown"),
@@ -81,5 +81,5 @@ class LongBenchV2Dataset(MappingDataset[ContextualMCSample]):
             choices=self._choices_data[qid],
             answers=self._answers_data[qid],
             contexts=[self._context_data[qid]],
-            meta_data=self._meta_data[qid],
+            metadata=self._metadata[qid],
         )

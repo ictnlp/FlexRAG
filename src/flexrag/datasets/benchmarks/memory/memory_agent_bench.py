@@ -101,7 +101,7 @@ class MemoryAgentBenchDataset(MappingDataset[ContextualQASample]):
                 self._query_data[qid] = {
                     "question": question,
                     "answer": answer,
-                    "meta_data": metadata,
+                    "metadata": metadata,
                     "context_id": context_id,
                 }
         return
@@ -118,5 +118,5 @@ class MemoryAgentBenchDataset(MappingDataset[ContextualQASample]):
             answers=data["answer"],
             contexts=[context],
             question_id=qid,
-            meta_data=data["meta_data"],
+            metadata=data["metadata"],
         )

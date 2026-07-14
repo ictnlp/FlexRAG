@@ -89,7 +89,7 @@ class MTRAGDataset(MappingDataset[IRDialogueSample]):
                             "text": raw["text"],
                             "title": raw["title"],
                         },
-                        meta_data={"url": raw["url"]},
+                        metadata={"url": raw["url"]},
                         source=f"mtrag-{domain}",
                     )
                     self._context_data[data.context_id] = data

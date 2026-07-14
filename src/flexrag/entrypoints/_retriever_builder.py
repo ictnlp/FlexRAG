@@ -183,7 +183,7 @@ def iter_jsonl_contexts(
     :param id_field: Row field used as ``context_id`` when ``context_id`` is
         absent.
     :param source_field: Optional row field used as ``source``.
-    :param metadata_field: Optional row field used as ``meta_data``.
+    :param metadata_field: Optional row field used as ``metadata``.
     :return: Context iterator.
     """
     control_fields = {
@@ -191,7 +191,7 @@ def iter_jsonl_contexts(
         id_field,
         "data",
         "source",
-        "meta_data",
+        "metadata",
     }
     if source_field is not None:
         control_fields.add(source_field)
@@ -211,19 +211,21 @@ def iter_jsonl_contexts(
                     for key, value in row.items()
                     if key not in control_fields
                 }
-            source = row.get(source_field) if source_field is not None else row.get("source")
-            meta_data = (
+            source = (
+                row.get(source_field) if source_field is not None else row.get("source")
+            )
+            metadata = (
                 row.get(metadata_field)
                 if metadata_field is not None
-                else row.get("meta_data", {})
+                else row.get("metadata", {})
             )
-            if not isinstance(meta_data, dict):
-                meta_data = {"value": meta_data}
+            if not isinstance(metadata, dict):
+                metadata = {"value": metadata}
             yield Context(
                 context_id=row.get("context_id", row.get(id_field)),
                 data=data,
                 source=source,
-                meta_data=meta_data,
+                metadata=metadata,
             )
 
 

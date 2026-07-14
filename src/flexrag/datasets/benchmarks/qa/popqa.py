@@ -87,5 +87,5 @@ class PopQADataset(MappingDataset[QASample]):
             question_id=question_id,
             question=item["question"],
             answers=answers,
-            meta_data=item,
+            metadata=item,
         )

@@ -131,7 +131,7 @@ class LongBenchDataset(MappingDataset[ContextualQASample]):
         self._context_data = {}
         self._queries_data = {}
         self._answers_data = {}
-        self._meta_data = {}
+        self._metadata = {}
         data_path = data_dir / self._file_name_map[self._subset]
         reader = LineDelimitedReader(data_path)
         for item in reader:
@@ -148,7 +148,7 @@ class LongBenchDataset(MappingDataset[ContextualQASample]):
                 data={"text": ctx_text},
                 source=f"LongBench-{self._subset}",
             )
-            self._meta_data[qid] = {
+            self._metadata[qid] = {
                 "length": item.get("length", 0),
                 "language": item.get("language", "unknown"),
                 "all_classes": item.get("all_classes", []),
@@ -166,5 +166,5 @@ class LongBenchDataset(MappingDataset[ContextualQASample]):
             question=self._queries_data[qid],
             answers=self._answers_data[qid],
             contexts=[self._context_data[qid]],
-            meta_data=self._meta_data[qid],
+            metadata=self._metadata[qid],
         )

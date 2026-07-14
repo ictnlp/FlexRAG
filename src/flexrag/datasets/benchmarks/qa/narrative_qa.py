@@ -80,7 +80,7 @@ class NarrativeQADataset(MappingDataset[ContextualQASample]):
                     "title": item["document"]["summary"]["title"],
                 },
                 source=item["document"].get("url", ""),
-                meta_data={
+                metadata={
                     "kind": item["document"].get("kind", ""),
                     "file_size": item["document"].get("file_size", 0),
                 },

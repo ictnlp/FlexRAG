@@ -126,7 +126,7 @@ class MuSiQueDataset(MappingDataset[ContextualQASample]):
                             "title": paragraph["title"],
                         },
                         source="musique",
-                        meta_data={
+                        metadata={
                             "idx": paragraph["idx"],
                             "is_supporting": support_flag,
                         },
@@ -139,7 +139,7 @@ class MuSiQueDataset(MappingDataset[ContextualQASample]):
                     question=item["question"],
                     answers=answers,
                     contexts=contexts,
-                    meta_data={
+                    metadata={
                         "answerable": item.get("answerable"),
                         "question_decomposition": item.get(
                             "question_decomposition", []

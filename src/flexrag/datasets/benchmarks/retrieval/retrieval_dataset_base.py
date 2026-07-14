@@ -32,7 +32,7 @@ class RetrievalDatasetBase(MappingDataset[IRSample | RankingSample]):
                 context_id=context.context_id,
                 data=dict(context.data),
                 source=context.source,
-                meta_data=dict(context.meta_data),
+                metadata=dict(context.metadata),
             )
         return Context(context_id=ctx_id)
 
@@ -56,7 +56,7 @@ class RetrievalDatasetBase(MappingDataset[IRSample | RankingSample]):
         question_id: str,
         qrels: dict[str, float],
         candidates: list[dict[str, Any]] | None = None,
-        meta_data: dict | None = None,
+        metadata: dict | None = None,
     ) -> IRSample | RankingSample:
         relevant_ctxs: list[Context] = []
         for ctx_id, relevance in qrels.items():
@@ -73,7 +73,7 @@ class RetrievalDatasetBase(MappingDataset[IRSample | RankingSample]):
                 contexts=relevant_ctxs,
                 qrels=dict(qrels),
                 candidates=candidate_ctxs,
-                meta_data=meta_data,
+                metadata=metadata,
             )
 
         return IRSample(
@@ -81,5 +81,5 @@ class RetrievalDatasetBase(MappingDataset[IRSample | RankingSample]):
             question_id=question_id,
             contexts=relevant_ctxs,
             qrels=dict(qrels),
-            meta_data=meta_data,
+            metadata=metadata,
         )

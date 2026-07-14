@@ -13,14 +13,14 @@ class Chunk:
     :type start: Optional[int]
     :param end: The end index of the chunk in the original text.
     :type end: Optional[int]
-    :param meta_data: Optional metadata associated with the chunk.
-    :type meta_data: Optional[dict]
+    :param metadata: Optional metadata associated with the chunk.
+    :type metadata: Optional[dict]
     """
 
     text: str
     start: Optional[int] = None
     end: Optional[int] = None
-    meta_data: Optional[dict] = None
+    metadata: Optional[dict] = None
 
 
 class ChunkerProtocol(Protocol):

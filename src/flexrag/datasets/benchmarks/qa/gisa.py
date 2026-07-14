@@ -120,7 +120,7 @@ class GISADataset(MappingDataset[QASample]):
                     question=question,
                     question_id=qid,
                     answers=[answer_json],
-                    meta_data={
+                    metadata={
                         "answer_type": item["answer_type"],
                         "question_type": item["question_type"],
                         "topic": item["topic"],

@@ -25,7 +25,7 @@ class Config:
     :param corpus_path: Line-delimited JSON file containing contexts.
     :param id_field: JSON row field used as ``context_id`` when absent.
     :param source_field: Optional JSON row field used as ``source``.
-    :param metadata_field: Optional JSON row field used as ``meta_data``.
+    :param metadata_field: Optional JSON row field used as ``metadata``.
     :param reinit: Whether to clear existing store/backend artifacts first.
     :param context_store: Context store construction configuration.
     :param backend: Backend construction configuration.

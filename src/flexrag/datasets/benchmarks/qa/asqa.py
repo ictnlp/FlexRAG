@@ -113,7 +113,7 @@ class ASQADataset(MappingDataset[QASample]):
                         question_id=sample_id,
                         question=str(row["ambiguous_question"]),
                         answers=answers,
-                        meta_data={
+                        metadata={
                             "sample_id": sample_id,
                             "split": config.split,
                             "qa_pairs": row.get("qa_pairs", []) or [],

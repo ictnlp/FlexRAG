@@ -70,5 +70,5 @@ class MedBrowseCompDataset(MappingDataset[QASample]):
         return QASample(
             question=item["prompt"],
             answers=[item["gold"]],
-            meta_data={"task_name": item["task_name"]},
+            metadata={"task_name": item["task_name"]},
         )

@@ -17,14 +17,14 @@ class IRSample:
         Default: None.
     :param qrels: Mapping from context IDs to their relevance grades for this
         question. Defaults to an empty mapping.
-    :param meta_data: The metadata of the evaluation data. Default: None.
+    :param metadata: The metadata of the evaluation data. Default: None.
     """
 
     question: str
     question_id: Optional[str] = None
     contexts: Optional[list[Context]] = None
     qrels: dict[str, float] = field(default_factory=dict)
-    meta_data: Optional[dict] = None
+    metadata: Optional[dict] = None
 
 
 @data(kw_only=True)
@@ -37,7 +37,7 @@ class RankingSample(IRSample):
     :param candidates: Retrieved candidate contexts to be ranked. Required.
     :param question_id: The unique identifier for the question. Default: None.
     :param contexts: The contexts related to the question. Default: None.
-    :param meta_data: The metadata of the evaluation data. Default: None.
+    :param metadata: The metadata of the evaluation data. Default: None.
     """
 
     candidates: list[RetrievedContext]
@@ -50,14 +50,14 @@ class MultipleChoiceSample:
     :param question: The question for evaluation. Required.
     :param question_id: The unique identifier for the question. Default: None.
     :param choices: The list of answer choices. Required.
-    :param meta_data: The metadata of the evaluation data. Default: None.
+    :param metadata: The metadata of the evaluation data. Default: None.
     :param answers: The golden answers for the question. Default: None.
     """
 
     question: str
     choices: list[str]
     question_id: Optional[str] = None
-    meta_data: Optional[dict] = None
+    metadata: Optional[dict] = None
     answers: Optional[list[int]] = None
 
 
@@ -68,7 +68,7 @@ class ContextualMCSample(MultipleChoiceSample):
     :param question: The question for evaluation. Required.
     :param question_id: The unique identifier for the question. Default: None.
     :param choices: The list of answer choices. Required.
-    :param meta_data: The metadata of the evaluation data. Default: None.
+    :param metadata: The metadata of the evaluation data. Default: None.
     :param answers: The golden answers for the question. Default: None.
     :param contexts: The contexts related to the question. Default: [].
     """
@@ -87,7 +87,7 @@ class IRMCSample(MultipleChoiceSample, IRSample):
     :param question: The question for evaluation. Required.
     :param question_id: The unique identifier for the question. Default: None.
     :param choices: The list of answer choices. Required.
-    :param meta_data: The metadata of the evaluation data. Default: None.
+    :param metadata: The metadata of the evaluation data. Default: None.
     :param answers: The golden answers for the question. Default: None.
     :param contexts: The golden contexts related to the question. Default: [].
     """
@@ -99,13 +99,13 @@ class QASample:
 
     :param question: The question for evaluation. Required.
     :param question_id: The unique identifier for the question. Default: None.
-    :param meta_data: The metadata of the evaluation data. Default: None.
+    :param metadata: The metadata of the evaluation data. Default: None.
     :param answers: The golden answers for the question. Default: None.
     """
 
     question: str
     question_id: Optional[str] = None
-    meta_data: Optional[dict] = None
+    metadata: Optional[dict] = None
     answers: Optional[list[str]] = None
 
 
@@ -115,7 +115,7 @@ class ContextualQASample(QASample):
 
     :param question: The question for evaluation. Required.
     :param question_id: The unique identifier for the question. Default: None.
-    :param meta_data: The metadata of the evaluation data. Default: None.
+    :param metadata: The metadata of the evaluation data. Default: None.
     :param answers: The golden answers for the question. Default: None.
     :param contexts: The contexts related to the question. Default: [].
     """
@@ -133,7 +133,7 @@ class IRQASample(QASample, IRSample):
 
     :param question: The question for evaluation. Required.
     :param question_id: The unique identifier for the question. Default: None.
-    :param meta_data: The metadata of the evaluation data. Default: None.
+    :param metadata: The metadata of the evaluation data. Default: None.
     :param answers: The golden answers for the question. Default: None.
     :param contexts: The golden contexts related to the question. Default: [].
     """
@@ -149,7 +149,7 @@ class MultiSessionQASample(QASample):
     :param sessions: A list of completed conversation sessions. Default: [].
     :param sessions_id: The unique identifier for the conversation sessions.
         Default: None.
-    :param meta_data: The metadata of the evaluation data. Default: None.
+    :param metadata: The metadata of the evaluation data. Default: None.
     """
 
     sessions: list[ChatMessages] = field(default_factory=list)
@@ -163,13 +163,13 @@ class DialogueSample:
     :param dialogue_id: The unique identifier for the dialogue. Default: None.
     :param messages: The history messages of the dialogue. Required.
     :param golden_responses: The golden responses for the dialogue. Default: None.
-    :param meta_data: The metadata of the evaluation data. Default: None.
+    :param metadata: The metadata of the evaluation data. Default: None.
     """
 
     messages: ChatMessages
     dialogue_id: Optional[str] = None
     golden_responses: Optional[list[ChatTurn]] = None
-    meta_data: Optional[dict] = None
+    metadata: Optional[dict] = None
 
 
 @data(kw_only=True)
@@ -180,7 +180,7 @@ class ContextualDialogueSample(DialogueSample):
     :param messages: The history messages of the dialogue. Required.
     :param golden_responses: The golden responses for the dialogue. Default: None.
     :param contexts: The contexts related to the dialogue. Default: [].
-    :param meta_data: The metadata of the evaluation data. Default: None.
+    :param metadata: The metadata of the evaluation data. Default: None.
     """
 
     contexts: list[Context] = field(default_factory=list)
@@ -199,7 +199,7 @@ class IRDialogueSample(DialogueSample):
     :param contexts: The golden contexts related to the dialogue. Default: [].
     :param qrels: Mapping from context IDs to their relevance grades for this
         dialogue. Defaults to an empty mapping.
-    :param meta_data: The metadata of the evaluation data. Default: None.
+    :param metadata: The metadata of the evaluation data. Default: None.
     """
 
     contexts: list[Context] = field(default_factory=list)

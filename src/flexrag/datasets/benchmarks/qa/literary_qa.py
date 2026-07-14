@@ -53,7 +53,7 @@ class LiteraryQADataset(MappingDataset[ContextualQASample]):
                     "text": row["text"],
                 },
                 source="literary_qa",
-                meta_data=metadata,
+                metadata=metadata,
             )
             self._context_data[context.context_id] = context
             for n, qa_pair in enumerate(row["qas"]):

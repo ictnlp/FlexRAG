@@ -98,7 +98,7 @@ def main(config: Config) -> None:
                         {
                             "question": item.question,
                             "golden_contexts": item.contexts,
-                            "metadata": item.meta_data,
+                            "metadata": item.metadata,
                             "contexts": ctxs,
                         },
                         ensure_ascii=False,

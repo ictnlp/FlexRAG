@@ -60,8 +60,8 @@ class TestEndToEndRAG:
         answerability = set()
         for item in dataset:
             self.valid_ir_qa_sample(item)
-            answerability.add(item.meta_data["answerability"])
-            if item.meta_data["answerability"] == "answerable":
+            answerability.add(item.metadata["answerability"])
+            if item.metadata["answerability"] == "answerable":
                 assert len(item.answers) > 0
                 assert len(item.contexts) > 0
             else:

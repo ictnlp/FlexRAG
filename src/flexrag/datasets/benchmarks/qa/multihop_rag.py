@@ -50,7 +50,7 @@ class MultihopRAGDataset(MappingDataset[ContextualQASample]):
                 context_id=ctx_id,
                 data={"text": item["body"], "title": item["title"]},
                 source=item["source"],
-                meta_data={
+                metadata={
                     "author": item["author"],
                     "category": item["category"],
                     "url": item["url"],
@@ -62,17 +62,17 @@ class MultihopRAGDataset(MappingDataset[ContextualQASample]):
         self._queries_data = {}
         self._answers_data = {}
         self._qrels_data = {}
-        self._meta_data = {}
+        self._metadata = {}
         data = load_dataset(data_path.as_posix(), name="MultiHopRAG", split="train")
         for idx, item in enumerate(data):
             qid = str(idx)
             self._queries_data[qid] = item["query"]
             self._answers_data[qid] = [item["answer"]]
-            self._meta_data[qid] = {"question_type": item["question_type"], "facts": []}
+            self._metadata[qid] = {"question_type": item["question_type"], "facts": []}
             qrels = {}
             for ctx in item["evidence_list"]:
                 qrels[ctx["title"]] = 1.0
-                self._meta_data[qid]["facts"].append(ctx["fact"])
+                self._metadata[qid]["facts"].append(ctx["fact"])
             self._qrels_data[qid] = qrels
         self._qids = list(self._queries_data.keys())
         return
@@ -90,5 +90,5 @@ class MultihopRAGDataset(MappingDataset[ContextualQASample]):
             question_id=qid,
             contexts=contexts,
             answers=self._answers_data[qid],
-            meta_data=self._meta_data[qid],
+            metadata=self._metadata[qid],
         )

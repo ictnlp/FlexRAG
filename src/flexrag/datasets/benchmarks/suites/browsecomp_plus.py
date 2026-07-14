@@ -112,7 +112,7 @@ class BrowseCompPlusDataset(MappingDataset[IRQASample]):
                     context_id=item["docid"],
                     data={"text": item.get("text", "")},
                     source="browsecomp-plus",
-                    meta_data={"url": item.get("url", "")},
+                    metadata={"url": item.get("url", "")},
                 )
             self._corpus = _ContextMappingCorpus(self._context_data)
         else:
@@ -122,7 +122,7 @@ class BrowseCompPlusDataset(MappingDataset[IRQASample]):
         self._answers_data: dict[str, list[str]] = {}
         self._evidence_docs: dict[str, list[dict]] = {}
         self._qrels_data: dict[str, dict[str, float]] = {}
-        self._meta_data: dict[str, dict] = {}
+        self._metadata: dict[str, dict] = {}
         for item in raw_dataset:
             decrypted = _transform_decrypt(item, _CANARY, skip_keys={"query_id"})
             qid = str(decrypted["query_id"])
@@ -138,7 +138,7 @@ class BrowseCompPlusDataset(MappingDataset[IRQASample]):
             self._answers_data[qid] = [decrypted["answer"]]
             self._evidence_docs[qid] = evidence_docs
             self._qrels_data[qid] = qrels
-            self._meta_data[qid] = {
+            self._metadata[qid] = {
                 "evidence_doc_ids": [doc["docid"] for doc in evidence_docs],
                 "gold_doc_ids": [doc["docid"] for doc in gold_docs],
                 "negative_doc_ids": [doc["docid"] for doc in negative_docs],
@@ -161,7 +161,7 @@ class BrowseCompPlusDataset(MappingDataset[IRQASample]):
                         context_id=docid,
                         data={"text": doc.get("text", "")},
                         source="browsecomp-plus",
-                        meta_data={"url": doc.get("url", "")},
+                        metadata={"url": doc.get("url", "")},
                     )
                 )
         return contexts
@@ -174,7 +174,7 @@ class BrowseCompPlusDataset(MappingDataset[IRQASample]):
             answers=self._answers_data[qid],
             contexts=self._build_contexts(qid),
             qrels=dict(self._qrels_data[qid]),
-            meta_data=self._meta_data[qid],
+            metadata=self._metadata[qid],
         )
 
     @property

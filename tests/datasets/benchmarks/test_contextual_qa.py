@@ -81,9 +81,9 @@ class TestContextualQA:
         for item in dataset:
             self.valid_contextual_qa_sample(item)
             assert item.question_id is not None
-            assert item.meta_data is not None
-            assert "supporting_facts" in item.meta_data
-            assert "evidences" in item.meta_data
+            assert item.metadata is not None
+            assert "supporting_facts" in item.metadata
+            assert "evidences" in item.metadata
         print(f"2WikiMultihopQA-{split} dataset length: {len(dataset)}")
         print(f"2WikiMultihopQA-{split} dataset test passed.")
         return

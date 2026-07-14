@@ -133,7 +133,7 @@ class ChatRAGBenchDataset(MappingDataset[ContextualDialogueSample]):
                         "text": str(ctx.get("text", "")),
                     },
                     source=f"chatrag_bench-{subset}",
-                    meta_data=extra_meta,
+                    metadata=extra_meta,
                 )
             )
         return contexts
@@ -154,20 +154,20 @@ class ChatRAGBenchDataset(MappingDataset[ContextualDialogueSample]):
         dialogue_id = str(item.get("id", f"{subset}_{index}"))
         if subset == "all":
             dialogue_id = f"{subset}_{dialogue_id}"
-        meta_data = {
+        metadata = {
             "subset": subset,
             "document": item.get("document"),
             "ground_truth_ctx": item.get("ground_truth_ctx"),
         }
         for key, value in item.items():
             if key not in {"messages", "ctxs", "answers", "answer"}:
-                meta_data.setdefault(key, value)
+                metadata.setdefault(key, value)
         return ContextualDialogueSample(
             dialogue_id=dialogue_id,
             messages=self._build_messages(item),
             golden_responses=self._build_golden_responses(item),
             contexts=self._build_contexts(item, subset, dialogue_id, num_ctx),
-            meta_data=meta_data,
+            metadata=metadata,
         )
 
     def __len__(self) -> int:

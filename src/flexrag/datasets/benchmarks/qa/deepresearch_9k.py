@@ -56,7 +56,7 @@ class DeepResearch9KDataset(MappingDataset[QASample]):
         return QASample(
             question=item["question"],
             answers=[item["final answer"]],
-            meta_data={
+            metadata={
                 "difficulty": item["difficulty"],
                 "search trajectory": item["search trajectory"],
             },

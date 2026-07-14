@@ -70,7 +70,7 @@ class FramesDataset(MappingDataset[IRQASample]):
         self._queries_data: dict[str, str] = {}
         self._answers_data: dict[str, list[str]] = {}
         self._links_data: dict[str, list[str]] = {}
-        self._meta_data: dict[str, dict] = {}
+        self._metadata: dict[str, dict] = {}
         for item in raw_dataset:
             qid = str(item["Unnamed: 0"])
             wiki_links = ast.literal_eval(item["wiki_links"])
@@ -78,7 +78,7 @@ class FramesDataset(MappingDataset[IRQASample]):
             self._queries_data[qid] = item["Prompt"]
             self._answers_data[qid] = [item["Answer"]]
             self._links_data[qid] = wiki_links
-            self._meta_data[qid] = {
+            self._metadata[qid] = {
                 "reasoning_types": item["reasoning_types"],
                 "wiki_links": wiki_links,
             }
@@ -96,7 +96,7 @@ class FramesDataset(MappingDataset[IRQASample]):
             self._context_by_url = {}
             self._context_by_title = {}
             for context in self._context_data.values():
-                url = context.meta_data.get("url", "")
+                url = context.metadata.get("url", "")
                 if url:
                     self._context_by_url[_normalize_wiki_url(url)] = context
                 title = context.data.get("title", "")
@@ -123,7 +123,7 @@ class FramesDataset(MappingDataset[IRQASample]):
                     context_id=link,
                     data={"title": _title_from_wiki_url(link)},
                     source="wikimedia/wikipedia",
-                    meta_data={"url": link},
+                    metadata={"url": link},
                 )
             contexts.append(context)
         return contexts
@@ -136,8 +136,10 @@ class FramesDataset(MappingDataset[IRQASample]):
             question=self._queries_data[qid],
             answers=self._answers_data[qid],
             contexts=contexts,
-            qrels={ctx.context_id: 1.0 for ctx in contexts if ctx.context_id is not None},
-            meta_data=self._meta_data[qid],
+            qrels={
+                ctx.context_id: 1.0 for ctx in contexts if ctx.context_id is not None
+            },
+            metadata=self._metadata[qid],
         )
 
     @property

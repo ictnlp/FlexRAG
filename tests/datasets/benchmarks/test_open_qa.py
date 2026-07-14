@@ -95,14 +95,14 @@ class TestOpenDomainQA:
             self.valid_qa_sample(item)
             assert item.question_id is not None
             assert len(item.answers) > 0
-            assert "sample_id" in item.meta_data
-            assert "split" in item.meta_data
-            assert "qa_pairs" in item.meta_data
-            assert "wikipages" in item.meta_data
-            assert "annotations" in item.meta_data
-            assert isinstance(item.meta_data["qa_pairs"], list)
-            assert isinstance(item.meta_data["wikipages"], list)
-            assert isinstance(item.meta_data["annotations"], list)
+            assert "sample_id" in item.metadata
+            assert "split" in item.metadata
+            assert "qa_pairs" in item.metadata
+            assert "wikipages" in item.metadata
+            assert "annotations" in item.metadata
+            assert isinstance(item.metadata["qa_pairs"], list)
+            assert isinstance(item.metadata["wikipages"], list)
+            assert isinstance(item.metadata["annotations"], list)
         print(f"ASQA dataset length: {len(dataset)}")
         print("ASQA dataset test passed.")
         return
@@ -113,13 +113,13 @@ class TestOpenDomainQA:
             self.valid_qa_sample(item)
             assert item.question_id is not None
             assert len(item.answers) > 0
-            assert "subj" in item.meta_data
-            assert "prop" in item.meta_data
-            assert "obj" in item.meta_data
-            assert "possible_answers" in item.meta_data
-            assert isinstance(item.meta_data["possible_answers"], list)
-            assert isinstance(item.meta_data["s_aliases"], list)
-            assert isinstance(item.meta_data["o_aliases"], list)
+            assert "subj" in item.metadata
+            assert "prop" in item.metadata
+            assert "obj" in item.metadata
+            assert "possible_answers" in item.metadata
+            assert isinstance(item.metadata["possible_answers"], list)
+            assert isinstance(item.metadata["s_aliases"], list)
+            assert isinstance(item.metadata["o_aliases"], list)
         print(f"PopQA dataset length: {len(dataset)}")
         print("PopQA dataset test passed.")
         return
@@ -160,8 +160,8 @@ class TestOpenDomainQA:
             assert item.question_id is not None
             assert len(item.answers) > 0
             assert item.answers[0].strip()
-            assert Path(item.meta_data["answer_path"]).exists()
-            samples_by_type.setdefault(item.meta_data["answer_type"], item)
+            assert Path(item.metadata["answer_path"]).exists()
+            samples_by_type.setdefault(item.metadata["answer_type"], item)
         assert {"item", "set", "list", "table"}.issubset(samples_by_type)
         for answer_type, item in samples_by_type.items():
             assert not item.answers[0].lstrip().startswith("[")
@@ -211,10 +211,10 @@ class TestOpenDomainQA:
             self.valid_qa_sample(item)
             assert item.question_id is not None
             assert len(item.answers) > 0
-            assert item.meta_data["subset"] == subset
-            assert "doc_name" in item.meta_data
-            assert Path(item.meta_data["source_file_path"]).exists()
-            assert item.meta_data["source_file_format"] == "pdf"
+            assert item.metadata["subset"] == subset
+            assert "doc_name" in item.metadata
+            assert Path(item.metadata["source_file_path"]).exists()
+            assert item.metadata["source_file_format"] == "pdf"
         print(f"UDA-QA-{subset} dataset length: {len(dataset)}")
         print(f"UDA-QA-{subset} dataset test passed.")
         return

@@ -182,11 +182,12 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
         self._answers_data = {}
         self._qrels_data = {}
         # save exact match positions for evaluation
-        self._meta_data = {}
+        self._metadata = {}
         for item in subset:
             self._queries_data[item["id"]] = item["input"]
             answers = []
             qrels = {}
+            # KILT's upstream schema names this field ``meta_data``.
             meta = item.get("meta_data", {})
             meta["provenance"] = []
             for ans in item["output"]:
@@ -221,7 +222,7 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
                 answers.append(item["original_answer"])
             self._answers_data[item["id"]] = list(set(answers))  # deduplicate answers
             self._qrels_data[item["id"]] = qrels
-            self._meta_data[item["id"]] = meta
+            self._metadata[item["id"]] = meta
         return
 
     def _load_corpus(
@@ -232,7 +233,7 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
         reader = LineDelimitedReader(corpus_path)
         for document in reader:
             wikipedia_id = document["wikipedia_id"]
-            meta_data = (
+            metadata = (
                 {
                     "wikidata_info": document.get("wikidata_info", {}),
                     "categories": document.get("categories", []),
@@ -250,7 +251,7 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
                         "title": document["wikipedia_title"],
                     },
                     source="wikipedia",
-                    meta_data=meta_data,
+                    metadata=metadata,
                 )
                 wiki_data[wikipedia_id] = context
             else:
@@ -264,7 +265,7 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
                             "title": document["wikipedia_title"],
                         },
                         source="wikipedia",
-                        meta_data=meta_data,
+                        metadata=metadata,
                     )
                     wiki_data[context_id] = context
         logger.info(f"Loaded {len(wiki_data)} contexts from KILT corpus.")
@@ -281,7 +282,7 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
             contexts = [self._context_data[ctx_id] for ctx_id in ctx_ids]
         else:
             contexts = [
-                Context(context_id=ctx_id, data={}, source="wikipedia", meta_data={})
+                Context(context_id=ctx_id, data={}, source="wikipedia", metadata={})
                 for ctx_id in ctx_ids
             ]
 
@@ -299,7 +300,7 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
                 answers=answers,
                 contexts=contexts,
                 qrels=dict(self._qrels_data[qid]),
-                meta_data=self._meta_data[qid],
+                metadata=self._metadata[qid],
             )
         # prepare sample for dialogue task
         elif self._subset in {"wow"}:
@@ -323,7 +324,7 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
                 golden_responses=responses,
                 contexts=contexts,
                 qrels=dict(self._qrels_data[qid]),
-                meta_data=self._meta_data[qid],
+                metadata=self._metadata[qid],
             )
         # prepare sample for other tasks
         else:
@@ -334,7 +335,7 @@ class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
                 answers=answers,
                 contexts=contexts,
                 qrels=dict(self._qrels_data[qid]),
-                meta_data=self._meta_data[qid],
+                metadata=self._metadata[qid],
             )
         return sample
 

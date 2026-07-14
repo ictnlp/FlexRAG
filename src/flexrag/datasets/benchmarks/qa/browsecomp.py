@@ -56,7 +56,7 @@ class BrowseCompDataset(MappingDataset[QASample]):
         return QASample(
             question=_decrypt(item.get("problem", ""), item.get("canary", "")),
             answers=[_decrypt(item.get("answer", ""), item.get("canary", ""))],
-            meta_data={"problem_topic": item["problem_topic"]},
+            metadata={"problem_topic": item["problem_topic"]},
         )
 
 

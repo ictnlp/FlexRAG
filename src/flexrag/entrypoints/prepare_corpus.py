@@ -52,7 +52,7 @@ class ContextWriter:
 
     def write(self, ctx: Context):
         ctx = asdict(ctx)
-        ctx.update(ctx.pop("meta_data"))
+        ctx.update(ctx.pop("metadata"))
         ctx.update(ctx.pop("data"))
         match self.save_format:
             case "jsonl":
@@ -116,7 +116,7 @@ def main(cfg: Config):
                             context_id=f"{global_id}-{in_doc_id}",
                             data={"text": text, "title": document.title},
                             source=path,
-                            meta_data={"source_file_path": document.source_file_path},
+                            metadata={"source_file_path": document.source_file_path},
                         )
                     )
                     in_doc_id += 1
@@ -129,7 +129,7 @@ def main(cfg: Config):
                         context_id=f"{global_id}-{in_doc_id}",
                         data={"text": text, "title": document.title},
                         source=path,
-                        meta_data={"source_file_path": document.source_file_path},
+                        metadata={"source_file_path": document.source_file_path},
                     )
                 )
                 in_doc_id += 1

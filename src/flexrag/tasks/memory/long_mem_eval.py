@@ -124,7 +124,7 @@ class LongMemEvalTask(MultiSessionQATask):
     def evaluate(
         self, assistant: AssistantBase, sample: MultiSessionQASample
     ) -> AssistantResponse:
-        metadata = sample.meta_data or {}
+        metadata = sample.metadata or {}
         messages = ChatMessages.from_list(
             [{"role": "user", "content": sample.question}],
             metadata={"date": metadata["question_date"]},

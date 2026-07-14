@@ -76,7 +76,7 @@ class QuALITYDataset(MappingDataset[ContextualMCSample]):
                     "text": row.pop("article"),
                 },
                 source=row.pop("source"),
-                meta_data=row,
+                metadata=row,
             )
             self._context_data[context.context_id] = context
             for q in questions:

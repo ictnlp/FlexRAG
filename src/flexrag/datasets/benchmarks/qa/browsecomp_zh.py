@@ -70,7 +70,7 @@ class BrowseCompZHDataset(MappingDataset[QASample]):
         return QASample(
             question=_decrypt(item.get("Question", ""), canary),
             answers=[_decrypt(item.get("Answer", ""), canary)],
-            meta_data={"problem_topic": _decrypt(item.get("Topic", ""), canary)},
+            metadata={"problem_topic": _decrypt(item.get("Topic", ""), canary)},
         )
 
 

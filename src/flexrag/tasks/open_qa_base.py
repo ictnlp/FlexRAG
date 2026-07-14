@@ -83,7 +83,7 @@ class OpenQATask(TaskBase):
             for item in self.testset:
                 questions.append(item.question)
                 golden_answers.append(item.answers)
-                metadatas.append(item.meta_data or {})
+                metadatas.append(item.metadata or {})
                 response = self.evaluate(assistant=assistant, sample=item)
                 responses.append(response.response.text_content or "")
                 contexts.append(response.contexts or [])
@@ -92,7 +92,7 @@ class OpenQATask(TaskBase):
                         {
                             "question": item.question,
                             "golden": item.answers,
-                            "metadata_test": item.meta_data,
+                            "metadata_test": item.metadata,
                             "response": response,
                         },
                         to_bytes=False,

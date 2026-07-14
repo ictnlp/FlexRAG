@@ -161,7 +161,7 @@ class LoongDataset(MappingDataset[ContextualQASample]):
                         "text": text,
                     },
                     source="loong",
-                    meta_data={
+                    metadata={
                         "doc_name": doc_name,
                         "doc_index": index,
                         "raw_path": raw_path,
@@ -190,7 +190,7 @@ class LoongDataset(MappingDataset[ContextualQASample]):
             question=self._build_question(item),
             answers=self._build_answers(item.get("answer")),
             contexts=self._build_contexts(item, doc_dir),
-            meta_data={
+            metadata={
                 "level": item.get("level"),
                 "set": item.get("set"),
                 "type": item.get("type"),
