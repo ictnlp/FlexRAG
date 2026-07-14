@@ -58,8 +58,3 @@ FlexRAG provides several assistant implementations that can be used out of the b
     :members:
     :show-inheritance:
     :exclude-members: answer, search, answer_with_contexts
-
-.. autoclass:: flexrag.assistant.ChatQAAssistant
-    :members:
-    :show-inheritance:
-    :exclude-members: answer, get_formatted_input, answer_with_contexts

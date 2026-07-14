@@ -98,10 +98,6 @@ msgstr ""
 msgid "The config for ModularAssistant."
 msgstr ""
 
-#: e7ed190487d94123b67825ae00158d61 of types.AssistantConfig:9
-msgid "The config for ChatQAAssistant."
-msgstr ""
-
 #: 39303392ae2c4abf8d0e51eaa71a6df0 of types.AssistantConfig:11
 msgid "The config for JinaDeepSearch."
 msgstr ""
@@ -233,18 +229,3 @@ msgid ""
 "The modular RAG assistant that supports retrieval, reranking, and "
 "generation."
 msgstr ""
-
-#: 73b2da2f9ed74bcb83c19e770f03e929
-#: flexrag.assistant.chatqa_assistant.ChatQAAssistant:1 of
-msgid ""
-"Bases: "
-":py:class:`~flexrag.assistant.modular_rag_assistant.ModularAssistant`"
-msgstr ""
-
-#: b3edc15cd71440f1bae1626f89070316
-#: flexrag.assistant.chatqa_assistant.ChatQAAssistant:1 of
-msgid ""
-"The Modular assistant that employs the ChatQA model for response "
-"generation."
-msgstr ""
-

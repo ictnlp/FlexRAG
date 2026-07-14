@@ -3,7 +3,7 @@ This quickstart guide will help you deploy or evaluate the RAG assistant with Fl
 
 In FlexRAG, a RAG assistant is similar to a traditional chatbot but can generate responses by leveraging an external knowledge base. As a result, many RAG-related operations are encapsulated within the RAG assistant, such as determining when retrieval is needed, how to perform retrieval, and how to process the retrieved documents.
 
-FlexRAG provides several built-in RAG assistants, including {class}`~flexrag.assistant.BasicAssistant`, {class}`~flexrag.assistant.ModularAssistant`, {class}`~flexrag.assistant.ChatQAAssistant`, .etc. You can run these assistants with FlexRAG's entrypoints. In this guide, we will show you how to run the {class}`~flexrag.assistant.ModularAssistant`, as it offers a wide range of configuration options.
+FlexRAG provides several built-in RAG assistants, including {class}`~flexrag.assistant.BasicAssistant` and {class}`~flexrag.assistant.ModularAssistant`. You can run these assistants with FlexRAG's entrypoints. In this guide, we will show you how to run the {class}`~flexrag.assistant.ModularAssistant`, as it offers a wide range of configuration options.
 
 The basic structure of the {class}`~flexrag.assistant.ModularAssistant` is as follows:
 

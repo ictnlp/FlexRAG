@@ -1,5 +1,4 @@
 from .assistant_base import ASSISTANTS, AssistantBase, AssistantResponse
-from .chatqa_assistant import ChatQAAssistant
 from .modular_rag_assistant import ModularAssistant, ModularAssistantConfig
 from .online_assistant import (
     JinaDeepSearch,
@@ -17,7 +16,6 @@ __all__ = [
     "AssistantResponse",
     "ModularAssistant",
     "ModularAssistantConfig",
-    "ChatQAAssistant",
     "JinaDeepSearch",
     "JinaDeepSearchConfig",
     "PerplexityAssistant",
