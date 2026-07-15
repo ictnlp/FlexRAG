@@ -1,6 +1,5 @@
 from typing import Protocol
 
-from flexrag.common import Register
 from flexrag.common.dataclasses import RetrievedContext
 
 
@@ -24,6 +23,3 @@ class RefinerProtocol(Protocol):
         :return: Refined contexts.
         """
         ...
-
-
-REFINERS = Register[RefinerProtocol]("refiner")

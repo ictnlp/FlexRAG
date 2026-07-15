@@ -7,10 +7,8 @@ from PIL import Image
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.models import (
     ENCODERS,
-    GENERATORS,
     EncoderConfig,
     GenerationConfig,
-    GeneratorConfig,
     LiteLLMEncoder,
     LiteLLMEncoderConfig,
     LiteLLMGenerator,
@@ -19,15 +17,12 @@ from flexrag.models import (
 
 
 class TestLiteLLMGenerator:
-    def test_generator_config_union(self):
-        cfg = GeneratorConfig(
-            generator_type="litellm",
-            litellm_config=LiteLLMGeneratorConfig(
-                provider="openai",
-                model_name="gpt-4o-mini",
-            ),
+    def test_generator_config(self):
+        cfg = LiteLLMGeneratorConfig(
+            provider="openai",
+            model_name="gpt-4o-mini",
         )
-        generator = GENERATORS.load(cfg)
+        generator = LiteLLMGenerator(cfg)
         assert isinstance(generator, LiteLLMGenerator)
 
     def test_chat_text(self, mock_litellm_client):

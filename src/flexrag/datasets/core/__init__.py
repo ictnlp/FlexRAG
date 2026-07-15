@@ -1,5 +1,4 @@
 from .dataset_base import (
-    DATASETS,
     ChainDataset,
     ConcatDataset,
     IterableDataset,
@@ -21,7 +20,6 @@ from .sample_types import (
 )
 
 __all__ = [
-    "DATASETS",
     "ChainDataset",
     "ConcatDataset",
     "IterableDataset",

@@ -7,7 +7,7 @@ from huggingface_hub import snapshot_download
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import ChatMessages
 
-from ...core import DATASETS, MappingDataset, MultiSessionQASample
+from ...core import MappingDataset, MultiSessionQASample
 
 
 @configure
@@ -31,7 +31,6 @@ class LongMemEvalDatasetConfig:
     split: Literal["oracle", "s_cleaned", "m_cleaned"] = "s_cleaned"
 
 
-@DATASETS("long_mem_eval", config_class=LongMemEvalDatasetConfig)
 class LongMemEvalDataset(MappingDataset[MultiSessionQASample]):
     def __init__(self, config: LongMemEvalDatasetConfig):
         # prepare the data directory

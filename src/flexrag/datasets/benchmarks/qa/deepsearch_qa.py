@@ -6,7 +6,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 
-from ...core import DATASETS, MappingDataset, QASample
+from ...core import MappingDataset, QASample
 from ...reader import LineDelimitedReader
 
 
@@ -28,7 +28,6 @@ class DeepSearchQADatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("deepsearch_qa", config_class=DeepSearchQADatasetConfig)
 class DeepSearchQADataset(MappingDataset[QASample]):
     """Dataset for DeepSearch QA benchmark."""
 

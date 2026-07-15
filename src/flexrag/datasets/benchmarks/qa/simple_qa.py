@@ -2,7 +2,7 @@ from typing import Optional
 
 from flexrag.common import FLEXRAG_CACHE_DIR, configure, download
 
-from ...core import DATASETS, MappingDataset, QASample
+from ...core import MappingDataset, QASample
 from ...reader import LineDelimitedReader
 
 RESOURCE_URL = (
@@ -29,7 +29,6 @@ class SimpleQADatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("simple_qa", config_class=SimpleQADatasetConfig)
 class SimpleQADataset(MappingDataset[QASample]):
     def __init__(self, config: SimpleQADatasetConfig):
         # Download the dataset if not already present

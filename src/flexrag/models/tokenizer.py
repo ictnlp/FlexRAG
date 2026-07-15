@@ -2,7 +2,7 @@ from functools import partial
 from itertools import chain
 from typing import Optional, Protocol
 
-from flexrag.common import Register, configure
+from flexrag.common import configure
 
 
 class TokenizerProtocol(Protocol):
@@ -78,15 +78,11 @@ class TokenizerProtocol(Protocol):
         ...
 
 
-TOKENIZERS = Register[TokenizerProtocol]("tokenizer")
-
-
 @configure
 class SpaceTokenizerConfig:
     """Configuration for :class:`SpaceTokenizer`."""
 
 
-@TOKENIZERS("space", config_class=SpaceTokenizerConfig)
 class SpaceTokenizer:
     """A simple tokenizer that splits text by spaces."""
 
@@ -137,7 +133,6 @@ class MosesTokenizerConfig:
     lang: str = "en"
 
 
-@TOKENIZERS("moses", config_class=MosesTokenizerConfig)
 class MosesTokenizer:
     """A wrapper for SacreMoses tokenizers."""
 
@@ -192,7 +187,6 @@ class NLTKTokenizerConfig:
     lang: str = "english"
 
 
-@TOKENIZERS("nltk", config_class=NLTKTokenizerConfig)
 class NLTKTokenizer:
     """A wrapper for NLTK tokenizers."""
 
@@ -250,7 +244,6 @@ class JiebaTokenizerConfig:
     cut_all: bool = False
 
 
-@TOKENIZERS("jieba", config_class=JiebaTokenizerConfig)
 class JiebaTokenizer:
     """A wrapper for Jieba tokenizers.
     Jieba keeps all characters including spaces and punctuations during tokenization,
@@ -308,7 +301,6 @@ class HuggingFaceTokenizerConfig:
     tokenizer_path: Optional[str] = None
 
 
-@TOKENIZERS("hf", config_class=HuggingFaceTokenizerConfig)
 class HuggingFaceTokenizer:
     """A wrapper for HuggingFace tokenizers."""
 
@@ -363,7 +355,6 @@ class TikTokenTokenizerConfig:
     model_name: Optional[str] = "gpt-4o"
 
 
-@TOKENIZERS("tiktoken", config_class=TikTokenTokenizerConfig)
 class TikTokenTokenizer:
     """A wrapper for TikToken tokenizers."""
 
@@ -414,6 +405,3 @@ class TikTokenTokenizer:
     def reversible(self) -> bool:
         """TikTokenTokenizer is reversible."""
         return True
-
-
-TokenizerConfig = TOKENIZERS.make_config(default="tiktoken")

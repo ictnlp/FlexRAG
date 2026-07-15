@@ -6,7 +6,7 @@ from typing import Optional
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.misc import download
 
-from ...core import DATASETS, MappingDataset, QASample
+from ...core import MappingDataset, QASample
 from ...reader import LineDelimitedReader
 
 
@@ -30,7 +30,6 @@ class BrowseCompDatasetConfig:
 RESOURCES = "https://openaipublic.blob.core.windows.net/simple-evals/browse_comp_test_set.csv"  # fmt: skip
 
 
-@DATASETS("browsecomp", config_class=BrowseCompDatasetConfig)
 class BrowseCompDataset(MappingDataset[QASample]):
     """Dataset for BrowseComp benchmark."""
 

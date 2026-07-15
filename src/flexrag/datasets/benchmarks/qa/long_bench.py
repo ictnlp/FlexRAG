@@ -7,7 +7,7 @@ from huggingface_hub import hf_hub_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, Context, configure
 
-from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...core import ContextualQASample, MappingDataset
 from ...reader import LineDelimitedReader
 
 
@@ -77,7 +77,6 @@ def _fix_narrative_qa_doc(doc: str) -> str:
     return doc
 
 
-@DATASETS("long_bench", config_class=LongBenchDatasetConfig)
 class LongBenchDataset(MappingDataset[ContextualQASample]):
     _file_name_map = {
         "trec": "trec.jsonl",

@@ -2,7 +2,6 @@ from flexrag.common import RetrievedContext, configure
 from flexrag.models.scorers import PairScorerProtocol
 
 from .ranker_base import (
-    RANKERS,
     RankerBase,
     RankerBaseConfig,
     RankingResult,
@@ -21,7 +20,6 @@ class HFRankerConfig(RankerBaseConfig):
     """
 
 
-@RANKERS("hf", config_class=HFRankerConfig)
 class HFRanker(RankerBase):
     """Rank candidates with an externally provided HuggingFace pair scorer."""
 

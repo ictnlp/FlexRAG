@@ -22,11 +22,6 @@ and asynchronous fallback behavior.
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.processors.rankers.RankerConfig
-    :members:
-    :inherited-members:
-
-
 Ranker Implementations
 ----------------------
 

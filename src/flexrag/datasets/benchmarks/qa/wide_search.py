@@ -8,7 +8,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 
-from ...core import DATASETS, MappingDataset, QASample
+from ...core import MappingDataset, QASample
 
 
 def _markdown_escape(value: str) -> str:
@@ -51,7 +51,6 @@ class WideSearchDatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("widesearch", config_class=WideSearchDatasetConfig)
 class WideSearchDataset(MappingDataset[QASample]):
     """Dataset for the WideSearch benchmark."""
 

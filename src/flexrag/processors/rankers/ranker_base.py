@@ -4,7 +4,7 @@ from typing import Optional, Protocol
 
 import numpy as np
 
-from flexrag.common import LOGGER_MANAGER, Register, configure
+from flexrag.common import LOGGER_MANAGER, configure
 from flexrag.common.dataclasses import RetrievedContext
 
 logger = LOGGER_MANAGER.get_logger("flexrag.rankers")
@@ -232,6 +232,3 @@ class RemoteRankerBase(RankerBase):
         """
         self._ensure_sync_bridge_allowed("rank")
         return asyncio.run(self.async_rank(query, candidates))
-
-
-RANKERS = Register[RankerProtocol]("ranker")

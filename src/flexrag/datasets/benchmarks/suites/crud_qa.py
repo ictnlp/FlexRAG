@@ -9,7 +9,7 @@ from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 from flexrag.common.dataclasses import Context
 from flexrag.common.misc import download_and_extract
 
-from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...core import ContextualQASample, MappingDataset
 from ...corpora.corpus_dataset import _ContextMappingCorpus
 
 
@@ -52,7 +52,6 @@ class CRUDRAGDatasetConfig:
 RESOURCES = "https://github.com/IAAR-Shanghai/CRUD_RAG/archive/refs/heads/main.zip"
 
 
-@DATASETS("crud_rag", config_class=CRUDRAGDatasetConfig)
 class CRUDRAGDataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: CRUDRAGDatasetConfig):
         self._subset = config.subset

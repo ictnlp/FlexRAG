@@ -7,7 +7,7 @@ import torch
 from flexrag.common import configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
-from .scorer_base import SCORERS, LocalPairScorerBase
+from .scorer_base import LocalPairScorerBase
 
 
 @configure
@@ -40,7 +40,6 @@ class HFColBertScorerConfig(HFModelConfig):
     batch_size: int = 32
 
 
-@SCORERS("hf_colbert", config_class=HFColBertScorerConfig)
 class HFColBertScorer(LocalPairScorerBase):
     """HFColBertScorer: The scorer based on the HuggingFace ColBERT model.
     Code adapted from https://github.com/hotchpotch/JQaRA/blob/main/evaluator/reranker/colbert_reranker.py

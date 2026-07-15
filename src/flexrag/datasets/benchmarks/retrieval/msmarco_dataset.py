@@ -14,7 +14,6 @@ from flexrag.common import (
     download_and_extract,
 )
 
-from ...core import DATASETS
 from ...corpora.corpus_dataset import _ContextMappingCorpus
 from ...reader import LineDelimitedReader
 from .retrieval_dataset_base import RetrievalDatasetBase
@@ -73,7 +72,6 @@ class MSMARCODatasetConfig:
     load_corpus: bool = False
 
 
-@DATASETS("msmarco", MSMARCODatasetConfig)
 class MSMARCODataset(RetrievalDatasetBase):
     """Dataset for loading MSMARCO Retrieval Dataset."""
 

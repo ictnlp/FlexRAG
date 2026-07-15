@@ -7,7 +7,7 @@ from huggingface_hub import hf_hub_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 
-from ...core import DATASETS, MappingDataset, QASample
+from ...core import MappingDataset, QASample
 from ...reader import LineDelimitedReader
 
 
@@ -49,7 +49,6 @@ def _parse_string_list(value) -> list[str]:
     return [str(value)]
 
 
-@DATASETS("popqa", config_class=PopQADatasetConfig)
 class PopQADataset(MappingDataset[QASample]):
     def __init__(self, config: PopQADatasetConfig):
         if config.data_path is None:

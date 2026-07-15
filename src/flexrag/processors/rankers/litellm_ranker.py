@@ -6,7 +6,7 @@ import numpy as np
 
 from flexrag.common import configure, trace
 
-from .ranker_base import RANKERS, RankerBaseConfig, RemoteRankerBase
+from .ranker_base import RankerBaseConfig, RemoteRankerBase
 
 litellm.suppress_debug_info = True
 
@@ -38,7 +38,6 @@ class LiteLLMRankerConfig(RankerBaseConfig):
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
-@RANKERS("litellm", config_class=LiteLLMRankerConfig)
 class LiteLLMRanker(RemoteRankerBase):
     """Raw LiteLLM rerank implementation.
 

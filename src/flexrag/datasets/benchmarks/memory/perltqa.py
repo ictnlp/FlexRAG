@@ -6,7 +6,7 @@ from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import Context
 from flexrag.common.misc import download
 
-from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...core import ContextualQASample, MappingDataset
 
 RESOURCES = {
     "en": {
@@ -46,7 +46,6 @@ class PerLTQADatasetConfig:
     lang: Literal["en", "en_v2", "zh"] = "en_v2"
 
 
-@DATASETS("perltqa", config_class=PerLTQADatasetConfig)
 class PerLTQADataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: PerLTQADatasetConfig):
         self._lang = config.lang

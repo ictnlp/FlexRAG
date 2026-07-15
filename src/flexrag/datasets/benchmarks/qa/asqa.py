@@ -7,7 +7,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 
-from ...core import DATASETS, MappingDataset, QASample
+from ...core import MappingDataset, QASample
 
 _REPO_ID = "din0s/asqa"
 _SPLIT_PATTERNS = {
@@ -66,7 +66,6 @@ def _resolve_data_dir(data_path: Path) -> Path:
     return data_path
 
 
-@DATASETS("asqa", config_class=ASQADatasetConfig)
 class ASQADataset(MappingDataset[QASample]):
     """Dataset for ASQA benchmark."""
 

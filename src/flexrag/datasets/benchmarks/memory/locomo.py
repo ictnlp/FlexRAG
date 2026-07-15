@@ -8,7 +8,7 @@ from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import ChatMessages
 from flexrag.common.misc import download
 
-from ...core import DATASETS, MappingDataset, MultiSessionQASample
+from ...core import MappingDataset, MultiSessionQASample
 
 RESOURCE_URL = (
     "https://github.com/snap-research/locomo/raw/refs/heads/main/data/locomo10.json"
@@ -31,7 +31,6 @@ class LoCoMoDatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("locomo", config_class=LoCoMoDatasetConfig)
 class LoCoMoDataset(MappingDataset[MultiSessionQASample]):
     def __init__(self, config: LoCoMoDatasetConfig):
         # prepare the data directory

@@ -4,8 +4,6 @@ from abc import abstractmethod
 from collections.abc import Iterable, Iterator, Mapping
 from typing import Any, Generic, TypeVar, overload
 
-from flexrag.common import Register
-
 ItemTypeI = TypeVar("ItemTypeI")
 ItemTypeM = TypeVar("ItemTypeM")
 ItemTypeChain = TypeVar("ItemTypeChain")
@@ -209,6 +207,3 @@ class SubDataset(MappingDataset[ItemTypeM]):
     def __getattr__(self, name: str) -> Any:
         """Delegate attribute access to the underlying dataset."""
         return getattr(self.dataset, name)
-
-
-DATASETS = Register[MappingDataset | IterableDataset]("datasets")

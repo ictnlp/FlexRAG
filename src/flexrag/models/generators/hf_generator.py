@@ -16,7 +16,7 @@ from flexrag.common import (
 from flexrag.common.logging import LOGGER_MANAGER
 
 from ..hf_utils import HFModelConfig, load_hf_model
-from .generator_base import GENERATORS, GenerationConfig, LocalGeneratorBase
+from .generator_base import GenerationConfig, LocalGeneratorBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.hf_model")
 
@@ -181,7 +181,6 @@ class HFGeneratorConfig(HFModelConfig):
     other_tokenizer_kwargs: dict = field(default_factory=dict)
 
 
-@GENERATORS("hf", config_class=HFGeneratorConfig)
 class HFGenerator(LocalGeneratorBase):
     """Raw local generator backed by Hugging Face Transformers.
 

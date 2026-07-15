@@ -13,7 +13,7 @@ from flexrag.common import (
     download_and_extract,
 )
 
-from ...core import DATASETS, IRQASample, MappingDataset
+from ...core import IRQASample, MappingDataset
 from ...corpora.corpus_dataset import _ContextMappingCorpus
 from ...reader import LineDelimitedReader
 
@@ -41,7 +41,6 @@ class ClapNQDatasetConfig:
     split: Annotated[str, Choices("train", "dev")] = "dev"
 
 
-@DATASETS("clapnq", config_class=ClapNQDatasetConfig)
 class ClapNQDataset(MappingDataset[IRQASample]):
     """Dataset for the CLAPNQ end-to-end RAG benchmark."""
 

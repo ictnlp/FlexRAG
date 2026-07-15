@@ -21,7 +21,7 @@ from flexrag.common.base64_utils import (
 )
 from flexrag.common.logging import LOGGER_MANAGER
 
-from .generator_base import GENERATORS, GenerationConfig, RemoteGeneratorBase
+from .generator_base import GenerationConfig, RemoteGeneratorBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.litellm_generator")
 
@@ -376,7 +376,6 @@ class LiteLLMGeneratorConfig:
     extra_kwargs: dict[str, Any] = field(default_factory=dict)
 
 
-@GENERATORS("litellm", config_class=LiteLLMGeneratorConfig)
 class LiteLLMGenerator(RemoteGeneratorBase):
     """Raw remote generator implemented with LiteLLM.
 

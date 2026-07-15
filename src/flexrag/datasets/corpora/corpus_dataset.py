@@ -4,7 +4,7 @@ from collections.abc import Iterator, Mapping
 from types import MappingProxyType
 from typing import Protocol, overload, runtime_checkable
 
-from flexrag.common import Context, Register
+from flexrag.common import Context
 
 
 @runtime_checkable
@@ -47,9 +47,6 @@ class MappingCorpus(IterableCorpus, Protocol):
     def __len__(self) -> int:
         """Return the number of contexts in the corpus."""
         ...
-
-
-CORPORA = Register[IterableCorpus]("corpus")
 
 
 class _InMemoryMappingCorpus:
@@ -168,4 +165,4 @@ class _ContextMappingCorpus(_InMemoryMappingCorpus):
         return
 
 
-__all__ = ["CORPORA", "CorpusView", "IterableCorpus", "MappingCorpus"]
+__all__ = ["CorpusView", "IterableCorpus", "MappingCorpus"]

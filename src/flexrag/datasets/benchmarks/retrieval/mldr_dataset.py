@@ -7,7 +7,6 @@ from huggingface_hub import snapshot_download
 from flexrag.common import FLEXRAG_CACHE_DIR, LOGGER_MANAGER, Choices, configure
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS
 from ...corpora.corpus_dataset import _ContextMappingCorpus
 from ...reader import LineDelimitedReader
 from .retrieval_dataset_base import RetrievalDatasetBase
@@ -68,7 +67,6 @@ class MultiLongDocRetrievalDatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("mldr", config_class=MultiLongDocRetrievalDatasetConfig)
 class MultiLongDocRetrievalDataset(RetrievalDatasetBase):
     def __init__(self, config: MultiLongDocRetrievalDatasetConfig) -> None:
         # prepare dataset path

@@ -9,7 +9,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 
-from ...core import DATASETS, MappingDataset, QASample
+from ...core import MappingDataset, QASample
 
 _REPO_ID = "PALIN2018/BrowseComp-ZH"
 
@@ -30,7 +30,6 @@ class BrowseCompZHDatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("browsecomp_zh", config_class=BrowseCompZHDatasetConfig)
 class BrowseCompZHDataset(MappingDataset[QASample]):
     """Dataset for BrowseComp-ZH benchmark."""
 

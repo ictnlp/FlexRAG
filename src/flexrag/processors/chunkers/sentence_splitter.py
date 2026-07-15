@@ -1,10 +1,8 @@
 from functools import partial
 
-from flexrag.common import Register, configure
+from flexrag.common import configure
 
-from .chunker_base import Chunk, ChunkerProtocol
-
-SENTENCE_SPLITTERS = Register[ChunkerProtocol]("sentence_splitter")
+from .chunker_base import Chunk
 
 
 @configure
@@ -18,7 +16,6 @@ class NLTKSentenceSplitterConfig:
     language: str = "english"
 
 
-@SENTENCE_SPLITTERS("nltk_splitter", config_class=NLTKSentenceSplitterConfig)
 class NLTKSentenceSplitter:
     """NLTKSentenceSplitter splits text into sentences using NLTK's PunktSentenceTokenizer.
     For more information, see https://www.nltk.org/api/nltk.tokenize.punkt.html#module-nltk.tokenize.punkt.
@@ -81,7 +78,6 @@ class RegexSplitterConfig:
     pattern: str = PREDEFINED_SPLIT_PATTERNS["en"]["sentence"]
 
 
-@SENTENCE_SPLITTERS("regex", config_class=RegexSplitterConfig)
 class RegexSplitter:
     """RegexSentenceSplitter splits text into sentences using a regular expression pattern.
 
@@ -127,7 +123,6 @@ class SpacySentenceSplitterConfig:
     model: str = "en_core_web_sm"
 
 
-@SENTENCE_SPLITTERS("spacy", config_class=SpacySentenceSplitterConfig)
 class SpacySentenceSplitter:
     """SpacySentenceSplitter splits text into sentences using spaCy's sentence splitter."""
 
@@ -170,8 +165,3 @@ class SpacySentenceSplitter:
             Chunk(text=sent.text, start=sent.start_char, end=sent.end_char)
             for sent in self.nlp(text).sents
         ]
-
-
-SentenceSplitterConfig = SENTENCE_SPLITTERS.make_config(
-    default="regex", config_name="SentenceSplitterConfig"
-)

@@ -4,7 +4,7 @@ from typing import Annotated, Optional
 from flexrag.common import FLEXRAG_CACHE_DIR, configure, download_and_extract
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS, ContextualMCSample, MappingDataset
+from ...core import ContextualMCSample, MappingDataset
 from ...reader import LineDelimitedReader
 
 
@@ -37,7 +37,6 @@ class QuALITYDatasetConfig:
 RESOURCE_URL = "https://github.com/nyu-mll/quality/raw/refs/heads/main/data/v1.0.1/QuALITY.v1.0.1.zip"
 
 
-@DATASETS("quality", config_class=QuALITYDatasetConfig)
 class QuALITYDataset(MappingDataset[ContextualMCSample]):
     suffix_map = {
         "train": "train",

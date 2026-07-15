@@ -14,7 +14,7 @@ from flexrag.common import (
     configure,
 )
 
-from ...core import DATASETS, ContextualDialogueSample, MappingDataset
+from ...core import ContextualDialogueSample, MappingDataset
 
 _REPO_ID = "nvidia/ChatRAG-Bench"
 
@@ -57,7 +57,6 @@ class ChatRAGBenchDatasetConfig:
     num_ctx: Optional[int] = None
 
 
-@DATASETS("chatrag_bench", config_class=ChatRAGBenchDatasetConfig)
 class ChatRAGBenchDataset(MappingDataset[ContextualDialogueSample]):
     """Dataset for ChatRAG-Bench."""
 

@@ -7,7 +7,6 @@ from huggingface_hub import snapshot_download
 from flexrag.common import FLEXRAG_CACHE_DIR, LOGGER_MANAGER, configure
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS
 from ...corpora.corpus_dataset import _ContextMappingCorpus
 from .retrieval_dataset_base import RetrievalDatasetBase
 
@@ -49,7 +48,6 @@ class MTEBDatasetConfig:
     load_corpus: bool = False
 
 
-@DATASETS("mteb", MTEBDatasetConfig)
 class MTEBDataset(RetrievalDatasetBase):
     """Dataset for loading MTEB Retrieval Dataset."""
 

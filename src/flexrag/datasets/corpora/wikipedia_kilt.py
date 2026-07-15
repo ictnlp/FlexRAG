@@ -11,7 +11,7 @@ from flexrag.common import FLEXRAG_CACHE_DIR, Context, configure
 from flexrag.common.misc import download
 
 from ..reader import LineDelimitedReader
-from .corpus_dataset import CORPORA, _InMemoryMappingCorpus
+from .corpus_dataset import _InMemoryMappingCorpus
 
 _RESOURCES = "http://dl.fbaipublicfiles.com/KILT/kilt_knowledgesource.json"
 
@@ -32,7 +32,6 @@ class WikipediaKILTCorpusConfig:
     load_in_memory: bool = False
 
 
-@CORPORA("wikipedia_kilt", config_class=WikipediaKILTCorpusConfig)
 class WikipediaKILTCorpus(_InMemoryMappingCorpus):
     """Wikipedia corpus backed by the KILT knowledge source.
 

@@ -12,7 +12,7 @@ from flexrag.common import FLEXRAG_CACHE_DIR, Context, configure
 from flexrag.common.misc import download
 
 from ..reader import LineDelimitedReader
-from .corpus_dataset import CORPORA, _InMemoryMappingCorpus
+from .corpus_dataset import _InMemoryMappingCorpus
 
 _RESOURCES = "https://dl.fbaipublicfiles.com/dpr/wikipedia_split/psgs_w100.tsv.gz"
 
@@ -33,7 +33,6 @@ class WikipediaDPRCorpusConfig:
     load_in_memory: bool = False
 
 
-@CORPORA("wikipedia_dpr", config_class=WikipediaDPRCorpusConfig)
 class WikipediaDPRCorpus(_InMemoryMappingCorpus):
     """Wikipedia corpus backed by the DPR passage dataset.
 

@@ -4,7 +4,7 @@ import torch
 from flexrag.common import configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
-from .scorer_base import SCORERS, LocalPairScorerBase
+from .scorer_base import LocalPairScorerBase
 
 
 @configure
@@ -22,7 +22,6 @@ class HFCrossEncoderScorerConfig(HFModelConfig):
     batch_size: int = 32
 
 
-@SCORERS("hf_cross_encoder", config_class=HFCrossEncoderScorerConfig)
 class HFCrossEncoderScorer(LocalPairScorerBase):
     """HFCrossEncoderScorer: The scorer based on the HuggingFace Cross Encoder model."""
 

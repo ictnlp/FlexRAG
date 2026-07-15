@@ -10,7 +10,7 @@ from flexrag.common.dataclasses import ChatMessages, ChatTurn, Context
 from flexrag.common.logging import LOGGER_MANAGER
 from flexrag.common.misc import download
 
-from ...core import DATASETS, IRDialogueSample, IRMCSample, IRQASample, MappingDataset
+from ...core import IRDialogueSample, IRMCSample, IRQASample, MappingDataset
 from ...corpora.corpus_dataset import _ContextMappingCorpus
 from ...reader import LineDelimitedReader
 
@@ -94,7 +94,6 @@ class KiltDatasetConfig:
 CORPUS_URL = "http://dl.fbaipublicfiles.com/KILT/kilt_knowledgesource.json"
 
 
-@DATASETS("kilt", config_class=KiltDatasetConfig)
 class KiltDataset(MappingDataset[IRQASample | IRDialogueSample | IRMCSample]):
     def __init__(self, config: KiltDatasetConfig):
         self._subset = config.subset

@@ -6,7 +6,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 
-from ...core import DATASETS, MappingDataset, QASample
+from ...core import MappingDataset, QASample
 
 
 @configure
@@ -26,7 +26,6 @@ class DeepResearch9KDatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("deepresearch_9k", config_class=DeepResearch9KDatasetConfig)
 class DeepResearch9KDataset(MappingDataset[QASample]):
     """Dataset for DeepResearch9K benchmark."""
 

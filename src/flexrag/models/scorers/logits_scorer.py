@@ -6,7 +6,7 @@ import torch
 from flexrag.common import Choices, configure, trace
 
 from ..hf_utils import HFModelConfig, load_hf_model
-from .scorer_base import SCORERS, LocalPairScorerBase
+from .scorer_base import LocalPairScorerBase
 
 
 @configure
@@ -38,7 +38,6 @@ class HFLogitsScorerConfig(HFModelConfig):
     batch_size: int = 32
 
 
-@SCORERS("hf_logits", config_class=HFLogitsScorerConfig)
 class HFLogitsScorer(LocalPairScorerBase):
     def __init__(self, cfg: HFLogitsScorerConfig):
         super().__init__(batch_size=cfg.batch_size)

@@ -9,7 +9,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Context, configure
 
-from ...core import DATASETS, IRQASample, MappingDataset
+from ...core import IRQASample, MappingDataset
 from ...corpora.corpus_dataset import _ContextMappingCorpus
 
 _CANARY = (
@@ -71,7 +71,6 @@ class BrowseCompPlusDatasetConfig:
     load_corpus: bool = False
 
 
-@DATASETS("browsecomp_plus", config_class=BrowseCompPlusDatasetConfig)
 class BrowseCompPlusDataset(MappingDataset[IRQASample]):
     """Dataset for the BrowseComp-Plus end-to-end RAG benchmark.
 

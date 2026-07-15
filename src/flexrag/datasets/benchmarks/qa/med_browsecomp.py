@@ -5,7 +5,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 
-from ...core import DATASETS, MappingDataset, QASample
+from ...core import MappingDataset, QASample
 from ...reader import LineDelimitedReader
 
 
@@ -30,7 +30,6 @@ class MedBrowseCompDatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("med_browsecomp", config_class=MedBrowseCompDatasetConfig)
 class MedBrowseCompDataset(MappingDataset[QASample]):
     """Dataset for MedBrowseComp benchmark."""
 

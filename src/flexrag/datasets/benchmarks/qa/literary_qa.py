@@ -4,7 +4,7 @@ from typing import Annotated
 from flexrag.common import Choices, configure
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...core import ContextualQASample, MappingDataset
 from ...reader import LineDelimitedReader
 
 
@@ -29,7 +29,6 @@ class LiteraryQADatasetConfig:
     split: Annotated[str, Choices("train", "validation", "test")] = "test"
 
 
-@DATASETS("literary_qa", config_class=LiteraryQADatasetConfig)
 class LiteraryQADataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: LiteraryQADatasetConfig):
         # load the dataset

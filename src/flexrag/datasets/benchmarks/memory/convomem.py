@@ -8,7 +8,7 @@ from huggingface_hub import snapshot_download
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import ChatMessages
 
-from ...core import DATASETS, MappingDataset, MultiSessionQASample
+from ...core import MappingDataset, MultiSessionQASample
 
 
 @configure
@@ -64,7 +64,6 @@ class ConvoMemDatasetConfig:
     context_size: int = 300
 
 
-@DATASETS("convomem", config_class=ConvoMemDatasetConfig)
 class ConvoMemDataset(MappingDataset[MultiSessionQASample]):
     def __init__(self, config: ConvoMemDatasetConfig):
         # set basic args

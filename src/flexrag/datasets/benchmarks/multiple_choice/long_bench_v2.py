@@ -5,7 +5,7 @@ from huggingface_hub import hf_hub_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Context, configure
 
-from ...core import DATASETS, ContextualMCSample, MappingDataset
+from ...core import ContextualMCSample, MappingDataset
 
 
 @configure
@@ -25,7 +25,6 @@ class LongBenchV2DatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("long_bench_v2", config_class=LongBenchV2DatasetConfig)
 class LongBenchV2Dataset(MappingDataset[ContextualMCSample]):
     def __init__(self, config: LongBenchV2DatasetConfig):
         # Download the dataset if not exists

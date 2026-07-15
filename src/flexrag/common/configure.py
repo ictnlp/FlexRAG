@@ -1,18 +1,12 @@
-import json
 import keyword
-import os
 import types
-from copy import deepcopy
 from dataclasses import asdict, field, fields, is_dataclass
 from pathlib import Path
 from typing import Annotated, Callable, Generic, Optional, TypeVar, dataclass_transform
 
 import yaml
-from huggingface_hub import HfApi
 from omegaconf import DictConfig, ListConfig, OmegaConf
 from pydantic.dataclasses import ConfigDict, Field, FieldInfo, dataclass
-
-from .default_vars import FLEXRAG_CACHE_DIR
 
 T = TypeVar("T")
 
@@ -187,19 +181,14 @@ RegistedType = TypeVar("RegistedType")
 
 
 class Register(Generic[RegistedType]):
-    def __init__(self, register_name: str, allow_load_from_repo: bool = False):
+    def __init__(self, register_name: str):
         """Initialize the register.
 
         :param register_name: The name of the register.
-        :type register_name: str
-        :param allow_load_from_repo: Whether to allow loading items from the HuggingFace Hub, defaults to False.
-        :type allow_load_from_repo: bool, optional
         """
         self.name = register_name
-        self.allow_load_from_repo = allow_load_from_repo
         self._items = {}
         self._shortcuts = {}
-        return
 
     def __call__(self, *short_names: str, config_class=None):
         """Register an item to the register.
@@ -212,7 +201,7 @@ class Register(Generic[RegistedType]):
         :rtype: Any
         """
 
-        def registe_item(item):
+        def register_item(item):
             main_name = str(item).split(".")[-1][:-2]
             # check name conflict
             assert main_name not in self._items, f"Name Conflict {main_name}"
@@ -232,10 +221,7 @@ class Register(Generic[RegistedType]):
                 self._shortcuts[name] = main_name
             return item
 
-        return registe_item
-
-    def __iter__(self):
-        return self._items.__iter__()
+        return register_item
 
     @property
     def names(self) -> list[str]:
@@ -247,43 +233,10 @@ class Register(Generic[RegistedType]):
         """Get the main names of the registered items."""
         return list(self._items.keys())
 
-    @property
-    def shortnames(self) -> list[str]:
-        """Get the short names of the registered items."""
-        return list(self._shortcuts.keys())
-
     def __getitem__(self, key: str) -> dict:
         if key not in self._items:
             key = self._shortcuts[key]
         return self._items[key]
-
-    def get(self, key: str, default=None) -> dict:
-        """Get the item dict by name.
-
-        :param key: The name of the item.
-        :type key: str
-        :param default: The default value to return, defaults to None.
-        :type default: Any
-        :return: The item dict containing the item, main_name, short_names, and config_class.
-        :rtype: dict
-        """
-        if key not in self._items:
-            if key not in self._shortcuts:
-                return default
-            key = self._shortcuts[key]
-        return self._items[key]
-
-    def get_item(self, key: str):
-        """Get the item by name.
-
-        :param key: The name of the item.
-        :type key: str
-        :return: The item.
-        :rtype: Any
-        """
-        if key not in self._items:
-            key = self._shortcuts[key]
-        return self._items[key]["item"]
 
     def make_config(
         self,
@@ -305,27 +258,21 @@ class Register(Generic[RegistedType]):
         choice_name = f"{self.name}_type"
         config_name = f"{self.name}_config" if config_name is None else config_name
         if allow_multiple:
-            if self.allow_load_from_repo:
-                config_fields = [(choice_name, list[str], field(default_factory=list))]
-            else:
-                config_fields = [
-                    (
-                        choice_name,
-                        list[Annotated[str, Choices(*self.names)]],
-                        field(default_factory=list),
-                    )
-                ]
+            config_fields = [
+                (
+                    choice_name,
+                    list[Annotated[str, Choices(*self.names)]],
+                    field(default_factory=list),
+                )
+            ]
         else:
-            if self.allow_load_from_repo:
-                config_fields = [(choice_name, Optional[str], field(default=default))]
-            else:
-                config_fields = [
-                    (
-                        choice_name,
-                        Optional[Annotated[str, Choices(*self.names)]],
-                        field(default=default),
-                    )
-                ]
+            config_fields = [
+                (
+                    choice_name,
+                    Optional[Annotated[str, Choices(*self.names)]],
+                    field(default=default),
+                )
+            ]
         config_fields += [
             (
                 f"{self[name]['short_names'][0]}_config",
@@ -371,54 +318,13 @@ class Register(Generic[RegistedType]):
         """
 
         def load_item(type_str: str) -> RegistedType:
-            # Try to load the item from the HuggingFace Hub First
-            if self.allow_load_from_repo:
-                client = HfApi(
-                    endpoint=os.environ.get("HF_ENDPOINT", None),
-                    token=os.environ.get("HF_TOKEN", None),
-                )
-                # download the snapshot from the HuggingFace Hub
-                if type_str.count("/") <= 1:
-                    try:
-                        assert client.repo_exists(type_str)
-                        repo_info = client.repo_info(type_str)
-                        assert repo_info is not None
-                        repo_id = repo_info.id
-                        dir_name = os.path.join(
-                            FLEXRAG_CACHE_DIR,
-                            f"{repo_id.split('/')[0]}--{repo_id.split('/')[1]}",
-                        )
-                        snapshot = client.snapshot_download(
-                            repo_id=repo_id,
-                            local_dir=dir_name,
-                        )
-                        assert snapshot is not None
-                        return load_item(snapshot)
-                    except AssertionError:
-                        pass
-                # load the item from the local repository
-                elif os.path.exists(type_str):
-                    # prepare the cls
-                    id_path = os.path.join(type_str, "cls.id")
-                    with open(id_path, "r") as f:
-                        cls_name = f.read().strip()
-                    # the configure will be ignored
-                    # cfg_name = f"{self[cls_name]['short_names'][0]}_config"
-                    # new_cfg = getattr(config, cfg_name, None)
-                    # load the item
-                    return self[cls_name]["item"].load_from_local(type_str)
-
-            # Load the item directly
-            if type_str in self:
-                cfg_name = f"{self[type_str]['short_names'][0]}_config"
-                sub_cfg = getattr(config, cfg_name, None)
-                if sub_cfg is None:
-                    loaded = self[type_str]["item"](**kwargs)
-                else:
-                    loaded = self[type_str]["item"](sub_cfg, **kwargs)
-            else:
+            if type_str not in self:
                 raise ValueError(f"Invalid {self.name} type: {type_str}")
-            return loaded
+            cfg_name = f"{self[type_str]['short_names'][0]}_config"
+            sub_cfg = getattr(config, cfg_name, None)
+            if sub_cfg is None:
+                return self[type_str]["item"](**kwargs)
+            return self[type_str]["item"](sub_cfg, **kwargs)
 
         choice = getattr(config, f"{self.name}_type", None)
         if choice is None:
@@ -430,61 +336,5 @@ class Register(Generic[RegistedType]):
             return loaded
         return load_item(str(choice))
 
-    def squeeze(self, config_instance):
-        """Set unused config fields to None.
-
-        :param config_instance: The config instance to squeeze.
-        :return: A copy of *config_instance* with unselected component configs set to None.
-        """
-        new_instance = deepcopy(config_instance)
-        choice = getattr(new_instance, f"{self.name}_type", None)
-        if choice is None:
-            selected_fields = []
-        elif isinstance(choice, list):
-            selected_fields = []
-            for choice_item in choice:
-                cfg_name = f"{self[str(choice_item)]['short_names'][0]}_config"
-                if getattr(new_instance, cfg_name, None) is not None:
-                    selected_fields.append(cfg_name)
-        else:
-            cfg_name = f"{self[str(choice)]['short_names'][0]}_config"
-            if getattr(new_instance, cfg_name, None) is not None:
-                selected_fields = [cfg_name]
-
-        for field in fields(new_instance):
-            if field.name == f"{self.name}_type":
-                continue
-            if field.name in selected_fields:
-                continue
-            if field.name.endswith("_config"):
-                setattr(new_instance, field.name, None)
-        return new_instance
-
-    def __len__(self) -> int:
-        return len(self._items)
-
     def __contains__(self, key: str) -> bool:
         return key in self.names
-
-    def __str__(self) -> str:
-        data = {
-            "name": self.name,
-            "items": [
-                {
-                    "main_name": k,
-                    "short_names": v["short_names"],
-                    "config_class": str(v["config_class"]),
-                }
-                for k, v in self._items.items()
-            ],
-        }
-        return json.dumps(data, indent=4)
-
-    def __repr__(self) -> str:
-        return str(self)
-
-    def __add__(self, register: "Register"):
-        new_register = Register(self.name)
-        new_register._items = {**self._items, **register._items}
-        new_register._shortcuts = {**self._shortcuts, **register._shortcuts}
-        return new_register

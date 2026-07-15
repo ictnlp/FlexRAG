@@ -5,7 +5,7 @@ from typing import Annotated, Optional
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, Context, configure, download
 from flexrag.common.misc import download_and_extract
 
-from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...core import ContextualQASample, MappingDataset
 from ...reader import LineDelimitedReader
 
 _DATA_URL = "https://github.com/MozerWang/Loong/raw/refs/heads/main/data/loong.jsonl"
@@ -46,7 +46,6 @@ class LoongDatasetConfig:
     language: Annotated[str, Choices("all", "en", "zh")] = "all"
 
 
-@DATASETS("loong", config_class=LoongDatasetConfig)
 class LoongDataset(MappingDataset[ContextualQASample]):
     """Dataset for the Loong benchmark."""
 

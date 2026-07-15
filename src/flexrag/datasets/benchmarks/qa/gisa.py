@@ -8,7 +8,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 
-from ...core import DATASETS, MappingDataset, QASample
+from ...core import MappingDataset, QASample
 from ...reader import LineDelimitedReader
 
 _ANSWER_ENCODINGS = {
@@ -67,7 +67,6 @@ class GISADatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("gisa", config_class=GISADatasetConfig)
 class GISADataset(MappingDataset[QASample]):
     """Dataset for GISA benchmark."""
 

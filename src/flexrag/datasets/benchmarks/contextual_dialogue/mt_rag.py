@@ -5,7 +5,7 @@ from typing import Literal, Optional
 from flexrag.common import FLEXRAG_CACHE_DIR, configure, download, download_and_extract
 from flexrag.common.dataclasses import ChatMessages, ChatTurn, Context
 
-from ...core import DATASETS, IRDialogueSample, MappingDataset
+from ...core import IRDialogueSample, MappingDataset
 from ...corpora.corpus_dataset import _ContextMappingCorpus
 
 RESOURCES = {
@@ -44,7 +44,6 @@ class MTRAGDatasetConfig:
     subset: Literal["clapnq", "cloud", "fiqa", "govt", "all"] = "all"
 
 
-@DATASETS("mt_rag", config_class=MTRAGDatasetConfig)
 class MTRAGDataset(MappingDataset[IRDialogueSample]):
     def __init__(self, config: MTRAGDatasetConfig):
         # Set basic arguments

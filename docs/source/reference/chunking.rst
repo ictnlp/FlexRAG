@@ -103,7 +103,3 @@ The configuration provides a general interface for loading and configurate the c
 .. autoclass:: flexrag.processors.chunkers.ChunkerConfig
     :members:
     :inherited-members:
-
-.. autoclass:: flexrag.processors.chunkers.SentenceSplitterConfig
-    :members:
-    :inherited-members:

@@ -6,7 +6,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 
-from ...core import DATASETS, MappingDataset, QASample
+from ...core import MappingDataset, QASample
 
 
 @configure
@@ -43,7 +43,6 @@ class GAIADatasetConfig:
     split: Annotated[str, Choices("test", "validation")] = "validation"
 
 
-@DATASETS("gaia", config_class=GAIADatasetConfig)
 class GAIADataset(MappingDataset[QASample]):
     """Dataset for GAIA benchmark."""
 

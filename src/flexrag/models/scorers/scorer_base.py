@@ -4,8 +4,6 @@ from typing import Protocol, TypeAlias
 
 import numpy as np
 
-from flexrag.common import Register
-
 PairScorerInput: TypeAlias = tuple[str, str] | list[tuple[str, str]]
 
 
@@ -114,6 +112,3 @@ class LocalPairScorerBase(ABC):
         :return: One score for each input pair.
         """
         return await asyncio.to_thread(self.score, pairs, batch_size=batch_size)
-
-
-SCORERS = Register[PairScorerProtocol]("scorer")

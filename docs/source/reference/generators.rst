@@ -10,10 +10,6 @@ Generators
     :members:
     :inherited-members:
 
-.. autoclass:: flexrag.models.GeneratorConfig
-    :members:
-    :inherited-members:
-
 .. autoclass:: flexrag.models.HFModelConfig
     :members:
     :inherited-members:

@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from dataclasses import field
 from typing import Any, Optional, Protocol, TypeAlias
 
-from flexrag.common import ChatMessages, ChatTurn, Register, configure
+from flexrag.common import ChatMessages, ChatTurn, configure
 
 GeneratorPrefixes: TypeAlias = str | list[str]
 GeneratorMessages: TypeAlias = (
@@ -434,6 +434,3 @@ class RemoteGeneratorBase(ABC):
             await self._async_generate_one(prefix, generation_config)
             for prefix in normalized_prefixes
         ]
-
-
-GENERATORS = Register[GeneratorProtocol]("generator")

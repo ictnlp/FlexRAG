@@ -12,7 +12,7 @@ from flexrag.common import FLEXRAG_CACHE_DIR, Choices, Context, configure
 from flexrag.common.misc import download
 
 from ..reader import LineDelimitedReader
-from .corpus_dataset import CORPORA, _InMemoryMappingCorpus
+from .corpus_dataset import _InMemoryMappingCorpus
 
 _RESOURCES = {
     "enwiki_2017_atlas": {
@@ -70,7 +70,6 @@ class WikipediaAtlasCorpusConfig:
     include_infobox: bool = True
 
 
-@CORPORA("wikipedia_atlas", config_class=WikipediaAtlasCorpusConfig)
 class WikipediaAtlasCorpus(_InMemoryMappingCorpus):
     """Wikipedia corpus backed by the Atlas corpus releases.
 

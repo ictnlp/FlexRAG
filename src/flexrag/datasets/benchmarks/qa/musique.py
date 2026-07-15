@@ -5,7 +5,7 @@ from typing import Annotated, Optional
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, Context, configure
 
-from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...core import ContextualQASample, MappingDataset
 from ...reader import LineDelimitedReader
 
 MUSIQUE_FILE_ID = "1tGdADlNjWFaHLeZZGShh2IRcpO6Lv24h"
@@ -77,7 +77,6 @@ def _ensure_data_dir(data_dir: Path) -> None:
     return
 
 
-@DATASETS("musique", config_class=MuSiQueDatasetConfig)
 class MuSiQueDataset(MappingDataset[ContextualQASample]):
     _file_name_map = {
         "train": "musique_full_v1.0_train.jsonl",

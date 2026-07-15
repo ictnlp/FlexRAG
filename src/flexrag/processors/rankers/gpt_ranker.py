@@ -6,7 +6,7 @@ from flexrag.common import configure, trace
 from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.models.generators import GeneratorProtocol
 
-from .ranker_base import RANKERS, RankerBase, RankerBaseConfig, RankingResult
+from .ranker_base import RankerBase, RankerBaseConfig, RankingResult
 
 
 @configure
@@ -23,7 +23,6 @@ class RankGPTRankerConfig(RankerBaseConfig):
     max_chunk_size: int = 300
 
 
-@RANKERS("rank_gpt", config_class=RankGPTRankerConfig)
 class RankGPTRanker(RankerBase):
     """RankGPTRanker:
     Rank the candidates based on the query using the Large Language model.

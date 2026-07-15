@@ -7,7 +7,7 @@ from huggingface_hub import hf_hub_download
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import ChatMessages
 
-from ...core import DATASETS, MappingDataset, MultiSessionQASample
+from ...core import MappingDataset, MultiSessionQASample
 
 
 @configure
@@ -27,7 +27,6 @@ class MSCSelfInstructDatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("msc_self_instruct", config_class=MSCSelfInstructDatasetConfig)
 class MSCSelfInstructDataset(MappingDataset[MultiSessionQASample]):
     def __init__(self, config: MSCSelfInstructDatasetConfig):
         # prepare the data directory

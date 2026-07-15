@@ -7,7 +7,7 @@ from huggingface_hub import snapshot_download
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...core import ContextualQASample, MappingDataset
 
 
 @configure
@@ -25,7 +25,6 @@ class MultihopRAGDatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("multihop_rag", config_class=MultihopRAGDatasetConfig)
 class MultihopRAGDataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: MultihopRAGDatasetConfig):
         # Download the dataset if not exists

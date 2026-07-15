@@ -9,7 +9,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 
-from ...core import DATASETS, MappingDataset, QASample
+from ...core import MappingDataset, QASample
 
 _SUBSETS = ("feta", "nq", "paper_text", "paper_tab", "fin", "tat")
 _ANSWER_FIELDS = {
@@ -62,7 +62,6 @@ class UDAQADatasetConfig:
     prefered_format: Annotated[str, Choices("pdf", "html")] = "pdf"
 
 
-@DATASETS("uda_qa", config_class=UDAQADatasetConfig)
 class UDAQADataset(MappingDataset[QASample]):
     """Dataset for the UDA-QA benchmark."""
 

@@ -8,7 +8,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Context, configure
 
-from ...core import DATASETS, IRQASample, MappingDataset
+from ...core import IRQASample, MappingDataset
 from ...corpora import WikipediaWikimediaCorpus, WikipediaWikimediaCorpusConfig
 from ...corpora.corpus_dataset import _ContextMappingCorpus
 
@@ -48,7 +48,6 @@ def _title_from_wiki_url(url: str) -> str:
     return title.replace("_", " ")
 
 
-@DATASETS("frames", config_class=FramesDatasetConfig)
 class FramesDataset(MappingDataset[IRQASample]):
     """Dataset for the FRAMES end-to-end RAG benchmark."""
 

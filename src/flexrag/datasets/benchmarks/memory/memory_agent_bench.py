@@ -7,7 +7,7 @@ from huggingface_hub import snapshot_download
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...core import ContextualQASample, MappingDataset
 
 
 @configure
@@ -41,7 +41,6 @@ class MemoryAgentBenchDatasetConfig:
     ] = "Accurate_Retrieval"
 
 
-@DATASETS("memory_agent_bench", config_class=MemoryAgentBenchDatasetConfig)
 class MemoryAgentBenchDataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: MemoryAgentBenchDatasetConfig):
         # prepare the data directory

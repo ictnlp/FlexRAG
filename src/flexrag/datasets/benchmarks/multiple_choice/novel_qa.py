@@ -8,7 +8,7 @@ from huggingface_hub import hf_hub_download
 from flexrag.common import FLEXRAG_CACHE_DIR, configure
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS, ContextualMCSample, MappingDataset
+from ...core import ContextualMCSample, MappingDataset
 
 
 @configure
@@ -32,7 +32,6 @@ class NovelQADatasetConfig:
     data_path: Optional[str] = None
 
 
-@DATASETS("novel_qa", config_class=NovelQADatasetConfig)
 class NovelQADataset(MappingDataset[ContextualMCSample]):
     def __init__(self, config: NovelQADatasetConfig):
         # download dataset if not exists

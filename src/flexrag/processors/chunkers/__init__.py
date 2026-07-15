@@ -14,12 +14,10 @@ from .lumber_chunker import LumberChunker, LumberChunkerConfig
 from .semantic_chunker import SemanticChunker, SemanticChunkerConfig
 from .sentence_splitter import (
     PREDEFINED_SPLIT_PATTERNS,
-    SENTENCE_SPLITTERS,
     NLTKSentenceSplitter,
     NLTKSentenceSplitterConfig,
     RegexSplitter,
     RegexSplitterConfig,
-    SentenceSplitterConfig,
     SpacySentenceSplitter,
     SpacySentenceSplitterConfig,
 )
@@ -48,8 +46,6 @@ __all__ = [
     "LumberChunkerConfig",
     "DenseXChunker",
     "DenseXChunkerConfig",
-    "SentenceSplitterConfig",
-    "SENTENCE_SPLITTERS",
     "PREDEFINED_SPLIT_PATTERNS",
     "NLTKSentenceSplitter",
     "NLTKSentenceSplitterConfig",

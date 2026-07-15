@@ -7,7 +7,7 @@ from huggingface_hub import hf_hub_download
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...core import ContextualQASample, MappingDataset
 
 
 @configure
@@ -37,7 +37,6 @@ class GutenQADatasetConfig:
     ] = "lumber_chunk"
 
 
-@DATASETS("guten_qa", config_class=GutenQADatasetConfig)
 class GutenQADataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: GutenQADatasetConfig):
         self._context_mode = config.context_mode

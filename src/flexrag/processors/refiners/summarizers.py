@@ -10,8 +10,6 @@ from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.models.encoders import EncoderProtocol
 from flexrag.models.generators import GeneratorProtocol
 
-from .refiner_base import REFINERS
-
 
 @configure
 class AbstractiveSummarizerConfig:
@@ -72,7 +70,6 @@ class AbstractiveSummarizerConfig:
     refined_field: Optional[str] = None
 
 
-@REFINERS("abstractive_summarizer", config_class=AbstractiveSummarizerConfig)
 class AbstractiveSummarizer:
     """The ``AbstractiveSummarizer`` summarizes the contexts using a generator."""
 
@@ -215,7 +212,6 @@ class RecompExtractiveSummarizerConfig:
     refined_field: Optional[str] = None
 
 
-@REFINERS("extractive_summarizer", config_class=RecompExtractiveSummarizerConfig)
 class RecompExtractiveSummarizer:
     """The ``ExtractiveSummarizer`` summarizes the contexts using an encoder."""
 

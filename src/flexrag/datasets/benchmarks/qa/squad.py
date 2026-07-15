@@ -8,7 +8,7 @@ from huggingface_hub import snapshot_download
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, configure
 from flexrag.common.dataclasses import Context
 
-from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...core import ContextualQASample, MappingDataset
 
 
 @configure
@@ -36,7 +36,6 @@ class SQuADDatasetConfig:
     version: Annotated[str, Choices("v1.1", "v2.0")] = "v2.0"
 
 
-@DATASETS("squad", config_class=SQuADDatasetConfig)
 class SQuADDataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: SQuADDatasetConfig):
         # Download the dataset if not exists

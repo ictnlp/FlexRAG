@@ -7,7 +7,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, Context, configure
 
-from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...core import ContextualQASample, MappingDataset
 
 
 @configure
@@ -32,7 +32,6 @@ class TwoWikiMultihopQADatasetConfig:
     split: Annotated[str, Choices("train", "dev", "test")] = "dev"
 
 
-@DATASETS("2wiki_multihop_qa", config_class=TwoWikiMultihopQADatasetConfig)
 class TwoWikiMultihopQADataset(MappingDataset[ContextualQASample]):
     """Dataset for the 2WikiMultihopQA benchmark."""
 

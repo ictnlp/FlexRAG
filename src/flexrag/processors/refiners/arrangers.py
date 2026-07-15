@@ -4,8 +4,6 @@ from typing import Annotated
 from flexrag.common import Choices, configure, trace
 from flexrag.common.dataclasses import RetrievedContext
 
-from .refiner_base import REFINERS
-
 
 @configure
 class ContextArrangerConfig:
@@ -21,7 +19,6 @@ class ContextArrangerConfig:
     )
 
 
-@REFINERS("context_arranger", config_class=ContextArrangerConfig)
 class ContextArranger:
     """The ``ContextArranger`` arranges the contexts based on the given order.
 

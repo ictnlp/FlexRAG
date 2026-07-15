@@ -13,7 +13,11 @@ from flexrag.metrics import (
     RougeConfig,
 )
 from flexrag.metrics.metrics_base import MetricCallable
-from flexrag.models.tokenizer import TokenizerConfig
+from flexrag.models.tokenizer import (
+    JiebaTokenizer,
+    JiebaTokenizerConfig,
+    SpaceTokenizer,
+)
 
 from ..contextual_qa_base import ContextualQATask, ContextualQATaskConfig
 from ..task_base import TASKS
@@ -156,21 +160,19 @@ class LongBenchTask(ContextualQATask):
                 "trivia_qa",
             }:
                 # English QA subsets are evaluated with F1
-                metrics["f1"] = F1(F1Config())
+                metrics["f1"] = F1(F1Config(), tokenizer=SpaceTokenizer())
             case subset if subset in {"multifield_qa_zh"}:
                 # Chinese QA subsets are evaluated with F1 using jieba tokenizer
                 metrics["f1"] = F1(
-                    F1Config(tokenizer_config=TokenizerConfig(tokenizer_type="jieba"))
+                    F1Config(), tokenizer=JiebaTokenizer(JiebaTokenizerConfig())
                 )
             case subset if subset in {"gov_report", "qm_sum", "multi_news", "sam_sum"}:
                 # English summarization subsets are evaluated with ROUGE
-                metrics["rouge"] = Rouge(RougeConfig())
+                metrics["rouge"] = Rouge(RougeConfig(), tokenizer=SpaceTokenizer())
             case subset if subset in {"dureader", "vc_sum"}:
                 # Chinese summarization subsets are evaluated with ROUGE using jieba tokenizer
                 metrics["rouge"] = Rouge(
-                    RougeConfig(
-                        tokenizer_config=TokenizerConfig(tokenizer_type="jieba")
-                    )
+                    RougeConfig(), tokenizer=JiebaTokenizer(JiebaTokenizerConfig())
                 )
             case subset if subset in {"lsht", "trec"}:
                 all_classes = [item.metadata["all_classes"] for item in self.testset]

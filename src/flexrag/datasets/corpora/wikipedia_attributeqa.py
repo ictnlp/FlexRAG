@@ -11,7 +11,7 @@ from flexrag.common import FLEXRAG_CACHE_DIR, Context, configure
 from flexrag.common.misc import download_and_extract
 
 from ..reader import LineDelimitedReader
-from .corpus_dataset import CORPORA, _InMemoryMappingCorpus
+from .corpus_dataset import _InMemoryMappingCorpus
 
 _RESOURCES = "https://storage.googleapis.com/gresearch/attributed_language_models/wikipedia.zip"  # fmt: skip
 
@@ -33,7 +33,6 @@ class WikipediaAttributedQACorpusConfig:
     load_in_memory: bool = False
 
 
-@CORPORA("wikipedia_attributedqa", config_class=WikipediaAttributedQACorpusConfig)
 class WikipediaAttributedQACorpus(_InMemoryMappingCorpus):
     """Wikipedia corpus backed by the Attributed-QA Wikipedia snapshot.
 

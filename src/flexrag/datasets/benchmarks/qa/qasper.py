@@ -5,7 +5,7 @@ from typing import Annotated, Optional
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, Context, configure
 from flexrag.common.misc import download_and_extract
 
-from ...core import DATASETS, ContextualQASample, MappingDataset
+from ...core import ContextualQASample, MappingDataset
 
 _RESOURCES = {
     "train_dev": "https://qasper-dataset.s3.us-west-2.amazonaws.com/qasper-train-dev-v0.3.tgz",
@@ -66,7 +66,6 @@ def _normalize_answers(raw_answers: list[dict]) -> list[str]:
     return list(dict.fromkeys(answers))
 
 
-@DATASETS("qasper", config_class=QasperDatasetConfig)
 class QasperDataset(MappingDataset[ContextualQASample]):
     def __init__(self, config: QasperDatasetConfig):
         if config.data_path is None:

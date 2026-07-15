@@ -15,7 +15,7 @@ from huggingface_hub import snapshot_download
 
 from flexrag.common import FLEXRAG_CACHE_DIR, Choices, Context, configure
 
-from .corpus_dataset import CORPORA, _InMemoryMappingCorpus
+from .corpus_dataset import _InMemoryMappingCorpus
 
 
 @configure
@@ -33,7 +33,6 @@ class WikipediaWikimediaCorpusConfig:
     subset: str = "20231101.en"
 
 
-@CORPORA("wikipedia_wikimedia", config_class=WikipediaWikimediaCorpusConfig)
 class WikipediaWikimediaCorpus(_InMemoryMappingCorpus):
     """Wikipedia corpus backed by the Wikimedia dataset on Hugging Face.
 
@@ -109,7 +108,6 @@ class WikipediaStructuredWikimediaCorpusConfig:
     context_mode: Annotated[str, Choices("section", "document")] = "section"
 
 
-@CORPORA("wikipedia_structured", config_class=WikipediaStructuredWikimediaCorpusConfig)
 class WikipediaStructuredWikimediaCorpus:
     """Wikipedia corpus backed by Wikimedia Structured Wikipedia on Hugging Face."""
 
