@@ -1,7 +1,7 @@
 import re
 from typing import Any
 
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import configure
 from flexrag.datasets.benchmarks import LongBenchV2Dataset, LongBenchV2DatasetConfig
 from flexrag.datasets.core import ContextualMCSample, MappingDataset
@@ -54,9 +54,9 @@ class LongBenchV2Task(ContextualMCTask):
     def load_evaluator(self) -> Evaluator:
         return Evaluator({"longbench_v2_metric": _LongBenchV2Metric()})
 
-    def evaluate(
-        self, assistant: AssistantBase, sample: ContextualMCSample
-    ) -> AssistantResponse:
+    async def evaluate(
+        self, assistant: AssistantProtocol, sample: ContextualMCSample
+    ) -> AssistantResult:
         # construct the question with provided contexts
         prompt = self.instruct.format(
             question=sample.question,
@@ -67,5 +67,5 @@ class LongBenchV2Task(ContextualMCTask):
             context=sample.contexts[0].data["text"],
         )
         # get response from assistant
-        response = assistant.answer([{"role": "user", "content": prompt}])
+        response = await assistant.answer([{"role": "user", "content": prompt}])
         return response

@@ -1,4 +1,4 @@
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import configure
 from flexrag.datasets.benchmarks import ConvoMemDataset, ConvoMemDatasetConfig
 from flexrag.datasets.core import MultiSessionQASample
@@ -131,12 +131,10 @@ class ConvoMemTask(MultiSessionQATask):
         }
         if self.llm_judger is not None:
             self.logger.info("LLM judger is enabled for evaluation.")
-            metrics["llm_judger"] = _ConvoMemMetric(
-                self.llm_judger, self.config.subset
-            )
+            metrics["llm_judger"] = _ConvoMemMetric(self.llm_judger, self.config.subset)
         return Evaluator(metrics)
 
-    def evaluate(
-        self, assistant: AssistantBase, sample: MultiSessionQASample
-    ) -> AssistantResponse:
-        return assistant.answer([{"role": "user", "content": sample.question}])
+    async def evaluate(
+        self, assistant: AssistantProtocol, sample: MultiSessionQASample
+    ) -> AssistantResult:
+        return await assistant.answer([{"role": "user", "content": sample.question}])

@@ -26,10 +26,5 @@ class TaskBase(ABC):
         """
         return
 
-    @abstractmethod
-    def run(self, assistant):
-        """Run the task."""
-        return
-
 
 TASKS = Register[TaskBase](register_name="task")

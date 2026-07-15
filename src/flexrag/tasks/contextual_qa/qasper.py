@@ -3,7 +3,7 @@ import string
 from collections import Counter
 from typing import Any
 
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import configure
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.datasets.benchmarks import QasperDataset, QasperDatasetConfig
@@ -137,11 +137,11 @@ class QasperTask(ContextualQATask):
     def load_evaluator(self) -> Evaluator:
         return Evaluator({"qasper_answer_f1": _QasperAnswerF1()})
 
-    def evaluate(
-        self, assistant: AssistantBase, sample: ContextualQASample
-    ) -> AssistantResponse:
+    async def evaluate(
+        self, assistant: AssistantProtocol, sample: ContextualQASample
+    ) -> AssistantResult:
         context = "\n".join(context.data["text"] for context in sample.contexts)
         prompt = self.instruction.format(context=context, question=sample.question)
-        return assistant.answer(
+        return await assistant.answer(
             messages=ChatMessages.from_list([ChatTurn(role="user", content=prompt)])
         )

@@ -1,10 +1,12 @@
+import asyncio
 import logging
 import os
 from abc import abstractmethod
+from collections.abc import Callable
 from pathlib import Path
 from typing import Optional
 
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
 from flexrag.common.dataclasses import Context
 from flexrag.common.serialization import json_dump
@@ -16,29 +18,31 @@ from .task_base import TaskBase
 
 @configure
 class ContextualQATaskConfig:
-    """Configuration for Contextualized QA Task."""
+    """Configuration for contextual QA evaluation.
+
+    :param log_interval: Progress logging interval.
+    :param output_path: Optional directory for evaluation outputs.
+    """
 
     log_interval: int = 10
     output_path: Optional[str] = None
 
 
 class ContextualQATask(TaskBase):
-    """Base class for all Contextualized QA Tasks."""
+    """Base class for contextual QA tasks."""
 
     config: ContextualQATaskConfig
 
-    def setup(self):
-        """Setup the Contextualized QA task."""
-        # setup logger
+    def setup(self) -> None:
+        """Load the dataset, evaluator, logging, and output paths."""
         self.logger = LOGGER_MANAGER.get_logger("task.contextualized_qa")
         if self.config.output_path is not None:
             os.makedirs(self.config.output_path, exist_ok=True)
-            log_path = Path(self.config.output_path, "log.txt")
-            handler = logging.FileHandler(log_path)
-            LOGGER_MANAGER.add_handler(handler)
+            LOGGER_MANAGER.add_handler(
+                logging.FileHandler(Path(self.config.output_path, "log.txt"))
+            )
         self.logger.debug(f"Configs:\n{self.config.dumps()}")
 
-        # setup output paths
         if self.config.output_path is not None:
             self.details_path = Path(self.config.output_path, "details.jsonl")
             self.eval_score_path = Path(self.config.output_path, "eval_score.json")
@@ -48,53 +52,57 @@ class ContextualQATask(TaskBase):
             self.eval_score_path = Path(os.devnull)
             self.config_path = Path(os.devnull)
         self.config.dump(self.config_path)
-
-        # load dataset
         self.testset = self.load_dataset()
-
-        # load metrics
         self.evaluator = self.load_evaluator()
-        return
 
-    def run(self, assistant: AssistantBase):
-        """Run the Contextualized QA task."""
-        # search and answer questions
-        questions: list[str] = []
-        golden_answers: list[list[str]] = []
-        metadatas: list[dict] = []
-        responses: list[str] = []
-        contexts: list[list[Context]] = []
+    async def run(
+        self,
+        assistant_factory: Callable[[], AssistantProtocol],
+    ) -> None:
+        """Evaluate all samples concurrently in one assistant episode.
+
+        Existing benchmark prompts remain responsible for rendering their
+        provided contexts.
+
+        :param assistant_factory: Factory returning a fresh assistant instance.
+        """
+        items = list(self.testset)
         p_logger = SimpleProgressLogger(
-            self.logger, interval=self.config.log_interval, total=len(self.testset)
+            self.logger, interval=self.config.log_interval, total=len(items)
         )
+        async with assistant_factory() as assistant:
+
+            async def evaluate_one(item: ContextualQASample) -> AssistantResult:
+                result = await self.evaluate(assistant=assistant, sample=item)
+                p_logger.update(desc="Inferencing")
+                return result
+
+            results = await asyncio.gather(*(evaluate_one(item) for item in items))
+
+        questions = [item.question for item in items]
+        golden_answers = [item.answers for item in items]
+        metadatas = [item.metadata or {} for item in items]
+        responses = [result.response.text_content or "" for result in results]
+        contexts: list[list[Context]] = [item.contexts for item in items]
+
         with open(self.details_path, "w", encoding="utf-8") as f:
-            for item in self.testset:
-                questions.append(item.question)
-                golden_answers.append(item.answers)
-                metadatas.append(item.metadata or {})
-                response = self.evaluate(assistant=assistant, sample=item)
-                if response.response.text_content is not None:
-                    responses.append(response.response.text_content)
-                else:
-                    responses.append("")
-                contexts.append(item.contexts)
+            for item, result in zip(items, results, strict=True):
                 f.write(
                     json_dump(
                         {
                             "question": item.question,
                             "golden": item.answers,
                             "metadata_test": item.metadata,
-                            "response": response,
+                            "response": result,
                         },
                         to_bytes=False,
                         ensure_ascii=False,
                     )
-                    + "\n"
                 )
-                p_logger.update(desc="Inferencing")
+                f.write("\n")
 
-        # Evaluate the results
-        resp_score, resp_score_detail = self.evaluator.evaluate(
+        resp_score, resp_score_detail = await asyncio.to_thread(
+            self.evaluator.evaluate,
             questions=questions,
             responses=responses,
             golden_responses=golden_answers,
@@ -102,8 +110,6 @@ class ContextualQATask(TaskBase):
             golden_contexts=contexts,
             log=True,
         )
-
-        # Save the evaluation results
         with open(self.eval_score_path, "w", encoding="utf-8") as f:
             f.write(
                 json_dump(
@@ -116,38 +122,33 @@ class ContextualQATask(TaskBase):
                     ensure_ascii=False,
                 )
             )
-        return
 
     @abstractmethod
-    def evaluate(
-        self, assistant: AssistantBase, sample: ContextualQASample
-    ) -> AssistantResponse:
-        """
-        Evaluate a single data sample.
+    async def evaluate(
+        self,
+        assistant: AssistantProtocol,
+        sample: ContextualQASample,
+    ) -> AssistantResult:
+        """Evaluate one contextual QA sample.
 
-        :param assistant: The assistant to evaluate.
-        :type assistant: AssistantBase
-        :param sample: A single data sample to be evaluated.
-        :type sample: ContextualQASample
-        :return: The response from the assistant.
-        :rtype: AssistantResponse
+        :param assistant: Active assistant episode.
+        :param sample: Contextual QA sample.
+        :return: Assistant result for the sample.
         """
-        return
+        raise NotImplementedError
 
     @abstractmethod
     def load_dataset(self) -> MappingDataset[ContextualQASample]:
-        """Load the dataset for the task.
+        """Load the contextual QA dataset.
 
-        :return: The dataset for the task.
-        :rtype: MappingDataset[ContextualQASample]
+        :return: Contextual QA dataset.
         """
-        return
+        raise NotImplementedError
 
     @abstractmethod
     def load_evaluator(self) -> Evaluator:
-        """Load the evaluator for the task.
+        """Load the response evaluator.
 
-        :return: The evaluator for the task.
-        :rtype: Evaluator
+        :return: Configured evaluator.
         """
-        return
+        raise NotImplementedError

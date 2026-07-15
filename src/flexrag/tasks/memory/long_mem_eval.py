@@ -1,6 +1,6 @@
 from collections import defaultdict
 
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import ChatMessages, RetrievedContext, configure
 from flexrag.datasets.benchmarks import LongMemEvalDataset, LongMemEvalDatasetConfig
 from flexrag.datasets.core import MultiSessionQASample
@@ -121,12 +121,12 @@ class LongMemEvalTask(MultiSessionQATask):
             metrics["llm_judger"] = _LongMemEvalMetric(self.llm_judger)
         return Evaluator(metrics)
 
-    def evaluate(
-        self, assistant: AssistantBase, sample: MultiSessionQASample
-    ) -> AssistantResponse:
+    async def evaluate(
+        self, assistant: AssistantProtocol, sample: MultiSessionQASample
+    ) -> AssistantResult:
         metadata = sample.metadata or {}
         messages = ChatMessages.from_list(
             [{"role": "user", "content": sample.question}],
             metadata={"date": metadata["question_date"]},
         )
-        return assistant.answer(messages)
+        return await assistant.answer(messages)

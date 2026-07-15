@@ -1,39 +1,29 @@
+from __future__ import annotations
+
 import os
 from copy import deepcopy
 from dataclasses import field
-from typing import Annotated, Optional
+from typing import Annotated, Any, Optional
 
 import httpx
 
-from flexrag.common import LOGGER_MANAGER, Choices, configure
-from flexrag.common.dataclasses import ChatMessages, RetrievedContext
+from flexrag.common import Choices, configure
+from flexrag.common.dataclasses import ChatMessages, ChatTurn, RetrievedContext
 from flexrag.models import GenerationConfig
 
-from .assistant_base import ASSISTANTS, AssistantBase, AssistantResponse
-
-logger = LOGGER_MANAGER.get_logger("flexrag.assistant")
+from .assistant_base import ASSISTANTS, AssistantBase, AssistantResult
 
 
 @configure
 class JinaDeepSearchConfig:
-    """The configuration for the Jina DeepSearch Assistant.
+    """Configuration for the Jina DeepSearch Assistant.
 
-    :param base_url: The base URL of the API. Defaults to "https://deepsearch.jina.ai/v1/chat/completions".
-    :type base_url: str
-    :param api_key: The API key for the Jina DeepSearch API.
-        If not provided, it will use the environment variable `JINA_API_KEY`.
-        Defaults to None.
-    :type api_key: Optional[str]
-    :param model: The model to use. Defaults to "jina-deepsearch-v1".
-    :type model: str
-    :param reasoning_effort: The reasoning effort. Defaults to "medium".
-        Available choices are "low", "medium", "high".
-    :type reasoning_effort: str
-    :param proxy: The proxy to use. Defaults to None.
-    :type proxy: str, optional
-    :param timeout: The timeout for the API call. Defaults to 10.
-        Note that the deepsearch API may take a long time to respond.
-    :type timeout: int
+    :param base_url: Jina DeepSearch API base URL.
+    :param api_key: API key. Falls back to ``JINA_API_KEY``.
+    :param model: Model name sent to the API.
+    :param reasoning_effort: Provider reasoning-effort setting.
+    :param proxy: Optional HTTP proxy.
+    :param timeout: Request timeout in seconds.
     """
 
     base_url: str = "https://deepsearch.jina.ai/v1"
@@ -46,79 +36,89 @@ class JinaDeepSearchConfig:
 
 @ASSISTANTS("jina_deepsearch", config_class=JinaDeepSearchConfig)
 class JinaDeepSearch(AssistantBase):
-    """The Jina DeepSearch Assistant (https://jina.ai/deepsearch/)."""
+    """Stateless QA assistant backed by Jina DeepSearch.
 
-    def __init__(self, cfg: JinaDeepSearchConfig):
-        # prepare client
-        api_key = cfg.api_key or os.getenv("JINA_API_KEY")
+    See https://jina.ai/deepsearch/.
+    """
+
+    def __init__(self, config: JinaDeepSearchConfig) -> None:
+        super().__init__()
+        api_key = config.api_key or os.getenv("JINA_API_KEY")
         if not api_key:
             raise ValueError(
-                "API key for Jina is not provided. "
-                "Please set it in the configuration or as an environment variable 'JINA_API_KEY'."
+                "Jina API key is required; set config.api_key or JINA_API_KEY"
             )
-        self.client = httpx.Client(
-            base_url=cfg.base_url,
-            headers={
+        self._client_kwargs: dict[str, Any] = {
+            "base_url": config.base_url,
+            "headers": {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}",
             },
-            proxy=cfg.proxy,
-            follow_redirects=True,
-            timeout=cfg.timeout,
-        )
-
-        # prepare data template
-        self.data_template = {
-            "model": cfg.model,
+            "proxy": config.proxy,
+            "follow_redirects": True,
+            "timeout": config.timeout,
+        }
+        self._data_template = {
+            "model": config.model,
             "messages": [],
-            "reasoning_effort": cfg.reasoning_effort,
+            "reasoning_effort": config.reasoning_effort,
             "stream": False,
         }
-        return
+        self._client: httpx.AsyncClient | None = None
 
-    def answer(
+    async def _start_episode(self) -> None:
+        self._client = httpx.AsyncClient(**self._client_kwargs)
+
+    async def _finish_episode(self) -> None:
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
+
+    async def _answer(
         self,
         messages: ChatMessages,
-        disable_retrieval: bool = False,
-    ) -> AssistantResponse:
-        assert not disable_retrieval, (
-            "JinaDeepSearch does not support disabling retrieval."
+        *,
+        retrieve: bool,
+    ) -> AssistantResult:
+        self._validate_qa_request(retrieve)
+        data = deepcopy(self._data_template)
+        data["messages"] = self._provider_messages(messages)
+        response = await self._require_client().post("chat/completions", json=data)
+        response.raise_for_status()
+        content = response.json()["choices"][0]["message"]["content"]
+        return AssistantResult(
+            response=ChatTurn(role="assistant", content=content),
+            metadata={"prompt": deepcopy(messages)},
         )
 
-        # prepare data
-        data = deepcopy(self.data_template)
-        data["messages"] = messages.to_list()
+    @staticmethod
+    def _validate_qa_request(retrieve: bool) -> None:
+        if not retrieve:
+            raise ValueError("JinaDeepSearch requires retrieve=True")
 
-        # generate response
-        response = self.client.post("chat/completions", json=data)
-        response.raise_for_status()
-        response = response.json()["choices"][0]["message"]["content"]
+    @staticmethod
+    def _provider_messages(messages: ChatMessages) -> list[dict[str, Any]]:
+        return [
+            {"role": turn.role, "content": deepcopy(turn.content)} for turn in messages
+        ]
 
-        return AssistantResponse(response=response)
+    def _require_client(self) -> httpx.AsyncClient:
+        if self._client is None:
+            raise RuntimeError("JinaDeepSearch requires an active episode")
+        return self._client
 
 
 @configure
 class PerplexityAssistantConfig(GenerationConfig):
-    """The configuration for the PerplexityAI Assistant.
+    """Configuration for the Perplexity QA Assistant.
 
-    :param base_url: The base URL of the API. Defaults to "https://api.perplexity.ai/chat/completions".
-    :type base_url: str
-    :param api_key: The API key for the PerplexityAI API.
-        If not provided, it will use the environment variable `PERPLEXITY_API_KEY`.
-        Defaults to None.
-    :type api_key: str
-    :param model: The model to use. Defaults to "sonar".
-    :type model: str
-    :param search_domain_filter: Given a list of domains, limit the citations used by the online model to URLs from the specified domains.
-        Defaults to []. Only available to users in Tier-3.
-    :type search_domain_filter: list[str]
-    :param search_recency_filter: Returns search results within the specified time interval.
-        Defaults to None. Available choices are "month", "week", "day", "hour".
-    :type search_recency_filter: str, optional
-    :param proxy: The proxy to use. Defaults to None.
-    :type proxy: str, optional
-    :param timeout: The timeout for the API call. Defaults to 10.
-    :type timeout: int
+    :param base_url: Perplexity API base URL.
+    :param api_key: API key. Falls back to ``PERPLEXITY_API_KEY``.
+    :param model: Model name sent to the API.
+    :param search_domain_filter: Optional domains used to constrain search.
+    :param search_recency_filter: Optional search-recency constraint.
+    :param proxy: Optional HTTP proxy.
+    :param timeout: Request timeout in seconds.
     """
 
     base_url: str = "https://api.perplexity.ai"
@@ -134,67 +134,91 @@ class PerplexityAssistantConfig(GenerationConfig):
 
 @ASSISTANTS("perplexity", config_class=PerplexityAssistantConfig)
 class PerplexityAssistant(AssistantBase):
-    """The PerplexityAI Assistant (https://www.perplexity.ai)."""
+    """Stateless QA assistant backed by Perplexity.
 
-    def __init__(self, cfg: PerplexityAssistantConfig):
-        # prepare client
-        api_key = cfg.api_key or os.getenv("PERPLEXITY_API_KEY")
+    See https://docs.perplexity.ai/.
+    """
+
+    def __init__(self, config: PerplexityAssistantConfig) -> None:
+        super().__init__()
+        api_key = config.api_key or os.getenv("PERPLEXITY_API_KEY")
         if not api_key:
             raise ValueError(
-                "API key for perplexity is not provided. "
-                "Please set it in the configuration or as an environment variable 'PERPLEXITY_API_KEY'."
+                "Perplexity API key is required; set config.api_key or "
+                "PERPLEXITY_API_KEY"
             )
-        self.client = httpx.Client(
-            base_url=cfg.base_url,
-            headers={
+        self._client_kwargs: dict[str, Any] = {
+            "base_url": config.base_url,
+            "headers": {
                 "Content-Type": "application/json",
                 "Authorization": f"Bearer {api_key}",
             },
-            proxy=cfg.proxy,
-            follow_redirects=True,
-            timeout=cfg.timeout,
-        )
-
-        # prepare message template
-        self.data_template = {
-            "model": cfg.model,
+            "proxy": config.proxy,
+            "follow_redirects": True,
+            "timeout": config.timeout,
+        }
+        self._data_template: dict[str, Any] = {
+            "model": config.model,
             "messages": [],
-            "max_tokens": cfg.max_new_tokens,
-            "temperature": cfg.temperature,
-            "top_p": cfg.top_p,
+            "max_tokens": config.max_new_tokens,
+            "temperature": config.temperature,
+            "top_p": config.top_p,
             "stream": False,
             "presence_penalty": 0,
             "frequency_penalty": 1,
         }
-        if len(cfg.search_domain_filter) > 0:
-            self.data_template["search_domain_filter"] = cfg.search_domain_filter
-        if cfg.search_recency_filter != "none":
-            self.data_template["search_recency_filter"] = cfg.search_recency_filter
-        return
+        if config.search_domain_filter:
+            self._data_template["search_domain_filter"] = config.search_domain_filter
+        if config.search_recency_filter != "none":
+            self._data_template["search_recency_filter"] = config.search_recency_filter
+        self._client: httpx.AsyncClient | None = None
 
-    def answer(
+    async def _start_episode(self) -> None:
+        self._client = httpx.AsyncClient(**self._client_kwargs)
+
+    async def _finish_episode(self) -> None:
+        if self._client is not None:
+            await self._client.aclose()
+            self._client = None
+
+    async def _answer(
         self,
         messages: ChatMessages,
-        disable_retrieval: bool = False,
-    ) -> AssistantResponse:
-        assert not disable_retrieval, (
-            "JinaDeepSearch does not support disabling retrieval."
-        )
-
-        # prepare data
-        data = deepcopy(self.data_template)
-        data["messages"] = messages.to_list()
-
-        # generate response
-        response = self.client.post("chat/completions", json=data)
+        *,
+        retrieve: bool,
+    ) -> AssistantResult:
+        self._validate_qa_request(retrieve)
+        data = deepcopy(self._data_template)
+        data["messages"] = JinaDeepSearch._provider_messages(messages)
+        response = await self._require_client().post("chat/completions", json=data)
         response.raise_for_status()
-        r = response.json()["choices"][0]["message"]["content"]
+        payload = response.json()
+        query = messages[-1].text_content
         contexts = [
             RetrievedContext(
-                source=i, retriever="perplexity", query=messages[-1].content
+                context_id=citation,
+                data={"text": citation},
+                source=citation,
+                retriever="perplexity",
+                query=query,
             )
-            for i in response.json()["citations"]
+            for citation in payload.get("citations", [])
         ]
-        return AssistantResponse(
-            response=r, contexts=contexts, metadata={"prompt": messages}
+        return AssistantResult(
+            response=ChatTurn(
+                role="assistant",
+                content=payload["choices"][0]["message"]["content"],
+            ),
+            contexts=contexts,
+            metadata={"prompt": deepcopy(messages)},
         )
+
+    @staticmethod
+    def _validate_qa_request(retrieve: bool) -> None:
+        if not retrieve:
+            raise ValueError("PerplexityAssistant requires retrieve=True")
+
+    def _require_client(self) -> httpx.AsyncClient:
+        if self._client is None:
+            raise RuntimeError("PerplexityAssistant requires an active episode")
+        return self._client

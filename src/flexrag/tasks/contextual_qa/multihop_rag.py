@@ -1,4 +1,4 @@
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import configure
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.datasets.benchmarks import MultihopRAGDataset, MultihopRAGDatasetConfig
@@ -45,16 +45,16 @@ class MultihopRAGTask(ContextualQATask):
         }
         return Evaluator(metrics)
 
-    def evaluate(
-        self, assistant: AssistantBase, sample: ContextualQASample
-    ) -> AssistantResponse:
+    async def evaluate(
+        self, assistant: AssistantProtocol, sample: ContextualQASample
+    ) -> AssistantResult:
         context_text = ""
         for context in sample.contexts:
             context_text += context.data["text"] + "\n"
         context_text = context_text.strip()
         # construct the prompt
         prompt = self.instruction.format(context=context_text, question=sample.question)
-        response = assistant.answer(
+        response = await assistant.answer(
             messages=ChatMessages.from_list([ChatTurn(role="user", content=prompt)])
         )
         return response

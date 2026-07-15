@@ -8,7 +8,7 @@ from typing import Optional
 import numpy as np
 import pandas as pd
 
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import configure
 from flexrag.datasets.benchmarks import GISADataset, GISADatasetConfig
 from flexrag.datasets.core import MappingDataset, QASample
@@ -325,10 +325,12 @@ User Question: {question}
     def load_evaluator(self) -> Evaluator:
         return Evaluator({"official_score": _GISAOfficialMetric()})
 
-    def evaluate(self, assistant: AssistantBase, sample: QASample) -> AssistantResponse:
+    async def evaluate(
+        self, assistant: AssistantProtocol, sample: QASample
+    ) -> AssistantResult:
         current_date = self.config.current_date or datetime.date.today().isoformat()
         prompt = self.template.format(
             current_date=current_date,
             question=sample.question,
         )
-        return assistant.answer([{"role": "user", "content": prompt}])
+        return await assistant.answer([{"role": "user", "content": prompt}])

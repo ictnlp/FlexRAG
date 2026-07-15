@@ -1,6 +1,6 @@
 import re
 
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import ChatMessages, configure
 from flexrag.datasets.benchmarks import SimpleQADataset, SimpleQADatasetConfig
 from flexrag.datasets.core import MappingDataset, QASample
@@ -179,6 +179,10 @@ class SimpleQATask(OpenQATask):
             metrics["llm_judger"] = _SimpleQAMetric(self.llm_judger)
         return Evaluator(metrics)
 
-    def evaluate(self, assistant: AssistantBase, sample: QASample) -> AssistantResponse:
-        response = assistant.answer([{"role": "user", "content": sample.question}])
+    async def evaluate(
+        self, assistant: AssistantProtocol, sample: QASample
+    ) -> AssistantResult:
+        response = await assistant.answer(
+            [{"role": "user", "content": sample.question}]
+        )
         return response

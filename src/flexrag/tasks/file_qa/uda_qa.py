@@ -1,7 +1,7 @@
 import re
 from collections import Counter
 
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import configure
 from flexrag.datasets.benchmarks import UDAQADataset, UDAQADatasetConfig
 from flexrag.datasets.core import MappingDataset, QASample
@@ -175,7 +175,9 @@ class UDAQATask(OpenQATask):
             }
         )
 
-    def evaluate(self, assistant: AssistantBase, sample: QASample) -> AssistantResponse:
+    async def evaluate(
+        self, assistant: AssistantProtocol, sample: QASample
+    ) -> AssistantResult:
         metadata = sample.metadata or {}
         file_path = metadata["source_file_path"]
         file_format = metadata["source_file_format"]
@@ -189,7 +191,7 @@ class UDAQATask(OpenQATask):
                 "mime_type": metadata["source_mime_type"],
                 "file_name": metadata["source_file_name"],
             }
-        return assistant.answer(
+        return await assistant.answer(
             [
                 {
                     "role": "user",

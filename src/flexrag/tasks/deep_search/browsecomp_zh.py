@@ -1,6 +1,6 @@
 import re
 
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import ChatMessages, configure
 from flexrag.datasets.benchmarks import BrowseCompZHDataset, BrowseCompZHDatasetConfig
 from flexrag.datasets.core import MappingDataset, QASample
@@ -164,9 +164,11 @@ class BrowseCompZHTask(OpenQATask):
             self.logger.info("LLM judger is enabled for evaluation.")
         return Evaluator(metrics)
 
-    def evaluate(self, assistant: AssistantBase, sample: QASample) -> AssistantResponse:
+    async def evaluate(
+        self, assistant: AssistantProtocol, sample: QASample
+    ) -> AssistantResult:
         prompt = self.template.format(Question=sample.question)
-        return assistant.answer(
+        return await assistant.answer(
             [
                 {"role": "system", "content": self.system_prompt},
                 {"role": "user", "content": prompt},

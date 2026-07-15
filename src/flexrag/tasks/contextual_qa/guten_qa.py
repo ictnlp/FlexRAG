@@ -1,4 +1,4 @@
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import configure
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.datasets.benchmarks import GutenQADataset, GutenQADatasetConfig
@@ -51,9 +51,9 @@ class GutenQATask(ContextualQATask):
         }
         return Evaluator(metrics)
 
-    def evaluate(
-        self, assistant: AssistantBase, sample: ContextualQASample
-    ) -> AssistantResponse:
+    async def evaluate(
+        self, assistant: AssistantProtocol, sample: ContextualQASample
+    ) -> AssistantResult:
         if self.config.context_mode == "book":
             context_text = sample.contexts[0].data["text"]
             template = self.instructions["book"]
@@ -65,7 +65,7 @@ class GutenQATask(ContextualQATask):
             template = self.instructions["chunk"]
         # construct the prompt
         prompt = template.format(context=context_text, question=sample.question)
-        response = assistant.answer(
+        response = await assistant.answer(
             messages=ChatMessages.from_list([ChatTurn(role="user", content=prompt)])
         )
         return response

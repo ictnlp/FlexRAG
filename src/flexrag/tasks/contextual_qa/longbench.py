@@ -1,6 +1,6 @@
 import re
 
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import configure
 from flexrag.common.dataclasses import ChatMessages, ChatTurn
 from flexrag.datasets.benchmarks import LongBenchDataset, LongBenchDatasetConfig
@@ -297,9 +297,9 @@ class LongBenchTask(ContextualQATask):
             evaluator.update(additional_metrics)
         return evaluator
 
-    def evaluate(
-        self, assistant: AssistantBase, sample: ContextualQASample
-    ) -> AssistantResponse:
+    async def evaluate(
+        self, assistant: AssistantProtocol, sample: ContextualQASample
+    ) -> AssistantResult:
         # construct the prompt
         subset = self.config.subset
         if subset not in {"gov_report", "multi_news", "vc_sum", "passage_count", "lcc"}:
@@ -310,7 +310,7 @@ class LongBenchTask(ContextualQATask):
             prompt = self.instructions[subset].format(
                 context=sample.contexts[0].data["text"]
             )
-        response = assistant.answer(
+        response = await assistant.answer(
             messages=ChatMessages.from_list([ChatTurn(role="user", content=prompt)])
         )
         return response

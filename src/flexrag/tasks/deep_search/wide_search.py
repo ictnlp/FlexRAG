@@ -8,7 +8,7 @@ from urllib.parse import urlparse
 
 import pandas as pd
 
-from flexrag.assistants import AssistantBase, AssistantResponse
+from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import ChatMessages, configure
 from flexrag.datasets.benchmarks import WideSearchDataset, WideSearchDatasetConfig
 from flexrag.datasets.core import MappingDataset, QASample
@@ -590,8 +590,10 @@ class WideSearchTask(OpenQATask):
             )
         return Evaluator({"official_score": _WideSearchOfficialMetric(self.llm_judger)})
 
-    def evaluate(self, assistant: AssistantBase, sample: QASample) -> AssistantResponse:
+    async def evaluate(
+        self, assistant: AssistantProtocol, sample: QASample
+    ) -> AssistantResult:
         language = (sample.metadata or {}).get("language", "en")
         template = _ZH_TEMPLATE if language == "zh" else _EN_TEMPLATE
         prompt = template.format(question=sample.question)
-        return assistant.answer([{"role": "user", "content": prompt}])
+        return await assistant.answer([{"role": "user", "content": prompt}])
