@@ -1,7 +1,7 @@
 import json
 import pickle
 from dataclasses import asdict, is_dataclass
-from typing import Any, Literal, Protocol, overload
+from typing import Any, Protocol
 
 import numpy as np
 from omegaconf import DictConfig, ListConfig, OmegaConf
@@ -81,49 +81,21 @@ class JsonSerializer:
 
         self.encoder = CustomEncoder
 
-    @overload
-    def serialize(self, obj: Any) -> bytes: ...
-
-    @overload
-    def serialize(
+    def dumps(
         self,
         obj: Any,
-        to_bytes: Literal[True],
         ensure_ascii: bool = True,
         indent: int | None = None,
         **kwargs,
-    ) -> bytes: ...
+    ) -> str:
+        """Serialize an object into JSON text.
 
-    @overload
-    def serialize(
-        self,
-        obj: Any,
-        to_bytes: Literal[False],
-        ensure_ascii: bool = True,
-        indent: int | None = None,
-        **kwargs,
-    ) -> str: ...
-
-    @overload
-    def serialize(
-        self,
-        obj: Any,
-        to_bytes: bool,
-        ensure_ascii: bool = True,
-        indent: int | None = None,
-        **kwargs,
-    ) -> bytes | str: ...
-
-    def serialize(
-        self,
-        obj: Any,
-        to_bytes: bool = True,
-        ensure_ascii: bool = True,
-        indent: int | None = None,
-        **kwargs,
-    ) -> bytes | str:
-        if to_bytes:
-            return json.dumps(obj, cls=self.encoder).encode("utf-8")
+        :param obj: Object to serialize.
+        :param ensure_ascii: Whether non-ASCII characters should be escaped.
+        :param indent: Optional indentation level for pretty printing.
+        :param kwargs: Extra keyword arguments forwarded to :func:`json.dumps`.
+        :return: Serialized JSON text.
+        """
         return json.dumps(
             obj,
             cls=self.encoder,
@@ -131,6 +103,9 @@ class JsonSerializer:
             indent=indent,
             **kwargs,
         )
+
+    def serialize(self, obj: Any) -> bytes:
+        return self.dumps(obj).encode("utf-8")
 
     def deserialize(self, data: bytes) -> Any:
         return json.loads(data.decode("utf-8"))
@@ -143,25 +118,27 @@ class JsonSerializer:
 _JsonSerializer = JsonSerializer()
 
 
-def json_dump(
+def json_dumps(
     obj: Any,
-    to_bytes: bool = True,
     ensure_ascii: bool = True,
     indent: int | None = None,
     **kwargs,
-) -> bytes | str:
-    """Serialize an object into JSON with FlexRAG convenience extensions.
+) -> str:
+    """Serialize an object into JSON text with FlexRAG extensions.
 
     :param obj: Object to serialize.
-    :param to_bytes: Whether to return UTF-8 encoded bytes. Defaults to
-        ``True``.
     :param ensure_ascii: Whether non-ASCII characters should be escaped.
         Defaults to ``True``.
     :param indent: Optional indentation level for pretty printing.
     :param kwargs: Extra keyword arguments forwarded to :func:`json.dumps`.
-    :return: JSON bytes or text.
+    :return: Serialized JSON text.
     """
-    return _JsonSerializer.serialize(obj, to_bytes, ensure_ascii, indent, **kwargs)
+    return _JsonSerializer.dumps(
+        obj,
+        ensure_ascii=ensure_ascii,
+        indent=indent,
+        **kwargs,
+    )
 
 
 @SERIALIZERS("msgpack")

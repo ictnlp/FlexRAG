@@ -1,76 +1,59 @@
 import asyncio
-import logging
-import os
 from abc import abstractmethod
 from collections.abc import Callable
-from pathlib import Path
-from typing import Optional
 
 from flexrag.assistants import AssistantProtocol, AssistantResult
-from flexrag.common import LOGGER_MANAGER, SimpleProgressLogger, configure
+from flexrag.common import SimpleProgressLogger, configure
 from flexrag.common.dataclasses import Context
-from flexrag.common.serialization import json_dump
+from flexrag.common.serialization import json_dumps
 from flexrag.datasets.core import ContextualQASample, MappingDataset
 from flexrag.metrics import Evaluator
 
-from .task_base import TaskBase
+from .task_base import TaskBase, TaskBaseConfig
 
 
 @configure
-class ContextualQATaskConfig:
+class ContextualQATaskConfig(TaskBaseConfig):
     """Configuration for contextual QA evaluation.
 
     :param log_interval: Progress logging interval.
     :param output_path: Optional directory for evaluation outputs.
     """
 
-    log_interval: int = 10
-    output_path: Optional[str] = None
-
 
 class ContextualQATask(TaskBase):
     """Base class for contextual QA tasks."""
 
     config: ContextualQATaskConfig
+    _logger_name = "task.contextualized_qa"
 
-    def setup(self) -> None:
-        """Load the dataset, evaluator, logging, and output paths."""
-        self.logger = LOGGER_MANAGER.get_logger("task.contextualized_qa")
-        if self.config.output_path is not None:
-            os.makedirs(self.config.output_path, exist_ok=True)
-            LOGGER_MANAGER.add_handler(
-                logging.FileHandler(Path(self.config.output_path, "log.txt"))
-            )
-        self.logger.debug(f"Configs:\n{self.config.dumps()}")
+    def __init__(
+        self,
+        config: ContextualQATaskConfig,
+        *,
+        assistant_factory: Callable[[], AssistantProtocol],
+    ) -> None:
+        """Load the dataset and evaluator for a contextual QA task.
 
-        if self.config.output_path is not None:
-            self.details_path = Path(self.config.output_path, "details.jsonl")
-            self.eval_score_path = Path(self.config.output_path, "eval_score.json")
-            self.config_path = Path(self.config.output_path, "config.json")
-        else:
-            self.details_path = Path(os.devnull)
-            self.eval_score_path = Path(os.devnull)
-            self.config_path = Path(os.devnull)
-        self.config.dump(self.config_path)
+        :param config: Contextual QA task configuration.
+        :param assistant_factory: Factory returning a fresh assistant instance.
+        """
+        super().__init__(config)
+        self._assistant_factory = assistant_factory
         self.testset = self.load_dataset()
         self.evaluator = self.load_evaluator()
 
-    async def run(
-        self,
-        assistant_factory: Callable[[], AssistantProtocol],
-    ) -> None:
+    async def run(self) -> None:
         """Evaluate all samples concurrently in one assistant episode.
 
         Existing benchmark prompts remain responsible for rendering their
         provided contexts.
-
-        :param assistant_factory: Factory returning a fresh assistant instance.
         """
         items = list(self.testset)
         p_logger = SimpleProgressLogger(
             self.logger, interval=self.config.log_interval, total=len(items)
         )
-        async with assistant_factory() as assistant:
+        async with self._assistant_factory() as assistant:
 
             async def evaluate_one(item: ContextualQASample) -> AssistantResult:
                 result = await self.evaluate(assistant=assistant, sample=item)
@@ -88,14 +71,13 @@ class ContextualQATask(TaskBase):
         with open(self.details_path, "w", encoding="utf-8") as f:
             for item, result in zip(items, results, strict=True):
                 f.write(
-                    json_dump(
+                    json_dumps(
                         {
                             "question": item.question,
                             "golden": item.answers,
                             "metadata_test": item.metadata,
                             "response": result,
                         },
-                        to_bytes=False,
                         ensure_ascii=False,
                     )
                 )
@@ -112,12 +94,11 @@ class ContextualQATask(TaskBase):
         )
         with open(self.eval_score_path, "w", encoding="utf-8") as f:
             f.write(
-                json_dump(
+                json_dumps(
                     {
                         "eval_scores": resp_score,
                         "eval_details": resp_score_detail,
                     },
-                    to_bytes=False,
                     indent=4,
                     ensure_ascii=False,
                 )

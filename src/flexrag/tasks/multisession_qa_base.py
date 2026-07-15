@@ -1,74 +1,51 @@
 import asyncio
-import logging
-import os
 from abc import abstractmethod
 from collections import defaultdict
 from collections.abc import Callable
-from pathlib import Path
-from typing import Optional
 
 from flexrag.assistants import AssistantProtocol, AssistantResult
-from flexrag.common import (
-    LOGGER_MANAGER,
-    RetrievedContext,
-    SimpleProgressLogger,
-    configure,
-)
-from flexrag.common.serialization import json_dump
+from flexrag.common import RetrievedContext, SimpleProgressLogger, configure
+from flexrag.common.serialization import json_dumps
 from flexrag.datasets.core import MappingDataset, MultiSessionQASample
 from flexrag.metrics import Evaluator
 
-from .task_base import TaskBase
+from .task_base import TaskBase, TaskBaseConfig
 
 
 @configure
-class MultiSessionQATaskConfig:
+class MultiSessionQATaskConfig(TaskBaseConfig):
     """Configuration for multi-session QA evaluation.
 
     :param log_interval: Progress logging interval.
     :param output_path: Optional directory for evaluation outputs.
     """
 
-    log_interval: int = 10
-    output_path: Optional[str] = None
-
 
 class MultiSessionQATask(TaskBase):
     """Base class for episode-isolated multi-session QA tasks."""
 
     config: MultiSessionQATaskConfig
+    _logger_name = "task.multi_session_qa"
 
-    def setup(self) -> None:
-        """Load the dataset, evaluator, logging, and output paths."""
-        self.logger = LOGGER_MANAGER.get_logger("task.multi_session_qa")
-        if self.config.output_path is not None:
-            os.makedirs(self.config.output_path, exist_ok=True)
-            LOGGER_MANAGER.add_handler(
-                logging.FileHandler(Path(self.config.output_path, "log.txt"))
-            )
-        self.logger.debug(f"Configs:\n{self.config.dumps()}")
-
-        if self.config.output_path is not None:
-            self.details_path = Path(self.config.output_path, "details.jsonl")
-            self.eval_score_path = Path(self.config.output_path, "eval_score.json")
-            self.config_path = Path(self.config.output_path, "config.json")
-        else:
-            self.details_path = Path(os.devnull)
-            self.eval_score_path = Path(os.devnull)
-            self.config_path = Path(os.devnull)
-        self.config.dump(self.config_path)
-        self.testset = self.load_dataset()
-        self.evaluator = self.load_evaluator()
-
-    async def run(
+    def __init__(
         self,
+        config: MultiSessionQATaskConfig,
+        *,
         assistant_factory: Callable[[], AssistantProtocol],
     ) -> None:
-        """Evaluate groups serially and questions within each group concurrently.
+        """Load the dataset and evaluator for a multi-session QA task.
 
+        :param config: Multi-session QA task configuration.
         :param assistant_factory: Factory returning a fresh assistant for each
             context group.
         """
+        super().__init__(config)
+        self._assistant_factory = assistant_factory
+        self.testset = self.load_dataset()
+        self.evaluator = self.load_evaluator()
+
+    async def run(self) -> None:
+        """Evaluate groups serially and questions within each group concurrently."""
         groups: dict[str | None, list[MultiSessionQASample]] = defaultdict(list)
         for item in self.testset:
             groups[item.sessions_id].append(item)
@@ -84,7 +61,7 @@ class MultiSessionQATask(TaskBase):
         )
 
         for group in groups.values():
-            async with assistant_factory() as assistant:
+            async with self._assistant_factory() as assistant:
                 await assistant.add_histories(group[0].sessions)
 
                 async def evaluate_one(
@@ -109,14 +86,13 @@ class MultiSessionQATask(TaskBase):
         with open(self.details_path, "w", encoding="utf-8") as f:
             for item, result in details:
                 f.write(
-                    json_dump(
+                    json_dumps(
                         {
                             "question": item.question,
                             "golden": item.answers,
                             "metadata_test": item.metadata,
                             "response": result,
                         },
-                        to_bytes=False,
                         ensure_ascii=False,
                     )
                 )
@@ -133,12 +109,11 @@ class MultiSessionQATask(TaskBase):
         )
         with open(self.eval_score_path, "w", encoding="utf-8") as f:
             f.write(
-                json_dump(
+                json_dumps(
                     {
                         "eval_scores": resp_score,
                         "eval_details": resp_score_detail,
                     },
-                    to_bytes=False,
                     indent=4,
                     ensure_ascii=False,
                 )

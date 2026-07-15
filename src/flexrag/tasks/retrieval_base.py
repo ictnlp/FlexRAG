@@ -1,147 +1,154 @@
-import logging
-import os
+import asyncio
 from abc import abstractmethod
-from pathlib import Path
-from typing import Optional
 
 from flexrag.common import (
-    LOGGER_MANAGER,
     Context,
     RetrievedContext,
     SimpleProgressLogger,
     configure,
 )
-from flexrag.common.serialization import json_dump
+from flexrag.common.serialization import json_dumps
 from flexrag.datasets.benchmarks import RetrievalDatasetBase
 from flexrag.metrics import Evaluator
 from flexrag.retrievers import RetrieverProtocol
 
-from .task_base import TaskBase
+from .task_base import TaskBase, TaskBaseConfig
 
 
 @configure
-class RetrievalTaskConfig:
-    """Configuration for Retrieval Task."""
+class RetrievalTaskConfig(TaskBaseConfig):
+    """Configuration for retrieval evaluation.
 
-    log_interval: int = 10
-    output_path: Optional[str] = None
+    :param batch_size: Number of evaluation queries submitted per search call.
+    :param reinit_retriever: Whether to temporarily replace retriever contents
+        with the benchmark corpus.
+    """
+
+    batch_size: int = 32
     reinit_retriever: bool = False
 
 
 class RetrievalTask(TaskBase):
-    """Retrieval Task."""
+    """Base class for batched retrieval evaluation tasks."""
 
     config: RetrievalTaskConfig
+    _logger_name = "task.retrieval"
 
-    def setup(self):
-        """Setup the Retrieval task."""
+    def __init__(
+        self,
+        config: RetrievalTaskConfig,
+        *,
+        retriever: RetrieverProtocol,
+    ) -> None:
+        """Load the retrieval dataset and evaluator.
 
-        # setup logger
-        self.logger = LOGGER_MANAGER.get_logger("task.retrieval")
-        if self.config.output_path is not None:
-            os.makedirs(self.config.output_path, exist_ok=True)
-            log_path = Path(self.config.output_path, "log.txt")
-            handler = logging.FileHandler(log_path)
-            LOGGER_MANAGER.add_handler(handler)
-        self.logger.debug(f"Configs:\n{self.config.dumps()}")
-
-        # setup output paths
-        if self.config.output_path is not None:
-            self.details_path = Path(self.config.output_path, "details.jsonl")
-            self.eval_score_path = Path(self.config.output_path, "eval_score.json")
-            self.config_path = Path(self.config.output_path, "config.json")
-        else:
-            self.details_path = Path(os.devnull)
-            self.eval_score_path = Path(os.devnull)
-            self.config_path = Path(os.devnull)
-        self.config.dump(self.config_path)
-
-        # load dataset
+        :param config: Retrieval task configuration.
+        :param retriever: Retriever to evaluate.
+        :raises ValueError: If ``batch_size`` is not positive.
+        """
+        if config.batch_size <= 0:
+            raise ValueError("RetrievalTaskConfig.batch_size must be positive")
+        super().__init__(config)
+        self._retriever = retriever
         self.testset = self.load_dataset()
-
-        # load metrics
         self.evaluator = self.load_evaluator()
-        return
 
-    def run(self, retriever: RetrieverProtocol):
-        """Run the Retrieval task."""
-        # initial check
+    async def run(self) -> None:
+        """Evaluate a retriever with sequential batches of queries.
+
+        When ``reinit_retriever`` is enabled, the benchmark corpus temporarily
+        replaces the retriever contents and is cleared even if evaluation
+        fails. Existing contents are not restored.
+
+        :raises ValueError: If reinitialization is requested without a corpus.
+        """
+        retriever = self._retriever
+        corpus = self.testset.corpus if self.config.reinit_retriever else None
         if self.config.reinit_retriever:
-            if retriever.count() > 0:
-                self.logger.warning(
-                    "Retriever is not empty. "
-                    "It will be reinitialized for the retrieval task."
-                )
-                retriever.clear()
-            if self.testset.corpus is None:
+            if corpus is None:
                 raise ValueError(
                     "Dataset corpus is not available. "
                     "Set the dataset to load its corpus before reinitializing the retriever."
                 )
-            retriever.add_contexts(self.testset.corpus)
 
-        # search and answer questions
-        questions: list[str] = []
-        goldens: list[list[Context]] = []
-        retrieved: list[list[RetrievedContext]] = []
-        evaluation_qrels: list[dict[str, float]] = []
-        self.query_ids: list[str] = []
-        self.qrels: dict[str, dict[str, float]] = {}
-        p_logger = SimpleProgressLogger(self.logger, interval=self.config.log_interval)
-        with open(self.details_path, "w", encoding="utf-8") as f:
-            for idx, item in enumerate(self.testset):
-                qid = item.question_id or str(idx)
-                self.query_ids.append(qid)
-                sample_qrels = dict(item.qrels)
-                self.qrels[qid] = sample_qrels
-                evaluation_qrels.append(sample_qrels)
-                questions.append(item.question)
-                goldens.append(item.contexts or [])
-                ctxs = retriever.search(item.question)[0]
-                retrieved.append(ctxs)
+        try:
+            if corpus is not None:
+                if await retriever.async_count() > 0:
+                    self.logger.warning(
+                        "Retriever is not empty. "
+                        "It will be reinitialized for the retrieval task."
+                    )
+                    await retriever.async_clear()
+                await retriever.async_add_contexts(corpus)
+
+            items = list(self.testset)
+            questions: list[str] = []
+            goldens: list[list[Context]] = []
+            retrieved: list[list[RetrievedContext]] = []
+            evaluation_qrels: list[dict[str, float]] = []
+            self.query_ids: list[str] = []
+            self.qrels: dict[str, dict[str, float]] = {}
+            p_logger = SimpleProgressLogger(
+                self.logger,
+                interval=self.config.log_interval,
+                total=len(items),
+            )
+
+            with open(self.details_path, "w", encoding="utf-8") as f:
+                for start in range(0, len(items), self.config.batch_size):
+                    batch = items[start : start + self.config.batch_size]
+                    batch_results = await retriever.async_search(
+                        [item.question for item in batch]
+                    )
+                    for offset, (item, ctxs) in enumerate(
+                        zip(batch, batch_results, strict=True)
+                    ):
+                        qid = item.question_id or str(start + offset)
+                        self.query_ids.append(qid)
+                        sample_qrels = dict(item.qrels)
+                        self.qrels[qid] = sample_qrels
+                        evaluation_qrels.append(sample_qrels)
+                        questions.append(item.question)
+                        goldens.append(item.contexts or [])
+                        retrieved.append(ctxs)
+                        f.write(
+                            json_dumps(
+                                {
+                                    "question": item.question,
+                                    "golden_contexts": item.contexts,
+                                    "qrels": item.qrels,
+                                    "metadata": item.metadata,
+                                    "contexts": ctxs,
+                                },
+                                ensure_ascii=False,
+                            )
+                        )
+                        f.write("\n")
+                        p_logger.update(desc="Searching")
+
+            eval_score, eval_score_detail = await asyncio.to_thread(
+                self.evaluator.evaluate,
+                questions=questions,
+                retrieved_contexts=retrieved,
+                golden_contexts=goldens,
+                qrels=evaluation_qrels,
+                log=True,
+            )
+
+            with open(self.eval_score_path, "w", encoding="utf-8") as f:
                 f.write(
-                    json_dump(
+                    json_dumps(
                         {
-                            "question": item.question,
-                            "golden_contexts": item.contexts,
-                            "qrels": item.qrels,
-                            "metadata": item.metadata,
-                            "contexts": ctxs,
+                            "eval_scores": eval_score,
+                            "eval_details": eval_score_detail,
                         },
-                        to_bytes=False,
+                        indent=4,
                         ensure_ascii=False,
                     )
-                    + "\n"
                 )
-                p_logger.update(desc="Searching")
-
-        # Evaluate the results
-        eval_score, eval_score_detail = self.evaluator.evaluate(
-            questions=questions,
-            retrieved_contexts=retrieved,
-            golden_contexts=goldens,
-            qrels=evaluation_qrels,
-            log=True,
-        )
-
-        # clean up retriever if needed
-        if self.config.reinit_retriever:
-            retriever.clear()
-
-        # Save the evaluation results
-        with open(self.eval_score_path, "w", encoding="utf-8") as f:
-            f.write(
-                json_dump(
-                    {
-                        "eval_scores": eval_score,
-                        "eval_details": eval_score_detail,
-                    },
-                    to_bytes=False,
-                    indent=4,
-                    ensure_ascii=False,
-                )
-            )
-        return
+        finally:
+            if self.config.reinit_retriever:
+                await retriever.async_clear()
 
     @abstractmethod
     def load_dataset(self) -> RetrievalDatasetBase:

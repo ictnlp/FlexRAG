@@ -44,10 +44,11 @@ class _Assistant(AssistantBase):
 
 
 class _TaskMixin:
-    def setup(self):
-        pass
+    def load_dataset(self):
+        return []
 
-    load_dataset = load_evaluator = setup
+    def load_evaluator(self):
+        return _Evaluator()
 
     async def evaluate(self, assistant, sample):
         return await assistant.answer([{"role": "user", "content": sample.question}])
@@ -65,15 +66,17 @@ def _prepare(task, samples, tmp_path):
 
 @pytest.mark.asyncio
 async def test_assistant_task_scheduling(tmp_path):
-    task = _OpenTask(OpenQATaskConfig())
-    _prepare(task, [QASample(question=f"q{i}") for i in range(3)], tmp_path)
     assistant = _Assistant([])
+    task = _OpenTask(
+        OpenQATaskConfig(),
+        assistant_factory=lambda: assistant,
+    )
+    _prepare(task, [QASample(question=f"q{i}") for i in range(3)], tmp_path)
 
-    await task.run(lambda: assistant)
+    await task.run()
     assert assistant.maximum == 3
     assert task.evaluator.responses == ["a:q0", "a:q1", "a:q2"]
 
-    task = _MultiTask(MultiSessionQATaskConfig())
     samples = []
     for group in ("g1", "g2"):
         history = ChatMessages.from_list([], metadata={"session_id": group})
@@ -85,13 +88,15 @@ async def test_assistant_task_scheduling(tmp_path):
             )
             for i in range(2)
         )
-    _prepare(task, samples, tmp_path)
     events, assistants = [], []
 
     def factory():
         assistants.append(_Assistant(events))
         return assistants[-1]
 
-    await task.run(factory)
+    task = _MultiTask(MultiSessionQATaskConfig(), assistant_factory=factory)
+    _prepare(task, samples, tmp_path)
+
+    await task.run()
     assert [assistant.maximum for assistant in assistants] == [2, 2]
     assert events == ["start", "g1", "finish", "start", "g2", "finish"]

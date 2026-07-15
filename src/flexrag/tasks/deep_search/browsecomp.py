@@ -1,4 +1,5 @@
 import re
+from collections.abc import Callable
 
 from flexrag.assistants import AssistantProtocol, AssistantResult
 from flexrag.common import ChatMessages, configure
@@ -98,10 +99,17 @@ class BrowseCompTask(OpenQATask):
         self,
         config: BrowseCompTaskConfig,
         llm_judger: GeneratorProtocol | None = None,
-    ):
+        *,
+        assistant_factory: Callable[[], AssistantProtocol],
+    ) -> None:
+        """Initialize the task and its optional LLM-based evaluator.
+
+        :param config: BrowseComp task configuration.
+        :param llm_judger: Optional generator used by the LLM judge metric.
+        :param assistant_factory: Factory returning a fresh assistant instance.
+        """
         self.llm_judger = llm_judger
-        super().__init__(config)
-        return
+        super().__init__(config, assistant_factory=assistant_factory)
 
     def load_dataset(self) -> MappingDataset[QASample]:
         return BrowseCompDataset(self.config)

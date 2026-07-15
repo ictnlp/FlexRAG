@@ -17,7 +17,7 @@ from flexrag.common import (
     load_user_module,
 )
 from flexrag.common.dataclasses import Context, RetrievedContext
-from flexrag.common.serialization import json_dump
+from flexrag.common.serialization import json_dumps
 from flexrag.datasets import MTEBDataset, MTEBDatasetConfig
 from flexrag.metrics import Evaluator, EvaluatorConfig
 from flexrag.retrievers import FlexRetrieverConfig
@@ -94,7 +94,7 @@ def main(config: Config) -> None:
                 ctxs = retriever.search(queries=item.question)[0]
                 retrieved.append(ctxs)
                 f.write(
-                    json_dump(
+                    json_dumps(
                         {
                             "question": item.question,
                             "golden_contexts": item.contexts,
@@ -116,7 +116,7 @@ def main(config: Config) -> None:
         )
         with open(eval_score_path, "w", encoding="utf-8") as f:
             f.write(
-                json_dump(
+                json_dumps(
                     {
                         "eval_scores": resp_score,
                         "eval_details": resp_score_detail,
