@@ -2,6 +2,7 @@ import types
 
 import numpy as np
 import pytest
+from aiohttp import ClientSession
 from PIL import Image
 
 from flexrag.assistants import ModularAssistant, ModularAssistantConfig
@@ -45,6 +46,41 @@ class TestLiteLLMGenerator:
         assert call["model"] == "openai/gpt-4o-mini"
         assert call["messages"][0]["content"] == "Who is Bruce Wayne?"
         mock_litellm_client["module"].completion.assert_not_called()
+
+    def test_owned_session_is_forwarded_and_closed(self, mock_litellm_client):
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(
+                provider="anthropic",
+                model_name="claude-sonnet-4-20250514",
+            )
+        )
+        generator.chat([ChatMessages(history=[ChatTurn(role="user", content="Ping")])])
+
+        call = mock_litellm_client["calls"]["acompletion"][0]
+        session = call["kwargs"]["shared_session"]
+        assert isinstance(session, ClientSession)
+        assert not session.closed
+
+        generator.close()
+        assert session.closed
+
+    def test_borrowed_session_is_not_closed(self, mocker, mock_litellm_client):
+        session = mocker.MagicMock()
+        session.close = mocker.AsyncMock()
+        generator = LiteLLMGenerator(
+            LiteLLMGeneratorConfig(
+                provider="openai",
+                model_name="gpt-4o-mini",
+                extra_kwargs={"shared_session": session},
+            )
+        )
+        generator.chat([ChatMessages(history=[ChatTurn(role="user", content="Ping")])])
+
+        call = mock_litellm_client["calls"]["acompletion"][0]
+        assert call["kwargs"]["shared_session"] is session
+
+        generator.close()
+        session.close.assert_not_awaited()
 
     def test_chat_multimodal_payload(self, mock_litellm_client, tmp_path):
         pdf_path = tmp_path / "sample.pdf"
@@ -379,6 +415,23 @@ class TestLiteLLMEncoder:
         assert call["input_type"] == "search_document"
         assert call["dimensions"] == 8
         mock_litellm_client["module"].embedding.assert_not_called()
+
+    def test_encoder_owned_session_is_forwarded_and_closed(self, mock_litellm_client):
+        encoder = LiteLLMEncoder(
+            LiteLLMEncoderConfig(
+                provider="cohere",
+                model_name="embed-v4.0",
+            )
+        )
+        encoder.encode(["Who is Bruce Wayne?"])
+
+        call = mock_litellm_client["calls"]["aembedding"][0]
+        session = call["kwargs"]["shared_session"]
+        assert isinstance(session, ClientSession)
+        assert not session.closed
+
+        encoder.close()
+        assert session.closed
 
     def test_encode_extra_kwargs_passthrough_with_explicit_precedence(
         self, mock_litellm_client

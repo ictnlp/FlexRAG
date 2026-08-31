@@ -5,6 +5,7 @@ import litellm
 import numpy as np
 
 from flexrag.common import configure, trace
+from flexrag.models.litellm_client import LiteLLMRerankClient
 
 from .ranker_base import RANKERS
 from .remote_ranker_base import RemoteRankerBase, RemoteRankerBaseConfig
@@ -47,7 +48,7 @@ class LiteLLMRankerConfig(RemoteRankerBaseConfig):
 
 @RANKERS("litellm", config_class=LiteLLMRankerConfig)
 class LiteLLMRanker(RemoteRankerBase):
-    async def _create_client(self, config: LiteLLMRankerConfig):
+    async def _create_client(self, config: LiteLLMRankerConfig) -> LiteLLMRerankClient:
         provider = (config.provider or "").strip()
         model_name = (config.model_name or "").strip()
         assert provider, "`provider` must be provided for LiteLLM rankers."
@@ -64,24 +65,36 @@ class LiteLLMRanker(RemoteRankerBase):
         request_kwargs.update(
             {key: value for key, value in explicit_kwargs.items() if value is not None}
         )
-        return {
-            "model": f"{provider}/{model_name}",
-            "request_kwargs": request_kwargs,
-        }
+        return await LiteLLMRerankClient.create(
+            provider=provider,
+            model_name=model_name,
+            request_kwargs=request_kwargs,
+            timeout=config.timeout,
+        )
+
+    async def _close_client(self, client: LiteLLMRerankClient) -> None:
+        await client.close()
+        return
 
     @trace("ranker.litellm_rerank")
     async def _async_rank_impl(
         self, client, query: str, candidates: list[str]
     ) -> tuple[np.ndarray, np.ndarray | None]:
         response = await litellm.arerank(
-            model=client["model"],
+            model=client.model,
             query=query,
             documents=candidates,
             top_n=len(candidates),
             return_documents=False,
-            **client["request_kwargs"],
+            **client.request_kwargs,
         )
         scores = np.zeros(len(candidates))
         for result in response.results:
-            scores[result.index] = result.relevance_score
+            if isinstance(result, dict):
+                index = result["index"]
+                relevance_score = result["relevance_score"]
+            else:
+                index = result.index
+                relevance_score = result.relevance_score
+            scores[index] = relevance_score
         return None, scores

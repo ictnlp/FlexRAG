@@ -7,6 +7,7 @@ import numpy as np
 from flexrag.common import ContentPart, configure, trace
 
 from ..generators.litellm_generator import _image_part
+from ..litellm_client import LiteLLMClient
 from .encoder_base import (
     ENCODERS,
     EncoderBase,
@@ -73,7 +74,7 @@ class LiteLLMEncoder(EncoderBase[LiteLLMEncoderConfig]):
     def _get_max_concurrency(self) -> int:
         return max(1, self._config.max_concurrency)
 
-    async def _create_client(self, config: LiteLLMEncoderConfig):
+    async def _create_client(self, config: LiteLLMEncoderConfig) -> LiteLLMClient:
         self._embedding_size = config.embedding_size
         self._input_type = config.input_type
         provider = (config.provider or "").strip()
@@ -92,10 +93,16 @@ class LiteLLMEncoder(EncoderBase[LiteLLMEncoderConfig]):
         request_kwargs.update(
             {key: value for key, value in explicit_kwargs.items() if value is not None}
         )
-        return {
-            "model": f"{provider}/{model_name}",
-            "request_kwargs": request_kwargs,
-        }
+        return await LiteLLMClient.create(
+            provider=provider,
+            model_name=model_name,
+            request_kwargs=request_kwargs,
+            max_concurrency=config.max_concurrency,
+        )
+
+    async def _close_client(self, client: LiteLLMClient) -> None:
+        await client.close()
+        return
 
     @trace("encoder.litellm_encode")
     async def _async_encode_impl(self, client, inputs: list[ContentPart]) -> np.ndarray:
@@ -135,8 +142,8 @@ class LiteLLMEncoder(EncoderBase[LiteLLMEncoderConfig]):
         return np.stack(ready_results, axis=0)
 
     async def _embed_inputs(self, client, inputs: list[Any]) -> np.ndarray:
-        request_kwargs = dict(client["request_kwargs"])
-        request_kwargs["model"] = client["model"]
+        request_kwargs = dict(client.request_kwargs)
+        request_kwargs["model"] = client.model
         request_kwargs["input"] = inputs
         request_kwargs["input_type"] = self._input_type
         request_kwargs["dimensions"] = self._embedding_size

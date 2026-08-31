@@ -96,10 +96,7 @@ def mock_litellm_client(mocker):
         scores = np.array(scores)
         indices = np.argsort(scores)[-top_n:][::-1]
         return types.SimpleNamespace(
-            results=[
-                types.SimpleNamespace(index=idx, relevance_score=scores[idx])
-                for idx in indices
-            ]
+            results=[{"index": idx, "relevance_score": scores[idx]} for idx in indices]
         )
 
     import litellm

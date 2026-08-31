@@ -1,11 +1,10 @@
-import asyncio
 from abc import abstractmethod
 
 import numpy as np
 
 from flexrag.common import configure
-from flexrag.common.async_utils import BackgroundEventLoop
 from flexrag.common.dataclasses import RetrievedContext
+from flexrag.models.async_client_base import AsyncClientMixin
 
 from .ranker_base import RankerBase, RankerBaseConfig, RankingResult
 
@@ -15,7 +14,10 @@ class RemoteRankerBaseConfig(RankerBaseConfig):
     max_concurrency: int = 1
 
 
-class RemoteRankerBase(RankerBase):
+class RemoteRankerBase(
+    AsyncClientMixin[RemoteRankerBaseConfig],
+    RankerBase,
+):
     """Base class for API-based rankers.
 
     The RemoteRankerBase uses a background event loop to run async calls,
@@ -44,27 +46,12 @@ class RemoteRankerBase(RankerBase):
     """
 
     def __init__(self, config: RemoteRankerBaseConfig):
-        super().__init__(config)
-        self._loop_thread = BackgroundEventLoop()
-        self._semaphore = None
-        self._client_lock = None
-        self._client = None
-        self._config = config
+        RankerBase.__init__(self, config)
+        AsyncClientMixin.__init__(self, config)
         return
 
-    async def _get_async_client(self):
-        """Create client lazily inside background event loop."""
-        if self._client_lock is None:
-            self._client_lock = asyncio.Lock()
-        async with self._client_lock:
-            if self._client is None:
-                self._client = await self._create_client(self._config)
-        return self._client
-
-    @abstractmethod
-    async def _create_client(self, config: RemoteRankerBaseConfig):
-        """Implemented by subclasses, create and return the async client instance."""
-        return
+    def _get_max_concurrency(self) -> int:
+        return max(1, self._config.max_concurrency)
 
     @abstractmethod
     async def _async_rank_impl(
@@ -98,9 +85,8 @@ class RemoteRankerBase(RankerBase):
         client = await self._get_async_client()
 
         # rank with concurrency control
-        if self._semaphore is None:
-            self._semaphore = asyncio.Semaphore(self._config.max_concurrency)
-        async with self._semaphore:
+        semaphore = await self._get_async_semaphore()
+        async with semaphore:
             indices, scores = await self._async_rank_impl(client, query, texts)
 
         # if scores are provided, ignore indices and sort by scores
@@ -136,13 +122,9 @@ class RemoteRankerBase(RankerBase):
         :return: RankingResult containing ranked candidates and scores.
         :rtype: RankingResult
         """
-        thread_future = self._loop_thread.run_async(
-            self._async_rank_core(query, candidates)
-        )
-        return await asyncio.wrap_future(thread_future)
+        return await self._run_coroutine_async(self._async_rank_core(query, candidates))
 
     def rank(
         self, query: str, candidates: list[RetrievedContext | str]
     ) -> RankingResult:
-        future = self._loop_thread.run_async(self._async_rank_core(query, candidates))
-        return future.result()
+        return self._run_coroutine_sync(self._async_rank_core(query, candidates))

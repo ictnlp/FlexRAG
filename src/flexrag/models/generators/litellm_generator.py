@@ -23,6 +23,7 @@ from flexrag.common.base64_utils import (
 )
 from flexrag.common.logging import LOGGER_MANAGER
 
+from ..litellm_client import LiteLLMClient
 from .generator_base import GENERATORS, GenerationConfig, GeneratorBase
 
 logger = LOGGER_MANAGER.get_logger("flexrag.models.litellm_generator")
@@ -519,7 +520,7 @@ class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
                 await asyncio.sleep(delay)
         raise RuntimeError("LiteLLM request retry loop exited unexpectedly.")
 
-    async def _create_client(self, config: LiteLLMGeneratorConfig):
+    async def _create_client(self, config: LiteLLMGeneratorConfig) -> LiteLLMClient:
         provider = (config.provider or "").strip()
         model_name = (config.model_name or "").strip()
         assert provider, "`provider` must be provided for LiteLLM models."
@@ -536,10 +537,16 @@ class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
         request_kwargs.update(
             {key: value for key, value in explicit_kwargs.items() if value is not None}
         )
-        return {
-            "model": f"{provider}/{model_name}",
-            "request_kwargs": request_kwargs,
-        }
+        return await LiteLLMClient.create(
+            provider=provider,
+            model_name=model_name,
+            request_kwargs=request_kwargs,
+            max_concurrency=config.max_concurrency,
+        )
+
+    async def _close_client(self, client: LiteLLMClient) -> None:
+        await client.close()
+        return
 
     @trace("generator.litellm_chat")
     async def _async_chat_one(
@@ -548,11 +555,11 @@ class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
         message: ChatMessages,
         generation_config: GenerationConfig | None,
     ) -> list[ChatTurn]:
-        request_kwargs = dict(client["request_kwargs"])
+        request_kwargs = dict(client.request_kwargs)
         request_kwargs.update(
             _generation_config_to_kwargs(generation_config, chat=True)
         )
-        request_kwargs["model"] = client["model"]
+        request_kwargs["model"] = client.model
         request_kwargs["messages"] = [
             _turn_to_litellm_message(turn) for turn in message
         ]
@@ -566,9 +573,9 @@ class LiteLLMGenerator(GeneratorBase[LiteLLMGeneratorConfig]):
         prompt: str,
         generation_config: GenerationConfig | None,
     ) -> list[str]:
-        request_kwargs = dict(client["request_kwargs"])
+        request_kwargs = dict(client.request_kwargs)
         request_kwargs.update(_generation_config_to_kwargs(generation_config))
-        request_kwargs["model"] = client["model"]
+        request_kwargs["model"] = client.model
         request_kwargs["prompt"] = prompt
         response = await self._request_with_retry(
             litellm.atext_completion, **request_kwargs

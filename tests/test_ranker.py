@@ -1,4 +1,5 @@
 import pytest
+from litellm import AsyncHTTPHandler
 
 from flexrag.common import LOGGER_MANAGER
 from flexrag.models import LiteLLMGeneratorConfig
@@ -54,6 +55,28 @@ class TestRanker:
             )
         )
         await self.run_ranker(ranker)
+        calls = mock_litellm_client["calls"]["arerank"]
+        client = calls[0]["kwargs"]["client"]
+        assert isinstance(client, AsyncHTTPHandler)
+        assert calls[1]["kwargs"]["client"] is client
+        assert client._client.is_closed
+        return
+
+    @pytest.mark.asyncio
+    async def test_rank_litellm_borrowed_client(self, mocker, mock_litellm_client):
+        client = mocker.MagicMock()
+        client.close = mocker.AsyncMock()
+        ranker = LiteLLMRanker(
+            LiteLLMRankerConfig(
+                provider="cohere",
+                model_name="rerank-v3.5",
+                api_key="test",
+                extra_kwargs={"client": client},
+            )
+        )
+        await self.run_ranker(ranker)
+        assert mock_litellm_client["calls"]["arerank"][0]["kwargs"]["client"] is client
+        client.close.assert_not_awaited()
         return
 
     @pytest.mark.gpu
