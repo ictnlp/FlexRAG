@@ -124,9 +124,9 @@ _active_session: ContextVar[Optional[ProfilerSession]] = ContextVar(
 _current_span: ContextVar[Optional[Span]] = ContextVar("current_span", default=None)
 
 
-def _maybe_cuda_sync() -> None:
+def _maybe_cuda_sync(device_id: int | None = None) -> None:
     if has_torch and torch.cuda.is_available():
-        torch.cuda.synchronize()
+        torch.cuda.synchronize(device_id)
 
 
 @contextmanager
@@ -151,7 +151,10 @@ def start_session(
 
 @contextmanager
 def record_span(
-    name: str, *, sync_cuda: bool = False
+    name: str,
+    *,
+    sync_cuda: bool = False,
+    device_id: int | None = None,
 ) -> Generator[Optional[Span], None, None]:
     """Record a span under the current session. If no session is active, this is a no-op."""
     session = _active_session.get()
@@ -161,7 +164,7 @@ def record_span(
         return
 
     if sync_cuda:
-        _maybe_cuda_sync()
+        _maybe_cuda_sync(device_id)
 
     span = Span(name)
     token = _current_span.set(span)
@@ -169,13 +172,18 @@ def record_span(
         yield span
     finally:
         if sync_cuda:
-            _maybe_cuda_sync()
+            _maybe_cuda_sync(device_id)
         span.end()
         _current_span.reset(token)
         session.record_span(name, span)
 
 
-def trace(name: str, *, sync_cuda: bool = False) -> callable:
+def trace(
+    name: str,
+    *,
+    sync_cuda: bool = False,
+    device_id: int | None = None,
+) -> callable:
     """Decorator to trace a function."""
 
     def decorator(func: callable) -> callable:
@@ -183,14 +191,22 @@ def trace(name: str, *, sync_cuda: bool = False) -> callable:
 
             @wraps(func)
             async def async_wrapper(*args, **kwargs):
-                with record_span(name, sync_cuda=sync_cuda):
+                with record_span(
+                    name,
+                    sync_cuda=sync_cuda,
+                    device_id=device_id,
+                ):
                     return await func(*args, **kwargs)
 
             return async_wrapper
 
         @wraps(func)
         def sync_wrapper(*args, **kwargs):
-            with record_span(name, sync_cuda=sync_cuda):
+            with record_span(
+                name,
+                sync_cuda=sync_cuda,
+                device_id=device_id,
+            ):
                 return func(*args, **kwargs)
 
         return sync_wrapper
