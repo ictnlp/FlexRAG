@@ -63,7 +63,7 @@ class RetrieverBase(ABC):
 
     cfg: RetrieverBaseConfig
 
-    def __init__(self, cfg: RetrieverBaseConfig):
+    def __init__(self, cfg: RetrieverBaseConfig) -> None:
         # load preprocess pipeline
         self.query_preprocess_pipeline = TextProcessPipeline(
             cfg.query_preprocess_pipeline
@@ -72,7 +72,7 @@ class RetrieverBase(ABC):
 
     async def async_search(
         self,
-        query: list[Any],
+        query: Any,
         **search_kwargs,
     ) -> list[list[RetrievedContext]]:
         """Search queries asynchronously."""
@@ -84,7 +84,7 @@ class RetrieverBase(ABC):
 
     def search(
         self,
-        query: Iterable[Any] | Any,
+        query: Any,
         disable_cache: bool = False,
         no_preprocess: bool = False,
         **search_kwargs,
@@ -92,7 +92,7 @@ class RetrieverBase(ABC):
         """Search queries with batching and runtime result caching.
 
         :param query: Queries to search.
-        :type query: Iterable[Any] | Any
+        :type query: Any
         :param disable_cache: Whether to disable runtime result cache for this call.
             Defaults to False.
         :type disable_cache: bool
@@ -106,20 +106,20 @@ class RetrieverBase(ABC):
 
         # normalize query
         if isinstance(query, str):
-            query = [query]
+            queries = [query]
         elif isinstance(query, Iterable):
-            query = list(query)
+            queries = list(query)
         else:
-            query = [query]
+            queries = [query]
         if not no_preprocess:
-            query = [self.query_preprocess_pipeline(q) for q in query]
+            queries = [self.query_preprocess_pipeline(q) for q in queries]
 
         # search without cache
         batch_size = max(1, self.cfg.batch_size)
         if disable_cache:
             results: list[list[RetrievedContext]] = []
-            for start in range(0, len(query), batch_size):
-                batch = query[start : start + batch_size]
+            for start in range(0, len(queries), batch_size):
+                batch = queries[start : start + batch_size]
                 results.extend(self._search(batch, **dict(search_kwargs)))
             return results
 
@@ -145,7 +145,7 @@ class RetrieverBase(ABC):
                     "search_kwargs": cache_search_kwargs,
                 }
             )
-            for q in query
+            for q in queries
         ]
 
         # try to get results from cache
@@ -163,8 +163,8 @@ class RetrieverBase(ABC):
         except Exception as e:
             warning_once(logger, "Runtime cache read failed; bypassing cache: %s", e)
             final_results: list[list[RetrievedContext]] = []
-            for start in range(0, len(query), batch_size):
-                batch = query[start : start + batch_size]
+            for start in range(0, len(queries), batch_size):
+                batch = queries[start : start + batch_size]
                 final_results.extend(self._search(batch, **dict(search_kwargs)))
             return final_results
 
@@ -176,7 +176,7 @@ class RetrieverBase(ABC):
         cache_items: dict[str, list[dict[str, Any]]] = {}
         for start in range(0, len(missing_indices), batch_size):
             indices = missing_indices[start : start + batch_size]
-            batch = [query[i] for i in indices]
+            batch = [queries[i] for i in indices]
             batch_results = self._search(batch, **dict(search_kwargs))
             if len(batch_results) != len(batch):
                 raise ValueError(
@@ -215,13 +215,13 @@ class RetrieverBase(ABC):
         :return: A batch of list that contains k RetrievedContext.
         :rtype: list[list[RetrievedContext]]
         """
-        return
+        raise NotImplementedError
 
     @property
     @abstractmethod
     def fields(self) -> list[str]:
         """The fields of the retrieved data."""
-        return
+        raise NotImplementedError
 
     def test_speed(
         self,
@@ -253,7 +253,7 @@ class RetrieverBase(ABC):
         logger.info(
             f"Retrieval {sample_num} items consume: {avg_time:.4f} ± {std_time:.4f} s"
         )
-        return end_time - start_time
+        return avg_time
 
 
 RETRIEVERS = Register[RetrieverBase]("retriever", True)
@@ -273,7 +273,7 @@ class EditableRetriever(RetrieverBase):
     """
 
     @abstractmethod
-    def add_passages(self, passages: Iterable[Context]):
+    def add_passages(self, passages: Iterable[Context]) -> None:
         """
         Add passages to the retriever database.
 
@@ -281,17 +281,17 @@ class EditableRetriever(RetrieverBase):
         :type passages: Iterable[Context]
         :return: None
         """
-        return
+        raise NotImplementedError
 
     @abstractmethod
     def clear(self) -> None:
         """Clear the retriever database."""
-        return
+        raise NotImplementedError
 
     @abstractmethod
-    def __len__(self):
+    def __len__(self) -> int:
         """Return the number of documents in the retriever database."""
-        return
+        raise NotImplementedError
 
     @abstractmethod
     def __getitem__(self, context_id: str) -> Context:
@@ -302,7 +302,7 @@ class EditableRetriever(RetrieverBase):
         :return: The document at the given context ID.
         :rtype: Context
         """
-        return
+        raise NotImplementedError
 
 
 @configure
@@ -348,9 +348,9 @@ class LocalRetriever(EditableRetriever):
     @staticmethod
     def load_from_hub(
         repo_id: str,
-        revision: str = None,
-        token: str = None,
-        cache_dir: str = FLEXRAG_CACHE_DIR,
+        revision: Optional[str] = None,
+        token: Optional[str] = None,
+        cache_dir: str | os.PathLike[str] = FLEXRAG_CACHE_DIR,
         **kwargs,
     ) -> "LocalRetriever":
         """Load a retriever from the HuggingFace Hub.
@@ -393,9 +393,9 @@ class LocalRetriever(EditableRetriever):
     def save_to_hub(
         self,
         repo_id: str,
-        token: str = os.environ.get("HF_TOKEN", None),
+        token: Optional[str] = os.environ.get("HF_TOKEN"),
         commit_message: str = "Update FlexRAG retriever",
-        retriever_card: str = None,
+        retriever_card: Optional[str] = None,
         private: bool = False,
         **kwargs,
     ) -> str:
@@ -425,17 +425,19 @@ class LocalRetriever(EditableRetriever):
                         f"the retriever will be saved temporarily at {tmp_dir}."
                     )
                 )
-                self.save_to_local(tmp_dir, update_config=True)
-                self.save_to_hub(
-                    token=token,
-                    repo_id=repo_id,
-                    commit_message=commit_message,
-                    retriever_card=retriever_card,
-                    private=private,
-                    **kwargs,
-                )
-            self.cfg.retriever_path = None
-            return
+                try:
+                    self.save_to_local(tmp_dir)
+                    return self.save_to_hub(
+                        token=token,
+                        repo_id=repo_id,
+                        commit_message=commit_message,
+                        retriever_card=retriever_card,
+                        private=private,
+                        **kwargs,
+                    )
+                finally:
+                    if self.cfg.retriever_path == tmp_dir:
+                        self.detach()
 
         # prepare the client
         api = HfApi(token=token)
@@ -457,10 +459,10 @@ class LocalRetriever(EditableRetriever):
             folder_path=self.cfg.retriever_path,
             **kwargs,
         )
-        return repo_url
+        return str(repo_url)
 
     @staticmethod
-    def load_from_local(repo_path: str = None, **kwargs) -> "LocalRetriever":
+    def load_from_local(repo_path: str, **kwargs) -> "LocalRetriever":
         """Load a retriever from the local disk.
 
         :param repo_path: The path to the local database. Default: None.
@@ -485,7 +487,7 @@ class LocalRetriever(EditableRetriever):
         return retriever
 
     @abstractmethod
-    def save_to_local(self, retriever_path: str = None):
+    def save_to_local(self, retriever_path: Optional[str] = None) -> None:
         """Save the retriever to the local disk.
 
         :param retriever_path: The path to the local database. Default: None.
@@ -493,11 +495,11 @@ class LocalRetriever(EditableRetriever):
         :return: None
         :rtype: None
         """
-        return
+        raise NotImplementedError
 
     @abstractmethod
-    def detach(self):
+    def detach(self) -> None:
         """Detach the retriever from the local database.
         After detaching, the retriever will be kept in memory and all modifications will not be applied to the disk.
         """
-        return
+        raise NotImplementedError
